@@ -214,3 +214,14 @@ cd rust/problems/07-chess && cargo test
 ```
 
 Pick a problem, open its `README.md`, start the timer in `INTERVIEW.md`, and **stare at the requirements before typing**.
+
+## Where to write your solutions
+
+> **Do not write solutions on `main`.** Keep `main` as the clean, empty playground.
+> Create a separate branch for your solutions and work there:
+>
+> ```bash
+> git checkout -b my-solutions
+> ```
+>
+> That way you can always pull updates to the problems on `main` and start fresh by branching again.
