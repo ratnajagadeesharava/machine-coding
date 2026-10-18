@@ -1,19 +1,25 @@
 package solution;
 
-/** Cannot be withdrawn below {@code minBalance}. No monthly fee. */
+/**
+ * Cannot be withdrawn below {@code minBalance}. No monthly fee.
+ */
 public class SavingsAccount extends Account {
+    private final long minBalance;
 
     public SavingsAccount(long minBalance) {
-        throw new UnsupportedOperationException("Not implemented yet");
+        this.minBalance = minBalance;
     }
 
     @Override
     protected long monthlyFee() {
-        throw new UnsupportedOperationException("Not implemented yet");
+        return 0;
     }
 
     @Override
     protected boolean canWithdraw(long amount) {
-        throw new UnsupportedOperationException("Not implemented yet");
+        if (this.balance() - amount >= minBalance) {
+            return true;
+        }
+        return false;
     }
 }
