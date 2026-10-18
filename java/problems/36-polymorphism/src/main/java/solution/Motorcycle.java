@@ -2,20 +2,27 @@ package solution;
 
 import contract.Vehicle;
 
-/** 200 cents, never a peak surcharge. */
+/**
+ * 200 cents, never a peak surcharge.
+ */
 public class Motorcycle implements Vehicle {
+    private final String plate;
 
     public Motorcycle(String plate) {
-        throw new UnsupportedOperationException("Not implemented yet");
+        if (plate == null || plate.isEmpty() || plate.isBlank()) {
+            throw new IllegalArgumentException("plate is not valid");
+        }
+        this.plate = plate;
     }
 
     @Override
     public String plate() {
-        throw new UnsupportedOperationException("Not implemented yet");
+
+        return this.plate;
     }
 
     @Override
     public long toll(boolean peak) {
-        throw new UnsupportedOperationException("Not implemented yet");
+        return 200;
     }
 }
