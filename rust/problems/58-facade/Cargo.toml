@@ -1,0 +1,13 @@
+[package]
+name = "p58_facade"
+version = "0.1.0"
+edition = "2021"
+publish = false
+description = "Facade - OOP / design practice"
+
+[features]
+# kept for `cargo play --hidden` compatibility (no interviewer scenarios for this problem)
+hidden = []
+
+[dependencies]
+playground-support = { path = "../../support" }

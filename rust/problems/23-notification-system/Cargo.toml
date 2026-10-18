@@ -1,0 +1,18 @@
+[package]
+name = "p23_notification_system"
+version = "0.1.0"
+edition = "2021"
+publish = false
+description = "Notification System — machine coding practice"
+
+[features]
+# Interviewer-only scenarios: cargo test --features hidden
+hidden = []
+
+[dependencies]
+playground-support = { path = "../../support" }
+
+[[test]]
+name = "hidden"
+path = "interviewer/hidden.rs"
+required-features = ["hidden"]

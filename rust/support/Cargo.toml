@@ -1,0 +1,6 @@
+[package]
+name = "playground-support"
+version = "0.1.0"
+edition = "2021"
+publish = false
+description = "Shared test infrastructure: clocks, thread coordination, skip-until-implemented"

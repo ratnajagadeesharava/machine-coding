@@ -1,0 +1,18 @@
+[package]
+name = "p30_concurrent_cache"
+version = "0.1.0"
+edition = "2021"
+publish = false
+description = "Concurrent Cache with Loaders — machine coding practice"
+
+[features]
+# Interviewer-only scenarios: cargo test --features hidden
+hidden = []
+
+[dependencies]
+playground-support = { path = "../../support" }
+
+[[test]]
+name = "hidden"
+path = "interviewer/hidden.rs"
+required-features = ["hidden"]

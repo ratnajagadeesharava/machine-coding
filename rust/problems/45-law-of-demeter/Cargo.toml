@@ -1,0 +1,13 @@
+[package]
+name = "p45_law_of_demeter"
+version = "0.1.0"
+edition = "2021"
+publish = false
+description = "Law of Demeter - OOP / design practice"
+
+[features]
+# kept for `cargo play --hidden` compatibility (no interviewer scenarios for this problem)
+hidden = []
+
+[dependencies]
+playground-support = { path = "../../support" }

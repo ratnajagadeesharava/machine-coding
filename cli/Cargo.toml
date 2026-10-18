@@ -1,0 +1,14 @@
+[package]
+name = "playground-cli"
+version = "0.1.0"
+edition = "2021"
+publish = false
+description = "rustlings-style runner for the machine-coding playground"
+
+[[bin]]
+name = "play"
+path = "src/main.rs"
+
+[dependencies]
+
+[workspace]

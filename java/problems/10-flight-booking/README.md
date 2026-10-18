@@ -1,0 +1,112 @@
+# 10 · Flight Booking (Java)
+
+| Difficulty | Duration | Scaffolding |
+|---|---|---|
+| Hard | 90 min | Level 1 — almost empty. Only a thin, primitive-typed test entry point is provided. Every domain class is yours. |
+
+> Read the requirements, then **design before you code**: which concepts, which owners, which API,
+> which state, which abstractions (if any). Nothing here tells you. See `INTERVIEW.md` for the process and
+> `FOLLOWUPS.md` (open one at a time, after the previous version passes).
+
+## Problem
+
+Build the booking core of an airline reservation system: customers search flights, hold a seat while they pay,
+confirm the booking, or cancel and receive a refund according to the fare rules.
+
+## Requirements
+
+1. Flights connect an origin to a destination at a departure time. Each flight has **business** and **economy** seats; every seat has a label (`B1…Bn`, `E1…En`) and each cabin has its own fare.
+2. **Search** by origin and destination for flights departing at or after a given time. Results are ordered by departure time, then cheapest economy fare, then flight id. Flights with no seat currently available are not returned.
+3. A customer **reserves** a specific seat for a passenger. A reservation **holds** the seat for **10 minutes**; while held (and not expired) nobody else can reserve it.
+4. A reservation is **confirmed** by a payment attempt. A *failed* payment keeps the hold (the customer may retry until the hold expires); a successful one turns the reservation into a confirmed booking that no longer expires.
+5. An expired hold releases the seat automatically — no cleanup call is made by anyone — and can no longer be confirmed.
+6. A seat can never be held or booked by two customers at the same time, including under heavy concurrency.
+7. **Cancellation**: cancelling a confirmed booking at least **24 hours** before departure refunds the full fare; later than that, **50%** (rounded down). Cancelling an unexpired, unconfirmed reservation releases the seat with a refund of 0. A seat released by cancellation is available again.
+8. Flights that have already departed cannot be reserved.
+
+## Constraints
+
+- Thousands of flights, hundreds of seats each; searching must not scan every flight linearly for every query in a production setting (a scan is fine for the tests, be ready to discuss an index).
+- Time comes from the `Clock` given to the factory.
+- Operations must be safe to call from many threads.
+
+## Examples
+
+```
+addFlight("F1", "BLR", "DEL", dep, economy=3, business=1, economyFare=5000, businessFare=20000)
+reserve("F1", "E2", "Asha")     → reservation R1     (E2 is held for 10 minutes)
+reserve("F1", "E2", "Ravi")     → refused
+confirm(R1, paymentSucceeds=false) → false, E2 still held
+confirm(R1, true)               → true               (booking, no expiry)
+cancel(R1) 48h before departure → refund 5000        cancel(R1) again → refused
+```
+
+## Behavioral contract
+
+The tests rely on exactly the following behavior. Anything not stated is yours to decide (and to state as an assumption).
+
+- Seat labels are exactly `B1…B<business>` and `E1…E<economy>`. `availableSeats` returns every seat that is neither booked nor under an unexpired hold: business seats first, then economy, each in numeric order. Unknown flight → empty list.
+- `reserve` returns a reservation id, or empty if: the flight or seat is unknown, the seat is taken, the flight has already departed, or the passenger name is blank. A hold is valid while `now < reservedAt + 10 min` (at exactly 10 minutes it has expired).
+- `confirm(id, paymentSucceeds)` returns `true` only when the reservation is active (unexpired, unconfirmed) **and** payment succeeded; in every other case `false`. A confirmed booking keeps the **same id** as the reservation.
+- `cancel(id)` returns the refund amount (possibly 0) or empty when the id is unknown, expired, or already cancelled. Refund: `fare` if `departure − now ≥ 24 h`, else `fare / 2` (integer division).
+- `search` only returns flights that still have at least one available seat.
+- `fareOf(flight, seat)` is the fare of that seat's cabin; empty for unknown flights/seats.
+
+## Test entry point (Java)
+
+The tests drive your system through the thin, primitive-typed contract below. It is **not** your domain
+model — it is the doorway. Create whatever classes you like in `src/main/java` and wire them up in
+`solution/Solution.java`.
+
+```java
+package contract;
+
+import java.util.List;
+import java.util.Optional;
+
+/** Thin test entry point. Your domain model lives behind it. Must be thread-safe. */
+public interface FlightBookingApi {
+
+    void addFlight(String flightId, String from, String to, long departureMillis,
+                   int economySeats, int businessSeats, long economyFare, long businessFare);
+
+    /** Flights with at least one available seat, ordered by departure, economy fare, then id. */
+    List<String> search(String from, String to, long notBeforeMillis);
+
+    /** Business seats first, then economy; each in numeric order. */
+    List<String> availableSeats(String flightId);
+
+    /** Holds the seat for 10 minutes and returns the reservation id, or empty if refused. */
+    Optional<String> reserve(String flightId, String seat, String passenger);
+
+    /** True only if the reservation is active and payment succeeded. */
+    boolean confirm(String reservationId, boolean paymentSucceeds);
+
+    /** Refund amount (possibly 0), or empty if unknown/expired/already cancelled. */
+    Optional<Long> cancel(String reservationOrBookingId);
+
+    Optional<Long> fareOf(String flightId, String seat);
+}
+```
+
+Your wiring point (`src/main/java/solution/Solution.java`):
+
+```java
+public final class Solution {
+    FlightBookingApi create(Clock clock)
+}
+```
+
+## Language notes
+
+`Clock` is `java.time.Clock`. All contract methods are called from multiple threads in the concurrency tests.
+
+## Running
+
+```bash
+mvn test                 # from this directory (or `mvn -pl problems/10-flight-booking test` from java/)
+STRICT=1 mvn test       # fail instead of skip while unimplemented
+mvn test -Phidden       # interviewer scenarios (see INTERVIEWER_NOTES.md)
+```
+
+Tests that need your implementation are **skipped** (not failed) until `create` is wired up, so a fresh checkout builds green.
