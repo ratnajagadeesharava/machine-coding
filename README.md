@@ -65,87 +65,125 @@ Visible tests teach you the contract; they do not enumerate every edge case. Eac
 
 ## Problems
 
-## Recommended order (easiest → hardest)
+## Recommended order (order of learning)
 
-All 73 problems sorted by difficulty (Easy → Medium → Medium-Hard → Hard → Senior), then by time limit, then by problem number.
-Work top to bottom. The `#` column is the problem's folder number (what `cargo play run <#>` and the directory names use);
+All 73 problems sequenced so each one builds on concepts from the ones before it: fundamentals, then principles, then patterns,
+then open-ended design, then concurrency. Work top to bottom. Difficulty is shown for reference only and goes up and down on purpose.
+The `#` column is the problem's folder number (what `cargo play run <#>` and the directory names use);
 **Order** is the suggested sequence. The tables further down group the same problems by topic.
+
+**Phase 1 - OOP fundamentals.** Objects, contracts and how objects relate.
 
 | Order | Problem | Difficulty | Time | Scaffold | # |
 |---:|---|---|---:|:---:|---:|
-| 1 | [KISS](java/problems/43-kiss/README.md) | Easy | 20 min | L2 | 43 |
-| 2 | [YAGNI](java/problems/44-yagni/README.md) | Easy | 25 min | L2 | 44 |
-| 3 | [Classes and Objects](java/problems/33-classes-objects/README.md) | Easy | 30 min | L2 | 33 |
-| 4 | [Interfaces](java/problems/34-interfaces/README.md) | Easy | 30 min | L2 | 34 |
-| 5 | [Inheritance](java/problems/35-inheritance/README.md) | Easy | 30 min | L2 | 35 |
-| 6 | [Polymorphism](java/problems/36-polymorphism/README.md) | Easy | 30 min | L2 | 36 |
+| 1 | [Classes and Objects](java/problems/33-classes-objects/README.md) | Easy | 30 min | L2 | 33 |
+| 2 | [Interfaces](java/problems/34-interfaces/README.md) | Easy | 30 min | L2 | 34 |
+| 3 | [Inheritance](java/problems/35-inheritance/README.md) | Easy | 30 min | L2 | 35 |
+| 4 | [Polymorphism](java/problems/36-polymorphism/README.md) | Easy | 30 min | L2 | 36 |
+| 5 | [Abstraction](java/problems/37-abstraction/README.md) | Medium | 30 min | L2 | 37 |
+| 6 | [Encapsulation](java/problems/38-encapsulation/README.md) | Medium | 30 min | L2 | 38 |
 | 7 | [Aggregation](java/problems/39-aggregation/README.md) | Easy | 30 min | L2 | 39 |
-| 8 | [Abstraction](java/problems/37-abstraction/README.md) | Medium | 30 min | L2 | 37 |
-| 9 | [Encapsulation](java/problems/38-encapsulation/README.md) | Medium | 30 min | L2 | 38 |
-| 10 | [DRY](java/problems/42-dry/README.md) | Medium | 30 min | L2 | 42 |
-| 11 | [Singleton](java/problems/52-singleton/README.md) | Medium | 30 min | L2 | 52 |
-| 12 | [Open/Closed](java/problems/47-ocp/README.md) | Medium | 35 min | L2 | 47 |
-| 13 | [Interface Segregation](java/problems/49-isp/README.md) | Medium | 35 min | L2 | 49 |
-| 14 | [Dependency Inversion](java/problems/50-dip/README.md) | Medium | 35 min | L2 | 50 |
-| 15 | [Factory Method](java/problems/53-factory-method/README.md) | Medium | 35 min | L2 | 53 |
-| 16 | [Adapter](java/problems/57-adapter/README.md) | Medium | 35 min | L2 | 57 |
-| 17 | [Facade](java/problems/58-facade/README.md) | Medium | 35 min | L2 | 58 |
-| 18 | [Composition](java/problems/40-composition/README.md) | Medium | 40 min | L2 | 40 |
-| 19 | [Association](java/problems/41-association/README.md) | Medium | 40 min | L2 | 41 |
-| 20 | [Law of Demeter](java/problems/45-law-of-demeter/README.md) | Medium | 40 min | L2 | 45 |
-| 21 | [Single Responsibility](java/problems/46-srp/README.md) | Medium | 40 min | L2 | 46 |
-| 22 | [Liskov Substitution](java/problems/48-lsp/README.md) | Medium | 40 min | L2 | 48 |
-| 23 | [Prototype](java/problems/56-prototype/README.md) | Medium | 40 min | L2 | 56 |
-| 24 | [Decorator](java/problems/59-decorator/README.md) | Medium | 40 min | L2 | 59 |
-| 25 | [Composite](java/problems/60-composite/README.md) | Medium | 40 min | L2 | 60 |
-| 26 | [Flyweight](java/problems/63-flyweight/README.md) | Medium | 40 min | L2 | 63 |
-| 27 | [Observer](java/problems/65-observer/README.md) | Medium | 40 min | L2 | 65 |
-| 28 | [Strategy](java/problems/66-strategy/README.md) | Medium | 40 min | L2 | 66 |
-| 29 | [Template Method](java/problems/69-template-method/README.md) | Medium | 40 min | L2 | 69 |
-| 30 | [Tic-Tac-Toe](java/problems/08-tic-tac-toe/README.md) | Medium | 45 min | L1 | 08 |
-| 31 | [Snake and Ladder](java/problems/09-snake-and-ladder/README.md) | Medium | 45 min | L1 | 09 |
-| 32 | [LRU Cache](java/problems/18-lru-cache/README.md) | Medium | 45 min | L2 | 18 |
-| 33 | [Abstract Factory](java/problems/54-abstract-factory/README.md) | Medium | 45 min | L2 | 54 |
-| 34 | [Builder](java/problems/55-builder/README.md) | Medium | 45 min | L2 | 55 |
-| 35 | [Proxy](java/problems/61-proxy/README.md) | Medium | 45 min | L2 | 61 |
-| 36 | [Iterator](java/problems/64-iterator/README.md) | Medium | 45 min | L2 | 64 |
+| 8 | [Composition](java/problems/40-composition/README.md) | Medium | 40 min | L2 | 40 |
+| 9 | [Association](java/problems/41-association/README.md) | Medium | 40 min | L2 | 41 |
+
+**Phase 2 - Design principles.** Habits that keep designs small and clean.
+
+| Order | Problem | Difficulty | Time | Scaffold | # |
+|---:|---|---|---:|:---:|---:|
+| 10 | [KISS](java/problems/43-kiss/README.md) | Easy | 20 min | L2 | 43 |
+| 11 | [YAGNI](java/problems/44-yagni/README.md) | Easy | 25 min | L2 | 44 |
+| 12 | [DRY](java/problems/42-dry/README.md) | Medium | 30 min | L2 | 42 |
+| 13 | [Law of Demeter](java/problems/45-law-of-demeter/README.md) | Medium | 40 min | L2 | 45 |
+
+**Phase 3 - SOLID.** Applies the habits to class design; finish with the combined exercise.
+
+| Order | Problem | Difficulty | Time | Scaffold | # |
+|---:|---|---|---:|:---:|---:|
+| 14 | [Single Responsibility](java/problems/46-srp/README.md) | Medium | 40 min | L2 | 46 |
+| 15 | [Open/Closed](java/problems/47-ocp/README.md) | Medium | 35 min | L2 | 47 |
+| 16 | [Liskov Substitution](java/problems/48-lsp/README.md) | Medium | 40 min | L2 | 48 |
+| 17 | [Interface Segregation](java/problems/49-isp/README.md) | Medium | 35 min | L2 | 49 |
+| 18 | [Dependency Inversion](java/problems/50-dip/README.md) | Medium | 35 min | L2 | 50 |
+| 19 | [SOLID Summary](java/problems/51-solid-summary/README.md) | Hard | 75 min | L2 | 51 |
+
+**Phase 4 - Creational patterns.** How objects get made.
+
+| Order | Problem | Difficulty | Time | Scaffold | # |
+|---:|---|---|---:|:---:|---:|
+| 20 | [Singleton](java/problems/52-singleton/README.md) | Medium | 30 min | L2 | 52 |
+| 21 | [Factory Method](java/problems/53-factory-method/README.md) | Medium | 35 min | L2 | 53 |
+| 22 | [Abstract Factory](java/problems/54-abstract-factory/README.md) | Medium | 45 min | L2 | 54 |
+| 23 | [Builder](java/problems/55-builder/README.md) | Medium | 45 min | L2 | 55 |
+| 24 | [Prototype](java/problems/56-prototype/README.md) | Medium | 40 min | L2 | 56 |
+
+**Phase 5 - Structural patterns.** How objects are wired together. Bridge comes last since it builds on Adapter/Composite thinking.
+
+| Order | Problem | Difficulty | Time | Scaffold | # |
+|---:|---|---|---:|:---:|---:|
+| 25 | [Adapter](java/problems/57-adapter/README.md) | Medium | 35 min | L2 | 57 |
+| 26 | [Facade](java/problems/58-facade/README.md) | Medium | 35 min | L2 | 58 |
+| 27 | [Decorator](java/problems/59-decorator/README.md) | Medium | 40 min | L2 | 59 |
+| 28 | [Composite](java/problems/60-composite/README.md) | Medium | 40 min | L2 | 60 |
+| 29 | [Proxy](java/problems/61-proxy/README.md) | Medium | 45 min | L2 | 61 |
+| 30 | [Flyweight](java/problems/63-flyweight/README.md) | Medium | 40 min | L2 | 63 |
+| 31 | [Bridge](java/problems/62-bridge/README.md) | Hard | 50 min | L2 | 62 |
+
+**Phase 6 - Behavioural patterns.** How objects collaborate. Start with the everyday ones (Strategy, Observer); Visitor last.
+
+| Order | Problem | Difficulty | Time | Scaffold | # |
+|---:|---|---|---:|:---:|---:|
+| 32 | [Strategy](java/problems/66-strategy/README.md) | Medium | 40 min | L2 | 66 |
+| 33 | [Observer](java/problems/65-observer/README.md) | Medium | 40 min | L2 | 65 |
+| 34 | [Template Method](java/problems/69-template-method/README.md) | Medium | 40 min | L2 | 69 |
+| 35 | [Command](java/problems/67-command/README.md) | Hard | 50 min | L2 | 67 |
+| 36 | [State](java/problems/68-state/README.md) | Hard | 60 min | L2 | 68 |
 | 37 | [Chain of Responsibility](java/problems/73-chain-of-responsibility/README.md) | Medium | 45 min | L2 | 73 |
-| 38 | [Library Management](java/problems/03-library/README.md) | Medium | 60 min | L1 | 03 |
-| 39 | [Coffee Machine](java/problems/04-coffee-machine/README.md) | Medium | 60 min | L1 | 04 |
-| 40 | [Vending Machine](java/problems/05-vending-machine/README.md) | Medium | 60 min | L1 | 05 |
-| 41 | [ATM](java/problems/06-atm/README.md) | Medium | 60 min | L1 | 06 |
-| 42 | [Splitwise](java/problems/15-splitwise/README.md) | Medium | 60 min | L1 | 15 |
-| 43 | [LFU Cache](java/problems/19-lfu-cache/README.md) | Medium-Hard | 60 min | L2 | 19 |
-| 44 | [Rate Limiter](java/problems/20-rate-limiter/README.md) | Medium-Hard | 60 min | L3 | 20 |
-| 45 | [Metrics Collector](java/problems/26-metrics/README.md) | Medium-Hard | 60 min | L1 | 26 |
-| 46 | [Circuit Breaker](java/problems/27-circuit-breaker/README.md) | Medium-Hard | 60 min | L3 | 27 |
-| 47 | [Parking Lot](java/problems/01-parking-lot/README.md) | Medium-Hard | 90 min | L1 | 01 |
-| 48 | [Travel Itinerary Planner](java/problems/12-travel-itinerary/README.md) | Medium-Hard | 90 min | L1 | 12 |
-| 49 | [Bus / Train Seat Booking](java/problems/13-seat-booking/README.md) | Medium-Hard | 90 min | L1 | 13 |
-| 50 | [Ride Sharing](java/problems/14-ride-sharing/README.md) | Medium-Hard | 90 min | L1 | 14 |
-| 51 | [Digital Wallet](java/problems/16-wallet/README.md) | Medium-Hard | 90 min | L1 | 16 |
-| 52 | [In-Memory Key-Value Store](java/problems/21-key-value-store/README.md) | Medium-Hard | 90 min | L1 | 21 |
-| 53 | [Pub-Sub Message Broker](java/problems/22-pub-sub/README.md) | Medium-Hard | 90 min | L1 | 22 |
-| 54 | [Notification System](java/problems/23-notification-system/README.md) | Medium-Hard | 90 min | L2 | 23 |
-| 55 | [Logging Framework](java/problems/25-logging-framework/README.md) | Medium-Hard | 90 min | L2 | 25 |
-| 56 | [Bridge](java/problems/62-bridge/README.md) | Hard | 50 min | L2 | 62 |
-| 57 | [Command](java/problems/67-command/README.md) | Hard | 50 min | L2 | 67 |
-| 58 | [Visitor](java/problems/70-visitor/README.md) | Hard | 50 min | L2 | 70 |
-| 59 | [Memento](java/problems/72-memento/README.md) | Hard | 50 min | L2 | 72 |
-| 60 | [State](java/problems/68-state/README.md) | Hard | 60 min | L2 | 68 |
-| 61 | [Mediator](java/problems/71-mediator/README.md) | Hard | 60 min | L2 | 71 |
-| 62 | [SOLID Summary](java/problems/51-solid-summary/README.md) | Hard | 75 min | L2 | 51 |
-| 63 | [Elevator System](java/problems/02-elevator/README.md) | Hard | 90 min | L1 | 02 |
-| 64 | [Flight Booking](java/problems/10-flight-booking/README.md) | Hard | 90 min | L1 | 10 |
-| 65 | [Hotel Booking](java/problems/11-hotel-booking/README.md) | Hard | 90 min | L1 | 11 |
-| 66 | [Task Scheduler](java/problems/24-task-scheduler/README.md) | Hard | 90 min | L3 | 24 |
-| 67 | [Bounded Blocking Buffer](java/problems/28-blocking-queue/README.md) | Hard | 90 min | L3 | 28 |
-| 68 | [Worker Pool](java/problems/29-worker-pool/README.md) | Hard | 90 min | L3 | 29 |
-| 69 | [Concurrent Cache with Loaders](java/problems/30-concurrent-cache/README.md) | Hard | 90 min | L3 | 30 |
-| 70 | [Stock Exchange Order Book](java/problems/17-order-book/README.md) | Hard | 120 min | L1 | 17 |
-| 71 | [In-Process Event Bus](java/problems/31-event-bus/README.md) | Hard | 120 min | L3 | 31 |
-| 72 | [Board Game Engine](java/problems/32-board-game-engine/README.md) | Hard | 120 min | L1 | 32 |
-| 73 | [Chess](java/problems/07-chess/README.md) | Senior | 120 min | L1 | 07 |
+| 38 | [Iterator](java/problems/64-iterator/README.md) | Medium | 45 min | L2 | 64 |
+| 39 | [Memento](java/problems/72-memento/README.md) | Hard | 50 min | L2 | 72 |
+| 40 | [Mediator](java/problems/71-mediator/README.md) | Hard | 60 min | L2 | 71 |
+| 41 | [Visitor](java/problems/70-visitor/README.md) | Hard | 50 min | L2 | 70 |
+
+**Phase 7 - Applied design (state machines, data structures).** Open-ended problems that reuse the patterns above. Small games and caches first, then multi-entity systems.
+
+| Order | Problem | Difficulty | Time | Scaffold | # |
+|---:|---|---|---:|:---:|---:|
+| 42 | [Tic-Tac-Toe](java/problems/08-tic-tac-toe/README.md) | Medium | 45 min | L1 | 08 |
+| 43 | [Snake and Ladder](java/problems/09-snake-and-ladder/README.md) | Medium | 45 min | L1 | 09 |
+| 44 | [LRU Cache](java/problems/18-lru-cache/README.md) | Medium | 45 min | L2 | 18 |
+| 45 | [Library Management](java/problems/03-library/README.md) | Medium | 60 min | L1 | 03 |
+| 46 | [Coffee Machine](java/problems/04-coffee-machine/README.md) | Medium | 60 min | L1 | 04 |
+| 47 | [Vending Machine](java/problems/05-vending-machine/README.md) | Medium | 60 min | L1 | 05 |
+| 48 | [ATM](java/problems/06-atm/README.md) | Medium | 60 min | L1 | 06 |
+| 49 | [Splitwise](java/problems/15-splitwise/README.md) | Medium | 60 min | L1 | 15 |
+| 50 | [Parking Lot](java/problems/01-parking-lot/README.md) | Medium-Hard | 90 min | L1 | 01 |
+| 51 | [LFU Cache](java/problems/19-lfu-cache/README.md) | Medium-Hard | 60 min | L2 | 19 |
+| 52 | [Metrics Collector](java/problems/26-metrics/README.md) | Medium-Hard | 60 min | L1 | 26 |
+| 53 | [Logging Framework](java/problems/25-logging-framework/README.md) | Medium-Hard | 90 min | L2 | 25 |
+| 54 | [In-Memory Key-Value Store](java/problems/21-key-value-store/README.md) | Medium-Hard | 90 min | L1 | 21 |
+| 55 | [Pub-Sub Message Broker](java/problems/22-pub-sub/README.md) | Medium-Hard | 90 min | L1 | 22 |
+| 56 | [Notification System](java/problems/23-notification-system/README.md) | Medium-Hard | 90 min | L2 | 23 |
+| 57 | [Digital Wallet](java/problems/16-wallet/README.md) | Medium-Hard | 90 min | L1 | 16 |
+| 58 | [Bus / Train Seat Booking](java/problems/13-seat-booking/README.md) | Medium-Hard | 90 min | L1 | 13 |
+| 59 | [Ride Sharing](java/problems/14-ride-sharing/README.md) | Medium-Hard | 90 min | L1 | 14 |
+| 60 | [Travel Itinerary Planner](java/problems/12-travel-itinerary/README.md) | Medium-Hard | 90 min | L1 | 12 |
+| 61 | [Elevator System](java/problems/02-elevator/README.md) | Hard | 90 min | L1 | 02 |
+| 62 | [Flight Booking](java/problems/10-flight-booking/README.md) | Hard | 90 min | L1 | 10 |
+| 63 | [Hotel Booking](java/problems/11-hotel-booking/README.md) | Hard | 90 min | L1 | 11 |
+| 64 | [Stock Exchange Order Book](java/problems/17-order-book/README.md) | Hard | 120 min | L1 | 17 |
+| 65 | [Board Game Engine](java/problems/32-board-game-engine/README.md) | Hard | 120 min | L1 | 32 |
+| 66 | [Chess](java/problems/07-chess/README.md) | Senior | 120 min | L1 | 07 |
+
+**Phase 8 - Concurrency.** Thread-safety, blocking, scheduling. Do these last.
+
+| Order | Problem | Difficulty | Time | Scaffold | # |
+|---:|---|---|---:|:---:|---:|
+| 67 | [Rate Limiter](java/problems/20-rate-limiter/README.md) | Medium-Hard | 60 min | L3 | 20 |
+| 68 | [Circuit Breaker](java/problems/27-circuit-breaker/README.md) | Medium-Hard | 60 min | L3 | 27 |
+| 69 | [Bounded Blocking Buffer](java/problems/28-blocking-queue/README.md) | Hard | 90 min | L3 | 28 |
+| 70 | [Worker Pool](java/problems/29-worker-pool/README.md) | Hard | 90 min | L3 | 29 |
+| 71 | [Concurrent Cache with Loaders](java/problems/30-concurrent-cache/README.md) | Hard | 90 min | L3 | 30 |
+| 72 | [Task Scheduler](java/problems/24-task-scheduler/README.md) | Hard | 90 min | L3 | 24 |
+| 73 | [In-Process Event Bus](java/problems/31-event-bus/README.md) | Hard | 120 min | L3 | 31 |
 
 ### Topic tables
 
