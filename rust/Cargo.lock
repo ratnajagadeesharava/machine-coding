@@ -94,6 +94,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "p104_quorum_kv"
+version = "0.1.0"
+dependencies = [
+ "playground-support",
+]
+
+[[package]]
 name = "p10_flight_booking"
 version = "0.1.0"
 dependencies = [

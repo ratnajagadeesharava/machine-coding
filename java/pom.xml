@@ -121,6 +121,7 @@
     <module>problems/101-two-phase-commit</module>
     <module>problems/102-saga-orchestrator</module>
     <module>problems/103-crdt-replication</module>
+    <module>problems/104-quorum-kv</module>
   </modules>
 
   <dependencies>
