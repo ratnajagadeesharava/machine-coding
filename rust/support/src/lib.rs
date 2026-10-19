@@ -100,7 +100,9 @@ pub fn watchdog(timeout_ms: u64) -> Watchdog {
             std::thread::sleep(Duration::from_millis(20));
         }
         if !flag.load(Ordering::SeqCst) {
-            eprintln!("\nTIMEOUT after {timeout_ms}ms: deadlock or livelock? Aborting the test run.");
+            eprintln!(
+                "\nTIMEOUT after {timeout_ms}ms: deadlock or livelock? Aborting the test run."
+            );
             std::process::exit(101);
         }
     });

@@ -38,7 +38,8 @@ fn should_keep_total_with_transfers_both_ways_between_many_pairs() {
             state ^= state << 17;
             let x = (state % n as u64) as usize;
             let y = (x + 1 + (state >> 20) as usize % (n - 1)) % n;
-            b.transfer(&format!("a{x}"), &format!("a{y}"), 1 + (state >> 40) % 20).unwrap();
+            b.transfer(&format!("a{x}"), &format!("a{y}"), 1 + (state >> 40) % 20)
+                .unwrap();
         }
     });
 

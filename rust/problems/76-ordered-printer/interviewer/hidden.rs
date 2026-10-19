@@ -11,7 +11,8 @@ fn should_hand_over_the_turn_twenty_thousand_times_quickly() {
 
     run_concurrently(workers, |id| {
         for _ in 0..5_000 {
-            p.take_turn(id, &mut || log.lock().unwrap().push(id)).unwrap();
+            p.take_turn(id, &mut || log.lock().unwrap().push(id))
+                .unwrap();
         }
     });
 

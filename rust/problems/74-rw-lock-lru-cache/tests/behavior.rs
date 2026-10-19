@@ -161,7 +161,11 @@ fn should_never_exceed_capacity_and_stay_consistent_under_mixed_load() {
     });
 
     assert_eq!(oversize.load(Ordering::SeqCst), 0, "len() above capacity");
-    assert_eq!(wrong_values.load(Ordering::SeqCst), 0, "a key returned another key's value");
+    assert_eq!(
+        wrong_values.load(Ordering::SeqCst),
+        0,
+        "a key returned another key's value"
+    );
     assert_eq!(
         count_present(&c, universe),
         c.len(),
@@ -235,7 +239,11 @@ fn should_keep_a_hot_key_alive_while_other_threads_only_read() {
         }
     });
 
-    assert_eq!(hot_misses.load(Ordering::SeqCst), 0, "the most recently used key was evicted");
+    assert_eq!(
+        hot_misses.load(Ordering::SeqCst),
+        0,
+        "the most recently used key was evicted"
+    );
 }
 
 #[test]

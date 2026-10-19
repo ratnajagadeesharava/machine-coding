@@ -38,7 +38,9 @@ fn vocabulary(n: usize) -> Vec<String> {
     (0..n)
         .map(|i| {
             let len = 3 + r.next(10);
-            let mut w: String = (0..len).map(|_| (b'a' + r.next(26) as u8) as char).collect();
+            let mut w: String = (0..len)
+                .map(|_| (b'a' + r.next(26) as u8) as char)
+                .collect();
             w.push((b'a' + (i % 26) as u8) as char);
             w
         })
@@ -63,7 +65,9 @@ fn document(vocab: &[String], r: &mut Rng, words: usize) -> String {
 fn documents(docs: usize, words_each: usize, seed: u64) -> Vec<String> {
     let vocab = vocabulary(64);
     let mut r = Rng::new(seed);
-    (0..docs).map(|_| document(&vocab, &mut r, words_each)).collect()
+    (0..docs)
+        .map(|_| document(&vocab, &mut r, words_each))
+        .collect()
 }
 
 fn strings(v: &[&str]) -> Vec<String> {
@@ -78,7 +82,9 @@ fn map(pairs: &[(&str, u64)]) -> HashMap<String, u64> {
 fn should_count_words_case_insensitively() {
     let c = sut!(create());
 
-    let result = c.count(&strings(&["Hello, hello WORLD!", "world of Hello"]), 2).unwrap();
+    let result = c
+        .count(&strings(&["Hello, hello WORLD!", "world of Hello"]), 2)
+        .unwrap();
 
     assert_eq!(result, map(&[("hello", 3), ("world", 2), ("of", 1)]));
 }
@@ -87,11 +93,24 @@ fn should_count_words_case_insensitively() {
 fn should_treat_everything_but_ascii_letters_as_separators() {
     let c = sut!(create());
 
-    let result = c.count(&strings(&["abc123def a-b_c\nd\te", "x.y,z;é"]), 1).unwrap();
+    let result = c
+        .count(&strings(&["abc123def a-b_c\nd\te", "x.y,z;é"]), 1)
+        .unwrap();
 
     assert_eq!(
         result,
-        map(&[("abc", 1), ("def", 1), ("a", 1), ("b", 1), ("c", 1), ("d", 1), ("e", 1), ("x", 1), ("y", 1), ("z", 1)])
+        map(&[
+            ("abc", 1),
+            ("def", 1),
+            ("a", 1),
+            ("b", 1),
+            ("c", 1),
+            ("d", 1),
+            ("e", 1),
+            ("x", 1),
+            ("y", 1),
+            ("z", 1)
+        ])
     );
 }
 
@@ -100,7 +119,10 @@ fn should_handle_empty_input() {
     let c = sut!(create());
 
     assert!(c.count(&[], 4).unwrap().is_empty());
-    assert!(c.count(&strings(&["", "   ", "123 !!"]), 4).unwrap().is_empty());
+    assert!(c
+        .count(&strings(&["", "   ", "123 !!"]), 4)
+        .unwrap()
+        .is_empty());
 }
 
 #[test]
@@ -169,6 +191,9 @@ fn should_lose_no_counts_over_100_runs() {
         let docs = documents(1 + r.next(80), 1 + r.next(300), run);
         let p = 1 + r.next(12);
 
-        assert!(c.count(&docs, p).unwrap() == expected(&docs), "run {run}, parallelism {p}");
+        assert!(
+            c.count(&docs, p).unwrap() == expected(&docs),
+            "run {run}, parallelism {p}"
+        );
     }
 }

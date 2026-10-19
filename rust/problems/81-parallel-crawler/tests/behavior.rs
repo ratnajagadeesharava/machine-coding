@@ -49,7 +49,12 @@ impl Web {
     fn assert_each_fetched_once(&self, expected: &HashSet<String>) {
         let fetches = self.fetches.lock().unwrap();
         let fetched: HashSet<String> = fetches.keys().cloned().collect();
-        assert!(&fetched == expected, "fetched pages differ: got {} expected {}", fetched.len(), expected.len());
+        assert!(
+            &fetched == expected,
+            "fetched pages differ: got {} expected {}",
+            fetched.len(),
+            expected.len()
+        );
         for (url, n) in fetches.iter() {
             assert_eq!(*n, 1, "fetches of {url}");
         }
@@ -58,10 +63,17 @@ impl Web {
 
 impl Fetcher for Web {
     fn links(&self, url: &str) -> Result<Vec<String>, FetchError> {
-        *self.fetches.lock().unwrap().entry(url.to_string()).or_insert(0) += 1;
+        *self
+            .fetches
+            .lock()
+            .unwrap()
+            .entry(url.to_string())
+            .or_insert(0) += 1;
         self.total_fetches.fetch_add(1, Ordering::SeqCst);
-        self.max_running
-            .fetch_max(self.running.fetch_add(1, Ordering::SeqCst) + 1, Ordering::SeqCst);
+        self.max_running.fetch_max(
+            self.running.fetch_add(1, Ordering::SeqCst) + 1,
+            Ordering::SeqCst,
+        );
         if self.latency_ms > 0 {
             thread::sleep(Duration::from_millis(self.latency_ms));
         }
@@ -112,7 +124,10 @@ fn should_follow_cycles_diamonds_self_links_and_duplicate_links() {
 #[test]
 fn should_finish_a_long_chain_where_only_one_worker_is_busy_at_a_time() {
     let c = sut!(create());
-    let mut web = Web { latency_ms: 1, ..Web::default() };
+    let mut web = Web {
+        latency_ms: 1,
+        ..Web::default()
+    };
     let n = 200;
     for i in 0..n - 1 {
         web.link(&format!("p{i}"), &[&format!("p{}", i + 1)]);
@@ -131,7 +146,10 @@ fn should_crawl_a_binary_tree() {
     let mut web = Web::default();
     let depth = 10;
     for i in 1..(1usize << depth) {
-        web.link(&format!("n{i}"), &[&format!("n{}", 2 * i), &format!("n{}", 2 * i + 1)]);
+        web.link(
+            &format!("n{i}"),
+            &[&format!("n{}", 2 * i), &format!("n{}", 2 * i + 1)],
+        );
     }
     let web = Arc::new(web);
 
@@ -190,9 +208,15 @@ fn should_count_broken_pages_as_reached_and_keep_going() {
 #[test]
 fn should_never_run_more_fetches_than_workers_but_use_them() {
     let c = sut!(create());
-    let mut web = Web { latency_ms: 10, ..Web::default() };
+    let mut web = Web {
+        latency_ms: 10,
+        ..Web::default()
+    };
     let leaves: Vec<String> = (0..100).map(|i| format!("leaf{i}")).collect();
-    web.link("root", &leaves.iter().map(|s| s.as_str()).collect::<Vec<_>>());
+    web.link(
+        "root",
+        &leaves.iter().map(|s| s.as_str()).collect::<Vec<_>>(),
+    );
     let web = Arc::new(web);
 
     let reached = c.crawl("root", 4, web.clone()).unwrap();
@@ -206,7 +230,10 @@ fn should_never_run_more_fetches_than_workers_but_use_them() {
 #[test]
 fn should_fetch_sequentially_with_one_worker() {
     let c = sut!(create());
-    let mut web = Web { latency_ms: 2, ..Web::default() };
+    let mut web = Web {
+        latency_ms: 2,
+        ..Web::default()
+    };
     web.link("root", &["a", "b", "c", "d"]);
     web.link("a", &["b"]);
     web.link("c", &["d"]);
@@ -221,7 +248,10 @@ fn should_fetch_sequentially_with_one_worker() {
 #[test]
 fn should_not_fetch_anything_after_crawl_returns() {
     let c = sut!(create());
-    let mut web = Web { latency_ms: 3, ..Web::default() };
+    let mut web = Web {
+        latency_ms: 3,
+        ..Web::default()
+    };
     for i in 0..60 {
         web.link("r", &[&format!("c{i}")]);
         web.link(&format!("c{i}"), &[&format!("c{}", (i + 1) % 60)]);
@@ -256,7 +286,13 @@ fn should_allow_several_crawls_at_once() {
         let mut web = Web::default();
         for i in 0..100 {
             let me = format!("s{t}-{i}");
-            web.link(&me, &[&format!("s{t}-{}", (i * 7 + 1) % 100), &format!("s{t}-{}", (i + 1) % 100)]);
+            web.link(
+                &me,
+                &[
+                    &format!("s{t}-{}", (i * 7 + 1) % 100),
+                    &format!("s{t}-{}", (i + 1) % 100),
+                ],
+            );
         }
         let start = format!("s{t}-0");
         let expected = web.reachable_from(&start);
@@ -284,7 +320,10 @@ fn should_crawl_random_graphs_correctly_over_100_runs() {
         let mut web = Web::default();
         for i in 0..nodes {
             let out: Vec<String> = (0..rnd(4)).map(|_| format!("u{}", rnd(nodes))).collect();
-            web.link(&format!("u{i}"), &out.iter().map(|s| s.as_str()).collect::<Vec<_>>());
+            web.link(
+                &format!("u{i}"),
+                &out.iter().map(|s| s.as_str()).collect::<Vec<_>>(),
+            );
             web.graph.entry(format!("u{i}")).or_default();
             if rnd(15) == 0 {
                 web.broken.insert(format!("u{i}"));

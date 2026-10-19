@@ -1,6 +1,7 @@
 //! Thin test entry point. Your design lives behind it.
 //! Must be usable from multiple threads (`&self`, `Send + Sync`).
 
+#[allow(clippy::len_without_is_empty)]
 pub trait SharedCache: Send + Sync {
     /// Returns the value and marks the key as the most recently used.
     fn get(&self, key: u64) -> Option<String>;

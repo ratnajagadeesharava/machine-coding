@@ -38,7 +38,11 @@ fn assert_sorts(s: &Arc<dyn ParallelSorter>, input: &[i32], parallelism: usize) 
 
     s.sort(&mut actual, parallelism).unwrap();
 
-    assert!(actual == expected, "n={} parallelism={parallelism}", input.len());
+    assert!(
+        actual == expected,
+        "n={} parallelism={parallelism}",
+        input.len()
+    );
 }
 
 /// Live threads of this process (Linux only).
@@ -51,7 +55,10 @@ fn thread_count() -> Option<usize> {
 }
 
 /// Peak number of live threads while a big sort runs, minus the baseline. `None` if it cannot be measured.
-fn max_extra_threads_while_sorting(s: &Arc<dyn ParallelSorter>, parallelism: usize) -> Option<usize> {
+fn max_extra_threads_while_sorting(
+    s: &Arc<dyn ParallelSorter>,
+    parallelism: usize,
+) -> Option<usize> {
     thread_count()?;
     let mut big = random(1_500_000, 5);
     let stop = Arc::new(AtomicBool::new(false));
@@ -164,9 +171,15 @@ fn should_not_spawn_more_threads_than_allowed() {
         eprintln!("SKIPPED: cannot count threads on this platform");
         return;
     };
-    assert!(one <= 1, "parallelism 1 needs no (or one) helper, saw {one} extra threads");
+    assert!(
+        one <= 1,
+        "parallelism 1 needs no (or one) helper, saw {one} extra threads"
+    );
     let four = max_extra_threads_while_sorting(&s, 4).unwrap();
-    assert!(four <= 4 + 1, "a thread per split would explode here, saw {four} extra threads");
+    assert!(
+        four <= 4 + 1,
+        "a thread per split would explode here, saw {four} extra threads"
+    );
 }
 
 #[test]
@@ -180,7 +193,10 @@ fn should_really_run_in_parallel() {
         return;
     };
 
-    assert!(extra >= 1, "no helper thread was ever seen: the sort looks sequential");
+    assert!(
+        extra >= 1,
+        "no helper thread was ever seen: the sort looks sequential"
+    );
 }
 
 #[test]

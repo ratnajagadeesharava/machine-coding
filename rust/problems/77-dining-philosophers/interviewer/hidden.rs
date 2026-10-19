@@ -25,7 +25,10 @@ fn should_not_starve_anyone_when_neighbours_are_greedy() {
     });
 
     for p in 0..seats {
-        assert_eq!(meals[p].load(Ordering::SeqCst), if p % 2 == 0 { 20_000 } else { 2_000 });
+        assert_eq!(
+            meals[p].load(Ordering::SeqCst),
+            if p % 2 == 0 { 20_000 } else { 2_000 }
+        );
     }
 }
 

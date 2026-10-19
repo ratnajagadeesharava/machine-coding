@@ -7,6 +7,8 @@ use std::sync::{Arc, Mutex};
 use std::thread;
 use std::time::Instant;
 
+type Slot<T> = Arc<Mutex<Option<T>>>;
+
 #[test]
 fn should_hand_out_each_connection_once_and_then_run_dry() {
     let p = sut!(create(3));
@@ -41,14 +43,17 @@ fn should_give_up_after_the_timeout_when_nothing_is_free() {
     let elapsed = start.elapsed().as_millis();
 
     assert_eq!(got, Ok(None));
-    assert!((180..=1_500).contains(&elapsed), "must wait roughly the timeout, waited {elapsed}ms");
+    assert!(
+        (180..=1_500).contains(&elapsed),
+        "must wait roughly the timeout, waited {elapsed}ms"
+    );
 }
 
 #[test]
 fn should_wake_a_waiter_promptly_when_a_connection_is_released() {
     let p = sut!(create(1));
     let id = p.acquire(0).unwrap().unwrap();
-    let got: Arc<Mutex<Option<Option<usize>>>> = Arc::new(Mutex::new(None));
+    let got: Slot<Option<usize>> = Arc::new(Mutex::new(None));
     {
         let (p, got) = (p.clone(), got.clone());
         thread::spawn(move || {
@@ -95,7 +100,10 @@ fn should_never_hand_the_same_connection_to_two_holders() {
     run_concurrently(16, |_| {
         for _ in 0..500 {
             let id = p.acquire(10_000).unwrap().expect("timed out waiting");
-            if held[id].compare_exchange(0, 1, Ordering::SeqCst, Ordering::SeqCst).is_err() {
+            if held[id]
+                .compare_exchange(0, 1, Ordering::SeqCst, Ordering::SeqCst)
+                .is_err()
+            {
                 violations.fetch_add(1, Ordering::SeqCst);
             }
             max_holders.fetch_max(holders.fetch_add(1, Ordering::SeqCst) + 1, Ordering::SeqCst);
@@ -174,7 +182,7 @@ fn should_pass_a_single_connection_between_many_threads() {
 fn should_fail_waiters_and_new_callers_after_close() {
     let p = sut!(create(1));
     let id = p.acquire(0).unwrap().unwrap();
-    let outcome: Arc<Mutex<Option<Result<Option<usize>, Closed>>>> = Arc::new(Mutex::new(None));
+    let outcome: Slot<Result<Option<usize>, Closed>> = Arc::new(Mutex::new(None));
     {
         let (p, outcome) = (p.clone(), outcome.clone());
         thread::spawn(move || {
@@ -182,7 +190,10 @@ fn should_fail_waiters_and_new_callers_after_close() {
             *outcome.lock().unwrap() = Some(r);
         });
     }
-    assert!(stays(100, || outcome.lock().unwrap().is_none()), "waiter blocks first");
+    assert!(
+        stays(100, || outcome.lock().unwrap().is_none()),
+        "waiter blocks first"
+    );
 
     p.close();
     p.close();
@@ -210,7 +221,10 @@ fn should_stay_correct_over_100_runs() {
                 let Some(id) = p.acquire(if i % 3 == 0 { 1 } else { 5_000 }).unwrap() else {
                     continue;
                 };
-                if held[id].compare_exchange(0, 1, Ordering::SeqCst, Ordering::SeqCst).is_err() {
+                if held[id]
+                    .compare_exchange(0, 1, Ordering::SeqCst, Ordering::SeqCst)
+                    .is_err()
+                {
                     violations.fetch_add(1, Ordering::SeqCst);
                 }
                 held[id].store(0, Ordering::SeqCst);

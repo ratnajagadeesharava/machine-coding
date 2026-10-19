@@ -15,7 +15,9 @@ impl Fetcher for Ring {
     fn links(&self, url: &str) -> Result<Vec<String>, FetchError> {
         self.fetches.fetch_add(1, Ordering::SeqCst);
         let i: usize = url[1..].parse().map_err(|_| FetchError)?;
-        let mut out: Vec<String> = (1..=3).map(|k| format!("p{}", (i * 3 + k) % self.n)).collect();
+        let mut out: Vec<String> = (1..=3)
+            .map(|k| format!("p{}", (i * 3 + k) % self.n))
+            .collect();
         out.push(format!("p{}", (i + 1) % self.n));
         Ok(out)
     }
@@ -25,7 +27,10 @@ impl Fetcher for Ring {
 fn should_crawl_a_hundred_thousand_pages_quickly() {
     let c = sut!(create());
     let n = 100_000;
-    let web = Arc::new(Ring { n, fetches: AtomicUsize::new(0) });
+    let web = Arc::new(Ring {
+        n,
+        fetches: AtomicUsize::new(0),
+    });
 
     let reached = c.crawl("p0", 16, web.clone()).unwrap();
 
@@ -39,7 +44,11 @@ impl Fetcher for Deep {
     fn links(&self, url: &str) -> Result<Vec<String>, FetchError> {
         thread::sleep(Duration::from_millis(2));
         let i: usize = url[1..].parse().map_err(|_| FetchError)?;
-        Ok(if i + 1 < self.0 { vec![format!("p{}", i + 1)] } else { vec![] })
+        Ok(if i + 1 < self.0 {
+            vec![format!("p{}", i + 1)]
+        } else {
+            vec![]
+        })
     }
 }
 

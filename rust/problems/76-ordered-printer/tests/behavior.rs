@@ -10,7 +10,8 @@ fn run_rounds(p: &Arc<dyn OrderedPrinter>, workers: usize, rounds: usize) -> Vec
     let log = Mutex::new(Vec::new());
     run_concurrently(workers, |id| {
         for _ in 0..rounds {
-            p.take_turn(id, &mut || log.lock().unwrap().push(id)).unwrap();
+            p.take_turn(id, &mut || log.lock().unwrap().push(id))
+                .unwrap();
         }
     });
     log.into_inner().unwrap()
@@ -55,7 +56,8 @@ fn should_keep_order_when_workers_arrive_in_reverse() {
     for id in (0..4).rev() {
         let (p, log) = (p.clone(), log.clone());
         handles.push(thread::spawn(move || {
-            p.take_turn(id, &mut || log.lock().unwrap().push(id)).unwrap();
+            p.take_turn(id, &mut || log.lock().unwrap().push(id))
+                .unwrap();
         }));
         thread::sleep(std::time::Duration::from_millis(30));
     }
@@ -74,7 +76,8 @@ fn should_block_an_out_of_turn_worker_until_its_turn() {
     {
         let (p, ran) = (p.clone(), ran.clone());
         thread::spawn(move || {
-            p.take_turn(1, &mut || ran.store(true, Ordering::SeqCst)).unwrap();
+            p.take_turn(1, &mut || ran.store(true, Ordering::SeqCst))
+                .unwrap();
         });
     }
 
@@ -125,7 +128,8 @@ fn should_hand_the_turn_over_even_when_the_action_panics() {
     let handle = {
         let (p, ran) = (p.clone(), ran.clone());
         thread::spawn(move || {
-            p.take_turn(1, &mut || ran.store(true, Ordering::SeqCst)).unwrap();
+            p.take_turn(1, &mut || ran.store(true, Ordering::SeqCst))
+                .unwrap();
         })
     };
     assert!(
@@ -151,6 +155,10 @@ fn should_stay_correct_over_100_runs() {
 
         let log = run_rounds(&p, workers, 20);
 
-        assert_eq!(log, expected(workers, 20), "run {run} with {workers} workers");
+        assert_eq!(
+            log,
+            expected(workers, 20),
+            "run {run} with {workers} workers"
+        );
     }
 }

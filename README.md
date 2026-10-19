@@ -173,7 +173,7 @@ The `#` column is the problem's folder number (what `cargo play run <#>` and the
 | 65 | [Board Game Engine](java/problems/32-board-game-engine/README.md) | Hard | 120 min | L1 | 32 |
 | 66 | [Chess](java/problems/07-chess/README.md) | Senior | 120 min | L1 | 07 |
 
-**Phase 8 - Concurrency.** Thread-safety, blocking, scheduling. Do these last.
+**Phase 8 - Concurrency.** Thread-safety, blocking, scheduling. Do these last. A longer, concurrency-only learning path (with eight additional problems, 74-81) is in the [Concurrency](#concurrency) section below.
 
 | Order | Problem | Difficulty | Time | Scaffold | # |
 |---:|---|---|---:|:---:|---:|
@@ -308,6 +308,58 @@ Java and Rust share the **same behavioral requirements**, not the same code — 
 collections, executors and locks; Rust ones on structs/enums/traits, ownership, `Arc`/`Mutex`/channels where
 (and only where) required. Rust traits use `&mut self` unless the problem requires concurrent access, in which
 case they take `&self` + `Send + Sync`.
+
+## Concurrency
+
+Multithreading and parallel-programming practice at SDE-3 level. The order below is the **order of learning** - each
+problem uses an idea the earlier ones introduced (waiting and waking, then locking and deadlocks, then resources and
+timeouts, then splitting work, then whole systems). Difficulty is shown for reference only and goes up and down on purpose.
+Problems marked **new** (74-81) were added for this track; the others already live in the main list above and are reused here.
+
+| Step | Problem | Difficulty | Time | Key concepts | Code | Done |
+|---:|---|---|---:|---|---|:---:|
+| Step 1 | [Ordered Printer (Turn Taking)](java/problems/76-ordered-printer/README.md) **new** | Medium | 45 min | wait/notify, `Condvar`, condition loops, lost wake-ups, hand-off | [java](java/problems/76-ordered-printer/README.md) · [rust](rust/problems/76-ordered-printer/README.md) | ☐ |
+| Step 2 | [Bounded Blocking Buffer](java/problems/28-blocking-queue/README.md) | Hard | 90 min | producer-consumer, two conditions, close/drain semantics, timeouts | [java](java/problems/28-blocking-queue/README.md) · [rust](rust/problems/28-blocking-queue/README.md) | ☐ |
+| Step 3 | [Bank Transfers Without Deadlock](java/problems/75-bank-transfer/README.md) **new** | Medium | 45 min | mutual exclusion, lock ordering, deadlock, atomic multi-object updates, consistent snapshots | [java](java/problems/75-bank-transfer/README.md) · [rust](rust/problems/75-bank-transfer/README.md) | ☐ |
+| Step 4 | [Dining Philosophers](java/problems/77-dining-philosophers/README.md) **new** | Medium-Hard | 60 min | deadlock conditions, resource ordering, starvation, scalable fairness | [java](java/problems/77-dining-philosophers/README.md) · [rust](rust/problems/77-dining-philosophers/README.md) | ☐ |
+| Step 5 | [Concurrent LRU Cache (Read-Write Lock)](java/problems/74-rw-lock-lru-cache/README.md) **new** | Medium-Hard | 60 min | read-write locks, lock upgrade pitfalls, shared mutable recency order, visibility, invariants across two data structures | [java](java/problems/74-rw-lock-lru-cache/README.md) · [rust](rust/problems/74-rw-lock-lru-cache/README.md) | ☐ |
+| Step 6 | [Bounded Connection Pool](java/problems/78-connection-pool/README.md) **new** | Medium-Hard | 60 min | semaphores, permits vs identity, timeouts, close semantics, resource leaks | [java](java/problems/78-connection-pool/README.md) · [rust](rust/problems/78-connection-pool/README.md) | ☐ |
+| Step 7 | [Rate Limiter](java/problems/20-rate-limiter/README.md) | Medium-Hard | 60 min | token bucket, injectable clock, atomics vs lock | [java](java/problems/20-rate-limiter/README.md) · [rust](rust/problems/20-rate-limiter/README.md) | ☐ |
+| Step 8 | [Worker Pool](java/problems/29-worker-pool/README.md) | Hard | 90 min | thread pool, task queue, graceful shutdown | [java](java/problems/29-worker-pool/README.md) · [rust](rust/problems/29-worker-pool/README.md) | ☐ |
+| Step 9 | [Parallel Merge Sort](java/problems/79-parallel-merge-sort/README.md) **new** | Medium-Hard | 60 min | fork-join, work splitting, thresholds, bounded parallelism, disjoint ranges | [java](java/problems/79-parallel-merge-sort/README.md) · [rust](rust/problems/79-parallel-merge-sort/README.md) | ☐ |
+| Step 10 | [Parallel Word Count](java/problems/80-parallel-word-count/README.md) **new** | Medium | 45 min | partition and merge, thread-local aggregation, contention on shared maps, split boundaries | [java](java/problems/80-parallel-word-count/README.md) · [rust](rust/problems/80-parallel-word-count/README.md) | ☐ |
+| Step 11 | [Parallel Web Crawler](java/problems/81-parallel-crawler/README.md) **new** | Hard | 90 min | shared visited set, work queue, termination detection, bounded workers, error isolation | [java](java/problems/81-parallel-crawler/README.md) · [rust](rust/problems/81-parallel-crawler/README.md) | ☐ |
+| Step 12 | [Concurrent Cache with Loaders](java/problems/30-concurrent-cache/README.md) | Hard | 90 min | per-key in-flight loads, thundering herd, failure handling | [java](java/problems/30-concurrent-cache/README.md) · [rust](rust/problems/30-concurrent-cache/README.md) | ☐ |
+| Step 13 | [Bus / Train Seat Booking](java/problems/13-seat-booking/README.md) | Medium-Hard | 90 min | check-then-act races, double booking, holds and expiry | [java](java/problems/13-seat-booking/README.md) · [rust](rust/problems/13-seat-booking/README.md) | ☐ |
+| Step 14 | [Circuit Breaker](java/problems/27-circuit-breaker/README.md) | Medium-Hard | 60 min | state machine under concurrency, time windows | [java](java/problems/27-circuit-breaker/README.md) · [rust](rust/problems/27-circuit-breaker/README.md) | ☐ |
+| Step 15 | [Task Scheduler](java/problems/24-task-scheduler/README.md) | Hard | 90 min | delayed and recurring tasks, delay queue, cancellation | [java](java/problems/24-task-scheduler/README.md) · [rust](rust/problems/24-task-scheduler/README.md) | ☐ |
+| Step 16 | [Pub-Sub Message Broker](java/problems/22-pub-sub/README.md) | Medium-Hard | 90 min | topics, subscribers, delivery ordering | [java](java/problems/22-pub-sub/README.md) · [rust](rust/problems/22-pub-sub/README.md) | ☐ |
+| Step 17 | [In-Process Event Bus](java/problems/31-event-bus/README.md) | Hard | 120 min | multiple subscribers, back-pressure, failure isolation, async delivery | [java](java/problems/31-event-bus/README.md) · [rust](rust/problems/31-event-bus/README.md) | ☐ |
+
+Tick the box when the tests pass **and** you can explain your locking choices and the follow-ups out loud.
+
+**What is different about these tests.** They are black-box (they only use the thin contract in each problem), they run many threads
+against one object, they use deadlock timeouts so a hang becomes a failure (Java: `Concurrently` / `assertTimeoutPreemptively`;
+Rust: `run_concurrently` aborts with a `TIMEOUT` message after 60 s), and the new problems repeat a randomized workload **100 times**
+to catch rare interleavings. Run one problem repeatedly if you suspect a flaky pass: `for i in $(seq 20); do cargo play run 77 || break; done`.
+
+Each new problem folder also has a `HINTS.md` with three collapsed levels (small nudge, which tool, shape of the solution) - open one level at a time.
+Optional: Rust solutions can additionally be model-checked with [`loom`](https://github.com/tokio-rs/loom) (swap `std::sync` for `loom::sync` in a test build); it is not needed for the provided tests.
+
+### New problems by folder number
+
+| # | Problem | Difficulty | Time | Scaffold |
+|---|---|---|---:|:---:|
+| 74 | [Concurrent LRU Cache (Read-Write Lock)](java/problems/74-rw-lock-lru-cache/README.md) | Medium-Hard | 60 min | L3 |
+| 75 | [Bank Transfers Without Deadlock](java/problems/75-bank-transfer/README.md) | Medium | 45 min | L3 |
+| 76 | [Ordered Printer (Turn Taking)](java/problems/76-ordered-printer/README.md) | Medium | 45 min | L3 |
+| 77 | [Dining Philosophers](java/problems/77-dining-philosophers/README.md) | Medium-Hard | 60 min | L3 |
+| 78 | [Bounded Connection Pool](java/problems/78-connection-pool/README.md) | Medium-Hard | 60 min | L3 |
+| 79 | [Parallel Merge Sort](java/problems/79-parallel-merge-sort/README.md) | Medium-Hard | 60 min | L3 |
+| 80 | [Parallel Word Count](java/problems/80-parallel-word-count/README.md) | Medium | 45 min | L3 |
+| 81 | [Parallel Web Crawler](java/problems/81-parallel-crawler/README.md) | Hard | 90 min | L3 |
+
+*(Java: `java/problems/<#>-<name>`, Rust: `rust/problems/<#>-<name>`; `cargo play run 77` or `cargo play run philosophers`. Each has `README.md`, `HINTS.md`, `INTERVIEW.md`, `FOLLOWUPS.md`, `RUBRIC.md`, `INTERVIEWER_NOTES.md`.)*
 
 ## The `play` runner (rustlings-style)
 

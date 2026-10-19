@@ -74,10 +74,22 @@ fn should_allow_transfer_of_the_whole_balance() {
 fn should_reject_invalid_requests() {
     let b = bank_with(sut!(create()), 2, 100);
 
-    assert_eq!(b.transfer(&acc(0), "ghost", 1), Err(BankError::UnknownAccount));
-    assert_eq!(b.transfer("ghost", &acc(0), 1), Err(BankError::UnknownAccount));
-    assert_eq!(b.transfer(&acc(0), &acc(0), 1), Err(BankError::InvalidRequest));
-    assert_eq!(b.transfer(&acc(0), &acc(1), 0), Err(BankError::InvalidRequest));
+    assert_eq!(
+        b.transfer(&acc(0), "ghost", 1),
+        Err(BankError::UnknownAccount)
+    );
+    assert_eq!(
+        b.transfer("ghost", &acc(0), 1),
+        Err(BankError::UnknownAccount)
+    );
+    assert_eq!(
+        b.transfer(&acc(0), &acc(0), 1),
+        Err(BankError::InvalidRequest)
+    );
+    assert_eq!(
+        b.transfer(&acc(0), &acc(1), 0),
+        Err(BankError::InvalidRequest)
+    );
     assert_eq!(b.balance("ghost"), Err(BankError::UnknownAccount));
     assert_eq!(b.open(&acc(0), 5), Err(BankError::AccountExists));
     assert_eq!(b.total(), 200);
@@ -139,7 +151,9 @@ fn should_conserve_money_under_random_load() {
         for _ in 0..10_000 {
             let from = rnd.next(accounts);
             let to = (from + 1 + rnd.next(accounts - 1)) % accounts;
-            if b.transfer(&acc(from), &acc(to), 1 + rnd.next(50) as u64).unwrap() {
+            if b.transfer(&acc(from), &acc(to), 1 + rnd.next(50) as u64)
+                .unwrap()
+            {
                 succeeded.fetch_add(1, Ordering::SeqCst);
             }
         }
@@ -173,12 +187,20 @@ fn should_never_show_money_in_flight_to_an_auditor() {
         for _ in 0..20_000 {
             let from = rnd.next(accounts);
             let to = (from + 1 + rnd.next(accounts - 1)) % accounts;
-            b.transfer(&acc(from), &acc(to), 1 + rnd.next(100) as u64).unwrap();
+            b.transfer(&acc(from), &acc(to), 1 + rnd.next(100) as u64)
+                .unwrap();
         }
     });
 
-    assert!(audits.load(Ordering::SeqCst) > 0, "auditor must make progress while transfers run");
-    assert_eq!(wrong_totals.load(Ordering::SeqCst), 0, "total() observed a half-applied transfer");
+    assert!(
+        audits.load(Ordering::SeqCst) > 0,
+        "auditor must make progress while transfers run"
+    );
+    assert_eq!(
+        wrong_totals.load(Ordering::SeqCst),
+        0,
+        "total() observed a half-applied transfer"
+    );
 }
 
 #[test]

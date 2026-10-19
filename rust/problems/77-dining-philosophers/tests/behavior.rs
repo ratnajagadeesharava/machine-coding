@@ -8,7 +8,12 @@ use std::thread;
 use std::time::Duration;
 
 /// Every philosopher eats `meals` times. Returns (times two neighbours ate together, meals per philosopher).
-fn run_meals(t: &Arc<dyn Table>, seats: usize, meals: usize, inside_meal: &(dyn Fn() + Sync)) -> (usize, Vec<usize>) {
+fn run_meals(
+    t: &Arc<dyn Table>,
+    seats: usize,
+    meals: usize,
+    inside_meal: &(dyn Fn() + Sync),
+) -> (usize, Vec<usize>) {
     let eating: Vec<AtomicUsize> = (0..seats).map(|_| AtomicUsize::new(0)).collect();
     let eaten: Vec<AtomicUsize> = (0..seats).map(|_| AtomicUsize::new(0)).collect();
     let violations = AtomicUsize::new(0);
@@ -94,7 +99,10 @@ fn should_let_non_neighbours_eat_in_parallel() {
     run_concurrently(seats, |p| {
         for _ in 0..20 {
             t.dine(p, &mut || {
-                max_eating.fetch_max(eating_now.fetch_add(1, Ordering::SeqCst) + 1, Ordering::SeqCst);
+                max_eating.fetch_max(
+                    eating_now.fetch_add(1, Ordering::SeqCst) + 1,
+                    Ordering::SeqCst,
+                );
                 thread::sleep(Duration::from_millis(10));
                 eating_now.fetch_sub(1, Ordering::SeqCst);
             })
@@ -104,7 +112,10 @@ fn should_let_non_neighbours_eat_in_parallel() {
 
     let max = max_eating.load(Ordering::SeqCst);
     assert!(max >= 2, "a global lock would make this 1, saw {max}");
-    assert!(max <= seats / 2, "at most floor(seats / 2) can eat at once, saw {max}");
+    assert!(
+        max <= seats / 2,
+        "at most floor(seats / 2) can eat at once, saw {max}"
+    );
 }
 
 #[test]

@@ -42,5 +42,8 @@ fn should_not_be_much_slower_than_the_sequential_sort() {
     let parallel = t1.elapsed();
 
     assert!(par == seq);
-    assert!(parallel < sequential * 3, "parallel {parallel:?} vs sequential {sequential:?}");
+    assert!(
+        parallel < sequential * 3,
+        "parallel {parallel:?} vs sequential {sequential:?}"
+    );
 }
