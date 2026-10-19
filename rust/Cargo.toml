@@ -75,4 +75,12 @@ members = [
     "problems/71-mediator",
     "problems/72-memento",
     "problems/73-chain-of-responsibility",
+    "problems/74-rw-lock-lru-cache",
+    "problems/75-bank-transfer",
+    "problems/76-ordered-printer",
+    "problems/77-dining-philosophers",
+    "problems/78-connection-pool",
+    "problems/79-parallel-merge-sort",
+    "problems/80-parallel-word-count",
+    "problems/81-parallel-crawler",
 ]

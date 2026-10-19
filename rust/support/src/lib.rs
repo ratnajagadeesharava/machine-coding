@@ -77,7 +77,38 @@ macro_rules! sut {
     };
 }
 
+/// Aborts the whole test process with a clear message if it is still alive after `timeout_ms`.
+/// Use it around code that could deadlock, so a hang becomes a failure instead of a frozen `cargo test`.
+/// Dropping the guard disarms it.
+pub struct Watchdog(Arc<std::sync::atomic::AtomicBool>);
+
+impl Drop for Watchdog {
+    fn drop(&mut self) {
+        self.0.store(true, Ordering::SeqCst);
+    }
+}
+
+pub fn watchdog(timeout_ms: u64) -> Watchdog {
+    let done = Arc::new(std::sync::atomic::AtomicBool::new(false));
+    let flag = done.clone();
+    std::thread::spawn(move || {
+        let deadline = Instant::now() + Duration::from_millis(timeout_ms);
+        while Instant::now() < deadline {
+            if flag.load(Ordering::SeqCst) {
+                return;
+            }
+            std::thread::sleep(Duration::from_millis(20));
+        }
+        if !flag.load(Ordering::SeqCst) {
+            eprintln!("\nTIMEOUT after {timeout_ms}ms: deadlock or livelock? Aborting the test run.");
+            std::process::exit(101);
+        }
+    });
+    Watchdog(done)
+}
+
 /// Runs `body(i)` on `threads` threads that all start at the same instant. Panics propagate.
+/// A deadlock is turned into a failure after 60 seconds (see [`watchdog`]).
 pub fn run_concurrently<F>(threads: usize, body: F)
 where
     F: Fn(usize) + Sync,
@@ -91,6 +122,7 @@ where
     T: Send,
     F: Fn(usize) -> T + Sync,
 {
+    let _guard = watchdog(60_000);
     let barrier = Barrier::new(threads);
     std::thread::scope(|s| {
         let handles: Vec<_> = (0..threads)
