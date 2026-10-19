@@ -122,6 +122,7 @@
     <module>problems/102-saga-orchestrator</module>
     <module>problems/103-crdt-replication</module>
     <module>problems/104-quorum-kv</module>
+    <module>problems/105-raft-log</module>
   </modules>
 
   <dependencies>

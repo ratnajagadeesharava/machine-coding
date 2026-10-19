@@ -101,6 +101,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "p105_raft_log"
+version = "0.1.0"
+dependencies = [
+ "playground-support",
+]
+
+[[package]]
 name = "p10_flight_booking"
 version = "0.1.0"
 dependencies = [

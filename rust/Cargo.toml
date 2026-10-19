@@ -106,4 +106,5 @@ members = [
     "problems/102-saga-orchestrator",
     "problems/103-crdt-replication",
     "problems/104-quorum-kv",
+    "problems/105-raft-log",
 ]
