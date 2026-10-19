@@ -102,4 +102,5 @@ members = [
     "problems/98-lock-lease-fencing",
     "problems/99-leader-election",
     "problems/100-gossip-protocol",
+    "problems/101-two-phase-commit",
 ]

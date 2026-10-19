@@ -118,6 +118,7 @@
     <module>problems/98-lock-lease-fencing</module>
     <module>problems/99-leader-election</module>
     <module>problems/100-gossip-protocol</module>
+    <module>problems/101-two-phase-commit</module>
   </modules>
 
   <dependencies>

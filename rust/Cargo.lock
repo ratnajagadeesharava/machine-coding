@@ -73,6 +73,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "p101_two_phase_commit"
+version = "0.1.0"
+dependencies = [
+ "playground-support",
+]
+
+[[package]]
 name = "p10_flight_booking"
 version = "0.1.0"
 dependencies = [
