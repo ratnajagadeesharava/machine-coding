@@ -116,6 +116,8 @@
     <module>problems/96-consistent-hashing</module>
     <module>problems/97-idempotent-requests</module>
     <module>problems/98-lock-lease-fencing</module>
+    <module>problems/99-leader-election</module>
+    <module>problems/100-gossip-protocol</module>
   </modules>
 
   <dependencies>

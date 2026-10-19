@@ -100,4 +100,6 @@ members = [
     "problems/96-consistent-hashing",
     "problems/97-idempotent-requests",
     "problems/98-lock-lease-fencing",
+    "problems/99-leader-election",
+    "problems/100-gossip-protocol",
 ]

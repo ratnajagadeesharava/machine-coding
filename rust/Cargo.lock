@@ -66,6 +66,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "p100_gossip_protocol"
+version = "0.1.0"
+dependencies = [
+ "playground-support",
+]
+
+[[package]]
 name = "p10_flight_booking"
 version = "0.1.0"
 dependencies = [
@@ -683,6 +690,13 @@ dependencies = [
 
 [[package]]
 name = "p98_lock_lease_fencing"
+version = "0.1.0"
+dependencies = [
+ "playground-support",
+]
+
+[[package]]
+name = "p99_leader_election"
 version = "0.1.0"
 dependencies = [
  "playground-support",
