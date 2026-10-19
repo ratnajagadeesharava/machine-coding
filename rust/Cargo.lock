@@ -80,6 +80,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "p102_saga_orchestrator"
+version = "0.1.0"
+dependencies = [
+ "playground-support",
+]
+
+[[package]]
 name = "p10_flight_booking"
 version = "0.1.0"
 dependencies = [
