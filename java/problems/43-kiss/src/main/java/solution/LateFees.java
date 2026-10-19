@@ -1,8 +1,11 @@
 package solution;
 
-/** Keep it simple: the whole solution is this one small class. */
+/**
+ * Keep it simple: the whole solution is this one small class.
+ */
 public final class LateFees {
-    private LateFees() {}
+    private LateFees() {
+    }
 
     /**
      * Late fee in cents for a returned library item.
@@ -10,6 +13,15 @@ public final class LateFees {
      * capped at 1000 cents (premium members: 500 cents).
      */
     public static long fee(int daysLate, boolean premium) {
-        throw new UnsupportedOperationException("Not implemented yet");
+        if (daysLate <= 0)
+            return 0;
+
+        if (!premium) {
+        long value = (long)daysLate *25;
+            return Math.min(value, 1000);
+        } else {
+            long value = (long)daysLate *10;
+            return Math.min(value, 500);
+        }
     }
 }
