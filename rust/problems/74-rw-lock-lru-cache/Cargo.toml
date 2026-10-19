@@ -1,0 +1,18 @@
+[package]
+name = "p74_rw_lock_lru_cache"
+version = "0.1.0"
+edition = "2021"
+publish = false
+description = "Concurrent LRU Cache (Read-Write Lock) - machine coding practice"
+
+[features]
+# Interviewer-only scenarios: cargo test --features hidden
+hidden = []
+
+[dependencies]
+playground-support = { path = "../../support" }
+
+[[test]]
+name = "hidden"
+path = "interviewer/hidden.rs"
+required-features = ["hidden"]

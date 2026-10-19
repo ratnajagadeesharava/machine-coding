@@ -60,3 +60,11 @@ Idioms to practice: records and `final` fields for value types, sealed interface
 | 30 | [Concurrent Cache with Loaders](problems/30-concurrent-cache/README.md) | Hard | 90 min | L3 |
 | 31 | [In-Process Event Bus](problems/31-event-bus/README.md) | Hard | 120 min | L3 |
 | 32 | [Board Game Engine](problems/32-board-game-engine/README.md) | Hard | 120 min | L1 |
+| 74 | [Concurrent LRU Cache (Read-Write Lock)](problems/74-rw-lock-lru-cache/README.md) | Medium-Hard | 60 min | L3 |
+| 75 | [Bank Transfers Without Deadlock](problems/75-bank-transfer/README.md) | Medium | 45 min | L3 |
+| 76 | [Ordered Printer (Turn Taking)](problems/76-ordered-printer/README.md) | Medium | 45 min | L3 |
+| 77 | [Dining Philosophers](problems/77-dining-philosophers/README.md) | Medium-Hard | 60 min | L3 |
+| 78 | [Bounded Connection Pool](problems/78-connection-pool/README.md) | Medium-Hard | 60 min | L3 |
+| 79 | [Parallel Merge Sort](problems/79-parallel-merge-sort/README.md) | Medium-Hard | 60 min | L3 |
+| 80 | [Parallel Word Count](problems/80-parallel-word-count/README.md) | Medium | 45 min | L3 |
+| 81 | [Parallel Web Crawler](problems/81-parallel-crawler/README.md) | Hard | 90 min | L3 |
