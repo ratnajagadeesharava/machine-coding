@@ -70,3 +70,27 @@ newtypes for IDs, borrowing over cloning, `Arc`/`Mutex`/channels only where actu
 | 79 | [Parallel Merge Sort](problems/79-parallel-merge-sort/README.md) | Medium-Hard | 60 min | L3 |
 | 80 | [Parallel Word Count](problems/80-parallel-word-count/README.md) | Medium | 45 min | L3 |
 | 81 | [Parallel Web Crawler](problems/81-parallel-crawler/README.md) | Hard | 90 min | L3 |
+| 82 | [URL Shortener](problems/82-url-shortener/README.md) | Medium | 45 min | L2 |
+| 83 | [Feature Flag Service](problems/83-feature-flags/README.md) | Medium | 45 min | L2 |
+| 84 | [In-Memory File System with Permissions](problems/84-file-system-permissions/README.md) | Medium-Hard | 75 min | L2 |
+| 85 | [Text Editor with Undo/Redo](problems/85-text-editor-undo/README.md) | Medium | 60 min | L2 |
+| 86 | [Document Versioning with Merge](problems/86-document-versioning/README.md) | Hard | 75 min | L2 |
+| 87 | [Expense Groups (Splitwise)](problems/87-expense-groups/README.md) | Hard | 75 min | L2 |
+| 88 | [Shared Event Calendar](problems/88-event-calendar/README.md) | Medium-Hard | 60 min | L2 |
+| 89 | [Movie Ticket Booking](problems/89-movie-ticketing/README.md) | Hard | 75 min | L2 |
+| 90 | [Food Delivery Dispatch](problems/90-food-delivery/README.md) | Hard | 75 min | L2 |
+| 91 | [Online Auction](problems/91-online-auction/README.md) | Medium-Hard | 60 min | L2 |
+| 92 | [Chat System](problems/92-chat-system/README.md) | Hard | 75 min | L2 |
+| 93 | [Cron Job Scheduler](problems/93-cron-job-scheduler/README.md) | Hard | 75 min | L2 |
+| 94 | [API Gateway](problems/94-api-gateway/README.md) | Hard | 75 min | L2 |
+| 95 | [Mini SQL Engine](problems/95-sql-engine/README.md) | Hard | 90 min | L2 |
+| 96 | [Consistent Hash Ring](problems/96-consistent-hashing/README.md) | Medium-Hard | 60 min | L3 |
+| 97 | [Idempotent Request Processor](problems/97-idempotent-requests/README.md) | Medium-Hard | 60 min | L3 |
+| 98 | [Lease Lock with Fencing Tokens](problems/98-lock-lease-fencing/README.md) | Medium-Hard | 50 min | L3 |
+| 99 | [Raft Leader Election](problems/99-leader-election/README.md) | Hard | 90 min | L3 |
+| 100 | [Gossip Protocol with Failure Detection](problems/100-gossip-protocol/README.md) | Hard | 90 min | L3 |
+| 101 | [Two-Phase Commit](problems/101-two-phase-commit/README.md) | Hard | 120 min | L3 |
+| 102 | [Saga Orchestrator](problems/102-saga-orchestrator/README.md) | Hard | 90 min | L3 |
+| 103 | [CRDT Replicated Store](problems/103-crdt-replication/README.md) | Hard | 75 min | L3 |
+| 104 | [Quorum Key-Value Store](problems/104-quorum-kv/README.md) | Hard | 90 min | L3 |
+| 105 | [Raft Log Replication](problems/105-raft-log/README.md) | Hard | 120 min | L3 |

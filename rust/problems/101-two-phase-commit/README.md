@@ -161,10 +161,10 @@ Your wiring point (`src/lib.rs`):
 
 ```rust
 /// A coordinator for the given participants. `log` may already contain records (restart).
-pub fn create_coordinator(_id: &str, _participants: &[&str], _send: SendFn, _log: Log, ) -> Option<Arc<dyn CoordinatorNode>> { ... }
+pub fn create_coordinator(_id: &str, _participants: &[&str], _send: SendFn, _log: Log) -> Option<Arc<dyn CoordinatorNode>> { ... }
 
 /// A participant that reports to `coordinator_id`. `log` may already contain records (restart).
-pub fn create_participant(_id: &str, _coordinator_id: &str, _send: SendFn, _log: Log, ) -> Option<Arc<dyn ParticipantNode>> { ... }
+pub fn create_participant(_id: &str, _coordinator_id: &str, _send: SendFn, _log: Log) -> Option<Arc<dyn ParticipantNode>> { ... }
 ```
 
 ## What the tests check

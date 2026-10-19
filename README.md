@@ -67,7 +67,7 @@ Visible tests teach you the contract; they do not enumerate every edge case. Eac
 
 ## Recommended order (order of learning)
 
-All 73 problems sequenced so each one builds on concepts from the ones before it: fundamentals, then principles, then patterns,
+The first 73 problems are sequenced so each one builds on concepts from the ones before it: fundamentals, then principles, then patterns,
 then open-ended design, then concurrency. Work top to bottom. Difficulty is shown for reference only and goes up and down on purpose.
 The `#` column is the problem's folder number (what `cargo play run <#>` and the directory names use);
 **Order** is the suggested sequence. The tables further down group the same problems by topic.
@@ -173,7 +173,7 @@ The `#` column is the problem's folder number (what `cargo play run <#>` and the
 | 65 | [Board Game Engine](java/problems/32-board-game-engine/README.md) | Hard | 120 min | L1 | 32 |
 | 66 | [Chess](java/problems/07-chess/README.md) | Senior | 120 min | L1 | 07 |
 
-**Phase 8 - Concurrency.** Thread-safety, blocking, scheduling. Do these last. A longer, concurrency-only learning path (with eight additional problems, 74-81) is in the [Concurrency](#concurrency) section below.
+**Phase 8 - Concurrency.** Thread-safety, blocking, scheduling. Do these last. A longer, concurrency-only learning path (with eight additional problems, 74-81) is in the [Concurrency](#concurrency) section below; classic product designs (82-95) and distributed-systems simulations (96-105) have their own learning paths in [Classic product systems](#classic-product-systems) and [Distributed systems](#distributed-systems-in-process-simulations).
 
 | Order | Problem | Difficulty | Time | Scaffold | # |
 |---:|---|---|---:|:---:|---:|
@@ -390,6 +390,139 @@ Tick the box when the tests pass **and** you can explain your locking choices an
 | 81 | [Parallel Web Crawler](java/problems/81-parallel-crawler/README.md) | Hard | 90 min | L3 |
 
 *(Java: `java/problems/<#>-<name>`, Rust: `rust/problems/<#>-<name>`; `cargo play run 77` or `cargo play run philosophers`. Each has `README.md`, `HINTS.md`, `INTERVIEW.md`, `FOLLOWUPS.md`, `RUBRIC.md`, `INTERVIEWER_NOTES.md`.)*
+
+## Classic product systems
+
+Interview staples from product companies (URL shortener, ticketing, food delivery, expense groups, file systems, text editors, a tiny SQL engine, ...). **Work top to bottom** - this is the order of learning, not of difficulty. Problems marked **new** (82-95) were added for this track; the others already live in the main list above and are reused here. Tick the box when the tests pass **and** you can explain your design and the follow-ups out loud.
+
+These are plain single-threaded designs unless a problem says otherwise (time comes from an injected fake clock, so nothing sleeps). Each has `README.md`, `HINTS.md` (three collapsed levels), `INTERVIEW.md`, `FOLLOWUPS.md`, `RUBRIC.md` and `INTERVIEWER_NOTES.md`, in both Java and Rust.
+
+### Stage 1 - Mapping and rules
+
+*Keys, ids and rule evaluation: the vocabulary every later product problem reuses.*
+
+| Step | Problem | Difficulty | Time | Key concepts | Code | Done |
+|---|---|---|---:|---|---|:---:|
+| Step 1 | [URL Shortener](java/problems/82-url-shortener/README.md) **new** | Medium | 45 min | id generation, bidirectional maps, uniqueness under contention, alias reservation, tombstones, atomic counters | [java](java/problems/82-url-shortener/README.md) · [rust](rust/problems/82-url-shortener/README.md) | ☐ |
+| Step 2 | [Feature Flag Service](java/problems/83-feature-flags/README.md) **new** | Medium | 45 min | rule evaluation order, deterministic hashing, stable percentage rollout, kill switch, read-mostly concurrency, copy-on-write | [java](java/problems/83-feature-flags/README.md) · [rust](rust/problems/83-feature-flags/README.md) | ☐ |
+
+### Stage 2 - Trees, edits and history
+
+*State that is a tree or a sequence, and how to undo, version and merge it.*
+
+| Step | Problem | Difficulty | Time | Key concepts | Code | Done |
+|---|---|---|---:|---|---|:---:|
+| Step 3 | [In-Memory File System with Permissions](java/problems/84-file-system-permissions/README.md) **new** | Medium-Hard | 75 min | tree model, path parsing, unix permission bits, owner/group/other classes, traversal checks, move invariants, locking a tree | [java](java/problems/84-file-system-permissions/README.md) · [rust](rust/problems/84-file-system-permissions/README.md) | ☐ |
+| Step 4 | [Text Editor with Undo/Redo](java/problems/85-text-editor-undo/README.md) **new** | Medium | 60 min | command pattern vs snapshots, undo/redo stacks, operation grouping (coalescing), cursor and selection model, state restoration | [java](java/problems/85-text-editor-undo/README.md) · [rust](rust/problems/85-text-editor-undo/README.md) | ☐ |
+| Step 5 | [Document Versioning with Merge](java/problems/86-document-versioning/README.md) **new** | Hard | 75 min | append-only history, optimistic concurrency, line diff (LCS), three-way merge, conflict detection, compare-and-append under a lock | [java](java/problems/86-document-versioning/README.md) · [rust](rust/problems/86-document-versioning/README.md) | ☐ |
+
+### Stage 3 - Money and time
+
+*Balances that must add up, and calendars/schedules driven by an injected clock.*
+
+| Step | Problem | Difficulty | Time | Key concepts | Code | Done |
+|---|---|---|---:|---|---|:---:|
+| Step 6 | [Splitwise](java/problems/15-splitwise/README.md) | Medium | 60 min | balances, split strategies | [java](java/problems/15-splitwise/README.md) · [rust](rust/problems/15-splitwise/README.md) | ☐ |
+| Step 7 | [Expense Groups (Splitwise)](java/problems/87-expense-groups/README.md) **new** | Hard | 75 min | ledger and net balances, fair integer splitting, atomic validation, debt minimisation (zero-sum partition), bitmask DP, money as integers | [java](java/problems/87-expense-groups/README.md) · [rust](rust/problems/87-expense-groups/README.md) | ☐ |
+| Step 8 | [Shared Event Calendar](java/problems/88-event-calendar/README.md) **new** | Medium-Hard | 60 min | interval overlap on half-open ranges, all-or-nothing multi-party booking, ordered multi-lock acquisition, per-user sorted structures, free-slot computation | [java](java/problems/88-event-calendar/README.md) · [rust](rust/problems/88-event-calendar/README.md) | ☐ |
+| Step 9 | [Cron Job Scheduler](java/problems/93-cron-job-scheduler/README.md) **new** | Hard | 75 min | cron expression parsing, next-slot computation over a calendar, retry with capped exponential backoff, deterministic polling scheduler, misfire policy, dead letters | [java](java/problems/93-cron-job-scheduler/README.md) · [rust](rust/problems/93-cron-job-scheduler/README.md) | ☐ |
+
+### Stage 4 - Marketplaces and bookings
+
+*Several actors competing for limited stock, with holds, expiry and state machines.*
+
+| Step | Problem | Difficulty | Time | Key concepts | Code | Done |
+|---|---|---|---:|---|---|:---:|
+| Step 10 | [Hotel Booking](java/problems/11-hotel-booking/README.md) | Hard | 90 min | availability, overlapping ranges | [java](java/problems/11-hotel-booking/README.md) · [rust](rust/problems/11-hotel-booking/README.md) | ☐ |
+| Step 11 | [Movie Ticket Booking](java/problems/89-movie-ticketing/README.md) **new** | Hard | 75 min | seat inventory, time-limited holds with a lazily evaluated clock, hold-to-booking state machine, atomic multi-seat reservation, tiered pricing, refund policy | [java](java/problems/89-movie-ticketing/README.md) · [rust](rust/problems/89-movie-ticketing/README.md) | ☐ |
+| Step 12 | [Online Auction](java/problems/91-online-auction/README.md) **new** | Medium-Hard | 60 min | compare-and-update on a single highest bid, anti-sniping time extension with an injected clock, lazy auction closing, outbid notifications, reserve price | [java](java/problems/91-online-auction/README.md) · [rust](rust/problems/91-online-auction/README.md) | ☐ |
+| Step 13 | [Food Delivery Dispatch](java/problems/90-food-delivery/README.md) **new** | Hard | 75 min | order state machine, all-or-nothing stock reservation, nearest-resource assignment with deterministic ties, FIFO waiting queue, compensation on cancel | [java](java/problems/90-food-delivery/README.md) · [rust](rust/problems/90-food-delivery/README.md) | ☐ |
+| Step 14 | [Chat System](java/problems/92-chat-system/README.md) **new** | Hard | 75 min | per-recipient delivery state, offline queues, group membership over time, total order per chat, status aggregation, read receipts | [java](java/problems/92-chat-system/README.md) · [rust](rust/problems/92-chat-system/README.md) | ☐ |
+
+### Stage 5 - Infrastructure products
+
+*Systems other engineers build on: request pipelines and a query engine.*
+
+| Step | Problem | Difficulty | Time | Key concepts | Code | Done |
+|---|---|---|---:|---|---|:---:|
+| Step 15 | [API Gateway](java/problems/94-api-gateway/README.md) **new** | Hard | 75 min | request pipeline, longest-prefix routing, token-bucket rate limiting with lazy refill, round-robin with failover, circuit-breaker state machine, injectable clock, per-key locking without serialising backend calls | [java](java/problems/94-api-gateway/README.md) · [rust](rust/problems/94-api-gateway/README.md) | ☐ |
+| Step 16 | [Mini SQL Engine](java/problems/95-sql-engine/README.md) **new** | Hard | 90 min | tokenizer and recursive-descent parser, typed in-memory tables, expression evaluation with AND/OR precedence, hash join, grouping and aggregation, primary-key index, statement atomicity, serialised execution | [java](java/problems/95-sql-engine/README.md) · [rust](rust/problems/95-sql-engine/README.md) | ☐ |
+
+### New problems by folder number (82-95)
+
+| # | Problem | Difficulty | Time | Scaffold |
+|---|---|---|---:|:---:|
+| 82 | [URL Shortener](java/problems/82-url-shortener/README.md) | Medium | 45 min | L2 |
+| 83 | [Feature Flag Service](java/problems/83-feature-flags/README.md) | Medium | 45 min | L2 |
+| 84 | [In-Memory File System with Permissions](java/problems/84-file-system-permissions/README.md) | Medium-Hard | 75 min | L2 |
+| 85 | [Text Editor with Undo/Redo](java/problems/85-text-editor-undo/README.md) | Medium | 60 min | L2 |
+| 86 | [Document Versioning with Merge](java/problems/86-document-versioning/README.md) | Hard | 75 min | L2 |
+| 87 | [Expense Groups (Splitwise)](java/problems/87-expense-groups/README.md) | Hard | 75 min | L2 |
+| 88 | [Shared Event Calendar](java/problems/88-event-calendar/README.md) | Medium-Hard | 60 min | L2 |
+| 89 | [Movie Ticket Booking](java/problems/89-movie-ticketing/README.md) | Hard | 75 min | L2 |
+| 90 | [Food Delivery Dispatch](java/problems/90-food-delivery/README.md) | Hard | 75 min | L2 |
+| 91 | [Online Auction](java/problems/91-online-auction/README.md) | Medium-Hard | 60 min | L2 |
+| 92 | [Chat System](java/problems/92-chat-system/README.md) | Hard | 75 min | L2 |
+| 93 | [Cron Job Scheduler](java/problems/93-cron-job-scheduler/README.md) | Hard | 75 min | L2 |
+| 94 | [API Gateway](java/problems/94-api-gateway/README.md) | Hard | 75 min | L2 |
+| 95 | [Mini SQL Engine](java/problems/95-sql-engine/README.md) | Hard | 90 min | L2 |
+
+## Distributed systems (in-process simulations)
+
+Senior interviews often ask for these *conceptually* ("how does Raft elect a leader?") and only rarely as code - so treat this track as a way to make the concepts concrete, not as a list of things you will be asked to code in 45 minutes. Everything runs in one process on a **deterministic simulation**: a fake clock (one tick = 1 ms), a message network that can delay, drop, duplicate and reorder messages, nodes that crash and recover, and network partitions. Nothing sleeps and every run is reproducible from its seed, so a failing seed is a bug report. Safety invariants (one leader per term, committed entries never change, ...) are checked after **every** simulated millisecond. **Work top to bottom** - this is the order of learning, not of difficulty. Problems 96-105 are new.
+
+### Stage 1 - Building blocks
+
+*In-process pieces every distributed design uses: placement, deduplication, leases.*
+
+| Step | Problem | Difficulty | Time | Key concepts | Code | Done |
+|---|---|---|---:|---|---|:---:|
+| Step 1 | [Consistent Hash Ring](java/problems/96-consistent-hashing/README.md) **new** | Medium-Hard | 60 min | consistent hashing, virtual nodes, weighted nodes, sorted ring with binary search, deterministic hashing, replica placement, minimal key movement, read-mostly concurrency | [java](java/problems/96-consistent-hashing/README.md) · [rust](rust/problems/96-consistent-hashing/README.md) | ☐ |
+| Step 2 | [Idempotent Request Processor](java/problems/97-idempotent-requests/README.md) **new** | Medium-Hard | 60 min | idempotency keys, exactly-once effect under retries, request fingerprinting, in-flight deduplication (single flight), failure handling and hand-over, TTL expiry, per-key locking, memory reclamation | [java](java/problems/97-idempotent-requests/README.md) · [rust](rust/problems/97-idempotent-requests/README.md) | ☐ |
+| Step 3 | [Lease Lock with Fencing Tokens](java/problems/98-lock-lease-fencing/README.md) **new** | Medium-Hard | 50 min | leases, time-bounded mutual exclusion, fencing tokens, monotonic counters, process pauses and clock reasoning, non-blocking API, per-lock state under concurrency | [java](java/problems/98-lock-lease-fencing/README.md) · [rust](rust/problems/98-lock-lease-fencing/README.md) | ☐ |
+
+### Stage 2 - Replication without a leader
+
+*Replicas that accept writes independently and still converge: gossip, CRDTs, quorums.*
+
+| Step | Problem | Difficulty | Time | Key concepts | Code | Done |
+|---|---|---|---:|---|---|:---:|
+| Step 4 | [Gossip Protocol with Failure Detection](java/problems/100-gossip-protocol/README.md) **new** | Hard | 90 min | epidemic dissemination, push-pull anti-entropy, versioned last-writer-wins merge, heartbeat failure detection, deterministic simulation | [java](java/problems/100-gossip-protocol/README.md) · [rust](rust/problems/100-gossip-protocol/README.md) | ☐ |
+| Step 5 | [CRDT Replicated Store](java/problems/103-crdt-replication/README.md) **new** | Hard | 75 min | state-based CRDTs, join semilattices, PN-counter, observed-remove set, last-writer-wins register, merge laws (idempotent, commutative, associative), snapshot serialization | [java](java/problems/103-crdt-replication/README.md) · [rust](rust/problems/103-crdt-replication/README.md) | ☐ |
+| Step 6 | [Quorum Key-Value Store](java/problems/104-quorum-kv/README.md) **new** | Hard | 90 min | Dynamo-style leaderless replication, majority quorums (W + R > N), versioned writes, read repair, request idempotency, timeouts and retries in a simulated network | [java](java/problems/104-quorum-kv/README.md) · [rust](rust/problems/104-quorum-kv/README.md) | ☐ |
+
+### Stage 3 - Agreement
+
+*One leader, one log, same order everywhere.*
+
+| Step | Problem | Difficulty | Time | Key concepts | Code | Done |
+|---|---|---|---:|---|---|:---:|
+| Step 7 | [Raft Leader Election](java/problems/99-leader-election/README.md) **new** | Hard | 90 min | Raft leader election, terms, randomized election timeouts, vote granting rules, heartbeats, check-quorum step-down, split-brain safety, deterministic simulation under crashes, partitions and message loss | [java](java/problems/99-leader-election/README.md) · [rust](rust/problems/99-leader-election/README.md) | ☐ |
+| Step 8 | [Raft Log Replication](java/problems/105-raft-log/README.md) **new** | Hard | 120 min | Raft consensus, leader election with the election restriction, replicated log with consistency check, commit rule (own-term entries), check-quorum, safety invariants under crashes, partitions and message duplication | [java](java/problems/105-raft-log/README.md) · [rust](rust/problems/105-raft-log/README.md) | ☐ |
+
+### Stage 4 - Transactions across services
+
+*All-or-nothing across several owners: atomic commit and compensation.*
+
+| Step | Problem | Difficulty | Time | Key concepts | Code | Done |
+|---|---|---|---:|---|---|:---:|
+| Step 9 | [Two-Phase Commit](java/problems/101-two-phase-commit/README.md) **new** | Hard | 120 min | atomic commit, coordinator/participant protocol, write-ahead logging, in-doubt state and blocking, presumed abort, recovery from a durable log | [java](java/problems/101-two-phase-commit/README.md) · [rust](rust/problems/101-two-phase-commit/README.md) | ☐ |
+| Step 10 | [Saga Orchestrator](java/problems/102-saga-orchestrator/README.md) **new** | Hard | 90 min | sagas and compensation, retry with exponential backoff, write-ahead progress log, crash recovery and resumption, idempotency, per-saga mutual exclusion | [java](java/problems/102-saga-orchestrator/README.md) · [rust](rust/problems/102-saga-orchestrator/README.md) | ☐ |
+
+### New problems by folder number (96-105)
+
+| # | Problem | Difficulty | Time | Scaffold |
+|---|---|---|---:|:---:|
+| 96 | [Consistent Hash Ring](java/problems/96-consistent-hashing/README.md) | Medium-Hard | 60 min | L3 |
+| 97 | [Idempotent Request Processor](java/problems/97-idempotent-requests/README.md) | Medium-Hard | 60 min | L3 |
+| 98 | [Lease Lock with Fencing Tokens](java/problems/98-lock-lease-fencing/README.md) | Medium-Hard | 50 min | L3 |
+| 99 | [Raft Leader Election](java/problems/99-leader-election/README.md) | Hard | 90 min | L3 |
+| 100 | [Gossip Protocol with Failure Detection](java/problems/100-gossip-protocol/README.md) | Hard | 90 min | L3 |
+| 101 | [Two-Phase Commit](java/problems/101-two-phase-commit/README.md) | Hard | 120 min | L3 |
+| 102 | [Saga Orchestrator](java/problems/102-saga-orchestrator/README.md) | Hard | 90 min | L3 |
+| 103 | [CRDT Replicated Store](java/problems/103-crdt-replication/README.md) | Hard | 75 min | L3 |
+| 104 | [Quorum Key-Value Store](java/problems/104-quorum-kv/README.md) | Hard | 90 min | L3 |
+| 105 | [Raft Log Replication](java/problems/105-raft-log/README.md) | Hard | 120 min | L3 |
 
 ## The `play` runner (rustlings-style)
 

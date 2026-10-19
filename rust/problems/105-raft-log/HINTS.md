@@ -26,7 +26,7 @@ Split the node into the same pieces the paper does: persistent-ish state (term, 
 <details>
 <summary>The shape of the solution — click to reveal</summary>
 
-RequestVote: reject lower terms, adopt higher ones, grant if you have not voted this term and the candidate's (lastTerm, lastIndex) is at least yours. AppendEntries: reject lower terms, reset the election timer, check prev, append only on conflict, advance commit. Leader: after each reply update matchIndex / back off nextIndex, then compute the highest N stored by a majority whose entry is from your own term. The paper's Figure 2 is the checklist; write each rule as a small method.
+Write one small handler per message type plus one per timer, and let every handler begin by comparing terms. The leader keeps, per follower, how far it believes the follower matches; the commit decision is a function of those numbers and of the terms in the log. The Raft paper's Figure 2 is the checklist - turn each rule in it into a method and test each against duplicated and stale messages.
 
 **Rust:** Use a `Vec<Entry>` with a sentinel entry at 0 so indexes are 1-based; keep everything in one `Mutex<Inner>` and collect outgoing messages in a Vec, sending them after the state update. Your own xorshift/`Rng` seeded from `seed` for the timeouts.
 

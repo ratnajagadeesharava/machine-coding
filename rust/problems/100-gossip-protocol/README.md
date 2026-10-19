@@ -104,7 +104,7 @@ Your wiring point (`src/lib.rs`):
 /// * `peers`: the OTHER nodes' names
 /// * `send`: `send(to, payload)` delivers a message to another node (later, maybe never)
 /// * `seed`: seed for the node's random choices (first round offset, which peers to gossip with)
-pub fn create(_id: &str, _peers: &[&str], _send: SendFn, _seed: u64, ) -> Option<Arc<dyn GossipNode>> { ... }
+pub fn create(_id: &str, _peers: &[&str], _send: SendFn, _seed: u64) -> Option<Arc<dyn GossipNode>> { ... }
 ```
 
 ## What the tests check
