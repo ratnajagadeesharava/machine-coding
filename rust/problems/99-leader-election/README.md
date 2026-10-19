@@ -122,7 +122,7 @@ Your wiring point (`src/lib.rs`):
 /// * `peers`: the OTHER nodes' names (the cluster has `peers.len() + 1` nodes)
 /// * `send`: `send(to, payload)` delivers a message to another node (later, maybe never)
 /// * `seed`: seed for the election-timeout random numbers
-pub fn create(_id: &str, _peers: &[&str], _send: SendFn, _seed: u64) -> Option<Arc<dyn ElectionNode>> { ... }
+pub fn create( _id: &str, _peers: &[&str], _send: SendFn, _seed: u64, ) -> Option<Arc<dyn ElectionNode>> { ... }
 ```
 
 ## What the tests check
