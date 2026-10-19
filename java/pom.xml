@@ -103,6 +103,8 @@
     <module>problems/83-feature-flags</module>
     <module>problems/84-file-system-permissions</module>
     <module>problems/85-text-editor-undo</module>
+    <module>problems/86-document-versioning</module>
+    <module>problems/87-expense-groups</module>
   </modules>
 
   <dependencies>

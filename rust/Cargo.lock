@@ -598,5 +598,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "p86_document_versioning"
+version = "0.1.0"
+dependencies = [
+ "playground-support",
+]
+
+[[package]]
+name = "p87_expense_groups"
+version = "0.1.0"
+dependencies = [
+ "playground-support",
+]
+
+[[package]]
 name = "playground-support"
 version = "0.1.0"
