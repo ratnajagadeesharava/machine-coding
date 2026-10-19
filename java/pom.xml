@@ -108,6 +108,7 @@
     <module>problems/88-event-calendar</module>
     <module>problems/89-movie-ticketing</module>
     <module>problems/90-food-delivery</module>
+    <module>problems/91-online-auction</module>
   </modules>
 
   <dependencies>

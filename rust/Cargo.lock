@@ -633,5 +633,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "p91_online_auction"
+version = "0.1.0"
+dependencies = [
+ "playground-support",
+]
+
+[[package]]
 name = "playground-support"
 version = "0.1.0"
