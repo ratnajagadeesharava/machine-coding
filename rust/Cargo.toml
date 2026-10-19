@@ -93,4 +93,5 @@ members = [
     "problems/89-movie-ticketing",
     "problems/90-food-delivery",
     "problems/91-online-auction",
+    "problems/92-chat-system",
 ]

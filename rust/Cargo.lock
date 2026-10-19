@@ -640,5 +640,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "p92_chat_system"
+version = "0.1.0"
+dependencies = [
+ "playground-support",
+]
+
+[[package]]
 name = "playground-support"
 version = "0.1.0"
