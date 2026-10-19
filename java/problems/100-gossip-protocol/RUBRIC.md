@@ -1,0 +1,44 @@
+# Rubric — 100 Gossip Protocol with Failure Detection (Java)
+
+| Area | Weight |
+|---|---:|
+| Functional correctness | 30% |
+| Design quality (model, API, responsibilities) | 10% |
+| Code quality | 10% |
+| Testing | 10% |
+| Distributed reasoning (failures, ordering, retries, idempotency) | 35% |
+| Performance | 5% |
+
+Score each area 0–4 (0 = absent, 2 = acceptable, 4 = would hire on this alone), multiply by weight.
+
+## Questions for every problem
+
+**Design**
+- Did the candidate identify the correct domain concepts?
+- Are responsibilities well separated; does each piece of state have one clear owner?
+- Are abstractions justified by a requirement? (Not: "did they use pattern X?")
+- Is the API clean, hard to misuse, and free of leaked internals?
+- Can the requirements evolve (see `FOLLOWUPS.md`) without a rewrite?
+- Is the implementation unnecessarily complicated?
+
+**Correctness & quality**
+- Are invariants preserved across every operation, including failed ones (no half-applied changes)?
+- Are edge cases (empty, boundary, repeated, invalid operations) handled deliberately?
+- Can components be tested independently of the whole system?
+
+**Concurrency & performance**
+- Is concurrency safe (or explicitly and correctly declared out of scope)? Is the locking granularity reasoned about?
+- Are performance characteristics reasonable for the stated constraints?
+
+**Language-specific**
+- Are classes/interfaces justified, or did you reach for an interface by reflex?
+- Are collections, locks and executors chosen on purpose (not `synchronized` everywhere)?
+- Is mutable state encapsulated; are value types immutable (records / final fields)?
+
+## Problem-specific
+
+- Is the merge rule argued to be commutative, associative and idempotent, and are heartbeats and versions treated as monotone?
+- Is traffic bounded (fan-out 2, one answer per push) and the answer not answered again?
+- Is liveness derived from local time of last heartbeat growth, with the benefit-of-the-doubt start handled?
+- Is all randomness seeded and all time taken from `onTick`, so a seed replays exactly?
+- Can the candidate explain what a partition does to writes and to the alive view, and why both heal?
