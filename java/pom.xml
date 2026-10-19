@@ -107,6 +107,7 @@
     <module>problems/87-expense-groups</module>
     <module>problems/88-event-calendar</module>
     <module>problems/89-movie-ticketing</module>
+    <module>problems/90-food-delivery</module>
   </modules>
 
   <dependencies>
