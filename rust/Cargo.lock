@@ -661,5 +661,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "p95_sql_engine"
+version = "0.1.0"
+dependencies = [
+ "playground-support",
+]
+
+[[package]]
 name = "playground-support"
 version = "0.1.0"

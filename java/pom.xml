@@ -112,6 +112,7 @@
     <module>problems/92-chat-system</module>
     <module>problems/93-cron-job-scheduler</module>
     <module>problems/94-api-gateway</module>
+    <module>problems/95-sql-engine</module>
   </modules>
 
   <dependencies>

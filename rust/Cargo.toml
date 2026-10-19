@@ -96,4 +96,5 @@ members = [
     "problems/92-chat-system",
     "problems/93-cron-job-scheduler",
     "problems/94-api-gateway",
+    "problems/95-sql-engine",
 ]
