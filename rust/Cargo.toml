@@ -83,4 +83,8 @@ members = [
     "problems/79-parallel-merge-sort",
     "problems/80-parallel-word-count",
     "problems/81-parallel-crawler",
+    "problems/82-url-shortener",
+    "problems/83-feature-flags",
+    "problems/84-file-system-permissions",
+    "problems/85-text-editor-undo",
 ]

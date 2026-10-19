@@ -99,6 +99,10 @@
     <module>problems/79-parallel-merge-sort</module>
     <module>problems/80-parallel-word-count</module>
     <module>problems/81-parallel-crawler</module>
+    <module>problems/82-url-shortener</module>
+    <module>problems/83-feature-flags</module>
+    <module>problems/84-file-system-permissions</module>
+    <module>problems/85-text-editor-undo</module>
   </modules>
 
   <dependencies>

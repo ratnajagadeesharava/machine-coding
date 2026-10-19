@@ -570,5 +570,33 @@ dependencies = [
 ]
 
 [[package]]
+name = "p82_url_shortener"
+version = "0.1.0"
+dependencies = [
+ "playground-support",
+]
+
+[[package]]
+name = "p83_feature_flags"
+version = "0.1.0"
+dependencies = [
+ "playground-support",
+]
+
+[[package]]
+name = "p84_file_system_permissions"
+version = "0.1.0"
+dependencies = [
+ "playground-support",
+]
+
+[[package]]
+name = "p85_text_editor_undo"
+version = "0.1.0"
+dependencies = [
+ "playground-support",
+]
+
+[[package]]
 name = "playground-support"
 version = "0.1.0"
