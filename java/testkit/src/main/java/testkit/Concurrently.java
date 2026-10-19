@@ -23,6 +23,13 @@ public final class Concurrently {
         });
     }
 
+    public static void run(int threads, long timeoutMs, IntConsumer body) {
+        collect(threads, timeoutMs, i -> {
+            body.accept(i);
+            return null;
+        });
+    }
+
     public static <T> List<T> collect(int threads, IntFunction<T> body) {
         return collect(threads, 30_000, body);
     }

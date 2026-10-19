@@ -1,0 +1,132 @@
+# 81 · Parallel Web Crawler (Rust)
+
+| Difficulty | Duration | Scaffolding |
+|---|---|---|
+| Hard | 90 min | Level 3 — infrastructure provided. Test utilities for threads/clocks exist; business/domain code is yours. |
+
+> Read the requirements, then **design before you code**: which concepts, which owners, which API,
+> which state, which abstractions (if any). Nothing here tells you. See `INTERVIEW.md` for the process,
+> `HINTS.md` if you are stuck (three levels, smallest nudge first) and
+> `FOLLOWUPS.md` (open one at a time, after the previous version passes).
+
+## Problem
+
+Crawl a web of pages starting from one URL, following every link, using up to N worker threads. A page may be linked
+from many places, the links form cycles, pages are slow, and some pages are broken. The crawl must fetch each URL exactly
+once, never run more than N fetches at the same time, survive failing pages and - the hard part - know when it is
+finished: there is no fixed amount of work, and workers that find the queue empty may still be fed by a worker that is
+busy fetching.
+
+## Requirements
+
+1. `crawl(start, workers, fetcher)` returns the set of **all URLs reached**, including `start`.
+2. The fetcher (`links(url)`) is provided by the caller. It may be slow, thread-safe, and may return duplicate links and links to itself.
+3. Every URL is fetched **exactly once**, however many pages link to it.
+4. At most `workers` fetches run at the same time.
+5. A page whose fetch fails (exception / `Err`) counts as reached, contributes no links, and does not stop the crawl.
+6. `crawl` returns only when all work is done, and leaves no thread running behind it.
+7. `workers < 1` is rejected.
+
+## Constraints and thread-safety requirements
+
+- Visited check and insertion must be one atomic step (two workers discovering the same URL must not both fetch it).
+- Termination: the crawl is over when the queue is empty **and** no worker is fetching. An idle worker must not exit while another worker may still add links.
+- Deep chains (200 pages, one busy worker at a time) and wide fans (1 page linking to 100) both finish.
+- Idle workers do not burn CPU.
+- Scale: 900-page heavily linked grid, 2,047-page tree; the hidden tests crawl 100,000 pages.
+
+## Examples
+
+```
+a -> b, c, b, a        b -> d        c -> d, a        d -> a, e
+crawl("a", 3 workers)  -> {a, b, c, d, e}, each fetched once
+
+b is broken, d is broken:  a -> b, c; c -> d
+-> {a, b, c, d}   (e is unknown because d failed)
+```
+
+## Behavioral contract
+
+The tests rely on exactly the following. Anything not stated is yours to decide (and to state as an assumption).
+
+- Java: `Crawler.crawl(String, int, Fetcher)` returning `Set<String>`; `Fetcher.links(String)` returns `List<String>` and throws a `RuntimeException` for a broken page. Rust: `Fetcher::links -> Result<Vec<String>, FetchError>`, `Crawler::crawl(&self, &str, usize, Arc<dyn Fetcher>) -> Result<HashSet<String>, InvalidWorkers>`.
+- `Fetcher` (and `FetchError`) are provided in the contract; you do not write them.
+- The tests count fetches per URL, the maximum number of simultaneous fetches, and any fetch that happens *after* `crawl` returned.
+- URLs are opaque strings; no normalisation is expected.
+
+## Minimum API the tests expect (Rust)
+
+The tests drive your system through the thin contract below (`src/contract.rs`). It is **not** your domain model — it is the doorway. Add your own modules/types/traits next to it and wire them up in `src/lib.rs`.
+
+```rust
+//! Thin test entry point. Your design lives behind it.
+//! Must be usable from multiple threads (`&self`, `Send + Sync`).
+
+use std::collections::HashSet;
+use std::sync::Arc;
+
+/// A broken page.
+#[derive(Debug, PartialEq, Eq)]
+pub struct FetchError;
+
+/// Provided by the tests (the "internet"). Thread-safe, may be slow, may contain duplicate and self links.
+pub trait Fetcher: Send + Sync {
+    /// The outgoing links of a page, or `Err(FetchError)` for a broken page.
+    fn links(&self, url: &str) -> Result<Vec<String>, FetchError>;
+}
+
+/// `workers` was 0.
+#[derive(Debug, PartialEq, Eq)]
+pub struct InvalidWorkers;
+
+pub trait Crawler: Send + Sync {
+    /// Crawls every page reachable from `start` and returns the set of all URLs reached (including `start` and
+    /// broken pages). Rules:
+    /// * every URL is fetched exactly once, however many pages link to it;
+    /// * at most `workers` fetches run at the same time;
+    /// * a page whose fetch fails counts as reached but contributes no links; the crawl goes on;
+    /// * returns only when no work is left, and leaves no thread running behind it.
+    ///
+    /// `Err(InvalidWorkers)` if `workers == 0`.
+    fn crawl(
+        &self,
+        start: &str,
+        workers: usize,
+        fetcher: Arc<dyn Fetcher>,
+    ) -> Result<HashSet<String>, InvalidWorkers>;
+}
+```
+
+Your wiring point (`src/lib.rs`):
+
+```rust
+pub fn create() -> Option<Arc<dyn Crawler>> { ... }
+```
+
+## What the tests check
+
+These tests are black-box: they only call the contract above, so any class design behind it works. Concurrency tests run many threads against one object, use deadlock timeouts (a hang becomes a failure) and repeat a workload 100 times to catch rare interleavings.
+
+- No links; cycles, diamonds, self-links and duplicate links.
+- 200-page chain with a 1 ms fetch and 8 workers (premature-exit bugs hang or truncate this).
+- Binary tree of 2,047 pages; 30x30 grid where every page links to four neighbours (each page is discovered four times).
+- Broken pages are reached but not expanded; the rest of the web is still crawled.
+- Star with 100 slow leaves and 4 workers: at most 4 and at least 2 fetches ran at once; 1 worker never overlaps.
+- After `crawl` returns, no more fetches happen (150 ms later).
+- Four crawls running at once through the same crawler.
+- **Repeat 100x** on random graphs with random worker counts: result equals a reference BFS and every page is fetched once.
+
+## Language notes
+
+`std::thread::scope` with N worker loops over a `Mutex<State>` + `Condvar`; fetch outside the lock. `HashSet::insert` returning `bool` is the visited check - keep it inside the same critical section as the push.
+
+## Running
+
+```bash
+cargo test -p p81_parallel_crawler
+STRICT=1 cargo test -p p81_parallel_crawler   # fail instead of skip while unimplemented
+cargo test -p p81_parallel_crawler --features hidden   # interviewer scenarios
+cargo play run 81              # from the repo root
+```
+
+Until `create` returns `Some(..)` every test prints `SKIPPED` and passes, so a fresh checkout builds green. Test code: `tests/behavior.rs`. Shared helpers (`run_concurrently`, `eventually`, `stays`, `watchdog`, `sut!`): `rust/support`. `run_concurrently` aborts the test run with a `TIMEOUT` message after 60 s, so a deadlock fails instead of freezing `cargo test`.

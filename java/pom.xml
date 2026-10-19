@@ -91,6 +91,14 @@
     <module>problems/71-mediator</module>
     <module>problems/72-memento</module>
     <module>problems/73-chain-of-responsibility</module>
+    <module>problems/74-rw-lock-lru-cache</module>
+    <module>problems/75-bank-transfer</module>
+    <module>problems/76-ordered-printer</module>
+    <module>problems/77-dining-philosophers</module>
+    <module>problems/78-connection-pool</module>
+    <module>problems/79-parallel-merge-sort</module>
+    <module>problems/80-parallel-word-count</module>
+    <module>problems/81-parallel-crawler</module>
   </modules>
 
   <dependencies>

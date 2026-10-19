@@ -514,5 +514,61 @@ dependencies = [
 ]
 
 [[package]]
+name = "p74_rw_lock_lru_cache"
+version = "0.1.0"
+dependencies = [
+ "playground-support",
+]
+
+[[package]]
+name = "p75_bank_transfer"
+version = "0.1.0"
+dependencies = [
+ "playground-support",
+]
+
+[[package]]
+name = "p76_ordered_printer"
+version = "0.1.0"
+dependencies = [
+ "playground-support",
+]
+
+[[package]]
+name = "p77_dining_philosophers"
+version = "0.1.0"
+dependencies = [
+ "playground-support",
+]
+
+[[package]]
+name = "p78_connection_pool"
+version = "0.1.0"
+dependencies = [
+ "playground-support",
+]
+
+[[package]]
+name = "p79_parallel_merge_sort"
+version = "0.1.0"
+dependencies = [
+ "playground-support",
+]
+
+[[package]]
+name = "p80_parallel_word_count"
+version = "0.1.0"
+dependencies = [
+ "playground-support",
+]
+
+[[package]]
+name = "p81_parallel_crawler"
+version = "0.1.0"
+dependencies = [
+ "playground-support",
+]
+
+[[package]]
 name = "playground-support"
 version = "0.1.0"
