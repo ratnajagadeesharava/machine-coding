@@ -89,4 +89,6 @@ members = [
     "problems/85-text-editor-undo",
     "problems/86-document-versioning",
     "problems/87-expense-groups",
+    "problems/88-event-calendar",
+    "problems/89-movie-ticketing",
 ]

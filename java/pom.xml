@@ -105,6 +105,8 @@
     <module>problems/85-text-editor-undo</module>
     <module>problems/86-document-versioning</module>
     <module>problems/87-expense-groups</module>
+    <module>problems/88-event-calendar</module>
+    <module>problems/89-movie-ticketing</module>
   </modules>
 
   <dependencies>
