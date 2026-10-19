@@ -104,4 +104,5 @@ members = [
     "problems/100-gossip-protocol",
     "problems/101-two-phase-commit",
     "problems/102-saga-orchestrator",
+    "problems/103-crdt-replication",
 ]

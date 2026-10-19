@@ -120,6 +120,7 @@
     <module>problems/100-gossip-protocol</module>
     <module>problems/101-two-phase-commit</module>
     <module>problems/102-saga-orchestrator</module>
+    <module>problems/103-crdt-replication</module>
   </modules>
 
   <dependencies>
