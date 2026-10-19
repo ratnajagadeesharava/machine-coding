@@ -113,6 +113,9 @@
     <module>problems/93-cron-job-scheduler</module>
     <module>problems/94-api-gateway</module>
     <module>problems/95-sql-engine</module>
+    <module>problems/96-consistent-hashing</module>
+    <module>problems/97-idempotent-requests</module>
+    <module>problems/98-lock-lease-fencing</module>
   </modules>
 
   <dependencies>

@@ -668,5 +668,26 @@ dependencies = [
 ]
 
 [[package]]
+name = "p96_consistent_hashing"
+version = "0.1.0"
+dependencies = [
+ "playground-support",
+]
+
+[[package]]
+name = "p97_idempotent_requests"
+version = "0.1.0"
+dependencies = [
+ "playground-support",
+]
+
+[[package]]
+name = "p98_lock_lease_fencing"
+version = "0.1.0"
+dependencies = [
+ "playground-support",
+]
+
+[[package]]
 name = "playground-support"
 version = "0.1.0"

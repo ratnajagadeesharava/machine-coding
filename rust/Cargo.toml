@@ -97,4 +97,7 @@ members = [
     "problems/93-cron-job-scheduler",
     "problems/94-api-gateway",
     "problems/95-sql-engine",
+    "problems/96-consistent-hashing",
+    "problems/97-idempotent-requests",
+    "problems/98-lock-lease-fencing",
 ]
