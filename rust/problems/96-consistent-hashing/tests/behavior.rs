@@ -16,7 +16,9 @@ fn ring(vnodes: usize, nodes: usize) -> Option<Arc<dyn HashRing>> {
 }
 
 fn ownership(r: &Arc<dyn HashRing>) -> HashMap<String, String> {
-    (0..KEYS).map(|k| (format!("key-{k}"), r.node_for(&format!("key-{k}")).unwrap())).collect()
+    (0..KEYS)
+        .map(|k| (format!("key-{k}"), r.node_for(&format!("key-{k}")).unwrap()))
+        .collect()
 }
 
 fn counts(o: &HashMap<String, String>) -> HashMap<String, usize> {
@@ -87,7 +89,10 @@ fn should_spread_keys_evenly() {
     assert_eq!(c.len(), 10);
     let mean = KEYS as f64 / 10.0;
     for v in c.values() {
-        assert!((mean * 0.65..=mean * 1.35).contains(&(*v as f64)), "share {v} too far from {mean}");
+        assert!(
+            (mean * 0.65..=mean * 1.35).contains(&(*v as f64)),
+            "share {v} too far from {mean}"
+        );
     }
 }
 
@@ -107,7 +112,10 @@ fn should_only_move_keys_to_the_new_node_when_one_joins() {
         }
     }
     let frac = moved as f64 / KEYS as f64;
-    assert!((0.04..=0.15).contains(&frac), "about 1/11 of the keys should move, got {frac}");
+    assert!(
+        (0.04..=0.15).contains(&frac),
+        "about 1/11 of the keys should move, got {frac}"
+    );
 }
 
 #[test]
@@ -151,7 +159,9 @@ fn should_return_distinct_replica_nodes_starting_with_the_primary() {
 #[test]
 fn should_promote_the_next_replica_when_the_primary_leaves() {
     let r = sut!(ring(100, 6));
-    let before: Vec<(String, Vec<String>)> = (0..2_000).map(|k| (format!("key-{k}"), r.nodes_for(&format!("key-{k}"), 3))).collect();
+    let before: Vec<(String, Vec<String>)> = (0..2_000)
+        .map(|k| (format!("key-{k}"), r.nodes_for(&format!("key-{k}"), 3)))
+        .collect();
 
     r.remove_node("node-2");
 
@@ -179,7 +189,10 @@ fn should_give_heavier_nodes_proportionally_more_keys() {
 #[test]
 fn should_answer_lookups_while_nodes_join_and_leave() {
     let r = sut!(ring(100, 5));
-    let ever_seen: HashSet<String> = (0..5).map(|i| format!("node-{i}")).chain((0..20).map(|i| format!("dyn-{i}"))).collect();
+    let ever_seen: HashSet<String> = (0..5)
+        .map(|i| format!("node-{i}"))
+        .chain((0..20).map(|i| format!("dyn-{i}")))
+        .collect();
     let bad = AtomicUsize::new(0);
 
     run_concurrently(8, |t| {
@@ -193,7 +206,9 @@ fn should_answer_lookups_while_nodes_join_and_leave() {
         for i in 0..20_000 {
             let key = format!("key-{i}");
             let owner = r.node_for(&key);
-            if owner.map(|o| !ever_seen.contains(&o)).unwrap_or(true) || r.nodes_for(&key, 3).is_empty() {
+            if owner.map(|o| !ever_seen.contains(&o)).unwrap_or(true)
+                || r.nodes_for(&key, 3).is_empty()
+            {
                 bad.fetch_add(1, Ordering::SeqCst);
             }
         }

@@ -72,9 +72,18 @@ fn should_keep_direct_history_in_send_order_for_both_sides() {
     c.send_direct("ann", "bob", "three").unwrap();
     c.send_direct("cy", "ann", "other chat").unwrap();
 
-    assert_eq!(texts(c.history("ann", "dm:ann:bob").unwrap()), strs(&["ann:one", "bob:two", "ann:three"]));
-    assert_eq!(texts(c.history("bob", "dm:ann:bob").unwrap()), strs(&["ann:one", "bob:two", "ann:three"]));
-    assert_eq!(texts(c.history("ann", "dm:ann:cy").unwrap()), strs(&["cy:other chat"]));
+    assert_eq!(
+        texts(c.history("ann", "dm:ann:bob").unwrap()),
+        strs(&["ann:one", "bob:two", "ann:three"])
+    );
+    assert_eq!(
+        texts(c.history("bob", "dm:ann:bob").unwrap()),
+        strs(&["ann:one", "bob:two", "ann:three"])
+    );
+    assert_eq!(
+        texts(c.history("ann", "dm:ann:cy").unwrap()),
+        strs(&["cy:other chat"])
+    );
     assert!(c.history("dee", "dm:ann:bob").unwrap().is_empty());
 }
 
@@ -113,8 +122,14 @@ fn should_only_let_members_send_and_only_the_admin_manage_members() {
 
     assert_eq!(c.send_group("cy", "g", "x"), Err(ChatError::NotAllowed));
     assert_eq!(c.add_member("bob", "g", "cy"), Err(ChatError::NotAllowed));
-    assert_eq!(c.remove_member("bob", "g", "ann"), Err(ChatError::NotAllowed));
-    assert_eq!(c.remove_member("ann", "g", "ann"), Err(ChatError::NotAllowed));
+    assert_eq!(
+        c.remove_member("bob", "g", "ann"),
+        Err(ChatError::NotAllowed)
+    );
+    assert_eq!(
+        c.remove_member("ann", "g", "ann"),
+        Err(ChatError::NotAllowed)
+    );
     assert_eq!(c.send_group("ann", "nope", "x"), Err(ChatError::Unknown));
     c.add_member("ann", "g", "cy").unwrap();
     c.send_group("cy", "g", "now I can").unwrap();
@@ -129,8 +144,14 @@ fn should_show_new_members_only_messages_sent_after_they_joined() {
     c.add_member("ann", "g", "cy").unwrap();
     c.send_group("bob", "g", "after").unwrap();
 
-    assert_eq!(texts(c.history("cy", "group:g").unwrap()), strs(&["bob:after"]));
-    assert_eq!(texts(c.history("bob", "group:g").unwrap()), strs(&["ann:before", "bob:after"]));
+    assert_eq!(
+        texts(c.history("cy", "group:g").unwrap()),
+        strs(&["bob:after"])
+    );
+    assert_eq!(
+        texts(c.history("bob", "group:g").unwrap()),
+        strs(&["ann:before", "bob:after"])
+    );
 }
 
 #[test]
@@ -142,8 +163,14 @@ fn should_stop_receiving_after_leaving_but_keep_what_was_already_there() {
     c.remove_member("cy", "g", "cy").unwrap(); // leaves
     c.send_group("ann", "g", "two").unwrap();
 
-    assert_eq!(texts(c.history("cy", "group:g").unwrap()), strs(&["ann:one"]));
-    assert_eq!(texts(c.history("bob", "group:g").unwrap()), strs(&["ann:one", "ann:two"]));
+    assert_eq!(
+        texts(c.history("cy", "group:g").unwrap()),
+        strs(&["ann:one"])
+    );
+    assert_eq!(
+        texts(c.history("bob", "group:g").unwrap()),
+        strs(&["ann:one", "ann:two"])
+    );
     assert_eq!(c.send_group("cy", "g", "x"), Err(ChatError::NotAllowed));
     assert_eq!(c.unread_count("cy", "group:g"), Ok(1));
 }
@@ -180,7 +207,8 @@ fn should_give_every_member_the_same_order_under_concurrent_senders() {
 
     run_concurrently(8, |t| {
         for i in 0..100 {
-            c.send_group(users[t % 4], "g", &format!("t{t}-{i}")).unwrap();
+            c.send_group(users[t % 4], "g", &format!("t{t}-{i}"))
+                .unwrap();
         }
     });
 
@@ -221,7 +249,12 @@ fn should_deliver_every_message_exactly_once_while_users_connect_and_disconnect(
         }
     });
 
-    let ids: HashSet<String> = c.history("bob", "dm:ann:bob").unwrap().iter().map(|h| h.split('|').next().unwrap().to_string()).collect();
+    let ids: HashSet<String> = c
+        .history("bob", "dm:ann:bob")
+        .unwrap()
+        .iter()
+        .map(|h| h.split('|').next().unwrap().to_string())
+        .collect();
     assert_eq!(ids.len(), 800);
     for id in &ids {
         assert_eq!(c.status_of(id), Ok("DELIVERED".to_string()));
@@ -237,7 +270,12 @@ fn should_stay_correct_over_100_runs() {
 
         run_concurrently(4, |t| {
             for i in 0..20 {
-                c.send_group(if t % 2 == 0 { "ann" } else { "bob" }, "g", &format!("x{t}{i}")).unwrap();
+                c.send_group(
+                    if t % 2 == 0 { "ann" } else { "bob" },
+                    "g",
+                    &format!("x{t}{i}"),
+                )
+                .unwrap();
             }
         });
 

@@ -14,8 +14,14 @@ fn should_schedule_and_list_an_agenda_sorted_by_start() {
     c.schedule("ann", "lunch", 720, 780, &[]).unwrap();
     c.schedule("bob", "1:1", 540, 570, &["ann"]).unwrap();
 
-    assert_eq!(c.agenda("ann", 0, 2_000), strs(&["540-570:1:1", "600-630:standup", "720-780:lunch"]));
-    assert_eq!(c.agenda("bob", 0, 2_000), strs(&["540-570:1:1", "600-630:standup"]));
+    assert_eq!(
+        c.agenda("ann", 0, 2_000),
+        strs(&["540-570:1:1", "600-630:standup", "720-780:lunch"])
+    );
+    assert_eq!(
+        c.agenda("bob", 0, 2_000),
+        strs(&["540-570:1:1", "600-630:standup"])
+    );
     assert!(c.agenda("cy", 0, 2_000).is_empty());
 }
 
@@ -46,7 +52,10 @@ fn should_refuse_an_event_that_conflicts_for_any_participant_and_create_nothing(
     let c = sut!(create());
     c.schedule("bob", "busy", 100, 200, &[]).unwrap();
 
-    assert_eq!(c.schedule("ann", "meeting", 150, 250, &["bob", "cy"]), Err(CalError::Conflict));
+    assert_eq!(
+        c.schedule("ann", "meeting", 150, 250, &["bob", "cy"]),
+        Err(CalError::Conflict)
+    );
 
     assert!(c.agenda("ann", 0, 1_000).is_empty());
     assert!(c.agenda("cy", 0, 1_000).is_empty());
@@ -56,11 +65,26 @@ fn should_refuse_an_event_that_conflicts_for_any_participant_and_create_nothing(
 fn should_reject_invalid_events() {
     let c = sut!(create());
 
-    assert_eq!(c.schedule("ann", "x", 100, 100, &[]), Err(CalError::InvalidInput));
-    assert_eq!(c.schedule("ann", "x", 200, 100, &[]), Err(CalError::InvalidInput));
-    assert_eq!(c.schedule("ann", " ", 100, 200, &[]), Err(CalError::InvalidInput));
-    assert_eq!(c.schedule("ann", "x", 100, 200, &["bob", "bob"]), Err(CalError::InvalidInput));
-    assert_eq!(c.schedule("ann", "x", 100, 200, &["ann"]), Err(CalError::InvalidInput));
+    assert_eq!(
+        c.schedule("ann", "x", 100, 100, &[]),
+        Err(CalError::InvalidInput)
+    );
+    assert_eq!(
+        c.schedule("ann", "x", 200, 100, &[]),
+        Err(CalError::InvalidInput)
+    );
+    assert_eq!(
+        c.schedule("ann", " ", 100, 200, &[]),
+        Err(CalError::InvalidInput)
+    );
+    assert_eq!(
+        c.schedule("ann", "x", 100, 200, &["bob", "bob"]),
+        Err(CalError::InvalidInput)
+    );
+    assert_eq!(
+        c.schedule("ann", "x", 100, 200, &["ann"]),
+        Err(CalError::InvalidInput)
+    );
 }
 
 #[test]
@@ -92,19 +116,34 @@ fn should_let_an_attendee_decline_without_affecting_others() {
 #[test]
 fn should_schedule_recurring_events_all_or_nothing() {
     let c = sut!(create());
-    c.schedule("bob", "blocker", 10_000 + 2 * 1_440, 10_060 + 2 * 1_440, &[]).unwrap(); // hits the 3rd occurrence
+    c.schedule(
+        "bob",
+        "blocker",
+        10_000 + 2 * 1_440,
+        10_060 + 2 * 1_440,
+        &[],
+    )
+    .unwrap(); // hits the 3rd occurrence
 
-    assert_eq!(c.schedule_recurring("ann", "daily", 10_000, 10_030, &["bob"], 1_440, 5), Err(CalError::Conflict));
+    assert_eq!(
+        c.schedule_recurring("ann", "daily", 10_000, 10_030, &["bob"], 1_440, 5),
+        Err(CalError::Conflict)
+    );
     assert!(c.agenda("ann", 0, 100_000).is_empty());
 
-    let ids = c.schedule_recurring("ann", "daily", 10_000, 10_030, &["cy"], 1_440, 5).unwrap();
+    let ids = c
+        .schedule_recurring("ann", "daily", 10_000, 10_030, &["cy"], 1_440, 5)
+        .unwrap();
     let mut unique = ids.clone();
     unique.sort();
     unique.dedup();
     assert_eq!(ids.len(), 5);
     assert_eq!(unique.len(), 5);
     assert_eq!(c.agenda("cy", 0, 100_000).len(), 5);
-    assert_eq!(c.agenda("ann", 0, 100_000)[1], format!("{}-{}:daily", 10_000 + 1_440, 10_030 + 1_440));
+    assert_eq!(
+        c.agenda("ann", 0, 100_000)[1],
+        format!("{}-{}:daily", 10_000 + 1_440, 10_030 + 1_440)
+    );
 }
 
 #[test]
@@ -114,9 +153,18 @@ fn should_find_common_free_slots() {
     c.schedule("bob", "b", 100, 180, &[]).unwrap();
     c.schedule("bob", "c", 240, 260, &[]).unwrap();
 
-    assert_eq!(c.common_free_slots(&["ann", "bob"], 0, 300, 30), strs(&["0-60", "180-240", "260-300"]));
-    assert_eq!(c.common_free_slots(&["ann", "bob"], 0, 300, 60), strs(&["0-60", "180-240"]));
-    assert_eq!(c.common_free_slots(&["ann"], 0, 300, 100), strs(&["120-300"]));
+    assert_eq!(
+        c.common_free_slots(&["ann", "bob"], 0, 300, 30),
+        strs(&["0-60", "180-240", "260-300"])
+    );
+    assert_eq!(
+        c.common_free_slots(&["ann", "bob"], 0, 300, 60),
+        strs(&["0-60", "180-240"])
+    );
+    assert_eq!(
+        c.common_free_slots(&["ann"], 0, 300, 100),
+        strs(&["120-300"])
+    );
     assert!(c.common_free_slots(&["ann", "bob"], 0, 300, 200).is_empty());
 }
 
@@ -126,7 +174,11 @@ fn should_let_exactly_one_of_two_crossing_meetings_win() {
         let c = sut!(create());
 
         let results = collect_concurrently(2, |t| {
-            let (org, att) = if t == 0 { ("ann", "bob") } else { ("bob", "ann") };
+            let (org, att) = if t == 0 {
+                ("ann", "bob")
+            } else {
+                ("bob", "ann")
+            };
             c.schedule(org, &format!("m{t}"), 100, 200, &[att]).is_ok()
         });
 
@@ -149,7 +201,9 @@ fn should_never_double_book_anyone_under_concurrent_scheduling() {
             let a = (s % 6) as usize;
             let b = (a + 1 + (s >> 8) as usize % 5) % 6;
             let start = ((s >> 16) % 20) * 30;
-            if c.schedule(people[a], "m", start, start + 30, &[people[b]]).is_ok() {
+            if c.schedule(people[a], "m", start, start + 30, &[people[b]])
+                .is_ok()
+            {
                 accepted.fetch_add(1, Ordering::SeqCst);
             }
         }
@@ -160,12 +214,32 @@ fn should_never_double_book_anyone_under_concurrent_scheduling() {
         let agenda = c.agenda(p, 0, 10_000);
         entries += agenda.len();
         for w in agenda.windows(2) {
-            let prev_end: u64 = w[0].split(':').next().unwrap().split('-').nth(1).unwrap().parse().unwrap();
-            let start: u64 = w[1].split(':').next().unwrap().split('-').next().unwrap().parse().unwrap();
+            let prev_end: u64 = w[0]
+                .split(':')
+                .next()
+                .unwrap()
+                .split('-')
+                .nth(1)
+                .unwrap()
+                .parse()
+                .unwrap();
+            let start: u64 = w[1]
+                .split(':')
+                .next()
+                .unwrap()
+                .split('-')
+                .next()
+                .unwrap()
+                .parse()
+                .unwrap();
             assert!(start >= prev_end, "{p} double booked");
         }
     }
-    assert_eq!(entries, accepted.load(Ordering::SeqCst) * 2, "each accepted meeting has exactly two participants");
+    assert_eq!(
+        entries,
+        accepted.load(Ordering::SeqCst) * 2,
+        "each accepted meeting has exactly two participants"
+    );
 }
 
 #[test]
@@ -182,8 +256,13 @@ fn should_stay_correct_over_100_runs() {
         });
 
         let w = wins.load(Ordering::SeqCst);
-        assert!((1..=3).contains(&w), "run {run}: at most 3 disjoint pairs fit in a ring of 6, got {w}");
-        let total: usize = (0..6).map(|t| c.agenda(&format!("p{t}"), 0, 100).len()).sum();
+        assert!(
+            (1..=3).contains(&w),
+            "run {run}: at most 3 disjoint pairs fit in a ring of 6, got {w}"
+        );
+        let total: usize = (0..6)
+            .map(|t| c.agenda(&format!("p{t}"), 0, 100).len())
+            .sum();
         assert_eq!(total, w * 2, "run {run}");
     }
 }

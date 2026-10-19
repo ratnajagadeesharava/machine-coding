@@ -11,7 +11,18 @@ fn should_handle_a_thousand_jobs_over_a_day() {
     let runs = Arc::new(AtomicUsize::new(0));
     for i in 0..1_000 {
         let runs = runs.clone();
-        s.define(&format!("job{i}"), &format!("*/{} * *", 1 + i % 60), Arc::new(move || { runs.fetch_add(1, Ordering::SeqCst); Ok(()) }), 1, 1_000, 1_000).unwrap();
+        s.define(
+            &format!("job{i}"),
+            &format!("*/{} * *", 1 + i % 60),
+            Arc::new(move || {
+                runs.fetch_add(1, Ordering::SeqCst);
+                Ok(())
+            }),
+            1,
+            1_000,
+            1_000,
+        )
+        .unwrap();
     }
 
     for _ in 1..=1_440 {
@@ -28,7 +39,18 @@ fn should_jump_over_weeks_of_downtime_with_one_run_per_job() {
     let s = sut!(create(clock.as_clock()));
     let runs = Arc::new(AtomicUsize::new(0));
     let r = runs.clone();
-    s.define("j", "* * *", Arc::new(move || { r.fetch_add(1, Ordering::SeqCst); Ok(()) }), 1, 1_000, 1_000).unwrap();
+    s.define(
+        "j",
+        "* * *",
+        Arc::new(move || {
+            r.fetch_add(1, Ordering::SeqCst);
+            Ok(())
+        }),
+        1,
+        1_000,
+        1_000,
+    )
+    .unwrap();
 
     clock.advance(21 * 1_440 * 60_000);
 

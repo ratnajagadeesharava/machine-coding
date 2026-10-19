@@ -16,7 +16,10 @@ fn should_resolve_a_code_back_to_its_url() {
     let code = s.shorten("https://example.com/a?b=c#d").unwrap();
 
     assert!(!code.is_empty() && code.chars().all(|c| c.is_ascii_alphanumeric()));
-    assert_eq!(s.resolve(&code), Some("https://example.com/a?b=c#d".to_string()));
+    assert_eq!(
+        s.resolve(&code),
+        Some("https://example.com/a?b=c#d".to_string())
+    );
 }
 
 #[test]
@@ -38,7 +41,10 @@ fn should_reject_invalid_urls() {
     assert_eq!(s.shorten(""), Err(ShortenError::InvalidUrl));
     assert_eq!(s.shorten("   "), Err(ShortenError::InvalidUrl));
     assert_eq!(s.shorten("example.com/a"), Err(ShortenError::InvalidUrl));
-    assert_eq!(s.shorten("ftp://example.com/a"), Err(ShortenError::InvalidUrl));
+    assert_eq!(
+        s.shorten("ftp://example.com/a"),
+        Err(ShortenError::InvalidUrl)
+    );
 }
 
 #[test]
@@ -62,8 +68,14 @@ fn should_return_none_for_unknown_codes() {
 fn should_support_custom_aliases() {
     let s = sut!(create());
 
-    assert_eq!(s.shorten_with_alias(&url(1), "my-link_1"), Ok("my-link_1".to_string()));
-    assert_eq!(s.shorten_with_alias(&url(1), "my-link_1"), Ok("my-link_1".to_string()));
+    assert_eq!(
+        s.shorten_with_alias(&url(1), "my-link_1"),
+        Ok("my-link_1".to_string())
+    );
+    assert_eq!(
+        s.shorten_with_alias(&url(1), "my-link_1"),
+        Ok("my-link_1".to_string())
+    );
     assert_eq!(s.resolve("my-link_1"), Some(url(1)));
 }
 
@@ -73,12 +85,24 @@ fn should_reject_bad_or_taken_aliases() {
     s.shorten_with_alias(&url(1), "taken").unwrap();
     let generated = s.shorten(&url(2)).unwrap();
 
-    assert_eq!(s.shorten_with_alias(&url(3), "taken"), Err(ShortenError::AliasTaken));
+    assert_eq!(
+        s.shorten_with_alias(&url(3), "taken"),
+        Err(ShortenError::AliasTaken)
+    );
     // a short generated code is rejected either as a bad alias or as a taken one
     assert!(s.shorten_with_alias(&url(3), &generated).is_err());
-    assert_eq!(s.shorten_with_alias(&url(3), "ab"), Err(ShortenError::InvalidAlias));
-    assert_eq!(s.shorten_with_alias(&url(3), "has space"), Err(ShortenError::InvalidAlias));
-    assert_eq!(s.shorten_with_alias(&url(3), &"x".repeat(21)), Err(ShortenError::InvalidAlias));
+    assert_eq!(
+        s.shorten_with_alias(&url(3), "ab"),
+        Err(ShortenError::InvalidAlias)
+    );
+    assert_eq!(
+        s.shorten_with_alias(&url(3), "has space"),
+        Err(ShortenError::InvalidAlias)
+    );
+    assert_eq!(
+        s.shorten_with_alias(&url(3), &"x".repeat(21)),
+        Err(ShortenError::InvalidAlias)
+    );
     assert_eq!(s.resolve("taken"), Some(url(1)));
 }
 
@@ -116,7 +140,9 @@ fn should_give_every_url_its_own_code_under_concurrent_shortening() {
     let s = sut!(create());
 
     let codes = collect_concurrently(16, |t| {
-        (0..2_000).map(|i| s.shorten(&url(t * 2_000 + i)).unwrap()).collect::<Vec<_>>()
+        (0..2_000)
+            .map(|i| s.shorten(&url(t * 2_000 + i)).unwrap())
+            .collect::<Vec<_>>()
     });
 
     let all: HashSet<&String> = codes.iter().flatten().collect();

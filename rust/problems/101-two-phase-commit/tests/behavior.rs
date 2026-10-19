@@ -38,20 +38,40 @@ impl Cluster {
         for p in PARTICIPANTS {
             participants.insert(p.to_string(), Self::start_participant(&net, &logs, p)?);
         }
-        Some(Cluster { net, logs, participants, coordinator })
+        Some(Cluster {
+            net,
+            logs,
+            participants,
+            coordinator,
+        })
     }
 
-    fn start_coordinator(net: &SimNet, logs: &HashMap<String, Log>) -> Option<Arc<dyn CoordinatorNode>> {
+    fn start_coordinator(
+        net: &SimNet,
+        logs: &HashMap<String, Log>,
+    ) -> Option<Arc<dyn CoordinatorNode>> {
         let node = create_coordinator("K", &PARTICIPANTS, net.sender("K"), logs["K"].clone())?;
         let (n1, n2) = (node.clone(), node.clone());
-        net.register("K", Arc::new(move |f, p| n1.on_message(f, p)), Arc::new(move |t| n2.on_tick(t)));
+        net.register(
+            "K",
+            Arc::new(move |f, p| n1.on_message(f, p)),
+            Arc::new(move |t| n2.on_tick(t)),
+        );
         Some(node)
     }
 
-    fn start_participant(net: &SimNet, logs: &HashMap<String, Log>, p: &str) -> Option<Arc<dyn ParticipantNode>> {
+    fn start_participant(
+        net: &SimNet,
+        logs: &HashMap<String, Log>,
+        p: &str,
+    ) -> Option<Arc<dyn ParticipantNode>> {
         let node = create_participant(p, "K", net.sender(p), logs[p].clone())?;
         let (n1, n2) = (node.clone(), node.clone());
-        net.register(p, Arc::new(move |f, m| n1.on_message(f, m)), Arc::new(move |t| n2.on_tick(t)));
+        net.register(
+            p,
+            Arc::new(move |f, m| n1.on_message(f, m)),
+            Arc::new(move |t| n2.on_tick(t)),
+        );
         Some(node)
     }
 
@@ -69,7 +89,8 @@ impl Cluster {
     }
 
     fn await_outcome(&self, tx: &str, max_ms: u64) -> Outcome {
-        self.net.run_until(&|| self.outcome(tx) != Outcome::Pending, max_ms);
+        self.net
+            .run_until(&|| self.outcome(tx) != Outcome::Pending, max_ms);
         self.outcome(tx)
     }
 
@@ -95,7 +116,9 @@ macro_rules! cluster {
 fn should_commit_across_participants_when_everyone_votes_yes() {
     let c = cluster!(1);
 
-    c.coordinator.begin("t1", &[("A", &[("x", "1")]), ("B", &[("y", "2")])]).unwrap();
+    c.coordinator
+        .begin("t1", &[("A", &[("x", "1")]), ("B", &[("y", "2")])])
+        .unwrap();
 
     assert_eq!(c.await_outcome("t1", 1_000), Outcome::Committed);
     c.net.run(300);
@@ -110,12 +133,24 @@ fn should_commit_across_participants_when_everyone_votes_yes() {
 fn should_abort_everywhere_when_one_participant_votes_no() {
     let c = cluster!(2);
 
-    c.coordinator.begin("t1", &[("A", &[("x", "1")]), ("B", &[("y", "REJECT")]), ("C", &[("z", "3")])]).unwrap();
+    c.coordinator
+        .begin(
+            "t1",
+            &[
+                ("A", &[("x", "1")]),
+                ("B", &[("y", "REJECT")]),
+                ("C", &[("z", "3")]),
+            ],
+        )
+        .unwrap();
 
     assert_eq!(c.await_outcome("t1", 1_000), Outcome::Aborted);
     c.net.run(500);
     assert!(!c.has("A", "x") && !c.has("C", "z"));
-    assert!(!c.participants["A"].is_locked("x"), "the YES voters release their locks");
+    assert!(
+        !c.participants["A"].is_locked("x"),
+        "the YES voters release their locks"
+    );
     assert!(!c.participants["C"].is_locked("z"));
     assert!(c.quiet());
 }
@@ -124,12 +159,16 @@ fn should_abort_everywhere_when_one_participant_votes_no() {
 fn should_hold_locks_between_vote_and_decision_and_refuse_a_conflicting_transaction() {
     let c = cluster!(3);
     c.net.set_latency(40, 40); // long enough to observe the window
-    c.coordinator.begin("t1", &[("A", &[("k", "from-t1")])]).unwrap();
+    c.coordinator
+        .begin("t1", &[("A", &[("k", "from-t1")])])
+        .unwrap();
     c.net.run(60); // PREPARE has arrived, the YES is on its way
 
     assert!(c.participants["A"].is_locked("k"));
     assert_eq!(c.participants["A"].in_doubt(), vec!["t1".to_string()]);
-    c.coordinator.begin("t2", &[("A", &[("k", "from-t2")])]).unwrap();
+    c.coordinator
+        .begin("t2", &[("A", &[("k", "from-t2")])])
+        .unwrap();
 
     assert_eq!(c.await_outcome("t1", 1_000), Outcome::Committed);
     assert_eq!(c.await_outcome("t2", 1_000), Outcome::Aborted);
@@ -140,11 +179,15 @@ fn should_hold_locks_between_vote_and_decision_and_refuse_a_conflicting_transact
 #[test]
 fn should_allow_a_second_transaction_on_the_same_key_once_the_first_is_done() {
     let c = cluster!(4);
-    c.coordinator.begin("t1", &[("A", &[("k", "one")])]).unwrap();
+    c.coordinator
+        .begin("t1", &[("A", &[("k", "one")])])
+        .unwrap();
     c.await_outcome("t1", 1_000);
     c.net.run(300);
 
-    c.coordinator.begin("t2", &[("A", &[("k", "two")])]).unwrap();
+    c.coordinator
+        .begin("t2", &[("A", &[("k", "two")])])
+        .unwrap();
 
     assert_eq!(c.await_outcome("t2", 1_000), Outcome::Committed);
     c.net.run(300);
@@ -156,19 +199,30 @@ fn should_abort_after_half_a_second_when_a_participant_never_answers() {
     let c = cluster!(5);
     c.net.crash("B");
 
-    c.coordinator.begin("t1", &[("A", &[("x", "1")]), ("B", &[("y", "2")])]).unwrap();
+    c.coordinator
+        .begin("t1", &[("A", &[("x", "1")]), ("B", &[("y", "2")])])
+        .unwrap();
 
-    assert_eq!(c.await_outcome("t1", 400), Outcome::Pending, "not before the 500 ms vote timeout");
+    assert_eq!(
+        c.await_outcome("t1", 400),
+        Outcome::Pending,
+        "not before the 500 ms vote timeout"
+    );
     assert_eq!(c.await_outcome("t1", 400), Outcome::Aborted);
     c.net.run(500);
-    assert!(!c.participants["A"].is_locked("x"), "A voted YES and must be told to release");
+    assert!(
+        !c.participants["A"].is_locked("x"),
+        "A voted YES and must be told to release"
+    );
 }
 
 #[test]
 fn should_tell_the_late_participant_the_outcome_when_it_comes_back() {
     let c = cluster!(6);
     c.net.crash("B");
-    c.coordinator.begin("t1", &[("A", &[("x", "1")]), ("B", &[("y", "2")])]).unwrap();
+    c.coordinator
+        .begin("t1", &[("A", &[("x", "1")]), ("B", &[("y", "2")])])
+        .unwrap();
     c.await_outcome("t1", 1_000);
     c.net.run(1_000);
 
@@ -184,14 +238,23 @@ fn should_tell_the_late_participant_the_outcome_when_it_comes_back() {
 fn should_keep_a_yes_voters_transaction_in_doubt_until_it_learns_the_commit() {
     let c = cluster!(7);
     c.net.set_latency(10, 10);
-    c.coordinator.begin("t1", &[("A", &[("x", "1")]), ("B", &[("y", "2")])]).unwrap();
-    c.net.run_until(&|| c.participants["B"].in_doubt().contains(&"t1".to_string()), 500); // B has voted YES
+    c.coordinator
+        .begin("t1", &[("A", &[("x", "1")]), ("B", &[("y", "2")])])
+        .unwrap();
+    c.net.run_until(
+        &|| c.participants["B"].in_doubt().contains(&"t1".to_string()),
+        500,
+    ); // B has voted YES
     c.net.crash("B");
 
     assert_eq!(c.await_outcome("t1", 1_000), Outcome::Committed);
     c.net.run(1_000);
     assert_eq!(c.participants["A"].get("x"), Some("1".to_string()));
-    assert_eq!(c.participants["B"].in_doubt(), vec!["t1".to_string()], "B is still in doubt and may not decide alone");
+    assert_eq!(
+        c.participants["B"].in_doubt(),
+        vec!["t1".to_string()],
+        "B is still in doubt and may not decide alone"
+    );
     assert!(c.participants["B"].is_locked("y"));
 
     c.net.recover("B");
@@ -202,11 +265,17 @@ fn should_keep_a_yes_voters_transaction_in_doubt_until_it_learns_the_commit() {
 }
 
 #[test]
-fn should_rebuild_a_participants_locks_and_doubt_from_its_log_after_a_restart_and_finish_the_commit() {
+fn should_rebuild_a_participants_locks_and_doubt_from_its_log_after_a_restart_and_finish_the_commit(
+) {
     let mut c = cluster!(8);
     c.net.set_latency(10, 10);
-    c.coordinator.begin("t1", &[("A", &[("x", "1")]), ("B", &[("y", "2")])]).unwrap();
-    c.net.run_until(&|| c.participants["B"].in_doubt().contains(&"t1".to_string()), 500);
+    c.coordinator
+        .begin("t1", &[("A", &[("x", "1")]), ("B", &[("y", "2")])])
+        .unwrap();
+    c.net.run_until(
+        &|| c.participants["B"].in_doubt().contains(&"t1".to_string()),
+        500,
+    );
     c.net.crash("B");
     c.await_outcome("t1", 1_000);
     c.net.run(500);
@@ -224,20 +293,31 @@ fn should_rebuild_a_participants_locks_and_doubt_from_its_log_after_a_restart_an
 fn should_block_participants_while_the_coordinator_is_gone_and_finish_when_it_returns() {
     let mut c = cluster!(9);
     c.net.set_latency(10, 10);
-    c.coordinator.begin("t1", &[("A", &[("x", "1")]), ("B", &[("y", "2")])]).unwrap();
+    c.coordinator
+        .begin("t1", &[("A", &[("x", "1")]), ("B", &[("y", "2")])])
+        .unwrap();
     // the moment the commit decision is logged, the coordinator dies before the decision can be delivered
-    c.net.run_until(&|| c.outcome("t1") == Outcome::Committed, 1_000);
+    c.net
+        .run_until(&|| c.outcome("t1") == Outcome::Committed, 1_000);
     c.net.partition(&[&["K"], &["A", "B", "C"]]);
     c.net.crash("K");
     c.net.run(2_000);
 
-    assert_eq!(c.participants["A"].in_doubt(), vec!["t1".to_string()], "2PC blocks: A cannot decide without K");
+    assert_eq!(
+        c.participants["A"].in_doubt(),
+        vec!["t1".to_string()],
+        "2PC blocks: A cannot decide without K"
+    );
     assert!(c.participants["A"].is_locked("x"));
     assert!(!c.has("A", "x"));
 
     c.net.heal();
     c.restart_coordinator(); // new instance, same log
-    assert_eq!(c.outcome("t1"), Outcome::Committed, "the decision survived in the log");
+    assert_eq!(
+        c.outcome("t1"),
+        Outcome::Committed,
+        "the decision survived in the log"
+    );
     c.net.run(1_000);
 
     assert_eq!(c.participants["A"].get("x"), Some("1".to_string()));
@@ -249,7 +329,9 @@ fn should_block_participants_while_the_coordinator_is_gone_and_finish_when_it_re
 fn should_presume_abort_when_the_coordinator_restarts_without_having_decided() {
     let mut c = cluster!(10);
     c.net.set_latency(10, 10);
-    c.coordinator.begin("t1", &[("A", &[("x", "1")]), ("B", &[("y", "2")])]).unwrap();
+    c.coordinator
+        .begin("t1", &[("A", &[("x", "1")]), ("B", &[("y", "2")])])
+        .unwrap();
     c.net.run(15); // PREPAREs delivered, no decision yet
     c.net.crash("K");
     c.net.run(100);
@@ -269,13 +351,17 @@ fn should_answer_an_inquiry_about_an_unknown_transaction_without_breaking_anythi
     c.coordinator.begin("t1", &[("A", &[("x", "1")])]).unwrap();
     c.await_outcome("t1", 1_000);
     // a brand-new coordinator with an EMPTY log knows nothing about t1
-    c.logs.insert("K".to_string(), Arc::new(MemoryLog::default()));
+    c.logs
+        .insert("K".to_string(), Arc::new(MemoryLog::default()));
     c.restart_coordinator();
 
     c.net.run(1_000);
 
     assert_eq!(c.participants["A"].get("x"), Some("1".to_string()));
-    assert_eq!(c.coordinator.outcome("t1"), Err(TxError::UnknownTransaction));
+    assert_eq!(
+        c.coordinator.outcome("t1"),
+        Err(TxError::UnknownTransaction)
+    );
 }
 
 #[test]
@@ -283,10 +369,22 @@ fn should_reject_invalid_begin_calls() {
     let c = cluster!(12);
     c.coordinator.begin("t1", &[("A", &[("x", "1")])]).unwrap();
 
-    assert_eq!(c.coordinator.begin("t1", &[("A", &[("y", "1")])]), Err(TxError::InvalidTransaction));
-    assert_eq!(c.coordinator.begin("t2", &[]), Err(TxError::InvalidTransaction));
-    assert_eq!(c.coordinator.begin("t3", &[("Z", &[("y", "1")])]), Err(TxError::InvalidTransaction));
-    assert_eq!(c.coordinator.outcome("nope"), Err(TxError::UnknownTransaction));
+    assert_eq!(
+        c.coordinator.begin("t1", &[("A", &[("y", "1")])]),
+        Err(TxError::InvalidTransaction)
+    );
+    assert_eq!(
+        c.coordinator.begin("t2", &[]),
+        Err(TxError::InvalidTransaction)
+    );
+    assert_eq!(
+        c.coordinator.begin("t3", &[("Z", &[("y", "1")])]),
+        Err(TxError::InvalidTransaction)
+    );
+    assert_eq!(
+        c.coordinator.outcome("nope"),
+        Err(TxError::UnknownTransaction)
+    );
 }
 
 #[test]
@@ -296,7 +394,12 @@ fn should_decide_every_transaction_consistently_on_a_lossy_network() {
     for i in 0..30 {
         let (a, b, cc) = (format!("a{i}"), format!("b{i}"), format!("c{i}"));
         let v = format!("v{i}");
-        c.coordinator.begin(&format!("tx{i}"), &[("A", &[(&a, &v)]), ("B", &[(&b, &v)]), ("C", &[(&cc, &v)])]).unwrap();
+        c.coordinator
+            .begin(
+                &format!("tx{i}"),
+                &[("A", &[(&a, &v)]), ("B", &[(&b, &v)]), ("C", &[(&cc, &v)])],
+            )
+            .unwrap();
         c.net.run(40);
     }
     c.net.run(3_000);
@@ -305,7 +408,11 @@ fn should_decide_every_transaction_consistently_on_a_lossy_network() {
     for i in 0..30 {
         let o = c.outcome(&format!("tx{i}"));
         assert_ne!(o, Outcome::Pending, "tx{i} decided");
-        let (a, b, cc) = (c.has("A", &format!("a{i}")), c.has("B", &format!("b{i}")), c.has("C", &format!("c{i}")));
+        let (a, b, cc) = (
+            c.has("A", &format!("a{i}")),
+            c.has("B", &format!("b{i}")),
+            c.has("C", &format!("c{i}")),
+        );
         assert!(a == b && b == cc, "tx{i} atomic");
         assert_eq!(a, o == Outcome::Committed, "tx{i} outcome matches the data");
         committed += a as usize;
@@ -317,13 +424,24 @@ fn should_decide_every_transaction_consistently_on_a_lossy_network() {
 #[test]
 fn should_stay_atomic_over_100_random_crash_and_partition_schedules() {
     for seed in 0..100u64 {
-        let Some(mut c) = Cluster::new(2_000 + seed) else { return playground_support::skipped() };
+        let Some(mut c) = Cluster::new(2_000 + seed) else {
+            return playground_support::skipped();
+        };
         let mut r = Rng::new(seed);
         c.net.set_latency(1, 15);
         for i in 0..6 {
             let (a, b, cc) = (format!("a{i}"), format!("b{i}"), format!("c{i}"));
             let bv = if i % 3 == 0 { "REJECT" } else { "v" };
-            c.coordinator.begin(&format!("tx{i}"), &[("A", &[(&a, "v")]), ("B", &[(&b, bv)]), ("C", &[(&cc, "v")])]).unwrap();
+            c.coordinator
+                .begin(
+                    &format!("tx{i}"),
+                    &[
+                        ("A", &[(&a, "v")]),
+                        ("B", &[(&b, bv)]),
+                        ("C", &[(&cc, "v")]),
+                    ],
+                )
+                .unwrap();
             c.net.run(r.below(150));
             let victim = ["A", "B", "C", "K"][r.below(4) as usize];
             match r.below(5) {
@@ -341,7 +459,10 @@ fn should_stay_atomic_over_100_random_crash_and_partition_schedules() {
                     }
                 }
                 3 => {
-                    let others: Vec<&str> = ["A", "B", "C", "K"].into_iter().filter(|x| *x != victim).collect();
+                    let others: Vec<&str> = ["A", "B", "C", "K"]
+                        .into_iter()
+                        .filter(|x| *x != victim)
+                        .collect();
                     c.net.partition(&[&[victim], &others]);
                 }
                 _ => c.net.heal(),
@@ -356,9 +477,17 @@ fn should_stay_atomic_over_100_random_crash_and_partition_schedules() {
         for i in 0..6 {
             let o = c.outcome(&format!("tx{i}"));
             assert_ne!(o, Outcome::Pending, "seed {seed} tx{i} decided");
-            let (a, b, cc) = (c.has("A", &format!("a{i}")), c.has("B", &format!("b{i}")), c.has("C", &format!("c{i}")));
+            let (a, b, cc) = (
+                c.has("A", &format!("a{i}")),
+                c.has("B", &format!("b{i}")),
+                c.has("C", &format!("c{i}")),
+            );
             assert!(a == b && b == cc, "seed {seed} tx{i} atomic ({a} {b} {cc})");
-            assert_eq!(a, o == Outcome::Committed, "seed {seed} tx{i} matches outcome {o:?}");
+            assert_eq!(
+                a,
+                o == Outcome::Committed,
+                "seed {seed} tx{i} matches outcome {o:?}"
+            );
             if i % 3 == 0 {
                 assert_eq!(o, Outcome::Aborted, "a REJECT vote can never commit");
             }

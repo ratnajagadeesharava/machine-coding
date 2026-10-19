@@ -33,7 +33,13 @@ pub trait DocStore: Send + Sync {
     ///   rules). A clean merge creates a new version with the merged content (or returns latest if the merge equals
     ///   latest); an overlapping change returns `Err(Conflict)` and creates nothing.
     /// * `Err(UnknownVersion)` if base is not in 1..=latest.
-    fn edit(&self, doc_id: &str, author: &str, base_version: usize, new_content: &str) -> Doc<usize>;
+    fn edit(
+        &self,
+        doc_id: &str,
+        author: &str,
+        base_version: usize,
+        new_content: &str,
+    ) -> Doc<usize>;
 
     /// Creates a new version holding the content of an old one (returns latest, creating nothing, if equal).
     fn restore(&self, doc_id: &str, author: &str, version: usize) -> Doc<usize>;

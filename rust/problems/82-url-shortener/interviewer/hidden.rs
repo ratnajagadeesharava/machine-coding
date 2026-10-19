@@ -23,12 +23,20 @@ fn should_not_let_aliases_collide_with_generated_codes_under_load() {
 
     run_concurrently(8, |t| {
         for i in 0..2_000 {
-            s.shorten_with_alias(&format!("https://example.com/alias/{t}/{i}"), &format!("alias-{t}-{i}")).unwrap();
-            s.shorten(&format!("https://example.com/gen/{t}/{i}")).unwrap();
+            s.shorten_with_alias(
+                &format!("https://example.com/alias/{t}/{i}"),
+                &format!("alias-{t}-{i}"),
+            )
+            .unwrap();
+            s.shorten(&format!("https://example.com/gen/{t}/{i}"))
+                .unwrap();
         }
     });
 
     for t in 0..8 {
-        assert_eq!(s.resolve(&format!("alias-{t}-5")), Some(format!("https://example.com/alias/{t}/5")));
+        assert_eq!(
+            s.resolve(&format!("alias-{t}-5")),
+            Some(format!("https://example.com/alias/{t}/5"))
+        );
     }
 }

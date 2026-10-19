@@ -7,12 +7,18 @@ fn should_handle_many_auctions_being_bid_on_at_once() {
     let clock = FakeClock::new(0);
     let a = sut!(create(clock.as_clock()));
     for i in 0..50 {
-        a.create_auction(&format!("a{i}"), "seller", 1, 0, 3_600_000).unwrap();
+        a.create_auction(&format!("a{i}"), "seller", 1, 0, 3_600_000)
+            .unwrap();
     }
 
     run_concurrently(16, |t| {
         for round in 1..=500u64 {
-            a.place_bid(&format!("a{}", round % 50), &format!("b{t}"), round * 16 + t as u64).unwrap();
+            a.place_bid(
+                &format!("a{}", round % 50),
+                &format!("b{t}"),
+                round * 16 + t as u64,
+            )
+            .unwrap();
         }
     });
 
@@ -32,5 +38,8 @@ fn should_keep_extending_while_bids_keep_arriving_in_the_last_minutes() {
         assert_eq!(a.place_bid("x", &format!("b{}", i % 2), i), Ok(true));
     }
 
-    assert_eq!(a.end_time_of("x"), Ok(clock.as_clock().now_millis() + 5 * 60_000));
+    assert_eq!(
+        a.end_time_of("x"),
+        Ok(clock.as_clock().now_millis() + 5 * 60_000)
+    );
 }

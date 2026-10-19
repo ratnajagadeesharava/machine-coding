@@ -8,7 +8,8 @@ fn should_recycle_expiring_holds_while_others_keep_booking() {
     let clock = FakeClock::new(0);
     let t = sut!(create(clock.as_clock()));
     t.add_screen("PVR", "blr", "s", 5, 10).unwrap();
-    t.add_show("sh", "PVR", "s", "m", 100_000, 60, 10, 20).unwrap();
+    t.add_show("sh", "PVR", "s", "m", 100_000, 60, 10, 20)
+        .unwrap();
     let bookings = AtomicUsize::new(0);
 
     run_concurrently(9, |u| {
@@ -27,7 +28,10 @@ fn should_recycle_expiring_holds_while_others_keep_booking() {
     });
 
     clock.advance(10 * 60_000); // every hold that is left has expired now
-    assert_eq!(t.available_seats("sh").unwrap().len() + bookings.load(Ordering::SeqCst), 50);
+    assert_eq!(
+        t.available_seats("sh").unwrap().len() + bookings.load(Ordering::SeqCst),
+        50
+    );
 }
 
 #[test]
@@ -36,7 +40,17 @@ fn should_search_across_many_shows() {
     let t = sut!(create(clock.as_clock()));
     t.add_screen("PVR", "blr", "s", 2, 2).unwrap();
     for i in 0..2_000u64 {
-        t.add_show(&format!("sh{i}"), "PVR", "s", if i % 2 == 0 { "a" } else { "b" }, 1_000 + i * 200, 100, 10, 20).unwrap();
+        t.add_show(
+            &format!("sh{i}"),
+            "PVR",
+            "s",
+            if i % 2 == 0 { "a" } else { "b" },
+            1_000 + i * 200,
+            100,
+            10,
+            20,
+        )
+        .unwrap();
     }
 
     assert_eq!(t.search_shows("blr", "a").len(), 1_000);

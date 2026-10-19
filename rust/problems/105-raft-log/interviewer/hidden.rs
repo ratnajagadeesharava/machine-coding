@@ -8,16 +8,28 @@ fn cluster(net: &SimNet, ids: &[&str], seed: u64) -> Option<HashMap<String, Arc<
     let mut nodes = HashMap::new();
     for (i, id) in ids.iter().enumerate() {
         let peers: Vec<&str> = ids.iter().copied().filter(|p| p != id).collect();
-        let node = create(id, &peers, net.sender(id), seed.wrapping_mul(7).wrapping_add(i as u64 * 13 + 1))?;
+        let node = create(
+            id,
+            &peers,
+            net.sender(id),
+            seed.wrapping_mul(7).wrapping_add(i as u64 * 13 + 1),
+        )?;
         let (n1, n2) = (node.clone(), node.clone());
-        net.register(id, Arc::new(move |f, p| n1.on_message(f, p)), Arc::new(move |t| n2.on_tick(t)));
+        net.register(
+            id,
+            Arc::new(move |f, p| n1.on_message(f, p)),
+            Arc::new(move |t| n2.on_tick(t)),
+        );
         nodes.insert(id.to_string(), node);
     }
     Some(nodes)
 }
 
 fn leader(net: &SimNet, nodes: &HashMap<String, Arc<dyn RaftNode>>) -> Option<String> {
-    let l: Vec<&String> = nodes.keys().filter(|k| !net.is_crashed(k) && nodes[*k].role() == Role::Leader).collect();
+    let l: Vec<&String> = nodes
+        .keys()
+        .filter(|k| !net.is_crashed(k) && nodes[*k].role() == Role::Leader)
+        .collect();
     if l.len() == 1 {
         Some(l[0].clone())
     } else {
@@ -29,7 +41,9 @@ fn leader(net: &SimNet, nodes: &HashMap<String, Arc<dyn RaftNode>>) -> Option<St
 fn should_replicate_a_hundred_commands_quickly_through_a_five_node_cluster() {
     let net = SimNet::new(1);
     let ids = ["a", "b", "c", "d", "e"];
-    let Some(nodes) = cluster(&net, &ids, 1) else { return skipped() };
+    let Some(nodes) = cluster(&net, &ids, 1) else {
+        return skipped();
+    };
     net.run_until(&|| leader(&net, &nodes).is_some(), 2_000);
     let l = nodes[&leader(&net, &nodes).unwrap()].clone();
     let mut expected = Vec::new();
@@ -39,14 +53,19 @@ fn should_replicate_a_hundred_commands_quickly_through_a_five_node_cluster() {
         expected.push(format!("cmd{i}"));
     }
 
-    assert!(net.run_until(&|| ids.iter().all(|i| nodes[*i].committed() == expected), 1_000));
+    assert!(net.run_until(
+        &|| ids.iter().all(|i| nodes[*i].committed() == expected),
+        1_000
+    ));
 }
 
 #[test]
 fn should_survive_a_rolling_restart_of_every_node_without_losing_committed_commands() {
     let net = SimNet::new(2);
     let ids = ["a", "b", "c"];
-    let Some(nodes) = cluster(&net, &ids, 2) else { return skipped() };
+    let Some(nodes) = cluster(&net, &ids, 2) else {
+        return skipped();
+    };
     let mut expected: Vec<String> = Vec::new();
     for round in 0..6 {
         net.run_until(&|| leader(&net, &nodes).is_some(), 3_000);
@@ -85,7 +104,9 @@ fn should_keep_safety_with_five_nodes_and_heavy_faults() {
     for seed in 0..60u64 {
         let net = SimNet::new(seed + 1_000);
         let ids = ["a", "b", "c", "d", "e"];
-        let Some(nodes) = cluster(&net, &ids, seed) else { return skipped() };
+        let Some(nodes) = cluster(&net, &ids, seed) else {
+            return skipped();
+        };
         let mut rng = Rng::new(seed + 1);
         let watch = Arc::new(Mutex::new(Watch::default()));
         let (w, ns) = (watch.clone(), nodes.clone());
@@ -94,15 +115,21 @@ fn should_keep_safety_with_five_nodes_and_heavy_faults() {
             for id in ["a", "b", "c", "d", "e"] {
                 let n = &ns[id];
                 if n.role() == Role::Leader {
-                    let prev = w.leader_of_term.entry(n.term()).or_insert_with(|| id.to_string()).clone();
+                    let prev = w
+                        .leader_of_term
+                        .entry(n.term())
+                        .or_insert_with(|| id.to_string())
+                        .clone();
                     if prev != id {
-                        w.violations.push(format!("two leaders in term {}", n.term()));
+                        w.violations
+                            .push(format!("two leaders in term {}", n.term()));
                     }
                 }
                 let now = n.committed();
                 let old = w.before.get(id).cloned().unwrap_or_default();
                 if now.len() < old.len() || now[..old.len()] != old[..] {
-                    w.violations.push(format!("{id} rewrote its committed entries"));
+                    w.violations
+                        .push(format!("{id} rewrote its committed entries"));
                 }
                 w.before.insert(id.to_string(), now.clone());
                 let common = now.len().min(w.longest.len());

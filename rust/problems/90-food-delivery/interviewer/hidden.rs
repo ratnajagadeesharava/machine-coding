@@ -35,7 +35,9 @@ fn should_handle_a_burst_of_ready_orders_with_few_partners() {
 
     run_concurrently(16, |t| {
         for _ in 0..100 {
-            let id = a.place_order(&format!("u{t}"), "r", &[("dish", 1)]).unwrap();
+            let id = a
+                .place_order(&format!("u{t}"), "r", &[("dish", 1)])
+                .unwrap();
             a.accept(&id).unwrap();
             a.mark_ready(&id).unwrap();
             while a.partner_of(&id).unwrap().is_none() {

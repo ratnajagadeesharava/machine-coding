@@ -11,12 +11,18 @@ fn should_evaluate_a_million_times_while_rules_are_being_edited() {
     run_concurrently(9, |t| {
         if t == 8 {
             for i in 0..2_000 {
-                f.add_rule("x", "tenant", &format!("t{i}"), i % 2 == 0).unwrap();
+                f.add_rule("x", "tenant", &format!("t{i}"), i % 2 == 0)
+                    .unwrap();
             }
             return;
         }
         for i in 0..125_000 {
-            f.is_enabled("x", &format!("user-{i}"), &[("tenant", &format!("t{}", i % 2_000))]).unwrap();
+            f.is_enabled(
+                "x",
+                &format!("user-{i}"),
+                &[("tenant", &format!("t{}", i % 2_000))],
+            )
+            .unwrap();
         }
     });
 

@@ -312,7 +312,10 @@ fn should_converge_after_random_operations_and_random_gossip() {
     }
     for seed in 0..100u64 {
         let mut rng = Rng::new(seed + 1);
-        let rs: Vec<Arc<dyn Replica>> = ["a", "b", "c"].iter().map(|id| replica(id).unwrap()).collect();
+        let rs: Vec<Arc<dyn Replica>> = ["a", "b", "c"]
+            .iter()
+            .map(|id| replica(id).unwrap())
+            .collect();
         let mut expected: i64 = 0;
         let mut in_flight: Vec<String> = Vec::new();
         for step in 0..150u64 {
@@ -330,7 +333,11 @@ fn should_converge_after_random_operations_and_random_gossip() {
                 }
                 3 | 4 => r.add("s", &format!("e{}", rng.below(4))),
                 5 => r.remove("s", &format!("e{}", rng.below(4))),
-                6 => r.write("r", &format!("v{}", rng.below(100)), rng.below(50) * 1000 + step),
+                6 => r.write(
+                    "r",
+                    &format!("v{}", rng.below(100)),
+                    rng.below(50) * 1000 + step,
+                ),
                 _ => in_flight.push(r.snapshot()),
             }
             if !in_flight.is_empty() && rng.below(3) == 0 {
@@ -344,7 +351,11 @@ fn should_converge_after_random_operations_and_random_gossip() {
 
         for r in &rs {
             assert_eq!(r.counter("c"), expected, "seed {seed} counter");
-            assert_eq!(sorted(r.elements("s")), sorted(rs[0].elements("s")), "seed {seed} set");
+            assert_eq!(
+                sorted(r.elements("s")),
+                sorted(rs[0].elements("s")),
+                "seed {seed} set"
+            );
             assert_eq!(r.read("r"), rs[0].read("r"), "seed {seed} register");
         }
     }

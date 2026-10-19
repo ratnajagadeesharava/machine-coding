@@ -21,7 +21,14 @@ pub type Tix<T> = Result<T, TicketError>;
 
 pub trait Ticketing: Send + Sync {
     /// A screen with `rows` rows (1..=26) of `seats_per_row` seats. `InvalidInput` if it exists.
-    fn add_screen(&self, theatre: &str, city: &str, screen: &str, rows: u32, seats_per_row: u32) -> Tix<()>;
+    fn add_screen(
+        &self,
+        theatre: &str,
+        city: &str,
+        screen: &str,
+        rows: u32,
+        seats_per_row: u32,
+    ) -> Tix<()>;
 
     /// A show on a screen. `InvalidInput` for an unknown screen, duration 0, price 0 or duplicate show id;
     /// `Conflict` if it overlaps another show on the same screen (touching is fine).

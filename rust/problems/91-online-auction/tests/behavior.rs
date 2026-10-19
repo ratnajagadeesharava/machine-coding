@@ -13,7 +13,8 @@ fn strs(v: &[&str]) -> Vec<String> {
 fn auctions() -> Option<(Arc<dyn Auctions>, FakeClock)> {
     let clock = FakeClock::new(1_000_000);
     let a = create(clock.as_clock())?;
-    a.create_auction("a1", "sam", 100, 500, 1_000_000 + 60 * MIN).unwrap();
+    a.create_auction("a1", "sam", 100, 500, 1_000_000 + 60 * MIN)
+        .unwrap();
     Some((a, clock))
 }
 
@@ -47,12 +48,24 @@ fn should_reject_invalid_bids_and_auctions() {
     let (a, clock) = sut!(auctions());
     let now = clock.as_clock().now_millis();
 
-    assert_eq!(a.place_bid("nope", "ann", 100), Err(AuctionError::InvalidInput));
+    assert_eq!(
+        a.place_bid("nope", "ann", 100),
+        Err(AuctionError::InvalidInput)
+    );
     assert_eq!(a.place_bid("a1", "ann", 0), Err(AuctionError::InvalidInput));
     assert_eq!(a.place_bid("a1", "sam", 500), Err(AuctionError::NotAllowed));
-    assert_eq!(a.create_auction("a1", "x", 1, 0, now + MIN), Err(AuctionError::InvalidInput));
-    assert_eq!(a.create_auction("a2", "x", 0, 0, now + MIN), Err(AuctionError::InvalidInput));
-    assert_eq!(a.create_auction("a3", "x", 1, 0, now), Err(AuctionError::InvalidInput));
+    assert_eq!(
+        a.create_auction("a1", "x", 1, 0, now + MIN),
+        Err(AuctionError::InvalidInput)
+    );
+    assert_eq!(
+        a.create_auction("a2", "x", 0, 0, now + MIN),
+        Err(AuctionError::InvalidInput)
+    );
+    assert_eq!(
+        a.create_auction("a3", "x", 1, 0, now),
+        Err(AuctionError::InvalidInput)
+    );
 }
 
 #[test]
@@ -62,7 +75,10 @@ fn should_not_accept_bids_after_the_end() {
 
     clock.advance(60 * MIN);
 
-    assert_eq!(a.place_bid("a1", "bob", 500), Err(AuctionError::InvalidState));
+    assert_eq!(
+        a.place_bid("a1", "bob", 500),
+        Err(AuctionError::InvalidState)
+    );
     assert_eq!(a.highest_bid("a1"), Ok(Some("ann:100".to_string())));
 }
 
@@ -77,11 +93,17 @@ fn should_extend_the_end_when_a_bid_arrives_in_the_last_five_minutes() {
 
     clock.advance(2 * MIN); // 4 minutes left
     a.place_bid("a1", "bob", 110).unwrap();
-    assert_eq!(a.end_time_of("a1"), Ok(clock.as_clock().now_millis() + 5 * MIN));
+    assert_eq!(
+        a.end_time_of("a1"),
+        Ok(clock.as_clock().now_millis() + 5 * MIN)
+    );
 
     clock.advance(4 * MIN); // the old end has passed, the new one has not
     assert_eq!(a.place_bid("a1", "ann", 120), Ok(true));
-    assert_eq!(a.end_time_of("a1"), Ok(clock.as_clock().now_millis() + 5 * MIN));
+    assert_eq!(
+        a.end_time_of("a1"),
+        Ok(clock.as_clock().now_millis() + 5 * MIN)
+    );
 }
 
 #[test]
@@ -110,7 +132,8 @@ fn should_report_the_result_only_after_the_end() {
 #[test]
 fn should_not_sell_below_the_reserve_or_without_bids() {
     let (a, clock) = sut!(auctions());
-    a.create_auction("a2", "sam", 10, 0, clock.as_clock().now_millis() + 60 * MIN).unwrap();
+    a.create_auction("a2", "sam", 10, 0, clock.as_clock().now_millis() + 60 * MIN)
+        .unwrap();
     a.place_bid("a1", "ann", 400).unwrap();
 
     clock.advance(60 * MIN);
@@ -127,7 +150,10 @@ fn should_notify_outbid_users_each_time_they_lose_the_lead() {
     a.place_bid("a1", "ann", 200).unwrap();
     a.place_bid("a1", "cy", 250).unwrap();
 
-    assert_eq!(a.notifications("ann"), strs(&["OUTBID:a1:150", "OUTBID:a1:250"]));
+    assert_eq!(
+        a.notifications("ann"),
+        strs(&["OUTBID:a1:150", "OUTBID:a1:250"])
+    );
     assert_eq!(a.notifications("bob"), strs(&["OUTBID:a1:200"]));
     assert!(a.notifications("cy").is_empty());
 }
@@ -135,20 +161,25 @@ fn should_notify_outbid_users_each_time_they_lose_the_lead() {
 #[test]
 fn should_only_cancel_without_bids_and_only_as_the_seller() {
     let (a, clock) = sut!(auctions());
-    a.create_auction("a2", "sam", 10, 0, clock.as_clock().now_millis() + 60 * MIN).unwrap();
+    a.create_auction("a2", "sam", 10, 0, clock.as_clock().now_millis() + 60 * MIN)
+        .unwrap();
     a.place_bid("a1", "ann", 100).unwrap();
 
     assert_eq!(a.cancel("a1", "sam"), Err(AuctionError::InvalidState));
     assert_eq!(a.cancel("a2", "ann"), Err(AuctionError::NotAllowed));
     a.cancel("a2", "sam").unwrap();
-    assert_eq!(a.place_bid("a2", "bob", 50), Err(AuctionError::InvalidState));
+    assert_eq!(
+        a.place_bid("a2", "bob", 50),
+        Err(AuctionError::InvalidState)
+    );
 }
 
 #[test]
 fn should_keep_a_strictly_increasing_history_under_concurrent_bidding() {
     let clock = FakeClock::new(1_000_000);
     let a = sut!(create(clock.as_clock()));
-    a.create_auction("race", "sam", 1, 0, 1_000_000 + 60 * MIN).unwrap();
+    a.create_auction("race", "sam", 1, 0, 1_000_000 + 60 * MIN)
+        .unwrap();
     let accepted = AtomicUsize::new(0);
 
     run_concurrently(32, |t| {
@@ -175,17 +206,24 @@ fn should_keep_a_strictly_increasing_history_under_concurrent_bidding() {
 fn should_notify_consistently_under_concurrent_bidding() {
     let clock = FakeClock::new(1_000_000);
     let a = sut!(create(clock.as_clock()));
-    a.create_auction("race", "sam", 1, 0, 1_000_000 + 60 * MIN).unwrap();
+    a.create_auction("race", "sam", 1, 0, 1_000_000 + 60 * MIN)
+        .unwrap();
 
     run_concurrently(8, |t| {
         for i in 1..=200u64 {
-            a.place_bid("race", &format!("b{t}"), i * 8 + t as u64).unwrap();
+            a.place_bid("race", &format!("b{t}"), i * 8 + t as u64)
+                .unwrap();
         }
     });
 
-    let outbids: usize = (0..8).map(|t| a.notifications(&format!("b{t}")).len()).sum();
+    let outbids: usize = (0..8)
+        .map(|t| a.notifications(&format!("b{t}")).len())
+        .sum();
     let history = a.bid_history("race").unwrap();
-    let self_raises = history.windows(2).filter(|w| w[0].split(':').next() == w[1].split(':').next()).count();
+    let self_raises = history
+        .windows(2)
+        .filter(|w| w[0].split(':').next() == w[1].split(':').next())
+        .count();
     assert_eq!(outbids, history.len() - 1 - self_raises);
 }
 
@@ -194,13 +232,22 @@ fn should_stay_correct_over_100_runs() {
     for run in 0..100 {
         let clock = FakeClock::new(1_000_000);
         let a = sut!(create(clock.as_clock()));
-        a.create_auction("r", "sam", 1, 0, 1_000_000 + 60 * MIN).unwrap();
+        a.create_auction("r", "sam", 1, 0, 1_000_000 + 60 * MIN)
+            .unwrap();
 
         run_concurrently(8, |t| {
             a.place_bid("r", &format!("b{t}"), 10 + t as u64).unwrap();
         });
 
-        assert_eq!(a.highest_bid("r"), Ok(Some("b7:17".to_string())), "run {run}");
-        assert_eq!(a.bid_history("r").unwrap().last().unwrap(), "b7:17", "run {run}");
+        assert_eq!(
+            a.highest_bid("r"),
+            Ok(Some("b7:17".to_string())),
+            "run {run}"
+        );
+        assert_eq!(
+            a.bid_history("r").unwrap().last().unwrap(),
+            "b7:17",
+            "run {run}"
+        );
     }
 }

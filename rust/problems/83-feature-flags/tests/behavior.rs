@@ -6,7 +6,9 @@ use std::sync::Arc;
 const NONE: &[(&str, &str)] = &[];
 
 fn count_on(f: &Arc<dyn FlagService>, flag: &str, users: usize) -> usize {
-    (0..users).filter(|u| f.is_enabled(flag, &format!("user-{u}"), NONE).unwrap()).count()
+    (0..users)
+        .filter(|u| f.is_enabled(flag, &format!("user-{u}"), NONE).unwrap())
+        .count()
 }
 
 #[test]
@@ -24,11 +26,20 @@ fn should_reject_unknown_flags_duplicates_and_bad_input() {
     let f = sut!(create());
     f.define("x", false).unwrap();
 
-    assert_eq!(f.is_enabled("nope", "u1", NONE), Err(FlagError::UnknownFlag));
+    assert_eq!(
+        f.is_enabled("nope", "u1", NONE),
+        Err(FlagError::UnknownFlag)
+    );
     assert_eq!(f.define("x", true), Err(FlagError::AlreadyDefined));
     assert_eq!(f.define(" ", true), Err(FlagError::InvalidArgument));
-    assert_eq!(f.is_enabled("x", " ", NONE), Err(FlagError::InvalidArgument));
-    assert_eq!(f.add_rule("nope", "a", "b", true), Err(FlagError::UnknownFlag));
+    assert_eq!(
+        f.is_enabled("x", " ", NONE),
+        Err(FlagError::InvalidArgument)
+    );
+    assert_eq!(
+        f.add_rule("nope", "a", "b", true),
+        Err(FlagError::UnknownFlag)
+    );
     assert_eq!(f.set_rollout("x", 101), Err(FlagError::InvalidArgument));
 }
 
@@ -43,7 +54,10 @@ fn should_apply_the_first_matching_rule() {
 
     assert_eq!(f.is_enabled("beta", "u", &[("country", "IN")]), Ok(true));
     assert_eq!(f.is_enabled("beta", "u", &[("plan", "pro")]), Ok(true));
-    assert_eq!(f.is_enabled("beta", "u", &[("plan", "free"), ("country", "US")]), Ok(false));
+    assert_eq!(
+        f.is_enabled("beta", "u", &[("plan", "free"), ("country", "US")]),
+        Ok(false)
+    );
     assert_eq!(f.is_enabled("beta", "u", &[("country", "US")]), Ok(false));
     assert_eq!(f.is_enabled("beta", "u", NONE), Ok(false));
 }
@@ -102,11 +116,16 @@ fn should_give_the_same_user_the_same_answer_every_time() {
     let f = sut!(create());
     f.define("x", false).unwrap();
     f.set_rollout("x", 50).unwrap();
-    let first: Vec<bool> = (0..1_000).map(|u| f.is_enabled("x", &format!("user-{u}"), NONE).unwrap()).collect();
+    let first: Vec<bool> = (0..1_000)
+        .map(|u| f.is_enabled("x", &format!("user-{u}"), NONE).unwrap())
+        .collect();
 
     for _ in 0..3 {
         for u in 0..1_000 {
-            assert_eq!(f.is_enabled("x", &format!("user-{u}"), NONE).unwrap(), first[u]);
+            assert_eq!(
+                f.is_enabled("x", &format!("user-{u}"), NONE).unwrap(),
+                first[u]
+            );
         }
     }
 }
@@ -116,7 +135,9 @@ fn should_never_turn_anybody_off_when_the_rollout_grows() {
     let f = sut!(create());
     f.define("x", false).unwrap();
     f.set_rollout("x", 30).unwrap();
-    let before: Vec<bool> = (0..10_000).map(|u| f.is_enabled("x", &format!("user-{u}"), NONE).unwrap()).collect();
+    let before: Vec<bool> = (0..10_000)
+        .map(|u| f.is_enabled("x", &format!("user-{u}"), NONE).unwrap())
+        .collect();
 
     f.set_rollout("x", 60).unwrap();
 
@@ -144,7 +165,10 @@ fn should_bucket_different_flags_independently() {
         })
         .count();
 
-    assert!((4_400..=5_600).contains(&both), "correlated buckets would give ~50%, got {both}");
+    assert!(
+        (4_400..=5_600).contains(&both),
+        "correlated buckets would give ~50%, got {both}"
+    );
 }
 
 #[test]
@@ -152,10 +176,16 @@ fn should_lose_no_rule_when_many_threads_add_rules() {
     let f = sut!(create());
     f.define("x", false).unwrap();
 
-    run_concurrently(16, |t| f.add_rule("x", &format!("k{t}"), "v", true).unwrap());
+    run_concurrently(16, |t| {
+        f.add_rule("x", &format!("k{t}"), "v", true).unwrap()
+    });
 
     for t in 0..16 {
-        assert_eq!(f.is_enabled("x", "u", &[(&format!("k{t}"), "v")]), Ok(true), "rule {t}");
+        assert_eq!(
+            f.is_enabled("x", "u", &[(&format!("k{t}"), "v")]),
+            Ok(true),
+            "rule {t}"
+        );
     }
 }
 
@@ -187,7 +217,11 @@ fn should_stay_correct_over_100_runs() {
         });
 
         for t in 0..8 {
-            assert_eq!(f.is_enabled("x", "u", &[(&format!("k{t}"), "v")]), Ok(true), "run {run} rule {t}");
+            assert_eq!(
+                f.is_enabled("x", "u", &[(&format!("k{t}"), "v")]),
+                Ok(true),
+                "run {run} rule {t}"
+            );
         }
     }
 }

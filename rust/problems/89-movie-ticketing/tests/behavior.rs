@@ -18,7 +18,8 @@ fn api() -> Option<(Arc<dyn Ticketing>, FakeClock)> {
     let clock = FakeClock::new(0);
     let t = create(clock.as_clock())?;
     t.add_screen("PVR", "blr", "s1", 4, 5).unwrap();
-    t.add_show("show1", "PVR", "s1", "dune", 600, 150, 200, 350).unwrap();
+    t.add_show("show1", "PVR", "s1", "dune", 600, 150, 200, 350)
+        .unwrap();
     Some((t, clock))
 }
 
@@ -36,10 +37,13 @@ fn should_list_all_seats_in_row_then_number_order() {
 #[test]
 fn should_search_upcoming_shows_by_city_and_movie_in_time_order() {
     let (t, clock) = sut!(api());
-    t.add_show("late", "PVR", "s1", "dune", 900, 150, 200, 350).unwrap();
-    t.add_show("other", "PVR", "s1", "barbie", 750, 100, 200, 350).unwrap();
+    t.add_show("late", "PVR", "s1", "dune", 900, 150, 200, 350)
+        .unwrap();
+    t.add_show("other", "PVR", "s1", "barbie", 750, 100, 200, 350)
+        .unwrap();
     t.add_screen("INOX", "del", "s9", 2, 2).unwrap();
-    t.add_show("delhi", "INOX", "s9", "dune", 610, 150, 100, 100).unwrap();
+    t.add_show("delhi", "INOX", "s9", "dune", 610, 150, 100, 100)
+        .unwrap();
 
     assert_eq!(t.search_shows("blr", "dune"), strs(&["show1", "late"]));
     assert_eq!(t.search_shows("del", "dune"), strs(&["delhi"]));
@@ -53,11 +57,23 @@ fn should_search_upcoming_shows_by_city_and_movie_in_time_order() {
 fn should_reject_overlapping_shows_on_the_same_screen_but_allow_touching() {
     let (t, _) = sut!(api()); // show1 600..750
 
-    assert_eq!(t.add_show("clash", "PVR", "s1", "x", 700, 60, 1, 1), Err(TicketError::Conflict));
+    assert_eq!(
+        t.add_show("clash", "PVR", "s1", "x", 700, 60, 1, 1),
+        Err(TicketError::Conflict)
+    );
     t.add_show("next", "PVR", "s1", "x", 750, 60, 1, 1).unwrap();
-    assert_eq!(t.add_show("show1", "PVR", "s1", "x", 2_000, 60, 1, 1), Err(TicketError::InvalidInput));
-    assert_eq!(t.add_show("bad", "PVR", "nope", "x", 2_000, 60, 1, 1), Err(TicketError::InvalidInput));
-    assert_eq!(t.add_show("bad", "PVR", "s1", "x", 2_000, 0, 1, 1), Err(TicketError::InvalidInput));
+    assert_eq!(
+        t.add_show("show1", "PVR", "s1", "x", 2_000, 60, 1, 1),
+        Err(TicketError::InvalidInput)
+    );
+    assert_eq!(
+        t.add_show("bad", "PVR", "nope", "x", 2_000, 60, 1, 1),
+        Err(TicketError::InvalidInput)
+    );
+    assert_eq!(
+        t.add_show("bad", "PVR", "s1", "x", 2_000, 0, 1, 1),
+        Err(TicketError::InvalidInput)
+    );
 }
 
 #[test]
@@ -70,19 +86,39 @@ fn should_hide_held_seats_from_others_and_refuse_double_holds() {
     let free = t.available_seats("show1").unwrap();
     assert_eq!(free.len(), 18);
     assert!(!free.contains(&"A1".to_string()) && !free.contains(&"A2".to_string()));
-    assert_eq!(t.hold("show1", "bob", &["A2", "A3"]), Err(TicketError::Conflict));
-    assert!(t.available_seats("show1").unwrap().contains(&"A3".to_string()), "all-or-nothing");
+    assert_eq!(
+        t.hold("show1", "bob", &["A2", "A3"]),
+        Err(TicketError::Conflict)
+    );
+    assert!(
+        t.available_seats("show1")
+            .unwrap()
+            .contains(&"A3".to_string()),
+        "all-or-nothing"
+    );
 }
 
 #[test]
 fn should_reject_invalid_holds() {
     let (t, _) = sut!(api());
 
-    assert_eq!(t.hold("nope", "ann", &["A1"]), Err(TicketError::InvalidInput));
-    assert_eq!(t.hold("show1", "ann", &["Z9"]), Err(TicketError::InvalidInput));
-    assert_eq!(t.hold("show1", "ann", &["A6"]), Err(TicketError::InvalidInput));
+    assert_eq!(
+        t.hold("nope", "ann", &["A1"]),
+        Err(TicketError::InvalidInput)
+    );
+    assert_eq!(
+        t.hold("show1", "ann", &["Z9"]),
+        Err(TicketError::InvalidInput)
+    );
+    assert_eq!(
+        t.hold("show1", "ann", &["A6"]),
+        Err(TicketError::InvalidInput)
+    );
     assert_eq!(t.hold("show1", "ann", &[]), Err(TicketError::InvalidInput));
-    assert_eq!(t.hold("show1", "ann", &["A1", "A1"]), Err(TicketError::InvalidInput));
+    assert_eq!(
+        t.hold("show1", "ann", &["A1", "A1"]),
+        Err(TicketError::InvalidInput)
+    );
 }
 
 #[test]
@@ -91,10 +127,16 @@ fn should_release_expired_holds_after_five_minutes() {
     let hold = t.hold("show1", "ann", &["A1"]).unwrap();
 
     minutes(&clock, 4);
-    assert!(!t.available_seats("show1").unwrap().contains(&"A1".to_string()));
+    assert!(!t
+        .available_seats("show1")
+        .unwrap()
+        .contains(&"A1".to_string()));
     minutes(&clock, 1);
 
-    assert!(t.available_seats("show1").unwrap().contains(&"A1".to_string()));
+    assert!(t
+        .available_seats("show1")
+        .unwrap()
+        .contains(&"A1".to_string()));
     assert_eq!(t.confirm(&hold, "ann"), Err(TicketError::Gone));
     t.hold("show1", "bob", &["A1"]).unwrap();
 }
@@ -148,9 +190,15 @@ fn should_refuse_to_hold_after_the_show_started() {
 #[test]
 fn should_refund_according_to_how_close_the_show_is() {
     let (t, clock) = sut!(api()); // show at minute 600
-    let b1 = t.confirm(&t.hold("show1", "ann", &["A1"]).unwrap(), "ann").unwrap(); // 350
-    let b2 = t.confirm(&t.hold("show1", "ann", &["C1", "C2", "C3"]).unwrap(), "ann").unwrap(); // 600
-    let b3 = t.confirm(&t.hold("show1", "ann", &["D1"]).unwrap(), "ann").unwrap(); // 200
+    let b1 = t
+        .confirm(&t.hold("show1", "ann", &["A1"]).unwrap(), "ann")
+        .unwrap(); // 350
+    let b2 = t
+        .confirm(&t.hold("show1", "ann", &["C1", "C2", "C3"]).unwrap(), "ann")
+        .unwrap(); // 600
+    let b3 = t
+        .confirm(&t.hold("show1", "ann", &["D1"]).unwrap(), "ann")
+        .unwrap(); // 200
 
     assert_eq!(t.cancel(&b1, "ann"), Ok(350)); // 600 minutes away
     minutes(&clock, 500); // 100 minutes before the show
@@ -164,7 +212,9 @@ fn should_refund_according_to_how_close_the_show_is() {
 #[test]
 fn should_not_let_others_cancel_a_booking() {
     let (t, _) = sut!(api());
-    let b = t.confirm(&t.hold("show1", "ann", &["A1"]).unwrap(), "ann").unwrap();
+    let b = t
+        .confirm(&t.hold("show1", "ann", &["A1"]).unwrap(), "ann")
+        .unwrap();
 
     assert_eq!(t.cancel(&b, "bob"), Err(TicketError::NotAllowed));
 }
@@ -173,7 +223,9 @@ fn should_not_let_others_cancel_a_booking() {
 fn should_let_exactly_one_thread_hold_the_same_seat() {
     let (t, _) = sut!(api());
 
-    let wins = collect_concurrently(16, |i| t.hold("show1", &format!("user{i}"), &["A1"]).is_ok());
+    let wins = collect_concurrently(16, |i| {
+        t.hold("show1", &format!("user{i}"), &["A1"]).is_ok()
+    });
 
     assert_eq!(wins.iter().filter(|w| **w).count(), 1);
 }
@@ -183,7 +235,8 @@ fn should_never_sell_the_same_seat_twice_under_load() {
     let clock = FakeClock::new(0);
     let t = sut!(create(clock.as_clock()));
     t.add_screen("PVR", "blr", "big", 10, 20).unwrap(); // 200 seats
-    t.add_show("big", "PVR", "big", "m", 10_000, 120, 100, 200).unwrap();
+    t.add_show("big", "PVR", "big", "m", 10_000, 120, 100, 200)
+        .unwrap();
     let sold = Mutex::new(HashSet::new());
     let duplicates = AtomicUsize::new(0);
 
@@ -212,7 +265,10 @@ fn should_never_sell_the_same_seat_twice_under_load() {
     });
 
     assert_eq!(duplicates.load(Ordering::SeqCst), 0);
-    assert_eq!(t.available_seats("big").unwrap().len(), 200 - sold.lock().unwrap().len());
+    assert_eq!(
+        t.available_seats("big").unwrap().len(),
+        200 - sold.lock().unwrap().len()
+    );
 }
 
 #[test]

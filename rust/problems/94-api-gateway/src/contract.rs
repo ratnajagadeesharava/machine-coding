@@ -29,7 +29,10 @@ pub struct Response {
 
 impl Response {
     pub fn new(status: u16, body: &str) -> Response {
-        Response { status, body: body.to_string() }
+        Response {
+            status,
+            body: body.to_string(),
+        }
     }
 }
 

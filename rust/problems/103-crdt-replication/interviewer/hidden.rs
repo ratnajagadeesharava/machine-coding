@@ -20,7 +20,11 @@ fn should_give_the_same_result_for_any_merge_order_of_the_same_snapshots() {
                     1 => r.decrement("c", rng.below(9)),
                     2 => r.add("s", &format!("e{}", rng.below(5))),
                     3 => r.remove("s", &format!("e{}", rng.below(5))),
-                    _ => r.write("r", &format!("v{}", rng.below(9)), rng.below(10) * 100 + step),
+                    _ => r.write(
+                        "r",
+                        &format!("v{}", rng.below(9)),
+                        rng.below(10) * 100 + step,
+                    ),
                 }
             }
             snaps.push(r.snapshot());
@@ -43,7 +47,9 @@ fn should_give_the_same_result_for_any_merge_order_of_the_same_snapshots() {
 
 #[test]
 fn should_keep_counter_snapshots_small() {
-    let Some(a) = create("a") else { return skipped() };
+    let Some(a) = create("a") else {
+        return skipped();
+    };
     for _ in 0..1_000 {
         a.increment("c", 1);
     }
@@ -52,12 +58,17 @@ fn should_keep_counter_snapshots_small() {
         a.increment("c", 1);
     }
 
-    assert!(a.snapshot().len() < size * 2, "a counter must not grow with the number of increments");
+    assert!(
+        a.snapshot().len() < size * 2,
+        "a counter must not grow with the number of increments"
+    );
 }
 
 #[test]
 fn should_scale_to_many_elements() {
-    let Some(a) = create("a") else { return skipped() };
+    let Some(a) = create("a") else {
+        return skipped();
+    };
     let b = create("b").unwrap();
     for i in 0..20_000 {
         a.add("s", &format!("e{i}"));

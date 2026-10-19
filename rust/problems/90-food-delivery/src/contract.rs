@@ -32,7 +32,12 @@ pub trait FoodDelivery: Send + Sync {
     fn search_restaurants(&self, cuisine: &str, x: i32, y: i32, max_distance: u32) -> Vec<String>;
 
     /// Places an order for `item -> quantity` (all quantities >= 1) and reserves the stock, all-or-nothing.
-    fn place_order(&self, customer: &str, restaurant_id: &str, items: &[(&str, u32)]) -> Food<String>;
+    fn place_order(
+        &self,
+        customer: &str,
+        restaurant_id: &str,
+        items: &[(&str, u32)],
+    ) -> Food<String>;
 
     fn total_of(&self, order_id: &str) -> Food<u64>;
 

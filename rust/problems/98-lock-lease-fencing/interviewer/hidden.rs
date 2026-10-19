@@ -10,7 +10,8 @@ fn should_handle_a_hundred_thousand_independent_locks() {
 
     run_concurrently(8, |t| {
         for i in 0..12_500 {
-            l.acquire(&format!("lock-{}", t * 12_500 + i), "o", 1_000).unwrap();
+            l.acquire(&format!("lock-{}", t * 12_500 + i), "o", 1_000)
+                .unwrap();
         }
     });
 

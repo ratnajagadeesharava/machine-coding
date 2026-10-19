@@ -35,8 +35,14 @@ fn partner(a: &Arc<dyn FoodDelivery>, id: &str) -> Option<String> {
 fn should_search_restaurants_by_cuisine_and_distance() {
     let a = sut!(app());
 
-    assert_eq!(a.search_restaurants("pizza", 1, 1, 100), strs(&["r1", "r2"]));
-    assert_eq!(a.search_restaurants("pizza", 5, 4, 100), strs(&["r2", "r1"]));
+    assert_eq!(
+        a.search_restaurants("pizza", 1, 1, 100),
+        strs(&["r1", "r2"])
+    );
+    assert_eq!(
+        a.search_restaurants("pizza", 5, 4, 100),
+        strs(&["r2", "r1"])
+    );
     assert_eq!(a.search_restaurants("pizza", 1, 1, 3), strs(&["r1"]));
     assert!(a.search_restaurants("sushi", 0, 0, 1).is_empty());
     assert!(a.search_restaurants("thai", 0, 0, 100).is_empty());
@@ -46,7 +52,9 @@ fn should_search_restaurants_by_cuisine_and_distance() {
 fn should_place_an_order_reserve_stock_and_compute_the_total() {
     let a = sut!(app());
 
-    let id = a.place_order("ann", "r1", &[("margherita", 2), ("cola", 3)]).unwrap();
+    let id = a
+        .place_order("ann", "r1", &[("margherita", 2), ("cola", 3)])
+        .unwrap();
 
     assert_eq!(a.total_of(&id), Ok(2 * 250 + 3 * 50));
     assert_eq!(a.status_of(&id), Ok("PLACED".to_string()));
@@ -58,7 +66,10 @@ fn should_place_an_order_reserve_stock_and_compute_the_total() {
 fn should_refuse_an_order_without_enough_stock_and_reserve_nothing() {
     let a = sut!(app());
 
-    assert_eq!(a.place_order("ann", "r1", &[("cola", 5), ("margherita", 11)]), Err(FoodError::OutOfStock));
+    assert_eq!(
+        a.place_order("ann", "r1", &[("cola", 5), ("margherita", 11)]),
+        Err(FoodError::OutOfStock)
+    );
 
     assert_eq!(a.stock_of("r1", "cola"), Ok(100));
     assert_eq!(a.stock_of("r1", "margherita"), Ok(10));
@@ -68,10 +79,22 @@ fn should_refuse_an_order_without_enough_stock_and_reserve_nothing() {
 fn should_reject_invalid_orders() {
     let a = sut!(app());
 
-    assert_eq!(a.place_order("ann", "nope", &[("cola", 1)]), Err(FoodError::UnknownId));
-    assert_eq!(a.place_order("ann", "r1", &[("sushi roll", 1)]), Err(FoodError::UnknownId));
-    assert_eq!(a.place_order("ann", "r1", &[("cola", 0)]), Err(FoodError::InvalidInput));
-    assert_eq!(a.place_order("ann", "r1", &[]), Err(FoodError::InvalidInput));
+    assert_eq!(
+        a.place_order("ann", "nope", &[("cola", 1)]),
+        Err(FoodError::UnknownId)
+    );
+    assert_eq!(
+        a.place_order("ann", "r1", &[("sushi roll", 1)]),
+        Err(FoodError::UnknownId)
+    );
+    assert_eq!(
+        a.place_order("ann", "r1", &[("cola", 0)]),
+        Err(FoodError::InvalidInput)
+    );
+    assert_eq!(
+        a.place_order("ann", "r1", &[]),
+        Err(FoodError::InvalidInput)
+    );
     assert_eq!(a.status_of("nope"), Err(FoodError::UnknownId));
 }
 
@@ -191,7 +214,10 @@ fn should_only_let_the_customer_cancel() {
 fn should_never_sell_more_than_the_stock_under_contention() {
     let a = sut!(app());
 
-    let results = collect_concurrently(50, |t| a.place_order(&format!("user{t}"), "r1", &[("margherita", 1)]).is_ok());
+    let results = collect_concurrently(50, |t| {
+        a.place_order(&format!("user{t}"), "r1", &[("margherita", 1)])
+            .is_ok()
+    });
 
     assert_eq!(results.iter().filter(|r| **r).count(), 10);
     assert_eq!(a.stock_of("r1", "margherita"), Ok(0));
@@ -210,7 +236,9 @@ fn should_give_every_partner_at_most_one_order_and_deliver_everything() {
 
     run_concurrently(12, |t| {
         for _ in 0..25 {
-            let id = a.place_order(&format!("user{t}"), "r1", &[("cola", 1)]).unwrap();
+            let id = a
+                .place_order(&format!("user{t}"), "r1", &[("cola", 1)])
+                .unwrap();
             a.accept(&id).unwrap();
             a.mark_ready(&id).unwrap();
             let p = loop {
@@ -254,6 +282,10 @@ fn should_stay_correct_over_100_runs() {
         assert_eq!(got.len(), 2, "run {run}");
         got.sort();
         got.dedup();
-        assert_eq!(got.len(), 2, "run {run}: both partners busy with one order each");
+        assert_eq!(
+            got.len(),
+            2,
+            "run {run}: both partners busy with one order each"
+        );
     }
 }

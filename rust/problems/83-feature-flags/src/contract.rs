@@ -15,7 +15,13 @@ pub trait FlagService: Send + Sync {
 
     /// Appends a targeting rule: users whose attribute `attribute` equals `value` get `result`.
     /// Rules are evaluated in the order they were added; the first matching rule wins.
-    fn add_rule(&self, flag: &str, attribute: &str, value: &str, result: bool) -> Result<(), FlagError>;
+    fn add_rule(
+        &self,
+        flag: &str,
+        attribute: &str,
+        value: &str,
+        result: bool,
+    ) -> Result<(), FlagError>;
 
     /// Percentage rollout 0..=100 for users that match no rule. Once a rollout is set, users inside the
     /// percentage get true and everybody else false (the default value is ignored). Each user must land in the
@@ -27,5 +33,10 @@ pub trait FlagService: Send + Sync {
     fn set_killed(&self, flag: &str, killed: bool) -> Result<(), FlagError>;
 
     /// Evaluation order: killed -> first matching rule -> rollout (if set) -> default.
-    fn is_enabled(&self, flag: &str, user_id: &str, attributes: &[(&str, &str)]) -> Result<bool, FlagError>;
+    fn is_enabled(
+        &self,
+        flag: &str,
+        user_id: &str,
+        attributes: &[(&str, &str)],
+    ) -> Result<bool, FlagError>;
 }

@@ -11,9 +11,13 @@ fn should_handle_a_deep_tree() {
         path.push_str(&format!("/d{i}"));
         fs.mkdir("root", &path).unwrap();
     }
-    fs.create_file("root", &format!("{path}/leaf"), "deep").unwrap();
+    fs.create_file("root", &format!("{path}/leaf"), "deep")
+        .unwrap();
 
-    assert_eq!(fs.read("root", &format!("{path}/leaf")), Ok("deep".to_string()));
+    assert_eq!(
+        fs.read("root", &format!("{path}/leaf")),
+        Ok("deep".to_string())
+    );
 }
 
 #[test]

@@ -45,11 +45,17 @@ impl SagaStep for Scripted {
         self.name.clone()
     }
     fn execute(&self, _saga_id: &str) -> bool {
-        self.journal.lock().unwrap().push(format!("exec:{}", self.name));
+        self.journal
+            .lock()
+            .unwrap()
+            .push(format!("exec:{}", self.name));
         self.execs.fetch_add(1, Ordering::SeqCst) >= self.exec_fails
     }
     fn compensate(&self, _saga_id: &str) -> bool {
-        self.journal.lock().unwrap().push(format!("comp:{}", self.name));
+        self.journal
+            .lock()
+            .unwrap()
+            .push(format!("comp:{}", self.name));
         self.comps.fetch_add(1, Ordering::SeqCst) >= self.comp_fails
     }
 }
@@ -108,7 +114,10 @@ fn should_run_all_steps_in_order_and_complete() {
     let (o, _) = sut!(setup());
     let j = journal();
 
-    let result = o.run("s1", &[good("reserve", &j), good("charge", &j), good("ship", &j)]);
+    let result = o.run(
+        "s1",
+        &[good("reserve", &j), good("charge", &j), good("ship", &j)],
+    );
 
     assert_eq!(result, SagaStatus::Completed);
     assert_eq!(entries(&j), ["exec:reserve", "exec:charge", "exec:ship"]);
@@ -136,13 +145,26 @@ fn should_compensate_completed_steps_in_reverse_order_when_a_step_fails() {
 
     let result = o.run(
         "s1",
-        &[good("reserve", &j), good("charge", &j), failing("ship", &j), good("notify", &j)],
+        &[
+            good("reserve", &j),
+            good("charge", &j),
+            failing("ship", &j),
+            good("notify", &j),
+        ],
     );
 
     assert_eq!(result, SagaStatus::Compensated);
     assert_eq!(
         entries(&j),
-        ["exec:reserve", "exec:charge", "exec:ship", "exec:ship", "exec:ship", "comp:charge", "comp:reserve"]
+        [
+            "exec:reserve",
+            "exec:charge",
+            "exec:ship",
+            "exec:ship",
+            "exec:ship",
+            "comp:charge",
+            "comp:reserve"
+        ]
     );
     assert_eq!(o.status("s1"), SagaStatus::Compensated);
 }
@@ -166,7 +188,10 @@ fn should_retry_a_failing_step_with_backoff_and_succeed_on_the_third_attempt() {
     let result = o.run("s1", &[good("a", &j), step("flaky", 2, 0, &j)]);
 
     assert_eq!(result, SagaStatus::Completed);
-    assert_eq!(entries(&j), ["exec:a", "exec:flaky", "exec:flaky", "exec:flaky"]);
+    assert_eq!(
+        entries(&j),
+        ["exec:a", "exec:flaky", "exec:flaky", "exec:flaky"]
+    );
     assert_eq!(sleeps_of(&sleeps), [100, 200]);
 }
 
@@ -185,7 +210,14 @@ fn should_retry_compensations_up_to_five_times() {
     let (o, sleeps) = sut!(setup());
     let j = journal();
 
-    let result = o.run("s1", &[good("reserve", &j), step("charge", 0, 3, &j), failing("ship", &j)]);
+    let result = o.run(
+        "s1",
+        &[
+            good("reserve", &j),
+            step("charge", 0, 3, &j),
+            failing("ship", &j),
+        ],
+    );
 
     assert_eq!(result, SagaStatus::Compensated);
     assert_eq!(count(&j, "comp:charge"), 4);
@@ -198,7 +230,14 @@ fn should_stop_with_compensation_failed_and_not_compensate_the_rest() {
     let (o, sleeps) = sut!(setup());
     let j = journal();
 
-    let result = o.run("s1", &[good("reserve", &j), step("charge", 0, usize::MAX, &j), failing("ship", &j)]);
+    let result = o.run(
+        "s1",
+        &[
+            good("reserve", &j),
+            step("charge", 0, usize::MAX, &j),
+            failing("ship", &j),
+        ],
+    );
 
     assert_eq!(result, SagaStatus::CompensationFailed);
     assert_eq!(count(&j, "comp:charge"), 5);
@@ -272,8 +311,15 @@ fn should_continue_a_crashed_saga_without_repeating_finished_steps() {
         let mut dedup = e.clone();
         dedup.sort();
         dedup.dedup();
-        assert_eq!(dedup.len(), e.len(), "crash after {k} writes: a step ran twice");
-        assert!(e.iter().all(|x| x.starts_with("exec:")), "crash after {k} writes: compensated a healthy saga");
+        assert_eq!(
+            dedup.len(),
+            e.len(),
+            "crash after {k} writes: a step ran twice"
+        );
+        assert!(
+            e.iter().all(|x| x.starts_with("exec:")),
+            "crash after {k} writes: compensated a healthy saga"
+        );
     }
 }
 
@@ -282,22 +328,48 @@ fn should_continue_a_crashed_compensation_in_reverse_order() {
     let full: Log = Arc::new(MemoryLog::default());
     let (o0, _) = sut!(setup_with(full.clone()));
     let j0 = journal();
-    o0.run("s1", &[good("a", &j0), good("b", &j0), good("c", &j0), failing("d", &j0)]);
+    o0.run(
+        "s1",
+        &[
+            good("a", &j0),
+            good("b", &j0),
+            good("c", &j0),
+            failing("d", &j0),
+        ],
+    );
     let all = full.records();
 
     for k in 0..=all.len() {
         let j = journal();
         let (o, _) = setup_with(log_with(&all[..k])).unwrap();
 
-        let result = o.run("s1", &[good("a", &j), good("b", &j), good("c", &j), failing("d", &j)]);
+        let result = o.run(
+            "s1",
+            &[
+                good("a", &j),
+                good("b", &j),
+                good("c", &j),
+                failing("d", &j),
+            ],
+        );
 
         assert_eq!(result, SagaStatus::Compensated, "crash after {k} writes");
-        assert_eq!(count(&j, "comp:d"), 0, "the failed step is never compensated");
-        let comps: Vec<String> = entries(&j).into_iter().filter(|e| e.starts_with("comp:")).collect();
+        assert_eq!(
+            count(&j, "comp:d"),
+            0,
+            "the failed step is never compensated"
+        );
+        let comps: Vec<String> = entries(&j)
+            .into_iter()
+            .filter(|e| e.starts_with("comp:"))
+            .collect();
         let mut sorted = comps.clone();
         sorted.sort();
         sorted.reverse();
-        assert_eq!(comps, sorted, "crash after {k} writes: compensations out of order");
+        assert_eq!(
+            comps, sorted,
+            "crash after {k} writes: compensations out of order"
+        );
     }
 }
 
@@ -310,7 +382,11 @@ fn should_run_many_sagas_concurrently_without_mixing_them_up() {
             let id = format!("t{t}-{i}");
             let j = journal();
             let doomed = i % 3 == 0;
-            let last = if doomed { failing("last", &j) } else { good("last", &j) };
+            let last = if doomed {
+                failing("last", &j)
+            } else {
+                good("last", &j)
+            };
             let status = o.run(&id, &[good("a", &j), good("b", &j), last]);
             out.push((id, doomed, status, entries(&j)));
         }
@@ -322,7 +398,19 @@ fn should_run_many_sagas_concurrently_without_mixing_them_up() {
     for (id, doomed, status, e) in all {
         if doomed {
             assert_eq!(status, SagaStatus::Compensated, "{id}");
-            assert_eq!(e, ["exec:a", "exec:b", "exec:last", "exec:last", "exec:last", "comp:b", "comp:a"], "{id}");
+            assert_eq!(
+                e,
+                [
+                    "exec:a",
+                    "exec:b",
+                    "exec:last",
+                    "exec:last",
+                    "exec:last",
+                    "comp:b",
+                    "comp:a"
+                ],
+                "{id}"
+            );
         } else {
             assert_eq!(status, SagaStatus::Completed, "{id}");
             assert_eq!(e, ["exec:a", "exec:b", "exec:last"], "{id}");
@@ -353,16 +441,24 @@ fn should_return_running_for_a_saga_that_another_thread_is_running() {
             true
         }
     }
-    let slow: Arc<dyn SagaStep> = Arc::new(Slow { inside: Mutex::new(inside_tx), release: Mutex::new(release_rx) });
+    let slow: Arc<dyn SagaStep> = Arc::new(Slow {
+        inside: Mutex::new(inside_tx),
+        release: Mutex::new(release_rx),
+    });
 
     thread::scope(|s| {
         let o2 = o.clone();
         let slow2 = slow.clone();
         let worker = s.spawn(move || o2.run("s1", &[slow2]));
-        inside_rx.recv_timeout(Duration::from_secs(5)).expect("the saga never started");
+        inside_rx
+            .recv_timeout(Duration::from_secs(5))
+            .expect("the saga never started");
 
         assert_eq!(o.status("s1"), SagaStatus::Running);
-        assert_eq!(o.run("s1", &[slow.clone()]), SagaStatus::Running);
+        assert_eq!(
+            o.run("s1", std::slice::from_ref(&slow)),
+            SagaStatus::Running
+        );
         release_tx.send(()).unwrap();
         assert_eq!(worker.join().unwrap(), SagaStatus::Completed);
     });

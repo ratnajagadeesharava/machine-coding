@@ -20,10 +20,18 @@ pub type Cal<T> = Result<T, CalError>;
 pub trait Calendar: Send + Sync {
     /// Schedules an event for the organizer and the attendees and returns its id. Conflicts for ANY person create
     /// nothing.
-    fn schedule(&self, organizer: &str, title: &str, start: u64, end: u64, attendees: &[&str]) -> Cal<String>;
+    fn schedule(
+        &self,
+        organizer: &str,
+        title: &str,
+        start: u64,
+        end: u64,
+        attendees: &[&str],
+    ) -> Cal<String>;
 
     /// Schedules `count` occurrences (count >= 1) starting at `start`, each repeating `every` minutes later
     /// (`every >= end - start`). All-or-nothing. Returns the ids in time order.
+    #[allow(clippy::too_many_arguments)]
     fn schedule_recurring(
         &self,
         organizer: &str,

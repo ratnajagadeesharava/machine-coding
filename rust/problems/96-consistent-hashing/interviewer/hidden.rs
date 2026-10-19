@@ -34,7 +34,9 @@ fn should_keep_the_balance_when_many_nodes_join_and_leave() {
 
     let mut counts: HashMap<String, usize> = HashMap::new();
     for k in 0..100_000 {
-        *counts.entry(r.node_for(&format!("key-{k}")).unwrap()).or_insert(0) += 1;
+        *counts
+            .entry(r.node_for(&format!("key-{k}")).unwrap())
+            .or_insert(0) += 1;
     }
 
     assert_eq!(counts.len(), 50);

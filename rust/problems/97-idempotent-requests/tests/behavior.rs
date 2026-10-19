@@ -19,7 +19,12 @@ fn setup() -> Option<(Arc<dyn IdempotentProcessor>, FakeClock)> {
 fn should_run_the_handler_once_and_replay_the_stored_response() {
     let (p, _) = sut!(setup());
     let calls = AtomicUsize::new(0);
-    let h = |body: &str| Ok(format!("done:{body}:{}", calls.fetch_add(1, Ordering::SeqCst) + 1));
+    let h = |body: &str| {
+        Ok(format!(
+            "done:{body}:{}",
+            calls.fetch_add(1, Ordering::SeqCst) + 1
+        ))
+    };
 
     let first = p.process("key-1", "pay 10", &h);
     let second = p.process("key-1", "pay 10", &h);
@@ -45,20 +50,34 @@ fn should_treat_different_keys_independently() {
 fn should_reject_a_key_reused_for_a_different_body() {
     let (p, _) = sut!(setup());
     let calls = AtomicUsize::new(0);
-    let h = |body: &str| Ok(format!("done:{body}:{}", calls.fetch_add(1, Ordering::SeqCst) + 1));
+    let h = |body: &str| {
+        Ok(format!(
+            "done:{body}:{}",
+            calls.fetch_add(1, Ordering::SeqCst) + 1
+        ))
+    };
     p.process("key-1", "pay 10", &h).unwrap();
 
-    assert_eq!(p.process("key-1", "pay 99", &h), Err(IdemError::KeyConflict));
+    assert_eq!(
+        p.process("key-1", "pay 99", &h),
+        Err(IdemError::KeyConflict)
+    );
 
     assert_eq!(calls.load(Ordering::SeqCst), 1);
-    assert_eq!(p.process("key-1", "pay 10", &h), Ok("done:pay 10:1".to_string()));
+    assert_eq!(
+        p.process("key-1", "pay 10", &h),
+        Ok("done:pay 10:1".to_string())
+    );
 }
 
 #[test]
 fn should_reject_a_blank_key() {
     let (p, _) = sut!(setup());
 
-    assert_eq!(p.process(" ", "x", &|_: &str| Ok("r".to_string())), Err(IdemError::InvalidInput));
+    assert_eq!(
+        p.process(" ", "x", &|_: &str| Ok("r".to_string())),
+        Err(IdemError::InvalidInput)
+    );
 }
 
 #[test]
@@ -74,7 +93,10 @@ fn should_not_store_a_failure_and_run_the_handler_again_on_retry() {
         }
     };
 
-    assert_eq!(p.process("k", "x", &flaky), Err(IdemError::HandlerFailed("boom".to_string())));
+    assert_eq!(
+        p.process("k", "x", &flaky),
+        Err(IdemError::HandlerFailed("boom".to_string()))
+    );
 
     assert_eq!(p.process("k", "x", &flaky), Ok("ok:2".to_string()));
     assert_eq!(p.process("k", "x", &flaky), Ok("ok:2".to_string()));
@@ -85,7 +107,12 @@ fn should_not_store_a_failure_and_run_the_handler_again_on_retry() {
 fn should_expire_stored_responses_after_24_hours() {
     let (p, clock) = sut!(setup());
     let calls = AtomicUsize::new(0);
-    let h = |body: &str| Ok(format!("done:{body}:{}", calls.fetch_add(1, Ordering::SeqCst) + 1));
+    let h = |body: &str| {
+        Ok(format!(
+            "done:{body}:{}",
+            calls.fetch_add(1, Ordering::SeqCst) + 1
+        ))
+    };
     p.process("k", "x", &h).unwrap();
 
     clock.advance(24 * HOUR - 1);
@@ -99,11 +126,15 @@ fn should_expire_stored_responses_after_24_hours() {
 #[test]
 fn should_allow_a_different_body_once_the_key_has_expired() {
     let (p, clock) = sut!(setup());
-    p.process("k", "old", &|_: &str| Ok("r1".to_string())).unwrap();
+    p.process("k", "old", &|_: &str| Ok("r1".to_string()))
+        .unwrap();
 
     clock.advance(25 * HOUR);
 
-    assert_eq!(p.process("k", "new", &|_: &str| Ok("r2".to_string())), Ok("r2".to_string()));
+    assert_eq!(
+        p.process("k", "new", &|_: &str| Ok("r2".to_string())),
+        Ok("r2".to_string())
+    );
 }
 
 #[test]
@@ -121,7 +152,10 @@ fn should_run_the_handler_only_once_when_many_threads_race_with_the_same_key() {
     assert_eq!(calls.load(Ordering::SeqCst), 1);
     assert_eq!(responses.iter().collect::<HashSet<_>>().len(), 1);
     assert_eq!(responses[0], "r1");
-    assert!(start.elapsed() < Duration::from_millis(1_500), "waiters share the single execution");
+    assert!(
+        start.elapsed() < Duration::from_millis(1_500),
+        "waiters share the single execution"
+    );
 }
 
 #[test]
@@ -137,7 +171,10 @@ fn should_not_make_different_keys_wait_for_each_other() {
         p.process(&format!("key-{t}"), "body", &slow).unwrap();
     });
 
-    assert!(start.elapsed() < Duration::from_millis(1_200), "a global lock would need 2.4 s");
+    assert!(
+        start.elapsed() < Duration::from_millis(1_200),
+        "a global lock would need 2.4 s"
+    );
 }
 
 #[test]
@@ -155,8 +192,20 @@ fn should_hand_over_to_a_waiting_caller_when_the_running_one_fails() {
 
     let outcomes = collect_concurrently(8, |_| p.process("k", "b", &fails_first));
 
-    assert_eq!(outcomes.iter().filter(|o| matches!(o, Err(IdemError::HandlerFailed(_)))).count(), 1);
-    assert_eq!(outcomes.iter().filter(|o| **o == Ok("ok".to_string())).count(), 7);
+    assert_eq!(
+        outcomes
+            .iter()
+            .filter(|o| matches!(o, Err(IdemError::HandlerFailed(_))))
+            .count(),
+        1
+    );
+    assert_eq!(
+        outcomes
+            .iter()
+            .filter(|o| **o == Ok("ok".to_string()))
+            .count(),
+        7
+    );
     assert_eq!(calls.load(Ordering::SeqCst), 2);
 }
 
@@ -178,7 +227,10 @@ fn should_report_a_conflict_even_while_the_first_call_is_still_running() {
         });
         started_rx.recv().unwrap();
 
-        assert_eq!(p.process("k", "B", &|_: &str| Ok("x".to_string())), Err(IdemError::KeyConflict));
+        assert_eq!(
+            p.process("k", "B", &|_: &str| Ok("x".to_string())),
+            Err(IdemError::KeyConflict)
+        );
 
         release_tx.send(()).unwrap();
     });

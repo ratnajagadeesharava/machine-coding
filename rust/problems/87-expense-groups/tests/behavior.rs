@@ -34,7 +34,11 @@ fn optimum(balances: &BTreeMap<String, i64>) -> usize {
     let mut best = vec![0usize; 1 << k];
     for m in 1..(1usize << k) {
         sum[m] = sum[m & (m - 1)] + v[m.trailing_zeros() as usize];
-        let b = (0..k).filter(|i| m >> i & 1 == 1).map(|i| best[m ^ (1 << i)]).max().unwrap_or(0);
+        let b = (0..k)
+            .filter(|i| m >> i & 1 == 1)
+            .map(|i| best[m ^ (1 << i)])
+            .max()
+            .unwrap_or(0);
         best[m] = b + usize::from(sum[m] == 0);
     }
     k - best[(1 << k) - 1]
@@ -55,9 +59,13 @@ fn should_split_an_expense_equally_and_give_the_remainder_to_the_first_names() {
     let g = sut!(create());
     g.create_group("flat", &["ann", "bob", "cy"]).unwrap();
 
-    g.add_expense("flat", "ann", 100, &["cy", "ann", "bob"]).unwrap(); // 34, 33, 33 in name order
+    g.add_expense("flat", "ann", 100, &["cy", "ann", "bob"])
+        .unwrap(); // 34, 33, 33 in name order
 
-    assert_eq!(g.balances("flat"), Ok(bal(&[("ann", 66), ("bob", -33), ("cy", -33)])));
+    assert_eq!(
+        g.balances("flat"),
+        Ok(bal(&[("ann", 66), ("bob", -33), ("cy", -33)]))
+    );
     assert_eq!(g.total_spent("flat"), Ok(100));
 }
 
@@ -66,9 +74,13 @@ fn should_support_exact_shares_and_a_payer_outside_the_split() {
     let g = sut!(create());
     g.create_group("g", &["ann", "bob", "cy"]).unwrap();
 
-    g.add_exact_expense("g", "ann", &[("bob", 30), ("cy", 70)]).unwrap();
+    g.add_exact_expense("g", "ann", &[("bob", 30), ("cy", 70)])
+        .unwrap();
 
-    assert_eq!(g.balances("g"), Ok(bal(&[("ann", 100), ("bob", -30), ("cy", -70)])));
+    assert_eq!(
+        g.balances("g"),
+        Ok(bal(&[("ann", 100), ("bob", -30), ("cy", -70)]))
+    );
 }
 
 #[test]
@@ -78,17 +90,47 @@ fn should_reject_invalid_input_and_change_nothing() {
 
     assert_eq!(g.create_group("g", &["x"]), Err(GroupError::AlreadyExists));
     assert_eq!(g.create_group("h", &[]), Err(GroupError::InvalidInput));
-    assert_eq!(g.create_group("h", &["x", "x"]), Err(GroupError::InvalidInput));
+    assert_eq!(
+        g.create_group("h", &["x", "x"]),
+        Err(GroupError::InvalidInput)
+    );
     assert_eq!(g.add_member("g", "ann"), Err(GroupError::AlreadyExists));
-    assert_eq!(g.add_expense("nope", "ann", 10, &["ann"]), Err(GroupError::UnknownGroup));
-    assert_eq!(g.add_expense("g", "zed", 10, &["ann"]), Err(GroupError::UnknownMember));
-    assert_eq!(g.add_expense("g", "ann", 10, &["ann", "zed"]), Err(GroupError::UnknownMember));
-    assert_eq!(g.add_expense("g", "ann", 0, &["ann"]), Err(GroupError::InvalidInput));
-    assert_eq!(g.add_expense("g", "ann", 10, &[]), Err(GroupError::InvalidInput));
-    assert_eq!(g.add_expense("g", "ann", 10, &["bob", "bob"]), Err(GroupError::InvalidInput));
-    assert_eq!(g.add_exact_expense("g", "ann", &[("bob", 0)]), Err(GroupError::InvalidInput));
-    assert_eq!(g.settle("g", "ann", "bob", -5), Err(GroupError::InvalidInput));
-    assert_eq!(g.settle("g", "ann", "ann", 5), Err(GroupError::InvalidInput));
+    assert_eq!(
+        g.add_expense("nope", "ann", 10, &["ann"]),
+        Err(GroupError::UnknownGroup)
+    );
+    assert_eq!(
+        g.add_expense("g", "zed", 10, &["ann"]),
+        Err(GroupError::UnknownMember)
+    );
+    assert_eq!(
+        g.add_expense("g", "ann", 10, &["ann", "zed"]),
+        Err(GroupError::UnknownMember)
+    );
+    assert_eq!(
+        g.add_expense("g", "ann", 0, &["ann"]),
+        Err(GroupError::InvalidInput)
+    );
+    assert_eq!(
+        g.add_expense("g", "ann", 10, &[]),
+        Err(GroupError::InvalidInput)
+    );
+    assert_eq!(
+        g.add_expense("g", "ann", 10, &["bob", "bob"]),
+        Err(GroupError::InvalidInput)
+    );
+    assert_eq!(
+        g.add_exact_expense("g", "ann", &[("bob", 0)]),
+        Err(GroupError::InvalidInput)
+    );
+    assert_eq!(
+        g.settle("g", "ann", "bob", -5),
+        Err(GroupError::InvalidInput)
+    );
+    assert_eq!(
+        g.settle("g", "ann", "ann", 5),
+        Err(GroupError::InvalidInput)
+    );
     assert_eq!(g.balances("g"), Ok(bal(&[])));
     assert_eq!(g.total_spent("g"), Ok(0));
 }
@@ -127,7 +169,10 @@ fn should_only_let_members_leave_when_they_are_square() {
 
     assert_eq!(g.remove_member("g", "bob"), Ok(false));
     assert_eq!(g.remove_member("g", "cy"), Ok(true));
-    assert_eq!(g.add_expense("g", "ann", 10, &["cy"]), Err(GroupError::UnknownMember));
+    assert_eq!(
+        g.add_expense("g", "ann", 10, &["cy"]),
+        Err(GroupError::UnknownMember)
+    );
     g.settle("g", "bob", "ann", 45).unwrap();
     assert_eq!(g.remove_member("g", "bob"), Ok(true));
     assert_eq!(g.remove_member("g", "ann"), Ok(true));
@@ -156,11 +201,18 @@ fn should_settle_up_a_pair_with_one_payment() {
 fn should_settle_up_with_the_fewest_possible_payments() {
     let g = sut!(greedy_trap());
     let before = g.balances("trip").unwrap();
-    assert_eq!(before, bal(&[("a", 2), ("b", 3), ("c", -4), ("d", -5), ("e", 4)]));
+    assert_eq!(
+        before,
+        bal(&[("a", 2), ("b", 3), ("c", -4), ("d", -5), ("e", 4)])
+    );
 
     let payments = g.settle_up("trip").unwrap();
 
-    assert_eq!(payments.len(), 3, "greedy matching needs 4, the optimum is 3");
+    assert_eq!(
+        payments.len(),
+        3,
+        "greedy matching needs 4, the optimum is 3"
+    );
     assert!(apply(&before, &payments).is_empty());
     let mut sorted = payments.clone();
     sorted.sort();
@@ -187,7 +239,12 @@ fn should_find_the_optimum_on_larger_random_groups() {
                 let payer = half * 6 + next(6);
                 let debtor = half * 6 + next(6);
                 if payer != debtor {
-                    g.add_exact_expense("g", &format!("m{payer}"), &[(&format!("m{debtor}"), 1 + next(50) as i64)]).unwrap();
+                    g.add_exact_expense(
+                        "g",
+                        &format!("m{payer}"),
+                        &[(&format!("m{debtor}"), 1 + next(50) as i64)],
+                    )
+                    .unwrap();
                 }
             }
         }
@@ -196,7 +253,11 @@ fn should_find_the_optimum_on_larger_random_groups() {
         let payments = g.settle_up("g").unwrap();
 
         assert!(apply(&before, &payments).is_empty(), "round {round}");
-        assert_eq!(payments.len(), optimum(&before), "round {round}: fewer payments exist");
+        assert_eq!(
+            payments.len(),
+            optimum(&before),
+            "round {round}: fewer payments exist"
+        );
     }
 }
 
@@ -216,7 +277,12 @@ fn should_split_across_threads_without_losing_an_expense() {
     // every expense of 10 split 4 ways is charged 3,3,2,2 to a,b,c,d; each payer paid 2 * 500 * 10; 4_000 expenses
     assert_eq!(
         g.balances("g"),
-        Ok(bal(&[("a", 10_000 - 12_000), ("b", 10_000 - 12_000), ("c", 10_000 - 8_000), ("d", 10_000 - 8_000)]))
+        Ok(bal(&[
+            ("a", 10_000 - 12_000),
+            ("b", 10_000 - 12_000),
+            ("c", 10_000 - 8_000),
+            ("d", 10_000 - 8_000)
+        ]))
     );
 }
 
@@ -235,6 +301,10 @@ fn should_stay_correct_over_100_runs() {
 
         // 120 expenses of 7: a is charged 3,2,2 and paid 840; b settled 120 in total
         assert_eq!(g.total_spent("g"), Ok(840), "run {run}");
-        assert_eq!(g.balances("g"), Ok(bal(&[("a", 360), ("b", -120), ("c", -240)])), "run {run}");
+        assert_eq!(
+            g.balances("g"),
+            Ok(bal(&[("a", 360), ("b", -120), ("c", -240)])),
+            "run {run}"
+        );
     }
 }

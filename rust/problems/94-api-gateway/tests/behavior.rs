@@ -42,7 +42,10 @@ fn status(g: &Arc<dyn Gateway>, key: &str, path: &str) -> u16 {
 fn should_answer_401_for_unknown_keys_and_not_consume_tokens() {
     let (g, _) = sut!(simple());
 
-    assert_eq!(g.handle("nope", "/api/x"), Response::new(401, "unauthorized"));
+    assert_eq!(
+        g.handle("nope", "/api/x"),
+        Response::new(401, "unauthorized")
+    );
     assert_eq!(g.handle("", "/api/x").status, 401);
 }
 
@@ -66,8 +69,14 @@ fn should_pick_the_longest_matching_prefix() {
     g.add_route("/api/users", &["users"]).unwrap();
     g.add_client("k", "c", 100);
 
-    assert_eq!(g.handle("k", "/api/users/42"), Response::new(200, "users/api/users/42"));
-    assert_eq!(g.handle("k", "/api/orders"), Response::new(200, "general/api/orders"));
+    assert_eq!(
+        g.handle("k", "/api/users/42"),
+        Response::new(200, "users/api/users/42")
+    );
+    assert_eq!(
+        g.handle("k", "/api/orders"),
+        Response::new(200, "general/api/orders")
+    );
 }
 
 #[test]
@@ -75,7 +84,10 @@ fn should_reject_bad_routes() {
     let (g, _) = sut!(gateway());
     g.register_backend("a", echo("a"));
 
-    assert_eq!(g.add_route("/x", &["ghost"]), Err(GatewayError::InvalidRoute));
+    assert_eq!(
+        g.add_route("/x", &["ghost"]),
+        Err(GatewayError::InvalidRoute)
+    );
     assert_eq!(g.add_route("/x", &[]), Err(GatewayError::InvalidRoute));
 }
 
@@ -85,7 +97,10 @@ fn should_round_robin_over_the_backends() {
 
     let bodies: Vec<String> = (0..6).map(|_| g.handle("key-1", "/api/p").body).collect();
 
-    assert_eq!(bodies, ["a/api/p", "b/api/p", "c/api/p", "a/api/p", "b/api/p", "c/api/p"]);
+    assert_eq!(
+        bodies,
+        ["a/api/p", "b/api/p", "c/api/p", "a/api/p", "b/api/p", "c/api/p"]
+    );
     assert_eq!(g.success_count("acme"), Ok(6));
 }
 
@@ -136,7 +151,11 @@ fn should_open_the_circuit_after_three_consecutive_failures_and_stop_calling_the
         assert_eq!(status(&g, "k", "/api/x"), 200);
     }
 
-    assert_eq!(g.call_count("a"), Ok(3), "a is skipped once its circuit is open");
+    assert_eq!(
+        g.call_count("a"),
+        Ok(3),
+        "a is skipped once its circuit is open"
+    );
 }
 
 #[test]
@@ -162,7 +181,10 @@ fn should_let_one_trial_through_after_thirty_seconds_and_close_on_success() {
     for _ in 0..10 {
         g.handle("k", "/api/x");
     }
-    assert!(g.call_count("a").unwrap() > before + 3, "closed again: a takes its share");
+    assert!(
+        g.call_count("a").unwrap() > before + 3,
+        "closed again: a takes its share"
+    );
 }
 
 #[test]

@@ -16,7 +16,8 @@ fn should_handle_a_large_group_with_many_messages() {
 
     run_concurrently(10, |t| {
         for i in 0..100 {
-            c.send_group(&format!("u{t}"), "big", &format!("m{t}-{i}")).unwrap();
+            c.send_group(&format!("u{t}"), "big", &format!("m{t}-{i}"))
+                .unwrap();
         }
     });
 

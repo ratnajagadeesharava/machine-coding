@@ -20,10 +20,18 @@ impl Cluster {
         for id in IDS {
             let node = create(id, &IDS, net.sender(id))?;
             let (n1, n2) = (node.clone(), node.clone());
-            net.register(id, Arc::new(move |f, p| n1.on_message(f, p)), Arc::new(move |t| n2.on_tick(t)));
+            net.register(
+                id,
+                Arc::new(move |f, p| n1.on_message(f, p)),
+                Arc::new(move |t| n2.on_tick(t)),
+            );
             nodes.insert(id.to_string(), node);
         }
-        Some(Cluster { net, nodes, requests: 0 })
+        Some(Cluster {
+            net,
+            nodes,
+            requests: 0,
+        })
     }
 
     fn node(&self, id: &str) -> &Arc<dyn KvNode> {
@@ -43,7 +51,8 @@ impl Cluster {
     fn finish(&self, via: &str, rid: &str) -> Reply {
         let n = self.nodes[via].clone();
         let r = rid.to_string();
-        self.net.run_until(&move || n.reply(&r) != Reply::Pending, 3_000);
+        self.net
+            .run_until(&move || n.reply(&r) != Reply::Pending, 3_000);
         self.nodes[via].reply(rid)
     }
 
@@ -268,7 +277,11 @@ fn should_always_read_the_last_acknowledged_write_under_random_faults() {
                 if let Some(d) = down {
                     c.net.recover(d);
                 }
-                down = if rng.below(2) == 0 { None } else { Some(IDS[rng.below(3) as usize]) };
+                down = if rng.below(2) == 0 {
+                    None
+                } else {
+                    Some(IDS[rng.below(3) as usize])
+                };
                 if let Some(d) = down {
                     c.net.crash(d);
                 }
@@ -279,7 +292,11 @@ fn should_always_read_the_last_acknowledged_write_under_random_faults() {
             c.net.run(1 + rng.below(20));
             if rng.below(2) == 0 {
                 let v = format!("v{op}");
-                assert_eq!(c.put(via, &key, &v), Reply::PutOk, "seed {seed} op {op} put");
+                assert_eq!(
+                    c.put(via, &key, &v),
+                    Reply::PutOk,
+                    "seed {seed} op {op} put"
+                );
                 last_ok.insert(key, v);
             } else {
                 let r = c.get(via, &key);

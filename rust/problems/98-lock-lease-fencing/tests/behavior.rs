@@ -139,7 +139,10 @@ fn should_not_let_a_stale_owner_release_or_renew_the_new_holders_lock() {
 #[test]
 fn should_let_a_fenced_store_reject_a_writer_whose_lease_expired_while_paused() {
     let (l, clock) = sut!(setup());
-    let mut store = FencedStore { highest: 0, value: String::new() };
+    let mut store = FencedStore {
+        highest: 0,
+        value: String::new(),
+    };
     let ann_token = l.acquire("db", "ann", 1_000).unwrap().unwrap();
     // ann stalls (long GC pause) past her lease; bob takes the lock and writes
     clock.advance(2_000);
@@ -198,7 +201,9 @@ fn should_give_mutual_exclusion_and_increasing_tokens_under_contention() {
 fn should_let_exactly_one_thread_win_a_free_lock() {
     let (l, _) = sut!(setup());
 
-    let results = collect_concurrently(16, |t| l.acquire("job", &format!("worker-{t}"), 10_000).unwrap());
+    let results = collect_concurrently(16, |t| {
+        l.acquire("job", &format!("worker-{t}"), 10_000).unwrap()
+    });
 
     assert_eq!(results.iter().filter(|r| r.is_some()).count(), 1);
     assert_eq!(l.latest_token("job"), 1);

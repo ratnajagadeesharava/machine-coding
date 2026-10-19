@@ -18,7 +18,14 @@ pub type Auc<T> = Result<T, AuctionError>;
 pub trait Auctions: Send + Sync {
     /// Opens an auction that runs from now until `end_time_ms`. `starting_price` is the lowest allowed first bid;
     /// `reserve_price` is the price the winner must reach for the item to sell.
-    fn create_auction(&self, id: &str, seller: &str, starting_price: u64, reserve_price: u64, end_time_ms: u64) -> Auc<()>;
+    fn create_auction(
+        &self,
+        id: &str,
+        seller: &str,
+        starting_price: u64,
+        reserve_price: u64,
+        end_time_ms: u64,
+    ) -> Auc<()>;
 
     /// Places a bid. Accepted (`Ok(true)`) only if the auction is open, the bidder is not the seller, and the amount is
     /// at least the starting price and strictly higher than the current highest bid. A lower or equal bid is simply

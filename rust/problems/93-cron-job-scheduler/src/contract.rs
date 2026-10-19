@@ -24,7 +24,15 @@ pub trait JobService: Send + Sync {
     /// after the minute of the definition. A failing run is retried up to `max_attempts` attempts in total; after
     /// failure number k (k = 1, 2, ...) the next attempt is due `min(initial_backoff_ms * 2^(k-1), max_backoff_ms)`
     /// later.
-    fn define(&self, name: &str, cron: &str, job: JobFn, max_attempts: u32, initial_backoff_ms: u64, max_backoff_ms: u64) -> Jobs<()>;
+    fn define(
+        &self,
+        name: &str,
+        cron: &str,
+        job: JobFn,
+        max_attempts: u32,
+        initial_backoff_ms: u64,
+        max_backoff_ms: u64,
+    ) -> Jobs<()>;
 
     /// Runs, on the calling thread, everything that is due now and returns the number of executions (attempts) made.
     /// Order: by due time, then by definition order. Per job at most ONE execution per call, and

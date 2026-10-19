@@ -26,5 +26,10 @@ pub trait IdempotentProcessor: Send + Sync {
     /// * If the handler fails, nothing is stored: the error reaches the caller that ran it (`HandlerFailed`), and the
     ///   key is free again. Callers that were waiting for it do not fail; one of them runs the handler next.
     /// * A stored response expires 24 hours after it was stored (then the key can be used again).
-    fn process(&self, idempotency_key: &str, request_body: &str, handler: HandlerFn<'_>) -> Result<String, IdemError>;
+    fn process(
+        &self,
+        idempotency_key: &str,
+        request_body: &str,
+        handler: HandlerFn<'_>,
+    ) -> Result<String, IdemError>;
 }

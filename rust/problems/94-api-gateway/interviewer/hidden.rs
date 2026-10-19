@@ -26,7 +26,10 @@ fn should_not_serialize_slow_backend_calls() {
         }
     });
 
-    assert!(start.elapsed() < Duration::from_secs(3), "160 calls of 50 ms: serialised would take 8 s");
+    assert!(
+        start.elapsed() < Duration::from_secs(3),
+        "160 calls of 50 ms: serialised would take 8 s"
+    );
 }
 
 #[test]
@@ -51,5 +54,8 @@ fn should_open_the_circuit_within_a_few_calls_even_when_many_threads_hit_a_faili
         }
     });
 
-    assert!(calls.load(Ordering::SeqCst) <= 3 + 16, "at most 3 + the requests already in flight");
+    assert!(
+        calls.load(Ordering::SeqCst) <= 3 + 16,
+        "at most 3 + the requests already in flight"
+    );
 }

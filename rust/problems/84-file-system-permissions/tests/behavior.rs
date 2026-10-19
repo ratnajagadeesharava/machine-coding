@@ -22,7 +22,10 @@ fn should_create_read_and_list_files_and_directories() {
     fs.create_file("alice", "/home/alice/b.txt", "bee").unwrap();
     fs.create_file("alice", "/home/alice/a.txt", "ay").unwrap();
 
-    assert_eq!(fs.list("alice", "/home/alice"), Ok(vec!["a.txt".to_string(), "b.txt".to_string()]));
+    assert_eq!(
+        fs.list("alice", "/home/alice"),
+        Ok(vec!["a.txt".to_string(), "b.txt".to_string()])
+    );
     assert_eq!(fs.read("alice", "/home/alice/a.txt"), Ok("ay".to_string()));
     assert_eq!(fs.list("alice", "/"), Ok(vec!["home".to_string()]));
 }
@@ -47,12 +50,18 @@ fn should_reject_bad_paths_missing_entries_and_duplicates() {
     fs.chmod("root", "/", 0o777).unwrap();
     fs.create_file("alice", "/f", "x").unwrap();
 
-    assert_eq!(fs.mkdir("alice", "relative/path"), Err(FsError::InvalidPath));
+    assert_eq!(
+        fs.mkdir("alice", "relative/path"),
+        Err(FsError::InvalidPath)
+    );
     assert_eq!(fs.mkdir("alice", "/a/../b"), Err(FsError::InvalidPath));
     assert_eq!(fs.mkdir("alice", "/a//b"), Err(FsError::InvalidPath));
     assert_eq!(fs.mkdir("alice", "/missing/child"), Err(FsError::NotFound));
     assert_eq!(fs.read("alice", "/missing"), Err(FsError::NotFound));
-    assert_eq!(fs.create_file("alice", "/f", "again"), Err(FsError::AlreadyExists));
+    assert_eq!(
+        fs.create_file("alice", "/f", "again"),
+        Err(FsError::AlreadyExists)
+    );
     assert_eq!(fs.mkdir("alice", "/f/sub"), Err(FsError::NotADirectory));
     assert_eq!(fs.list("alice", "/f"), Err(FsError::NotADirectory));
     assert_eq!(fs.read("alice", "/"), Err(FsError::IsADirectory));
@@ -121,9 +130,18 @@ fn should_require_write_and_execute_on_the_parent_to_create_or_delete() {
     fs.mkdir("alice", "/shared").unwrap();
     fs.create_file("alice", "/shared/f", "x").unwrap();
 
-    assert_eq!(fs.create_file("carol", "/shared/g", "x"), Err(FsError::PermissionDenied)); // others: r-x
-    assert_eq!(fs.delete("carol", "/shared/f"), Err(FsError::PermissionDenied));
-    assert_eq!(fs.mkdir("bob", "/shared/sub"), Err(FsError::PermissionDenied)); // group dev has r-x, no w
+    assert_eq!(
+        fs.create_file("carol", "/shared/g", "x"),
+        Err(FsError::PermissionDenied)
+    ); // others: r-x
+    assert_eq!(
+        fs.delete("carol", "/shared/f"),
+        Err(FsError::PermissionDenied)
+    );
+    assert_eq!(
+        fs.mkdir("bob", "/shared/sub"),
+        Err(FsError::PermissionDenied)
+    ); // group dev has r-x, no w
 
     fs.chmod("alice", "/shared", 0o775).unwrap();
     fs.create_file("bob", "/shared/g", "x").unwrap();
@@ -152,7 +170,10 @@ fn should_restrict_chmod_to_owner_and_chown_to_root() {
     fs.create_file("alice", "/f", "x").unwrap();
 
     assert_eq!(fs.chmod("bob", "/f", 0o777), Err(FsError::PermissionDenied));
-    assert_eq!(fs.chown("alice", "/f", "bob", "dev"), Err(FsError::PermissionDenied));
+    assert_eq!(
+        fs.chown("alice", "/f", "bob", "dev"),
+        Err(FsError::PermissionDenied)
+    );
     fs.chmod("alice", "/f", 0o600).unwrap();
     assert_eq!(fs.mode("/f"), Ok(0o600));
     assert_eq!(fs.chmod("alice", "/f", 0o1000), Err(FsError::InvalidMode));
@@ -171,12 +192,21 @@ fn should_move_files_and_directories() {
 
     assert_eq!(fs.read("alice", "/dst/moved/f"), Ok("x".to_string()));
     assert_eq!(fs.list("alice", "/src"), Ok(vec![]));
-    assert_eq!(fs.rename("alice", "/dst", "/dst/moved/loop"), Err(FsError::InvalidPath)); // into its own subtree
+    assert_eq!(
+        fs.rename("alice", "/dst", "/dst/moved/loop"),
+        Err(FsError::InvalidPath)
+    ); // into its own subtree
     fs.create_file("alice", "/x", "1").unwrap();
-    assert_eq!(fs.rename("alice", "/x", "/dst"), Err(FsError::AlreadyExists));
+    assert_eq!(
+        fs.rename("alice", "/x", "/dst"),
+        Err(FsError::AlreadyExists)
+    );
     fs.mkdir("alice", "/ro").unwrap();
     fs.create_file("alice", "/ro/f", "1").unwrap();
-    assert_eq!(fs.rename("carol", "/ro/f", "/y"), Err(FsError::PermissionDenied)); // carol cannot remove entries from /ro
+    assert_eq!(
+        fs.rename("carol", "/ro/f", "/y"),
+        Err(FsError::PermissionDenied)
+    ); // carol cannot remove entries from /ro
 }
 
 #[test]
@@ -184,7 +214,10 @@ fn should_let_exactly_one_thread_create_the_same_path() {
     let fs = sut!(fs());
     fs.chmod("root", "/", 0o777).unwrap();
 
-    let wins = collect_concurrently(16, |t| fs.create_file("alice", "/contested", &format!("by {t}")).is_ok());
+    let wins = collect_concurrently(16, |t| {
+        fs.create_file("alice", "/contested", &format!("by {t}"))
+            .is_ok()
+    });
 
     assert_eq!(wins.iter().filter(|w| **w).count(), 1);
 }
@@ -198,7 +231,12 @@ fn should_keep_all_entries_when_many_threads_create_files_in_the_same_directory(
 
     run_concurrently(8, |t| {
         for i in 0..250 {
-            fs.create_file(if t % 2 == 0 { "alice" } else { "bob" }, &format!("/d/f-{t}-{i}"), "x").unwrap();
+            fs.create_file(
+                if t % 2 == 0 { "alice" } else { "bob" },
+                &format!("/d/f-{t}-{i}"),
+                "x",
+            )
+            .unwrap();
         }
     });
 
@@ -216,7 +254,8 @@ fn should_survive_concurrent_create_and_delete_cycles() {
             let dir = format!("/w{t}");
             fs.mkdir("alice", &dir).unwrap();
             fs.create_file("alice", &format!("{dir}/f"), "x").unwrap();
-            fs.rename("alice", &format!("{dir}/f"), &format!("{dir}/g")).unwrap();
+            fs.rename("alice", &format!("{dir}/f"), &format!("{dir}/g"))
+                .unwrap();
             fs.delete("alice", &format!("{dir}/g")).unwrap();
             fs.delete("alice", &dir).unwrap();
             cycles.fetch_add(1, Ordering::SeqCst);
