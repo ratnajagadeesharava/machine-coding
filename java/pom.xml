@@ -111,6 +111,7 @@
     <module>problems/91-online-auction</module>
     <module>problems/92-chat-system</module>
     <module>problems/93-cron-job-scheduler</module>
+    <module>problems/94-api-gateway</module>
   </modules>
 
   <dependencies>
