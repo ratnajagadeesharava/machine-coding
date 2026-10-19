@@ -2,7 +2,7 @@ package solution;
 
 import contract.PaymentGateway;
 
-/** Checks out by bank transfer: its factory method creates a {@link BankGateway}. */
+/** Bank transfer checkout. */
 public class BankTransferCheckout extends CheckoutFlow {
 
     @Override

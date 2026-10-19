@@ -1,4 +1,4 @@
-//! Visitor — operations on a document as separate objects, with double dispatch through `Element::accept`.
+//! Document elements and operations on them.
 #![allow(unused_variables)]
 
 pub mod contract;
@@ -15,13 +15,12 @@ impl Paragraph {
 }
 
 impl Element for Paragraph {
-    /// Calls `visitor.visit_paragraph(text)`.
     fn accept(&self, visitor: &mut dyn Visitor) {
         todo!()
     }
 }
 
-/// An image. Blank url or zero width/height -> `Err(DocError::InvalidImage)`.
+/// An image.
 pub struct Image;
 
 impl Image {
@@ -31,14 +30,12 @@ impl Image {
 }
 
 impl Element for Image {
-    /// Calls `visitor.visit_image(url, width, height)`.
     fn accept(&self, visitor: &mut dyn Visitor) {
         todo!()
     }
 }
 
-/// A grid of cells. The rows must be non-empty and every row must have the same non-zero number of cells,
-/// otherwise `Err(DocError::InvalidTable)`.
+/// A grid of cells.
 pub struct Table;
 
 impl Table {
@@ -48,17 +45,12 @@ impl Table {
 }
 
 impl Element for Table {
-    /// Calls `visitor.visit_table(rows)`.
     fn accept(&self, visitor: &mut dyn Visitor) {
         todo!()
     }
 }
 
-/// Turns elements into HTML fragments (one per visited element, in visiting order). Text and attribute values are
-/// escaped: `&` -> `&amp;` (first), `<` -> `&lt;`, `>` -> `&gt;`, `"` -> `&quot;`.
-/// - paragraph: `<p>TEXT</p>`
-/// - image: `<img src="URL" width="W" height="H"/>`
-/// - table: `<table><tr><td>A</td><td>B</td></tr><tr>...</tr></table>`
+/// Turns elements into HTML fragments.
 pub struct HtmlExporter;
 
 impl HtmlExporter {
@@ -83,8 +75,7 @@ impl Visitor for HtmlExporter {
     }
 }
 
-/// Counts words (runs of non-whitespace characters): a paragraph counts its words, an image 0, a table all words in
-/// all cells. The total accumulates over everything visited.
+/// Counts words.
 pub struct WordCounter;
 
 impl WordCounter {
@@ -125,17 +116,17 @@ impl Document {
         todo!()
     }
 
-    /// Applies the visitor to every element, in order.
+    /// Applies the visitor to every element.
     pub fn accept_all(&self, visitor: &mut dyn Visitor) {
         todo!()
     }
 
-    /// The HTML of every element joined with "\n", produced with an `HtmlExporter`. Empty document -> "".
+    /// The HTML of every element joined with "\n". Empty document -> "".
     pub fn to_html(&self) -> String {
         todo!()
     }
 
-    /// Total number of words, computed with a `WordCounter`.
+    /// Total number of words.
     pub fn total_words(&self) -> usize {
         todo!()
     }

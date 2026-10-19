@@ -1,6 +1,6 @@
 package contract;
 
-/** Provided receiver: the text being edited. Commands act on it; the buffer itself knows nothing about undo. */
+/** Provided receiver: the text being edited. */
 public final class TextBuffer {
     private final StringBuilder text = new StringBuilder();
 

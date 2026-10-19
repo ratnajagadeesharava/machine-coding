@@ -1,5 +1,4 @@
-//! Observer — a subject that notifies loosely-coupled observers. All methods take `&self`, so observers can
-//! subscribe and unsubscribe while a notification is in progress (use `RefCell` inside).
+//! Observer — a price feed that notifies subscribed observers. All methods take `&self`.
 #![allow(unused_variables)]
 
 pub mod contract;
@@ -14,7 +13,7 @@ impl PriceFeed {
         todo!()
     }
 
-    /// Listens to every symbol. Ids are unique.
+    /// Listens to every symbol. 
     pub fn subscribe(&self, observer: Rc<dyn PriceObserver>) -> SubscriptionId {
         todo!()
     }
@@ -34,15 +33,7 @@ impl PriceFeed {
         todo!()
     }
 
-    /// Tells the interested observers about a new price. Blank symbol -> `Err(InvalidSymbol)`, price 0 ->
-    /// `Err(InvalidPrice)` (nobody is notified). Rules:
-    /// - observers are notified in the order they subscribed;
-    /// - the set of observers is fixed when `publish` starts: one that subscribes during the notification does NOT
-    ///   get this price;
-    /// - an observer unsubscribed before its turn (by anyone, even during this publish) is skipped;
-    /// - an observer that returns `Err` does not stop the others.
-    ///
-    /// Returns how many observers failed.
+    /// Notifies the interested observers of a new price; returns how many observers failed.
     pub fn publish(&self, symbol: &str, price_cents: u64) -> Result<usize, FeedError> {
         todo!()
     }

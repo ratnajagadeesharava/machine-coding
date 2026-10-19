@@ -2,10 +2,7 @@
 
 | Difficulty | Duration | Scaffolding |
 |---|---|---|
-| Medium | 40 min | Level 2 — `Parcel`, the `ShippingStrategy` trait and `ShipError` are provided; four strategies, the calculator and `cheapest` are stubs. |
-
-> **Pattern:** *Strategy* — define a family of interchangeable algorithms behind one trait and let the client pick
-> (or swap) one at runtime. The context never contains a `match` on a pricing type.
+| Medium | 40 min | Level 2 — `Parcel`, `ShippingStrategy` and `ShipError` provided; write the four strategies, `ShippingCalculator` and `cheapest`. |
 
 ## Problem
 
@@ -18,10 +15,6 @@ distance, "free over €100". Each rule is a strategy; the checkout asks the cur
 2. `FreeOverThreshold::new(min_value_cents, fallback)` — free when `parcel.value_cents >= min`, otherwise the fallback's cost. `name()` is `"free>=<min>/<fallback name>"`. Strategies can wrap strategies.
 3. `ShippingCalculator::new(Box<dyn ShippingStrategy>)`: `quote(&parcel)` uses the current strategy; `set_strategy` swaps it at runtime; `strategy_name()` names it. A parcel under 1 gram → `Err(ShipError::InvalidParcel)`.
 4. `cheapest(&[Box<dyn ShippingStrategy>], &parcel)` returns the **index** of the cheapest strategy (first wins a tie). Empty list → `Err(NoStrategies)`; parcel under 1 gram → `Err(InvalidParcel)`.
-
-## Constraints (what the tests catch)
-
-- The tests define a `Pickup` strategy of their own and plug it into the calculator and `cheapest` with no changes to your code.
 
 ## Running
 

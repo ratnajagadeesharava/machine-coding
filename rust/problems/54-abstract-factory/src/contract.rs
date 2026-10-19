@@ -14,8 +14,7 @@ pub trait AddressValidator {
     fn is_valid_postal_code(&self, postal_code: &str) -> bool;
 }
 
-/// The abstract factory: one kit = one consistent FAMILY of products for a region. A client takes all of its tax,
-/// price and address behaviour from the same kit, so it can never mix US tax with EU formatting.
+/// Region-specific tax, price and address behaviour.
 pub trait RegionKit {
     /// Region code: "US", "EU" or "IN".
     fn region(&self) -> &str;

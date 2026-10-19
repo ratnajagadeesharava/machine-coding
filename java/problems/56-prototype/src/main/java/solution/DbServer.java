@@ -3,7 +3,7 @@ package solution;
 import contract.Blueprint;
 import java.util.List;
 
-/** A database server blueprint. kind() is "db"; it starts with two disks, 100 GB and 500 GB, and no tags. Blank name -> IllegalArgumentException. */
+/** A database server blueprint. */
 public class DbServer implements Blueprint {
 
     public DbServer(String name) {

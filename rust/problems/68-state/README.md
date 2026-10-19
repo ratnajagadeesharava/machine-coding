@@ -2,15 +2,7 @@
 
 | Difficulty | Duration | Scaffolding |
 |---|---|---|
-| Hard | 60 min | Level 2 — one stub type, `Ticket`, with the full transition table in its doc comment; `TicketError` is provided. You add the state types and trait. |
-
-> **Pattern:** *State* — let an object change its behaviour when its internal state changes, by delegating to a
-> **state object**. Each state type knows only its own rules and which state comes next, so `Ticket` contains no big
-> `match` over the state, and adding a state means adding a type.
->
-> **Rust adaptation:** a common shape is `Box<dyn TicketState>` where each transition takes `self: Box<Self>` and
-> returns the next boxed state (so a state can consume itself); shared data (agent, comments, reopen count, time
-> resolved) lives in `Ticket` and is passed to the state methods.
+| Hard | 60 min | Level 2 — one stub type, `Ticket`, with the transition table in its doc comment; `TicketError` is provided. You write the rest. |
 
 ## Problem
 
@@ -29,10 +21,6 @@ Implement the transition table in `Ticket`'s doc comment:
 6. `comment(text)` works in every state except CLOSED.
 7. `auto_close_if_stale()`: a RESOLVED ticket resolved 72 hours or more ago becomes CLOSED and returns `true`; otherwise `false` and nothing changes.
 8. A disallowed operation returns `Err(TicketError::Illegal("cannot <operation> a ticket in state <STATE>"))` (operations: assign, hold, resume, resolve, reopen, close, comment). Blank arguments are rejected first with `Err(InvalidArgument)`. A failed call changes nothing.
-
-## Constraints (what the tests catch)
-
-- Keep everything in `src/lib.rs`. The source must not contain `match self.state`, `match &self.state`, `match state`, `match self.status` or `match &self.status`, and must have at least **5** `impl <Trait> for <Type>` lines (one per state).
 
 ## Running
 

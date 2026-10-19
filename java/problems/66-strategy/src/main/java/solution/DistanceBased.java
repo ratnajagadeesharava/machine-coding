@@ -3,7 +3,7 @@ package solution;
 import contract.Parcel;
 import contract.ShippingStrategy;
 
-/** name() is "distance". Cost = centsPerKm * distanceKm. */
+/** Distance-based shipping. */
 public class DistanceBased implements ShippingStrategy {
 
     public DistanceBased(long centsPerKm) {

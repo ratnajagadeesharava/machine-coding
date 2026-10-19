@@ -15,8 +15,7 @@ pub enum RegistryError {
     UnknownKey,
 }
 
-/// A server blueprint that can be cloned. `clone_box` is the prototype operation: `Clone` itself cannot be used
-/// through `Box<dyn Blueprint>`, so each concrete type implements this.
+/// A server blueprint.
 pub trait Blueprint {
     fn name(&self) -> &str;
     fn rename(&mut self, new_name: &str);

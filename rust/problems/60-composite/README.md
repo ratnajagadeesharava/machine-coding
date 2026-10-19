@@ -2,14 +2,7 @@
 
 | Difficulty | Duration | Scaffolding |
 |---|---|---|
-| Medium | 40 min | Level 2 — the `FsNode` trait and `FsError` are provided in `src/contract.rs`; `File` (leaf) and `Directory` (composite) are stubs. |
-
-> **Pattern:** *Composite* — compose objects into tree structures and let clients treat **individual objects and
-> compositions uniformly**. `size()` on a file and `size()` on a folder with 10,000 files is the same call.
->
-> **Rust adaptation:** a folder owns `Vec<Box<dyn FsNode>>`. Because adding a folder to another **moves** it, a
-> cycle cannot be built, so (unlike the Java version) there is no cycle check. The trait's `child` method (default
-> `None`, overridden by `Directory`) lets `find` walk the tree without downcasting.
+| Medium | 40 min | Level 2 — the `FsNode` trait and `FsError` provided in `src/contract.rs`; the rest is yours to write. |
 
 ## Problem
 
@@ -24,10 +17,6 @@ and "list everything" without caring whether they hold a file or a folder.
 4. `add(child)`: a name already used in this folder → `Err(FsError::DuplicateName)` and the folder is unchanged.
 5. `remove(name)` returns the removed node (or `None`). `child_names()` lists the direct children in insertion order.
 6. `find("docs/deep/c.txt")` follows a `/`-separated path relative to the folder; `None` if a step is missing, goes through a file, or the path is blank.
-
-## Constraints (what the tests catch)
-
-- The tests add a `Shortcut` node defined in the test file to a folder. A folder that only understands `File`/`Directory` fails.
 
 ## Running
 

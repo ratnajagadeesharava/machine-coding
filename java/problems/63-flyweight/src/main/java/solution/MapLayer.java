@@ -2,14 +2,14 @@ package solution;
 
 import java.util.List;
 
-/** A layer of markers. Styles always come from the factory it was given. */
+/** A layer of markers. */
 public class MapLayer {
 
     public MapLayer(StyleFactory factory) {
         throw new UnsupportedOperationException("Not implemented yet");
     }
 
-    /** Creates a marker whose style is {@code factory.get(shape, color)}. Invalid arguments -> IllegalArgumentException. */
+    /** Invalid arguments -> IllegalArgumentException. */
     public void addMarker(double lat, double lng, String label, String shape, String color) {
         throw new UnsupportedOperationException("Not implemented yet");
     }
@@ -18,7 +18,7 @@ public class MapLayer {
         throw new UnsupportedOperationException("Not implemented yet");
     }
 
-    /** Markers in insertion order. Callers cannot modify the layer through the returned list. */
+    /** Markers in insertion order. */
     public List<Marker> markers() {
         throw new UnsupportedOperationException("Not implemented yet");
     }

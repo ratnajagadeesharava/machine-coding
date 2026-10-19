@@ -4,10 +4,7 @@ import java.util.List;
 import java.util.Optional;
 
 /**
- * Imports CSV lines "name,email,city". The first line is a header and is skipped. A record is valid when it has
- * exactly 3 comma-separated fields (empty trailing fields count) and none of them is blank after trimming. Valid
- * records are transformed by trimming every field and joining them with "|" ("ann , a@x.io, Rome" -> "ann|a@x.io|Rome"),
- * and saved by appending to the sink list. Null lines or sink -> IllegalArgumentException.
+ * Imports CSV lines "name,email,city" into a sink list. Null lines or sink -> IllegalArgumentException.
  */
 public class CsvImporter extends DataImporter {
 

@@ -2,16 +2,12 @@
 
 | Difficulty | Duration | Scaffolding |
 |---|---|---|
-| Medium | 45 min | Level 2 — three product interfaces and the `RegionKit` abstract factory are provided; three kits, a lookup and a client are stubs. |
-
-> **Pattern:** *Abstract Factory* — an interface for creating **families of related objects** without naming their
-> concrete classes. Here a "kit" produces the tax calculator, price formatter and address validator of one region,
-> so a checkout can never combine US tax with EU number formatting.
+| Medium | 45 min | Level 2 — the product interfaces and `RegionKit` are provided; the rest is yours to write. |
 
 ## Problem
 
 A shop sells in the US, the EU and India. Each region has its own tax rate, price format and postal-code rule. The
-checkout summary code must not contain a single `if (region == ...)`; it receives a kit and uses it.
+checkout summary is produced from a region kit.
 
 ## Requirements
 
@@ -25,10 +21,6 @@ checkout summary code must not contain a single `if (region == ...)`; it receive
 2. `isValidPostalCode(null)` is `false`.
 3. `Kits.forRegion(code)`: `"US"`, `"EU"`, `"IN"` in any case; `null` or unknown → `IllegalArgumentException`.
 4. `CheckoutSummary.summarize(kit, netCents, postalCode)` returns `"<region>: net <net>, tax <tax>, total <total>, postal <valid|invalid>"` — all amounts written by the kit's formatter, tax from the kit's calculator, `total = net + tax`. Example: `US: net $100.00, tax $8.00, total $108.00, postal valid`.
-
-## Constraints (what the tests catch)
-
-- The tests build a whole `TestKit` family and pass it to `summarize`. A client that does `instanceof UsKit` or switches on the region string fails.
 
 ## Running
 

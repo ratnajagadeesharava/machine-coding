@@ -2,7 +2,7 @@ package contract;
 
 import java.util.List;
 
-/** Provided contract: a server blueprint that can be cloned. {@link #copy()} is the prototype operation. */
+/** Provided contract: a server blueprint. */
 public interface Blueprint {
 
     String name();

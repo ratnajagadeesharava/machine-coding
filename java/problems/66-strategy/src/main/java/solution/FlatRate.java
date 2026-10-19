@@ -3,7 +3,7 @@ package solution;
 import contract.Parcel;
 import contract.ShippingStrategy;
 
-/** name() is "flat". Every parcel costs {@code cents}. A negative amount -> IllegalArgumentException. */
+/** Flat-rate shipping. */
 public class FlatRate implements ShippingStrategy {
 
     public FlatRate(long cents) {

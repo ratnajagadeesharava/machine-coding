@@ -1,9 +1,6 @@
 package solution;
 
-/**
- * One pin on the map. It holds only EXTRINSIC (per-pin) state - position and label - plus a reference to its
- * shared style. It must never hold a bitmap of its own.
- */
+/** One pin on the map. */
 public class Marker {
 
     /** lat must be in -90..90 and lng in -180..180 (IllegalArgumentException otherwise); style must not be null. */

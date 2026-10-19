@@ -4,14 +4,10 @@
 |---|---|---|
 | Medium | 35 min | Level 2 — four subsystem interfaces and the `UploadResult` record are provided; `PhotoUploadFacade` is a stub. |
 
-> **Pattern:** *Facade* — provide a single, simple interface to a complex subsystem. Clients call one method; the
-> facade knows the order, the error handling and the clean-up across the pieces.
-
 ## Problem
 
 Uploading a profile photo means: validate, virus-scan, resize, store, and add to the search index — and if the last
-step fails, undo the storage step. Every screen in the app was copying these five steps (badly). Hide them behind a
-facade with a single `upload` call.
+step fails, undo the storage step. Every screen in the app was copying these five steps (badly). Provide a single `upload` call for it.
 
 ## Requirements
 
@@ -23,11 +19,6 @@ facade with a single `upload` call.
 4. `storage.store(fileName, <resized content>)`. If it throws → `("FAILED_STORAGE", "")`; nothing is indexed.
 5. `index.index(url, fileName)`. If it throws → `storage.delete(url)` (compensation) and `("FAILED_INDEXING", "")`.
 6. Otherwise `("OK", url)`.
-
-## Constraints (what the tests catch)
-
-- The subsystems are recording fakes; the tests check the exact call sequence, that the **resized** content is stored, and that a failed index call is followed by the delete.
-- The facade can be reused for many uploads.
 
 ## Running
 

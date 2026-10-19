@@ -1,6 +1,4 @@
-//! State — each ticket state is its own type implementing a state trait; `Ticket` delegates to the current one.
-//!
-//! Keep everything in this file: the tests scan it for state-switching code and count the `impl ... for ...` blocks.
+//! Help-desk ticket with state-dependent behaviour.
 #![allow(unused_variables)]
 
 pub mod contract;
@@ -9,7 +7,7 @@ use contract::*;
 use playground_support::Clock;
 use std::sync::Arc;
 
-/// A support ticket whose behaviour depends on its current state.
+/// A support ticket.
 ///
 /// ```text
 ///             assign          hold         resume          resolve       reopen            close     comment

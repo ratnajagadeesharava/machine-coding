@@ -2,10 +2,7 @@
 
 | Difficulty | Duration | Scaffolding |
 |---|---|---|
-| Medium | 40 min | Level 2 — the `FsNode` component interface is provided; `FileNode` (leaf) and `DirectoryNode` (composite) are stubs. |
-
-> **Pattern:** *Composite* — compose objects into tree structures and let clients treat **individual objects and
-> compositions uniformly**. `size()` on a file and `size()` on a folder with 10,000 files is the same call.
+| Medium | 40 min | Level 2 — the `FsNode` component interface is provided; the rest is yours to write. |
 
 ## Problem
 
@@ -20,10 +17,6 @@ and "list everything" without caring whether they hold a file or a folder.
 4. `add(child)`: `null`, a name already used in this folder, or a **cycle** (adding the folder to itself, or adding any folder that contains this one) → `IllegalArgumentException`, and nothing changes.
 5. `remove(name)` returns whether it existed. `children()` is a read-only view in insertion order.
 6. `find("docs/deep/c.txt")` follows a `/`-separated path relative to the folder; empty if a step is missing or goes through a file; a blank path → `IllegalArgumentException`.
-
-## Constraints (what the tests catch)
-
-- The tests add a `Shortcut` node defined in the test file to a folder. A folder that casts children to `FileNode`/`DirectoryNode` fails.
 
 ## Running
 

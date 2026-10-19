@@ -1,11 +1,11 @@
-//! Prototype — new servers are stamped out by cloning registered blueprints through `Box<dyn Blueprint>`.
+//! Server blueprints and a registry of them.
 #![allow(unused_variables)]
 
 pub mod contract;
 
 use contract::*;
 
-/// kind() is "web"; starts with one 20 GB disk and no tags. Blank name -> `BlueprintError::InvalidName`.
+/// A web server blueprint.
 pub struct WebServer;
 
 impl WebServer {
@@ -41,7 +41,7 @@ impl Blueprint for WebServer {
     }
 }
 
-/// kind() is "db"; starts with two disks, 100 GB and 500 GB, and no tags. Blank name -> `InvalidName`.
+/// A database server blueprint.
 pub struct DbServer;
 
 impl DbServer {
@@ -85,13 +85,12 @@ impl BlueprintRegistry {
         todo!()
     }
 
-    /// Stores a COPY (`clone_box`) of the prototype under the key, replacing any earlier one. Blank key -> `BlankKey`.
+    /// Registers a prototype under a key.
     pub fn register(&mut self, key: &str, prototype: &dyn Blueprint) -> Result<(), RegistryError> {
         todo!()
     }
 
-    /// A new independent copy of the registered prototype renamed to `new_name`. Unknown key -> `UnknownKey`;
-    /// blank name -> `BlankName`.
+    /// Creates a new server from the registered prototype.
     pub fn create(&self, key: &str, new_name: &str) -> Result<Box<dyn Blueprint>, RegistryError> {
         todo!()
     }

@@ -3,10 +3,7 @@ package solution;
 import contract.Command;
 import contract.TextBuffer;
 
-/**
- * Deletes [from, to). It remembers the text it removed so that undo can put it back at {@code from}.
- * Null buffer -> IllegalArgumentException. A bad range is reported by execute() (the buffer rejects it).
- */
+/** Deletes a range of text. */
 public class DeleteCommand implements Command {
 
     public DeleteCommand(TextBuffer buffer, int from, int to) {

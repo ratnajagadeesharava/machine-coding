@@ -1,4 +1,4 @@
-//! Decorator — each decorator wraps a `Box<dyn MessageSink>` and is itself a `MessageSink`.
+//! Decorator.
 #![allow(unused_variables)]
 
 pub mod contract;
@@ -7,7 +7,7 @@ use contract::*;
 use playground_support::Clock;
 use std::sync::Arc;
 
-/// Sends `"[t=<clock.now_millis()>] " + message`.
+/// Prefixes each message with the clock time.
 pub struct TimestampingSink;
 
 impl TimestampingSink {
@@ -38,7 +38,7 @@ impl MessageSink for RedactingSink {
 }
 
 /// Tries the next sink up to `max_attempts` times. After the last failed attempt the LAST error is returned.
-/// `max_attempts` is at least 1 (the constructor makes 0 behave like 1).
+/// 
 pub struct RetryingSink;
 
 impl RetryingSink {

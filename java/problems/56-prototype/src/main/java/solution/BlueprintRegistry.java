@@ -2,21 +2,15 @@ package solution;
 
 import contract.Blueprint;
 
-/** A catalogue of ready-made blueprints. New servers are stamped out by cloning a registered prototype. */
+/** A catalogue of ready-made blueprints. */
 public class BlueprintRegistry {
 
-    /**
-     * Stores a COPY of the prototype under the key (replacing any earlier one), so later changes to the object the
-     * caller passed in do not affect the catalogue. Blank key or null prototype -> IllegalArgumentException.
-     */
+    /** Registers a prototype under a key. */
     public void register(String key, Blueprint prototype) {
         throw new UnsupportedOperationException("Not implemented yet");
     }
 
-    /**
-     * Returns a new, independent copy of the registered prototype with its name set to newName. Unknown key, or a
-     * blank newName -> IllegalArgumentException.
-     */
+    /** Creates a new server from the registered prototype. */
     public Blueprint create(String key, String newName) {
         throw new UnsupportedOperationException("Not implemented yet");
     }

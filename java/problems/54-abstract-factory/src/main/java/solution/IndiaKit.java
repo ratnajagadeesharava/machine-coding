@@ -5,7 +5,7 @@ import contract.PriceFormatter;
 import contract.RegionKit;
 import contract.TaxCalculator;
 
-/** Region "IN". Tax 18% (1800 bps, half up). Prices like "Rs 12.50". Postal codes: exactly 6 digits. */
+/** Region kit for India. */
 public class IndiaKit implements RegionKit {
 
     @Override

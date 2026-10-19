@@ -5,7 +5,7 @@ pub mod contract;
 
 use contract::*;
 
-/// Inserts `text` at character position `pos`. Undo removes exactly what was inserted.
+/// Inserts text into the buffer.
 pub struct InsertCommand;
 
 impl InsertCommand {
@@ -23,7 +23,7 @@ impl Command for InsertCommand {
     }
 }
 
-/// Deletes `[from, to)`. It remembers the text it removed so that undo can put it back at `from`.
+/// Deletes a range of text.
 pub struct DeleteCommand;
 
 impl DeleteCommand {
@@ -41,8 +41,7 @@ impl Command for DeleteCommand {
     }
 }
 
-/// Several commands as one. `execute` runs them in order; if one fails, the ones already run are undone in
-/// reverse order (all-or-nothing) and the error is returned. `undo` undoes them in reverse order.
+/// Several commands as one.
 pub struct MacroCommand;
 
 impl MacroCommand {
@@ -60,7 +59,7 @@ impl Command for MacroCommand {
     }
 }
 
-/// The invoker: runs commands and remembers them for undo / redo.
+/// Runs commands with undo / redo support.
 pub struct CommandHistory;
 
 impl CommandHistory {
@@ -68,18 +67,17 @@ impl CommandHistory {
         todo!()
     }
 
-    /// Runs the command. On success it becomes the newest undoable command and the redo list is cleared. On `Err`
-    /// the history is unchanged and the error is returned.
+    /// Runs the command.
     pub fn execute(&mut self, command: Box<dyn Command>, buffer: &mut TextBuffer) -> Result<(), EditError> {
         todo!()
     }
 
-    /// Undoes the newest command and makes it redoable. Returns false (doing nothing) if there is nothing to undo.
+    /// Returns false if there is nothing to undo.
     pub fn undo(&mut self, buffer: &mut TextBuffer) -> bool {
         todo!()
     }
 
-    /// Executes the newest undone command again and makes it undoable. Returns false if there is nothing to redo.
+    /// Returns false if there is nothing to redo.
     pub fn redo(&mut self, buffer: &mut TextBuffer) -> bool {
         todo!()
     }

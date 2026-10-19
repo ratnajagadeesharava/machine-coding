@@ -2,7 +2,7 @@ package solution;
 
 import contract.PaymentGateway;
 
-/** Checks out by card: its factory method creates a {@link CardGateway}. */
+/** Card checkout. */
 public class CardCheckout extends CheckoutFlow {
 
     @Override
