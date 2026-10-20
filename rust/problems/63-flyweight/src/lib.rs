@@ -1,4 +1,4 @@
-//! Flyweight — markers share their heavy icon (`Arc<MarkerStyle>`) and keep only a position and a label.
+//! Map markers and their icons.
 #![allow(unused_variables)]
 
 pub mod contract;
@@ -6,8 +6,7 @@ pub mod contract;
 use contract::MapError;
 use std::sync::Arc;
 
-/// The flyweight: shape, colour and a 4096-byte bitmap allocated once per style. Add a private constructor that
-/// only `StyleFactory` uses: nobody else should be able to create one.
+/// The icon of a map marker: shape, colour and a 4096-byte bitmap.
 pub struct MarkerStyle;
 
 impl MarkerStyle {
@@ -25,7 +24,7 @@ impl MarkerStyle {
     }
 }
 
-/// Hands out ONE shared `Arc<MarkerStyle>` per distinct (shape, colour). Thread-safe (`Send + Sync`).
+/// Provides `Arc<MarkerStyle>` values. Must be `Send + Sync`.
 pub struct StyleFactory;
 
 impl StyleFactory {
@@ -33,8 +32,7 @@ impl StyleFactory {
         todo!()
     }
 
-    /// The shared style for this shape and colour (compared exactly, case-sensitive). Blank shape or colour ->
-    /// `Err(MapError::InvalidStyle)`. Many threads may ask at once; each distinct pair is still created only once.
+    /// Blank shape or colour -> `Err(MapError::InvalidStyle)`.
     pub fn get(&self, shape: &str, color: &str) -> Result<Arc<MarkerStyle>, MapError> {
         todo!()
     }
@@ -45,8 +43,7 @@ impl StyleFactory {
     }
 }
 
-/// One pin: EXTRINSIC (per-pin) state only - position and label - plus the shared style. It must never hold a
-/// bitmap of its own.
+/// One pin on the map.
 pub struct Marker;
 
 impl Marker {
@@ -72,7 +69,7 @@ impl Marker {
     }
 }
 
-/// A layer of markers. Styles always come from the factory it was given.
+/// A layer of markers.
 pub struct MapLayer;
 
 impl MapLayer {
@@ -80,7 +77,7 @@ impl MapLayer {
         todo!()
     }
 
-    /// Creates a marker whose style is `factory.get(shape, color)`. Invalid arguments leave the layer unchanged.
+    /// Invalid arguments leave the layer unchanged.
     pub fn add_marker(&mut self, lat: f64, lng: f64, label: &str, shape: &str, color: &str) -> Result<(), MapError> {
         todo!()
     }

@@ -3,11 +3,7 @@ package solution;
 import contract.DocumentStore;
 import java.util.Optional;
 
-/**
- * Caching proxy: remembers documents the real store has returned so the (slow) real store is asked only once per
- * document. A blank/null id -> IllegalArgumentException. Only PRESENT documents are cached: a missing document is
- * looked up again next time (it may have been created meanwhile).
- */
+/** Caching proxy. A blank/null id -> IllegalArgumentException. */
 public class CachingStoreProxy implements DocumentStore {
 
     public CachingStoreProxy(DocumentStore real) {

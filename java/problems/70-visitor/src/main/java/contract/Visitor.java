@@ -2,10 +2,7 @@ package contract;
 
 import java.util.List;
 
-/**
- * Provided visitor interface: one method per kind of document element, each returning an {@code R}. A new
- * operation on documents = a new Visitor class; the element classes never change.
- */
+/** Provided visitor interface: one method per kind of document element. */
 public interface Visitor<R> {
 
     R visitParagraph(String text);

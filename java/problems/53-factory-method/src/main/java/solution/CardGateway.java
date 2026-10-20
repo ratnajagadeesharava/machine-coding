@@ -2,7 +2,7 @@ package solution;
 
 import contract.PaymentGateway;
 
-/** name() is "card". Accepts charges of up to 100000 cents (inclusive). */
+/** Card payment gateway. */
 public class CardGateway implements PaymentGateway {
 
     @Override

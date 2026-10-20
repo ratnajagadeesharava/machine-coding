@@ -2,10 +2,7 @@
 
 | Difficulty | Duration | Scaffolding |
 |---|---|---|
-| Medium | 40 min | Level 2 — `PriceObserver` and `Subscription` are provided; `PriceFeed` is a stub. |
-
-> **Pattern:** *Observer* — a subject keeps a list of observers and notifies them when its state changes, without
-> knowing what the observers are or do. Subscribers come and go at runtime and are loosely coupled to the subject.
+| Medium | 40 min | Level 2 — `PriceObserver` and `Subscription` provided; write `PriceFeed`. |
 
 ## Problem
 
@@ -23,10 +20,6 @@ but the ticker must not depend on any of them — and one broken listener must n
 5. An observer that is cancelled before its turn — even by an earlier observer during the same publish — is **skipped**.
 6. An observer that throws does not stop the others; `publish` returns how many threw.
 7. Subscribing the same observer object twice means it is notified twice; cancelling one subscription leaves the other.
-
-## Constraints (what the tests catch)
-
-- All observers in the tests are lambdas; the feed must work with nothing but the `PriceObserver` interface.
 
 ## Running
 

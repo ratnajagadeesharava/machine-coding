@@ -1,4 +1,4 @@
-//! Proxy — three stand-ins that implement `DocumentStore` and control access to a real store.
+//! Proxy.
 #![allow(unused_variables)]
 
 pub mod contract;
@@ -32,7 +32,7 @@ impl DocumentStore for CachingStoreProxy {
 }
 
 /// Virtual proxy: the factory is NOT called by `new`; it is called exactly once, on the first `fetch`, and the
-/// store it returns is reused. (Hint: `std::cell::OnceCell`.)
+/// store it returns is reused.
 pub struct LazyStoreProxy;
 
 impl LazyStoreProxy {

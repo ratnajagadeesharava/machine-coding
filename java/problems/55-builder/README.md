@@ -2,16 +2,12 @@
 
 | Difficulty | Duration | Scaffolding |
 |---|---|---|
-| Medium | 45 min | Level 2 — one stub class, `HttpRequest`, with its nested `Builder`. Bodies throw `UnsupportedOperationException`. |
-
-> **Pattern:** *Builder* — separate the construction of a complex object from its representation, so the same
-> step-by-step process can create different results, and the finished object can be **immutable** and **always valid**.
+| Medium | 45 min | Level 2 — one stub class, `HttpRequest`, with its nested `Builder`. |
 
 ## Problem
 
 An HTTP client library needs request objects with many optional parts (method, URL, headers, query parameters, body,
-timeout). A constructor with eight parameters is unreadable, and setters allow half-built or later-modified
-requests. Provide a fluent builder.
+timeout). Provide a fluent builder for them.
 
 ## Requirements
 
@@ -24,7 +20,7 @@ requests. Provide a fluent builder.
    - `timeoutMillis`: 1 to 60000.
 3. `build()` throws `IllegalStateException` when no URL was set, or when a body is combined with `GET` or `DELETE`.
 4. **Reuse:** one builder can build several requests; changing the builder afterwards must not change requests already built.
-5. `HttpRequest` is immutable: no public constructor, no `setXxx` methods, `headers()` is an unmodifiable map.
+5. `HttpRequest` is immutable: it is created only through the builder and `headers()` cannot be modified.
 
 ## Running
 

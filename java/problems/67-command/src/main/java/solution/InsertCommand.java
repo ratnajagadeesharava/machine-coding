@@ -3,7 +3,7 @@ package solution;
 import contract.Command;
 import contract.TextBuffer;
 
-/** Inserts {@code text} at {@code pos}. Undo removes exactly what was inserted. Null buffer or text -> IllegalArgumentException. */
+/** Inserts text into a buffer. */
 public class InsertCommand implements Command {
 
     public InsertCommand(TextBuffer buffer, int pos, String text) {

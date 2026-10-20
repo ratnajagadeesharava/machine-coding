@@ -5,7 +5,7 @@ pub mod contract;
 
 use contract::*;
 
-/// name() is "flat". Every parcel costs `cents`.
+/// Flat-rate shipping.
 pub struct FlatRate;
 
 impl FlatRate {
@@ -23,7 +23,7 @@ impl ShippingStrategy for FlatRate {
     }
 }
 
-/// name() is "weight". Cost = cents_per_kg * (number of STARTED kilograms): 1 g -> 1 kg, 1000 g -> 1 kg, 1001 g -> 2 kg.
+/// Weight-based shipping.
 pub struct ByWeight;
 
 impl ByWeight {
@@ -41,7 +41,7 @@ impl ShippingStrategy for ByWeight {
     }
 }
 
-/// name() is "distance". Cost = cents_per_km * distance_km.
+/// Distance-based shipping.
 pub struct DistanceBased;
 
 impl DistanceBased {
@@ -59,8 +59,7 @@ impl ShippingStrategy for DistanceBased {
     }
 }
 
-/// name() is `"free>=<min>/<fallback name>"`. Parcels worth at least `min_value_cents` ship free; others cost
-/// whatever the fallback strategy says.
+/// Free shipping above a parcel value, otherwise delegates to another strategy.
 pub struct FreeOverThreshold;
 
 impl FreeOverThreshold {
@@ -78,7 +77,7 @@ impl ShippingStrategy for FreeOverThreshold {
     }
 }
 
-/// The context. The pricing algorithm is a replaceable strategy it is given.
+/// Quotes shipping for parcels.
 pub struct ShippingCalculator;
 
 impl ShippingCalculator {
@@ -86,7 +85,6 @@ impl ShippingCalculator {
         todo!()
     }
 
-    /// Swaps the algorithm at runtime.
     pub fn set_strategy(&mut self, strategy: Box<dyn ShippingStrategy>) {
         todo!()
     }
@@ -95,14 +93,13 @@ impl ShippingCalculator {
         todo!()
     }
 
-    /// The current strategy's cost. A parcel under 1 gram -> `Err(ShipError::InvalidParcel)`.
+    /// The shipping cost for this parcel.
     pub fn quote(&self, parcel: &Parcel) -> Result<u64, ShipError> {
         todo!()
     }
 }
 
-/// Index of the cheapest strategy for this parcel; on a tie the one that comes first. Empty list ->
-/// `Err(NoStrategies)`; a parcel under 1 gram -> `Err(InvalidParcel)`.
+/// Index of the cheapest strategy for this parcel.
 pub fn cheapest(strategies: &[Box<dyn ShippingStrategy>], parcel: &Parcel) -> Result<usize, ShipError> {
     todo!()
 }

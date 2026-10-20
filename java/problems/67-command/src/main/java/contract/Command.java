@@ -1,6 +1,6 @@
 package contract;
 
-/** Provided command interface: a request turned into an object, so it can be queued, logged and undone. */
+/** Provided command interface: an undoable edit. */
 public interface Command {
 
     /** Does the work. May throw (e.g. IllegalArgumentException) - then it must have changed nothing. */

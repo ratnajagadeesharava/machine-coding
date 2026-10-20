@@ -4,10 +4,7 @@ import contract.AccessPolicy;
 import contract.DocumentStore;
 import java.util.Optional;
 
-/**
- * Protection proxy: checks {@code policy.canRead(user, id)} before every fetch. If not allowed it throws
- * SecurityException and the real store is NEVER asked. A blank/null id -> IllegalArgumentException (policy not asked).
- */
+/** Protection proxy: denied access -> SecurityException. A blank/null id -> IllegalArgumentException. */
 public class AccessControlStoreProxy implements DocumentStore {
 
     public AccessControlStoreProxy(DocumentStore real, AccessPolicy policy, String user) {

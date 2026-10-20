@@ -10,8 +10,7 @@ pub enum FeedError {
 
 pub type SubscriptionId = u64;
 
-/// Observers are notified with `&self` (use interior mutability for state). Returning `Err` means the observer
-/// failed; the feed must keep going.
+/// Observers are notified with `&self`. Returning `Err` means the observer failed.
 pub trait PriceObserver {
     fn on_price(&self, symbol: &str, price_cents: u64) -> Result<(), String>;
 }

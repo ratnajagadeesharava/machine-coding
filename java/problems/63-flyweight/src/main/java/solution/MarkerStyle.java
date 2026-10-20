@@ -1,13 +1,8 @@
 package solution;
 
-/**
- * The flyweight: the heavy, SHARED part of a map marker (its icon). Intrinsic state only: shape, colour and a
- * 4096-byte bitmap that is allocated once per style. It has no public constructor: only {@link StyleFactory}
- * creates styles, so they can be shared safely.
- */
+/** The icon of a map marker: shape, colour and a 4096-byte bitmap. */
 public final class MarkerStyle {
 
-    /** Package-private on purpose. Allocates the 4096-byte bitmap. */
     MarkerStyle(String shape, String color) {
         throw new UnsupportedOperationException("Not implemented yet");
     }

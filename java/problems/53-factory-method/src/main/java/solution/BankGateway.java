@@ -2,7 +2,7 @@ package solution;
 
 import contract.PaymentGateway;
 
-/** name() is "bank". Bank transfers have a minimum: accepts charges of at least 1000 cents. */
+/** Bank payment gateway. */
 public class BankGateway implements PaymentGateway {
 
     @Override

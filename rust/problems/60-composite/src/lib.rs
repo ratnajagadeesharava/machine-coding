@@ -1,7 +1,4 @@
-//! Composite — files and folders share the `FsNode` trait; a folder holds `Box<dyn FsNode>` children.
-//!
-//! Rust adaptation: ownership makes cycles impossible (a folder that contains another is moved into it), so there
-//! is no cycle check here.
+//! Composite.
 #![allow(unused_variables)]
 
 pub mod contract;
@@ -57,7 +54,7 @@ impl Directory {
     }
 
     /// Looks a node up by a '/'-separated path RELATIVE to this folder, e.g. `"docs/b.txt"`. `None` when any step
-    /// is missing or goes through a file, or when the path is blank. Hint: use `FsNode::child`.
+    /// is missing or goes through a file, or when the path is blank.
     pub fn find(&self, path: &str) -> Option<&dyn FsNode> {
         todo!()
     }

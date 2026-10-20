@@ -1,4 +1,4 @@
-//! Bridge — alerts (the abstraction) hold a `Box<dyn Channel>` (the implementor) and know nothing else about it.
+//! Alerts and channels.
 #![allow(unused_variables)]
 
 pub mod contract;
@@ -51,7 +51,7 @@ impl Channel for SlackChannel {
     }
 }
 
-/// The abstraction side of the bridge: WHAT is being said. Every alert type holds a channel and can switch it.
+/// A message to be sent through a channel.
 pub trait Alert {
     /// Sends (or, for digests, queues) a message for the recipient.
     fn send(&mut self, recipient: &str, message: &str);

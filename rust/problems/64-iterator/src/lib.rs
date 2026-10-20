@@ -1,4 +1,4 @@
-//! Iterator — a lazy, paginated feed and a lazy filter, both as real `Iterator` implementations.
+//! A paginated feed and a filtering iterator.
 #![allow(unused_variables)]
 
 pub mod contract;
@@ -11,7 +11,6 @@ use std::rc::Rc;
 pub struct PagedFeed;
 
 impl PagedFeed {
-    /// Nothing is fetched here.
     pub fn new(fetcher: Rc<dyn PageFetcher>) -> PagedFeed {
         todo!()
     }
@@ -21,14 +20,7 @@ impl PagedFeed {
     }
 }
 
-/// The lazy iterator over a feed. Add whatever fields you need.
-///
-/// - creating it fetches nothing; the first `next()` fetches page 0;
-/// - the next page is fetched only when the current page's items are used up AND `next()` is called again;
-/// - empty pages (even the first) are skipped by fetching the following page;
-/// - at the end `next()` keeps returning `None`;
-/// - if the fetcher fails, `next()` returns `Some(Err(..))` and the iterator stays usable: the next call retries
-///   the SAME page.
+/// The iterator over a feed. Add whatever fields you need.
 pub struct FeedIter;
 
 impl Iterator for FeedIter {
@@ -39,7 +31,7 @@ impl Iterator for FeedIter {
     }
 }
 
-/// A lazy filtering iterator: pulls from `inner` only as far as needed (never ahead of the element it returns).
+/// A filtering iterator.
 pub struct FilterLazy<I, P>(PhantomData<(I, P)>);
 
 impl<I: Iterator, P: FnMut(&I::Item) -> bool> Iterator for FilterLazy<I, P> {
@@ -50,7 +42,7 @@ impl<I: Iterator, P: FnMut(&I::Item) -> bool> Iterator for FilterLazy<I, P> {
     }
 }
 
-/// Wraps `inner` so that only elements accepted by `keep` come out.
+/// Only elements accepted by `keep` come out.
 pub fn filter_lazy<I: Iterator, P: FnMut(&I::Item) -> bool>(inner: I, keep: P) -> FilterLazy<I, P> {
     todo!()
 }

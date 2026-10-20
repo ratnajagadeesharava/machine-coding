@@ -2,11 +2,7 @@
 
 | Difficulty | Duration | Scaffolding |
 |---|---|---|
-| Medium | 45 min | Level 2 — the `DocumentStore` subject interface and `AccessPolicy` are provided; three proxies are stubs. |
-
-> **Pattern:** *Proxy* — a stand-in that has the **same interface** as the real object and controls access to it.
-> Three classic kinds in one problem: a **caching** proxy (avoid repeated expensive calls), a **virtual** (lazy)
-> proxy (delay creating something expensive) and a **protection** proxy (permission checks).
+| Medium | 45 min | Level 2 — the `DocumentStore` subject interface and `AccessPolicy` are provided; the rest is yours to write. |
 
 ## Problem
 
@@ -20,10 +16,6 @@ without the callers noticing.
 2. `LazyStoreProxy(Supplier<DocumentStore>)`: the supplier is **not** called when the proxy is constructed; it is called exactly once, on the first `fetch`, and the result is reused.
 3. `AccessControlStoreProxy(real, policy, user)`: before every fetch it asks `policy.canRead(user, id)`. If `false` → `SecurityException` and the real store is **never** asked. Blank/`null` id → `IllegalArgumentException` and the policy is not asked either.
 4. Each proxy implements `DocumentStore`, so they can be stacked: `Caching(AccessControl(Lazy(real)))`. In that stack a denied document is never cached and never causes the real store to be built.
-
-## Constraints (what the tests catch)
-
-- The real store is a counting fake; the policy is a recording lambda; the factory is a counting lambda.
 
 ## Running
 

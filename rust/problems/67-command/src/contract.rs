@@ -6,7 +6,7 @@ pub enum EditError {
     OutOfRange,
 }
 
-/// The text being edited. Commands act on it; the buffer itself knows nothing about undo.
+/// The text being edited.
 #[derive(Debug, Default)]
 pub struct TextBuffer {
     text: String,
@@ -52,7 +52,7 @@ impl TextBuffer {
     }
 }
 
-/// A request turned into an object, so it can be queued, logged and undone. The receiver is passed in on each call.
+/// An undoable edit; the buffer is passed in on each call.
 pub trait Command {
     /// Does the work. On `Err` it must have changed nothing.
     fn execute(&mut self, buffer: &mut TextBuffer) -> Result<(), EditError>;

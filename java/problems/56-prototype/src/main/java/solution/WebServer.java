@@ -3,7 +3,7 @@ package solution;
 import contract.Blueprint;
 import java.util.List;
 
-/** A web server blueprint. kind() is "web"; it starts with one 20 GB disk and no tags. Blank name -> IllegalArgumentException. */
+/** A web server blueprint. */
 public class WebServer implements Blueprint {
 
     public WebServer(String name) {

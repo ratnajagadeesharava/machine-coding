@@ -2,15 +2,7 @@
 
 | Difficulty | Duration | Scaffolding |
 |---|---|---|
-| Medium | 40 min | Level 2 — the `PriceObserver` trait and `FeedError` are provided; `PriceFeed` is a stub. |
-
-> **Pattern:** *Observer* — a subject keeps a list of observers and notifies them when its state changes, without
-> knowing what the observers are or do. Subscribers come and go at runtime and are loosely coupled to the subject.
->
-> **Rust adaptation:** observers are `Rc<dyn PriceObserver>` and every `PriceFeed` method takes `&self`, so an
-> observer that holds an `Rc<PriceFeed>` can subscribe or unsubscribe while a notification is running (the feed
-> keeps its list in a `RefCell`; copy the list before notifying so you never hold a borrow while calling out).
-> Failure is a returned `Err`, not an exception. Subscriptions are identified by a `SubscriptionId`.
+| Medium | 40 min | Level 2 — `PriceObserver` and `FeedError` provided; write `PriceFeed`. |
 
 ## Problem
 

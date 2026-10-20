@@ -4,11 +4,6 @@
 |---|---|---|
 | Hard | 50 min | Level 2 — the `Channel` interface is provided; three channels, the abstract `Alert` and three alert types are stubs. |
 
-> **Pattern:** *Bridge* — decouple an **abstraction** from its **implementation** so the two can vary
-> independently. Here the abstraction is *what kind of alert* (info, urgent, digest) and the implementation is *how
-> it travels* (email, SMS, Slack). Without a bridge you would need 3 × 3 = 9 classes (and 4 × 3 = 12 when someone
-> adds "pager"); with it you write 3 + 3.
-
 ## Problem
 
 An ops platform sends three kinds of alerts over three channels, and the combination changes per team and sometimes
@@ -24,10 +19,6 @@ know what an alert is.
    - `EmailChannel`: `EMAIL to:<recipient> subject:<title> | <body>`
    - `SlackChannel`: `SLACK @<recipient> *<title>* <body>`
    - `SmsChannel`: `SMS <recipient>: <text>` with `text = title + ": " + body`, cut to **40 characters** — a longer text becomes its first 37 characters followed by `...`.
-
-## Constraints (what the tests catch)
-
-- Alerts are tested with a `Recording` channel defined in the test (so their shaping cannot depend on any real channel), and channels are tested directly (so their formatting cannot depend on any alert). The same `Recording` channel also works with all three alert types.
 
 ## Running
 

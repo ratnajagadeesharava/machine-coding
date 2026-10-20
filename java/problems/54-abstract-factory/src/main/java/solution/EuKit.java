@@ -5,7 +5,7 @@ import contract.PriceFormatter;
 import contract.RegionKit;
 import contract.TaxCalculator;
 
-/** Region "EU". Tax 19% (1900 bps, half up). Prices like "12,50 EUR" (decimal comma). Postal codes: exactly 5 digits. */
+/** Region kit for the EU. */
 public class EuKit implements RegionKit {
 
     @Override

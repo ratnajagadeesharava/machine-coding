@@ -2,11 +2,7 @@
 
 | Difficulty | Duration | Scaffolding |
 |---|---|---|
-| Hard | 60 min | Level 2 — one stub class, `Ticket`, with the full transition table in its Javadoc. You add the state classes. |
-
-> **Pattern:** *State* — let an object change its behaviour when its internal state changes, by delegating to a
-> **state object**. Each state class knows only its own rules and which state comes next, so `Ticket` contains no
-> big `switch`/`if` over the state, and adding a state means adding a class.
+| Hard | 60 min | Level 2 — one stub class, `Ticket`, with the transition table in its Javadoc. You write the rest. |
 
 ## Problem
 
@@ -26,10 +22,6 @@ Implement the transition table in `Ticket`'s Javadoc:
 6. `comment(text)` works in every state except CLOSED.
 7. `autoCloseIfStale()`: a RESOLVED ticket resolved 72 hours or more ago (per the injected `Clock`) becomes CLOSED and returns `true`; otherwise `false` and nothing changes.
 8. An operation that is not allowed in the current state throws `IllegalStateException("cannot <operation> a ticket in state <STATE>")` (operation names: assign, hold, resume, resolve, reopen, close, comment). Blank arguments are rejected first with `IllegalArgumentException`. A failed call changes nothing.
-
-## Constraints (what the tests catch)
-
-- The `solution` package must have **at least 6** `.java` files (the ticket plus one per state) and none of the code may contain `switch`, `state ==`, `state.equals`, `.ordinal()` or `getClass()`.
 
 ## Running
 

@@ -3,7 +3,7 @@ package solution;
 import contract.Visitor;
 import java.util.List;
 
-/** Counts words (runs of non-whitespace characters): a paragraph counts its words, an image 0, a table all words in all cells. */
+/** Counts words. */
 public class WordCounter implements Visitor<Integer> {
 
     @Override

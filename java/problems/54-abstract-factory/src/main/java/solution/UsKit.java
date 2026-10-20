@@ -5,10 +5,7 @@ import contract.PriceFormatter;
 import contract.RegionKit;
 import contract.TaxCalculator;
 
-/**
- * Region "US". Tax 8% (800 basis points, half up). Prices like "$12.50". Postal codes: 5 digits, optionally
- * followed by "-" and 4 more digits ("12345", "12345-6789").
- */
+/** Region kit for the US. */
 public class UsKit implements RegionKit {
 
     @Override

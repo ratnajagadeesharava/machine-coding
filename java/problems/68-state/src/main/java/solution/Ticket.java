@@ -5,10 +5,7 @@ import java.util.List;
 import java.util.Optional;
 
 /**
- * A support ticket whose behaviour depends on its current state. Design it with the State pattern: every state
- * (NEW, IN_PROGRESS, ON_HOLD, RESOLVED, CLOSED) is its own class in this package that knows which operations it
- * allows and what the next state is; the Ticket just delegates to its current state object. Put each state in its own
- * source file (the tests count the files and scan for state-switching code).
+ * A support ticket (states NEW, IN_PROGRESS, ON_HOLD, RESOLVED, CLOSED).
  *
  * <pre>
  *            assign       hold          resume        resolve        reopen             close          comment

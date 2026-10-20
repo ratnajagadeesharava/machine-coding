@@ -2,10 +2,7 @@
 
 | Difficulty | Duration | Scaffolding |
 |---|---|---|
-| Medium | 35 min | Level 2 — the target (`Notifier`, `Delivery`) and the legacy adaptee (`LegacySmsGateway`) are provided; the adapter and a small client are stubs. |
-
-> **Pattern:** *Adapter* — convert the interface of an existing class into the interface that clients expect, so
-> classes with incompatible interfaces can work together **without changing either**.
+| Medium | 35 min | Level 2 — the target (`Notifier`, `Delivery`) and the legacy adaptee (`LegacySmsGateway`) are provided; `LegacySmsAdapter` and `AlertService` are stubs. |
 
 ## Problem
 
@@ -15,17 +12,12 @@ application code. Write the adapter.
 
 ## Requirements
 
-1. `LegacySmsAdapter(LegacySmsGateway)` implements `Notifier` by **wrapping** the gateway (object adapter): its only superclass is `Object` and its only interface is `Notifier`.
+1. `LegacySmsAdapter(LegacySmsGateway)` implements `Notifier`, backed by the given gateway.
 2. `send(phone, message)`:
    - blank/`null` phone → `Delivery(false, "invalid number")`; then blank message → `Delivery(false, "empty message")`; in both cases the legacy gateway is **not** called;
-   - otherwise call `submitXml` **exactly once** with `<sms><to>PHONE</to><body>MESSAGE</body></sms>`, where phone and message have `&` `<` `>` `"` `'` escaped as `&amp;` `&lt;` `&gt;` `&quot;` `&apos;` (escape `&` first);
+   - otherwise call `submitXml` with `<sms><to>PHONE</to><body>MESSAGE</body></sms>`, where phone and message have `&` `<` `>` `"` `'` escaped as `&amp;` `&lt;` `&gt;` `&quot;` `&apos;` (escape `&` first);
    - map the code: `0` → `Delivery(true, "")`, `1` → `"invalid number"`, `2` → `"message too long"`, `3` → `"unauthorized"`, any other `N` → `"unknown error (code N)"`.
-3. `AlertService(Notifier).alertAll(phones, message)` sends to each phone in order and returns `"<phone>: <error>"` for each failure (empty list if none, or if `phones` is `null`/empty). It knows nothing about XML or codes.
-
-## Constraints (what the tests catch)
-
-- The legacy gateway is a recording fake. XML must match exactly, including escaping.
-- `AlertService` is also tested with a plain lambda `Notifier`.
+3. `AlertService(Notifier).alertAll(phones, message)` sends to each phone in order and returns `"<phone>: <error>"` for each failure (empty list if none, or if `phones` is `null`/empty).
 
 ## Running
 

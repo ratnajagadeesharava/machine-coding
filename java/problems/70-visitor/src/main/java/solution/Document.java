@@ -16,17 +16,17 @@ public class Document {
         throw new UnsupportedOperationException("Not implemented yet");
     }
 
-    /** Applies the visitor to every element, in order, and returns the results in the same order. */
+    /** Applies the visitor to every element; results in order. */
     public <R> List<R> visitAll(Visitor<R> visitor) {
         throw new UnsupportedOperationException("Not implemented yet");
     }
 
-    /** The HTML of every element joined with "\n", produced with an {@link HtmlExporter}. Empty document -> "". */
+    /** The HTML of every element joined with "\n". Empty document -> "". */
     public String toHtml() {
         throw new UnsupportedOperationException("Not implemented yet");
     }
 
-    /** Total number of words, computed with a {@link WordCounter}. */
+    /** Total number of words. */
     public int totalWords() {
         throw new UnsupportedOperationException("Not implemented yet");
     }

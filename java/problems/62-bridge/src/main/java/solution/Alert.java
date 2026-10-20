@@ -2,10 +2,7 @@ package solution;
 
 import contract.Channel;
 
-/**
- * The abstraction side of the bridge: WHAT is being said. It holds a {@link Channel} (the bridge) and never
- * knows which concrete channel it is. Subclasses decide how the message is shaped.
- */
+/** A message to be sent through a channel. */
 public abstract class Alert {
 
     /** Null channel -> IllegalArgumentException. */

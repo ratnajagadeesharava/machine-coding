@@ -1,12 +1,11 @@
-//! Abstract Factory — each `RegionKit` creates a consistent family of products; the client uses only the traits.
+//! Abstract Factory.
 #![allow(unused_variables)]
 
 pub mod contract;
 
 use contract::*;
 
-/// Region "US". Tax 8% (800 bps, half up). Prices like "$12.50". Postal codes: 5 digits, optionally followed by
-/// "-" and 4 more digits ("12345", "12345-6789").
+/// Region kit for the US.
 pub struct UsKit;
 
 impl RegionKit for UsKit {
@@ -24,7 +23,7 @@ impl RegionKit for UsKit {
     }
 }
 
-/// Region "EU". Tax 19% (1900 bps, half up). Prices like "12,50 EUR" (decimal comma). Postal codes: exactly 5 digits.
+/// Region kit for the EU.
 pub struct EuKit;
 
 impl RegionKit for EuKit {
@@ -42,7 +41,7 @@ impl RegionKit for EuKit {
     }
 }
 
-/// Region "IN". Tax 18% (1800 bps, half up). Prices like "Rs 12.50". Postal codes: exactly 6 digits.
+/// Region kit for India.
 pub struct IndiaKit;
 
 impl RegionKit for IndiaKit {
@@ -60,15 +59,12 @@ impl RegionKit for IndiaKit {
     }
 }
 
-/// "US", "EU" or "IN" in any letter case; anything else -> `Err(KitError::UnknownRegion)`.
+/// Region kit lookup.
 pub fn kit_for_region(code: &str) -> Result<Box<dyn RegionKit>, KitError> {
     todo!()
 }
 
-/// The client. Returns `"<region>: net <net>, tax <tax>, total <total>, postal <valid|invalid>"` where every amount
-/// is written by the kit's price formatter, tax comes from the kit's tax calculator (on the net amount),
-/// total = net + tax, and the postal code is judged by the kit's address validator.
-/// Example (US): `"US: net $100.00, tax $8.00, total $108.00, postal valid"`.
+/// Builds the checkout summary line.
 pub fn summarize(kit: &dyn RegionKit, net_cents: u64, postal_code: &str) -> String {
     todo!()
 }
