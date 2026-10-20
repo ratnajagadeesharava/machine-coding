@@ -1,11 +1,11 @@
-//! Polymorphism — one trait, many behaviours. `TollPlaza` works with `&dyn Vehicle` only.
+//! Polymorphism.
 #![allow(unused_variables)]
 
 pub mod contract;
 
 use contract::*;
 
-/// 500 cents; peak 750.
+/// Car.
 pub struct Car;
 
 impl Car {
@@ -23,7 +23,7 @@ impl Vehicle for Car {
     }
 }
 
-/// 200 cents, never surcharged.
+/// Motorcycle.
 pub struct Motorcycle;
 
 impl Motorcycle {
@@ -41,7 +41,7 @@ impl Vehicle for Motorcycle {
     }
 }
 
-/// 1000 cents + 300 per axle beyond 2; peak = 1.5x. Fewer than 2 axles -> `TollError::InvalidAxles`.
+/// Truck.
 pub struct Truck;
 
 impl Truck {
@@ -59,7 +59,7 @@ impl Vehicle for Truck {
     }
 }
 
-/// 800 cents; peak 960.
+/// Bus.
 pub struct Bus;
 
 impl Bus {
@@ -77,7 +77,7 @@ impl Vehicle for Bus {
     }
 }
 
-/// Charges any `Vehicle`. It must not know which concrete types exist.
+/// Charges vehicles and keeps receipts.
 pub struct TollPlaza;
 
 impl TollPlaza {
@@ -85,7 +85,6 @@ impl TollPlaza {
         todo!()
     }
 
-    /// Charges the vehicle's own toll, records the receipt "PLATE:amount" and returns the amount.
     pub fn charge(&mut self, vehicle: &dyn Vehicle, peak: bool) -> u64 {
         todo!()
     }
@@ -94,7 +93,6 @@ impl TollPlaza {
         todo!()
     }
 
-    /// One entry per charge, in order.
     pub fn receipts(&self) -> Vec<String> {
         todo!()
     }

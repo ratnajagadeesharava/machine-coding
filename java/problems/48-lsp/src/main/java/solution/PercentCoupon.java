@@ -2,7 +2,7 @@ package solution;
 
 import contract.Coupon;
 
-/** percent in 1..100 (otherwise IllegalArgumentException). Discount = amount * percent / 100, rounded down. */
+/** Percentage coupon. */
 public class PercentCoupon implements Coupon {
 
     public PercentCoupon(String code, int percent) {

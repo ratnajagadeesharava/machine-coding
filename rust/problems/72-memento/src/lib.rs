@@ -1,5 +1,4 @@
-//! Memento — `GameCharacter` (originator) saves into an opaque `Snapshot` (memento) kept by `SaveSlots` and
-//! `UndoHistory` (caretakers) without them ever seeing inside.
+//! Memento — save and restore a `GameCharacter`.
 #![allow(unused_variables)]
 
 pub mod contract;
@@ -9,13 +8,11 @@ use contract::GameError;
 pub const MAX_HP: u32 = 100;
 pub const MAX_ITEMS: usize = 3;
 
-/// The memento: opaque to everybody except `GameCharacter`. Keep every field PRIVATE (no `pub` fields) and give it
-/// no accessor methods; the tests scan this file. Add private fields to hold the state, and keep the derive: the
-/// caretakers need to clone snapshots.
+/// A saved character state.
 #[derive(Clone)]
 pub struct Snapshot;
 
-/// The originator. Initial state: hp 100, level 1, position (0, 0), empty inventory.
+/// A game character. Initial state: hp 100, level 1, position (0, 0), empty inventory.
 pub struct GameCharacter;
 
 impl GameCharacter {
@@ -72,19 +69,18 @@ impl GameCharacter {
         todo!()
     }
 
-    /// Captures hp, level, position and inventory as a deep, independent copy.
+    /// Captures the character's state.
     pub fn save(&self) -> Snapshot {
         todo!()
     }
 
-    /// Puts the character back into the saved state (the name is not part of the state). A snapshot can be restored
-    /// repeatedly.
+    /// Restores a saved state.
     pub fn restore(&mut self, snapshot: &Snapshot) {
         todo!()
     }
 }
 
-/// The caretaker for manual saves: it stores snapshots under a name and hands them back, never looking inside.
+/// Named save slots.
 pub struct SaveSlots;
 
 impl SaveSlots {
@@ -92,12 +88,12 @@ impl SaveSlots {
         todo!()
     }
 
-    /// Stores a snapshot in the slot, replacing any earlier one. Blank slot -> `Err(InvalidInput)`.
+    /// Saves the character into the slot.
     pub fn save(&mut self, slot: &str, character: &GameCharacter) -> Result<(), GameError> {
         todo!()
     }
 
-    /// Restores the slot's snapshot into the character. Returns false (and changes nothing) for an unknown slot.
+    /// Loads the slot into the character.
     pub fn load(&self, slot: &str, character: &mut GameCharacter) -> bool {
         todo!()
     }
@@ -107,7 +103,7 @@ impl SaveSlots {
     }
 }
 
-/// The caretaker for undo/redo of one character. It stores snapshots only.
+/// Undo/redo for one character.
 pub struct UndoHistory;
 
 impl UndoHistory {
@@ -116,19 +112,17 @@ impl UndoHistory {
         todo!()
     }
 
-    /// Remembers the character's CURRENT state as something to go back to, and forgets everything that could be
-    /// redone. When more than `max_checkpoints` are remembered the oldest is dropped.
+    /// Remembers the current state.
     pub fn checkpoint(&mut self, character: &GameCharacter) {
         todo!()
     }
 
-    /// Goes back to the newest checkpoint (which is consumed). The state the character had just before going back is
-    /// kept so that `redo` can return to it. False (doing nothing) when there is no checkpoint.
+    /// Goes back one checkpoint.
     pub fn undo(&mut self, character: &mut GameCharacter) -> bool {
         todo!()
     }
 
-    /// Returns to the state left by the latest undo; that undo's target becomes undoable again. False if nothing to redo.
+    /// Re-applies the latest undone state.
     pub fn redo(&mut self, character: &mut GameCharacter) -> bool {
         todo!()
     }

@@ -2,7 +2,7 @@ package solution;
 
 import java.util.List;
 
-/** A course has a seat limit. It does not own its students. */
+/** A course with a seat limit. */
 public class Course {
 
     /** Blank code or capacity <= 0 -> IllegalArgumentException. */
@@ -14,7 +14,7 @@ public class Course {
         throw new UnsupportedOperationException("Not implemented yet");
     }
 
-    /** Same effect as {@code student.enroll(this)}: whichever side you start from, both stay consistent. */
+    /** Same effect as {@code student.enroll(this)}. */
     public boolean enroll(Student student) {
         throw new UnsupportedOperationException("Not implemented yet");
     }

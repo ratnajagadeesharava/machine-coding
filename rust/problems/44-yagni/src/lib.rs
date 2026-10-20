@@ -1,4 +1,4 @@
-//! Does exactly what the README asks and nothing more.
+//! URL shortener.
 #![allow(unused_variables)]
 
 pub mod contract;

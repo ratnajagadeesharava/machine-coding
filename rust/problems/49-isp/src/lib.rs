@@ -1,12 +1,11 @@
-//! ISP — small traits, devices implement only what they can do, jobs ask for only what they need.
+//! Office devices and jobs.
 #![allow(unused_variables)]
 
 pub mod contract;
 
 use contract::*;
 
-/// A printer and nothing else: it implements ONLY `Printer`.
-/// `print` returns "PRINTED: " + document; a blank document -> `Err(BlankDocument)`.
+/// A basic printer.
 pub struct BasicPrinter;
 
 impl BasicPrinter {
@@ -21,7 +20,7 @@ impl Printer for BasicPrinter {
     }
 }
 
-/// A scanner and nothing else: it implements ONLY `Scanner`. Pages are "SCAN-1", "SCAN-2", ...
+/// A flatbed scanner.
 pub struct FlatbedScanner;
 
 impl FlatbedScanner {
@@ -36,10 +35,7 @@ impl Scanner for FlatbedScanner {
     }
 }
 
-/// Does everything. It implements the three small traits directly.
-/// print: "PRINTED: " + document (blank -> `Err(BlankDocument)`). scan: "SCAN-1", "SCAN-2", ...
-/// fax: a blank document -> `Err(BlankDocument)`; the number must be an optional '+' followed by 7 to 15
-/// digits, otherwise `Ok(false)`; a good number gives `Ok(true)`.
+/// All-in-one office machine.
 pub struct AllInOne;
 
 impl AllInOne {
@@ -66,17 +62,17 @@ impl FaxMachine for AllInOne {
     }
 }
 
-/// Prints every document in order and returns the outputs. Asks for a `Printer`, nothing bigger.
+/// Print job.
 pub fn print_job(printer: &dyn Printer, documents: &[&str]) -> Result<Vec<String>, DeviceError> {
     todo!()
 }
 
-/// Scans `pages` pages in order (`pages == 0` -> `Err(InvalidPages)`). Asks for a `Scanner`, nothing bigger.
+/// Scan job.
 pub fn scan_job(scanner: &mut dyn Scanner, pages: u32) -> Result<Vec<String>, DeviceError> {
     todo!()
 }
 
-/// Sends one fax. Asks for a `FaxMachine`, nothing bigger.
+/// Fax job.
 pub fn fax_job(machine: &mut dyn FaxMachine, number: &str, document: &str) -> Result<bool, DeviceError> {
     todo!()
 }

@@ -1,11 +1,11 @@
-//! LSP — three coupons that all honour the `Coupon` contract, and a `checkout` that trusts it.
+//! Coupons and checkout.
 #![allow(unused_variables)]
 
 pub mod contract;
 
 use contract::*;
 
-/// percent in 1..=100 (else `InvalidArgument`). Discount = amount * percent / 100, rounded down.
+/// Percentage coupon.
 pub struct PercentCoupon;
 
 impl PercentCoupon {
@@ -23,7 +23,7 @@ impl Coupon for PercentCoupon {
     }
 }
 
-/// Takes a fixed number of cents off (`off >= 0`, else `InvalidArgument`). The price never goes below 0.
+/// Fixed-amount coupon.
 pub struct FlatCoupon;
 
 impl FlatCoupon {
@@ -41,8 +41,7 @@ impl Coupon for FlatCoupon {
     }
 }
 
-/// Takes `off` off, but only when the amount is at least `min_spend`. Below the minimum the amount is returned
-/// unchanged (it must NOT be an error). The price never goes below 0.
+/// Minimum-spend coupon.
 pub struct MinSpendCoupon;
 
 impl MinSpendCoupon {
@@ -60,8 +59,7 @@ impl Coupon for MinSpendCoupon {
     }
 }
 
-/// Sum of the prices, then the coupon is applied ONCE to that sum. `None` coupon = no discount. Empty list = 0.
-/// A negative price -> `Err(CouponError::NegativeAmount)`. Works with ANY coupon: no special cases per type.
+/// Computes a basket total with an optional coupon.
 pub fn checkout_total(prices_cents: &[i64], coupon: Option<&dyn Coupon>) -> Result<i64, CouponError> {
     todo!()
 }

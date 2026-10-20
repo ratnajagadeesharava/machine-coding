@@ -2,7 +2,7 @@ package solution;
 
 import contract.Vehicle;
 
-/** 200 cents, never a peak surcharge. */
+/** Motorcycle. */
 public class Motorcycle implements Vehicle {
 
     public Motorcycle(String plate) {

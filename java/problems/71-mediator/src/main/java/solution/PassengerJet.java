@@ -3,10 +3,7 @@ package solution;
 import contract.Aircraft;
 import contract.Tower;
 
-/**
- * A real aircraft. It knows its tower and nothing else: it must never hold a reference to another aircraft (the
- * tests check its fields by reflection).
- */
+/** A passenger aircraft. */
 public class PassengerJet implements Aircraft {
 
     /** Blank id or null tower -> IllegalArgumentException. Starts as "AIRBORNE". */
@@ -19,7 +16,7 @@ public class PassengerJet implements Aircraft {
         throw new UnsupportedOperationException("Not implemented yet");
     }
 
-    /** Asks the tower for the runway (the tower's reply changes the status through the callbacks). */
+    /** Asks the tower for the runway. */
     public void requestLanding() {
         throw new UnsupportedOperationException("Not implemented yet");
     }

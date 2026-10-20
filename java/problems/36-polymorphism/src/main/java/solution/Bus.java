@@ -2,7 +2,7 @@ package solution;
 
 import contract.Vehicle;
 
-/** 800 cents; at peak time 1.2x (960). */
+/** Bus. */
 public class Bus implements Vehicle {
 
     public Bus(String plate) {

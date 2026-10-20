@@ -3,7 +3,7 @@ package solution;
 import contract.Customer;
 import contract.Wallet;
 
-/** A customer that pays out of its own wallet. canAfford / pay are answered by the customer itself. */
+/** A customer that pays out of its own wallet. */
 public class StandardCustomer implements Customer {
 
     public StandardCustomer(String name, Wallet wallet) {

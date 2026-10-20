@@ -1,9 +1,8 @@
 package solution;
 
-/** Implement this class. Keep the public signatures: the tests compile against them. */
+/** Currency amount in minor units. */
 public final class Money implements Comparable<Money> {
 
-    /** currency must be exactly 3 upper-case letters, otherwise IllegalArgumentException. */
     public static Money of(String currency, long minorUnits) {
         throw new UnsupportedOperationException("Not implemented yet");
     }
@@ -40,6 +39,4 @@ public final class Money implements Comparable<Money> {
     public int compareTo(Money other) {
         throw new UnsupportedOperationException("Not implemented yet");
     }
-
-    // equals, hashCode and toString are part of the exercise too.
 }

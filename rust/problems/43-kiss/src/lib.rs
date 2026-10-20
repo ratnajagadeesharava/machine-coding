@@ -1,4 +1,4 @@
-//! Keep it simple: the whole solution is one function.
+//! Library late fees.
 #![allow(unused_variables)]
 
 /// Late fee in cents for a returned library item.

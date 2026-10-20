@@ -2,7 +2,7 @@ package solution;
 
 import contract.Coupon;
 
-/** Takes a fixed number of cents off (offCents >= 0, otherwise IllegalArgumentException). The price never goes below 0. */
+/** Fixed-amount coupon. */
 public class FlatCoupon implements Coupon {
 
     public FlatCoupon(String code, long offCents) {

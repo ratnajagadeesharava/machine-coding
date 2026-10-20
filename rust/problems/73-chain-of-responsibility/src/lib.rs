@@ -1,8 +1,4 @@
-//! Chain of Responsibility — handlers are tried in order until one decides.
-//!
-//! Rust adaptation: a pointer-linked list of handlers (each owning `Option<Box<next>>`) fights ownership, so the
-//! chain is an ordered `Vec<Box<dyn Decider>>` owned by an `ApprovalChain`. The behaviour is the same: the request
-//! walks the handlers in order and stops at the first decision.
+//! Chain of Responsibility — expense approval.
 #![allow(unused_variables)]
 
 pub mod contract;
@@ -71,22 +67,21 @@ impl Decider for Director {
     }
 }
 
-/// An ordered chain of handlers.
+/// A chain of approval handlers.
 pub struct ApprovalChain;
 
 impl ApprovalChain {
-    /// An empty chain: every request is rejected with the "no approver" message.
+    /// An empty chain.
     pub fn new() -> ApprovalChain {
         todo!()
     }
 
-    /// Appends a handler to the END of the chain.
+    /// Appends a handler to the chain.
     pub fn then(self, handler: Box<dyn Decider>) -> ApprovalChain {
         todo!()
     }
 
-    /// Asks the handlers in order; the first decision is the answer and the rest of the chain is NOT asked. With no
-    /// decision the answer is `"REJECTED:no approver for <amount_cents>"`.
+    /// Returns the decision text.
     pub fn handle(&self, request: &ExpenseRequest) -> String {
         todo!()
     }

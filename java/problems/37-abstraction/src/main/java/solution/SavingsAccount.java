@@ -1,6 +1,6 @@
 package solution;
 
-/** Cannot be withdrawn below {@code minBalance}. No monthly fee. */
+/** Savings account. */
 public class SavingsAccount extends Account {
 
     public SavingsAccount(long minBalance) {

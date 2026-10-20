@@ -1,8 +1,6 @@
 package solution;
 
-/**
- * May be overdrawn down to {@code -overdraftLimit}. Monthly fee 200, waived while the balance is at least 100000.
- */
+/** Checking account. */
 public class CheckingAccount extends Account {
 
     public CheckingAccount(long overdraftLimit) {

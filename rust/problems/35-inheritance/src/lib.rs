@@ -1,16 +1,14 @@
-//! Inheritance, the Rust way: shared data lives in `Staff`, shared behaviour lives in the default
-//! methods of the `Payable` trait, and each kind of employee wraps a `Staff` and overrides what differs.
+//! Inheritance.
 #![allow(unused_variables)]
 
 pub mod contract;
 
 use contract::PayrollError;
 
-/// The data every employee has: a name and a base salary.
+/// Name and base salary.
 pub struct Staff;
 
 impl Staff {
-    /// Blank name -> `InvalidName`; negative salary -> `NegativeSalary`.
     pub fn new(name: &str, base_monthly: i64) -> Result<Staff, PayrollError> {
         todo!()
     }
@@ -24,28 +22,24 @@ impl Staff {
     }
 }
 
-/// The "base class". Implementors only have to say where their `Staff` is; everything else has a default
-/// body that you write here once.
+/// Payable staff member.
 pub trait Payable {
     fn staff(&self) -> &Staff;
 
-    /// Default "Employee".
     fn role(&self) -> String {
         todo!()
     }
 
-    /// Default: the base salary.
     fn monthly_pay(&self) -> u64 {
         todo!()
     }
 
-    /// "{role}: {name} earns {monthly_pay}". Implementors must NOT override this.
     fn describe(&self) -> String {
         todo!()
     }
 }
 
-/// Pay = base * (100 + 20 * (level - 1)) / 100. Level must be 1..=3 (`InvalidLevel`). Role "Engineer".
+/// Engineer.
 pub struct Engineer;
 
 impl Engineer {
@@ -60,7 +54,7 @@ impl Payable for Engineer {
     }
 }
 
-/// Pay = base / 2. Role "Intern".
+/// Intern.
 pub struct Intern;
 
 impl Intern {
@@ -75,7 +69,7 @@ impl Payable for Intern {
     }
 }
 
-/// Pay = base + (sum of the reports' pay) / 20. Role "Manager". Reports may be managers.
+/// Manager.
 pub struct Manager;
 
 impl Manager {

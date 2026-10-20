@@ -2,15 +2,12 @@
 
 | Difficulty | Duration | Scaffolding |
 |---|---|---|
-| Easy | 30 min | Level 2 — the `Sensor` trait is provided in `src/contract.rs`; the types you write are stubs in `src/lib.rs` with `todo!()` bodies. |
-
-> **Concept:** a trait is Rust's interface. Code that depends on the trait works with every implementor,
-> including ones that do not exist yet (`Box<dyn Sensor>`).
+| Easy | 30 min | Level 2 — the `Sensor` trait, `SensorFault` and `HubError` are provided; the rest is yours to write. |
 
 ## Problem
 
 A building-monitoring system collects readings from many kinds of sensors. Write two sensors and a `SensorHub`
-that collects readings **without knowing which concrete sensor types exist**.
+that collects readings from whatever sensors are registered.
 
 ## Requirements
 
@@ -21,10 +18,6 @@ that collects readings **without knowing which concrete sensor types exist**.
 5. `read_all()` returns `(id, reading)` in **registration order**, leaving out faulty sensors. `last_faults()` lists the ids that were faulty during the last `read_all()`.
 6. `average(unit)` is the mean of the healthy sensors with that unit, or `None`.
 7. `ids()` lists registered ids in registration order.
-
-## Constraints
-
-- `SensorHub` may use only the `Sensor` trait. The tests register a sensor type that exists only in the test file.
 
 ## Running
 

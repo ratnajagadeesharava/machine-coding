@@ -2,7 +2,7 @@ package solution;
 
 import java.util.Optional;
 
-/** Does exactly what the README asks and nothing more. */
+/** URL shortener. */
 public class UrlShortener {
 
     public UrlShortener() {

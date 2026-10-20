@@ -2,7 +2,7 @@ package solution;
 
 import contract.Customer;
 
-/** Takes payments. Talks to the customer only — never to the customer's wallet. */
+/** Takes payments. */
 public class Cashier {
 
     /**

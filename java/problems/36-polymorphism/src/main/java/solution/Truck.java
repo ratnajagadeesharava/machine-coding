@@ -2,7 +2,7 @@ package solution;
 
 import contract.Vehicle;
 
-/** 1000 cents + 300 per axle beyond 2; at peak time 1.5x. Fewer than 2 axles -> IllegalArgumentException. */
+/** Truck. */
 public class Truck implements Vehicle {
 
     public Truck(String plate, int axles) {

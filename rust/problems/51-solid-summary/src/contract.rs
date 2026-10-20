@@ -39,13 +39,13 @@ pub trait PaymentMethod {
     fn charge(&self, amount_cents: u64) -> Result<PaymentResult, OrderError>;
 }
 
-/// Only some payment methods can give money back, so refunding is a separate, small trait.
+/// Something that can refund a charge.
 pub trait Refundable {
     /// True if `amount_cents` was refunded against that charge reference.
     fn refund(&self, reference: &str, amount_cents: u64) -> bool;
 }
 
-/// How delivery is priced. New policies are added, existing code is not edited.
+/// How delivery is priced.
 pub trait DeliveryFeePolicy {
     fn fee(&self, distance_m: u32) -> u64;
 }
