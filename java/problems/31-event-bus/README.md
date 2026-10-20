@@ -10,14 +10,24 @@
 
 ## Problem
 
-Components of one application need to talk without knowing each other. Build an in-process, asynchronous
-publish/subscribe facility: parties register interest in a named topic, other parties announce events on that
-topic, and every interested party gets to react — without a slow or broken party hurting the rest.
+**What you are building.** Parts of one application (orders, billing, notifications) need to react to each other's
+events without knowing each other. You build an in-process, asynchronous **publish/subscribe bus**: a party
+subscribes to a named topic with a callback, any party can publish a text event to a topic, and every party that is
+subscribed gets its callback invoked with that event. One slow or crashing callback must never hurt anyone else, and
+callbacks are allowed to publish more events themselves.
+
+### Terms used below
+
+- **Topic**: a name (string) events are published under.
+- **Event**: an arbitrary string payload.
+- **Subscription**: one registration of a callback on a topic; identified by a **subscription id**.
+- **Callback / handler**: the function run with the event text.
+- **Idle**: nothing is left to do — every published event has been handled or discarded and no callback is running.
 
 ## Requirements
 
 1. A party **subscribes** to a topic with a callback and receives a **subscription id**; it can **unsubscribe** with that id.
-2. Anyone can **publish** a string event to a topic. Every party subscribed to that topic **at the moment of publishing** receives the event exactly once.
+2. Anyone can **publish** a string event to a topic. Every party subscribed to that topic **at the moment of publishing** receives the event exactly once. Subscribers of other topics receive nothing.
 3. Publishing is asynchronous: `publish` hands the event over and returns; it never waits for callbacks to finish and never drops an event because callbacks are slow.
 4. A party sees events in the order they were published (for events announced one after another by the same thread).
 5. A callback that blocks for a long time must not prevent other subscribers — on the same topic or others — from receiving their events.
@@ -29,7 +39,7 @@ topic, and every interested party gets to react — without a slow or broken par
 ## Constraints
 
 - Many threads publishing, subscribing and unsubscribing at once; thousands of subscriptions and events.
-- Tests must be able to observe progress without sleeping: `awaitIdle` is the synchronisation point.
+- Tests observe progress without sleeping: `awaitIdle` is the synchronisation point.
 - Bounded resource use: do not assume one thread per subscription is acceptable beyond a toy.
 
 ## Examples
@@ -40,6 +50,37 @@ publish("orders", "o-1")   → A and B each get "o-1" once, C gets nothing
 A blocks forever           → B (and C) still receive every later event
 A publishes "billing" events from inside its callback → C gets them, no deadlock
 ```
+
+Snapshot and ordering:
+
+```
+publish("t","e1")                       (nobody subscribed → silently discarded)
+awaitIdle(10000)                        → true
+subscribe("t", X)
+publish("t","e2")  publish("t","e3")
+awaitIdle(10000)                        → true;  X saw exactly ["e2","e3"], in that order
+```
+
+Unsubscribe while events are pending (X's callback is blocked inside "e1"):
+
+```
+publish("t","e1")   (X starts it and blocks)   publish("t","e2")   publish("t","e3")
+unsubscribe(idOfX)  → true      (does not wait for the running "e1")
+let X finish        → X saw only "e1"; "e2" and "e3" are discarded for X
+unsubscribe(idOfX)  → false     unsubscribe("no-such-id") → false
+```
+
+Chained publishing: with `a`-subscriber re-publishing `e + "!"` to `b`, and a `b`-subscriber re-publishing to `c`,
+`publish("a","x")` followed by `awaitIdle` leaves the `c` subscriber with exactly `["x!!"]`.
+
+## Edge cases
+
+- Subscribing the same callback twice creates two independent subscriptions with different ids; each event reaches the callback twice.
+- Topics are case-sensitive exact strings; empty events are fine; an event with no subscribers is silently dropped.
+- A subscription's callback is never run at the same time as itself, even with many concurrent publishers.
+- A callback may unsubscribe itself; it still finishes the current event and is never started again.
+- `awaitIdle(0)` on a bus with nothing pending returns `true`; with a callback still blocked it returns `false` after the timeout.
+- After `close()`: earlier events are still delivered, later publishes are silently ignored (no error), `awaitIdle` keeps working.
 
 ## Behavioral contract
 
@@ -94,7 +135,7 @@ public final class Solution {
 
 ## Language notes
 
-Handlers are `Consumer<String>` receiving the event. Use daemon threads (or call `close()`), otherwise the test JVM may not exit. Tests only use `awaitIdle` and latches to synchronise.
+Handlers are `Consumer<String>` receiving the event. Tests only use `awaitIdle` and latches to synchronise.
 
 ## Running
 

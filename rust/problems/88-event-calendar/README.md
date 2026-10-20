@@ -11,10 +11,16 @@
 
 ## Problem
 
-You are building the scheduling core of a team calendar. People organise meetings and invite colleagues; nobody
-may ever be double-booked. A meeting either lands in every participant's calendar or in nobody's. Organisers can also set up
-a recurring series (for example a daily stand-up), which must be created as a whole or not at all. Users want to see their
-agenda for a time window and ask "when are all of us free for 30 minutes?". The service is hit by many people at once.
+You are building the scheduling core of a team calendar. People organise meetings and invite colleagues; nobody may ever be double-booked. A meeting either lands in every participant's calendar or in nobody's. Organisers can also create a recurring series (for example a daily stand-up) which is created as a whole or not at all. Users view their agenda for a time window and ask "when are all of us free for at least 30 minutes?". Many people use the service at the same time.
+
+## Glossary
+
+- **Organizer**: the user who creates the event; only they can cancel it.
+- **Attendee**: an invited user; they can decline (leave) but not cancel.
+- **Participant**: the organizer plus all attendees.
+- **Overlap**: two events overlap when `a.start < b.end && b.start < a.end`. Events that only touch (one ends exactly when the next starts) do not overlap.
+- **Occurrence**: one event of a recurring series.
+- **Free slot**: a time window in which every requested user has no event.
 
 ## Requirements
 
@@ -38,14 +44,50 @@ agenda for a time window and ask "when are all of us free for 30 minutes?". The 
 ## Examples
 
 ```
-schedule(ann, "standup", 600, 630, [bob])      -> id
-schedule(bob, "other",   620, 700, [])         -> IllegalStateException  (bob busy 620-630)
-schedule(bob, "other",   630, 700, [])         -> ok  (touching is fine)
+Conflicts and touching
+schedule(ann, "standup", 600, 630, [bob])      -> id1
+schedule(bob, "other",   620, 700, [])         -> conflict error (bob busy 620-630); nothing is created
+schedule(bob, "other",   630, 700, [])         -> ok (touching is fine)
 agenda(bob, 0, 2000)  -> ["600-630:standup", "630-700:other"]
 
-ann busy 60-120, bob busy 100-180 and 240-260:
-commonFreeSlots([ann, bob], 0, 300, 30) -> ["0-60", "180-240", "260-300"]
+All-or-nothing across people
+bob is busy 100-200; schedule(ann, "meeting", 150, 250, [bob, cy]) -> conflict error
+agenda(ann) and agenda(cy) stay empty.
+
+Agenda window and ordering
+ann has "a" 100-200 and "b" 200-300:
+agenda(ann, 150, 200) -> ["100-200:a"]      (a starts before the window but overlaps it; b starts at the end, excluded)
+agenda(ann, 200, 250) -> ["200-300:b"]
+agenda(ann, 300, 400) -> []
+Titles may contain ':' or '-': a "1:1" at 540-570 is listed as "540-570:1:1". Same start -> ordered by title.
+
+Cancel / decline
+id = schedule(ann, "sync", 100, 200, [bob, cy])
+decline(bob, id)  -> bob's agenda empty, cy's still has "100-200:sync"; bob may now book 100-200 again
+decline(ann, id)  -> permission error (organizer)       cancel(bob, id) -> permission error (not organizer)
+cancel(ann, "no-such-id") -> unknown-event error        cancel(ann, id) -> removed for everybody
+
+Recurring, all-or-nothing
+bob has a blocker overlapping the 3rd day.
+schedule_recurring(ann, "daily", 10000, 10030, [bob], 1440, 5) -> conflict error, ann's agenda stays empty
+schedule_recurring(ann, "daily", 10000, 10030, [cy],  1440, 5) -> 5 distinct ids in time order,
+   occurrences 10000-10030, 11440-11470, 12880-12910, ...
+
+Common free slots
+ann busy 60-120; bob busy 100-180 and 240-260:
+common_free_slots([ann, bob], 0, 300, 30)  -> ["0-60", "180-240", "260-300"]
+common_free_slots([ann, bob], 0, 300, 60)  -> ["0-60", "180-240"]
+common_free_slots([ann],      0, 300, 100) -> ["120-300"]
+common_free_slots([ann, bob], 0, 300, 200) -> []
 ```
+
+## Edge cases
+
+- Invalid input (`end <= start`, blank/whitespace title, duplicate attendee, organizer also listed as attendee, recurring with `count < 1` or `every < end - start`) is refused and creates nothing.
+- Users are never registered: a user with no events has an empty agenda and is free everywhere.
+- Event ids are unique non-blank strings; the format is yours, but each occurrence of a series has its own id.
+- Two meetings that cross-invite the same people for the same slot (ann organises with bob, bob organises with ann): exactly one succeeds, the other gets the conflict error.
+- `cancel` checks that the event exists first, then that the caller is the organizer.
 
 ## Behavioral contract
 
@@ -144,10 +186,6 @@ These tests are black-box: they only call the contract above, so any class desig
 - Common free slots for two users with several thresholds and for a single user.
 - Concurrency: two crossing meetings with the same slot (exactly one wins, 50 rounds); 12 threads randomly booking pairs among 6 people (no overlaps, entries == 2 x accepted); a ring of 6 people booking `p[t]` with `p[t+1]` at the same time (between 1 and 3 winners, repeated 100x).
 - More edge cases (a year of recurrences, 30 users all inviting each other for deadlock freedom) are in `interviewer/`.
-
-## Language notes
-
-`BTreeMap<u64, EventId>` per user (`range(..end).next_back()` for the neighbour check) behind a `Mutex`; to lock several users, sort the names and lock in that order, or keep one `Mutex<Inner>` and discuss why striping is the follow-up.
 
 ## Running
 

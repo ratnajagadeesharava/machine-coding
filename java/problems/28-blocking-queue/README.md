@@ -10,10 +10,14 @@
 
 ## Problem
 
-Producers and consumers run on different threads and run at different speeds. Build the hand-off point between them: a
-bounded first-in-first-out buffer. Producers must slow down (wait) when the buffer is full, consumers must wait when it
-is empty, and when the producing side is finished there must be a clean way to tell everybody to stop without losing
-anything that was already accepted.
+Producers and consumers run on different threads at different speeds, for example request threads that enqueue jobs and worker threads that process them. You are building the hand-off point between them: a **bounded, first-in-first-out buffer** (your own version of `java.util.concurrent.ArrayBlockingQueue`). Producers must slow down (wait) when the buffer is full, consumers must wait when it is empty, and when the producing side is finished there must be a clean way to tell everybody to stop **without losing anything that was already accepted**.
+
+**Terms**
+
+- **Capacity**: the maximum number of items stored at once (at least 1).
+- **Blocking operation**: `put` and `take` wait as long as needed. The timed variants `offer` and `poll` wait at most a given number of milliseconds.
+- **Closed**: after `close`, nothing new is accepted, but what is already stored is still handed out.
+- **Drained**: closed *and* empty. Only then do `take`/`poll` report "no more items" (empty `Optional` in Java, `None` in Rust).
 
 ## Requirements
 
@@ -34,12 +38,50 @@ anything that was already accepted.
 
 ## Examples
 
+Capacity 2:
+
 ```
-capacity 2:  put(1) put(2)          → buffer full
-             put(3) on another thread → waits
-             take() → 1             → the waiting put completes, buffer now holds 2, 3
-close() while holding [2, 3]        → take() → 2, take() → 3, take() → "no more items"
+put(1); put(2)               -> both return immediately, size() == 2 (full)
+put(3) on another thread     -> waits (size() stays 2)
+take() -> 1                  -> the waiting put(3) now completes; buffer holds 2, 3 in that order
 ```
+
+Close with items left:
+
+```
+buffer holds [2, 3]
+close()                      -> returns immediately; calling close() again is harmless
+size()  -> 2
+take()  -> 2        poll(10) -> 3        take() -> "no more items"        poll(10) -> "no more items"
+put(4)  -> fails (Java: IllegalStateException, Rust: Err(Closed));   offer(4, 10) fails the same way; size() stays 0
+```
+
+Timeouts (capacity 1):
+
+```
+put(1)
+offer(2, 100)    -> false after waiting about 100 ms (item 2 not stored); size() == 1
+take() -> 1
+poll(100)        -> "nothing" after waiting about 100 ms (buffer open and empty)
+poll(0)          -> "nothing" immediately         offer(1, 0) -> true        offer(2, 0) -> false immediately
+```
+
+Close wakes waiters:
+
+```
+3 consumers blocked in take() on an empty buffer;  close()  -> all 3 return "no more items"
+capacity 1, holding [1]; a producer blocked in put(2) and another in offer(3, 60000);  close()
+    -> both fail (exception / Err(Closed)); neither 2 nor 3 is stored; take() -> 1, then "no more items"
+```
+
+## Edge cases
+
+- `offer` returning `false` (timeout) and `poll` returning "nothing" because of a timeout are normal results, not errors. `take` returns "no more items" only when the buffer is closed and empty, never because of a timeout.
+- A timeout of `0` (or negative, in Java) never waits.
+- A blocked `offer` or `put` that is woken by space appearing stores its item; one woken by `close` does not.
+- `size()` never exceeds the capacity, not even momentarily, and never counts items whose `put`/`offer` failed.
+- Each accepted item goes to exactly one consumer. With several producers and consumers, every item is delivered once, and the items of any one producer reach any one consumer in the order they were put.
+- Java: a thread interrupted while waiting in `put`, `take`, `offer` or `poll` gets `InterruptedException`, and the buffer stays unchanged.
 
 ## Behavioral contract
 

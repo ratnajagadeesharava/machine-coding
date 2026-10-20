@@ -9,6 +9,16 @@
 > `HINTS.md` if you are stuck (three levels, smallest nudge first) and
 > `FOLLOWUPS.md` (open one at a time, after the previous version passes).
 
+## What you are building
+
+You are building the engine of a small job scheduler, the kind that runs nightly reports or periodic clean-ups. Operators
+define named jobs, each with a cron-style schedule (`minute hour weekday`) and a retry policy (how many attempts, and how long to
+wait between them). Nothing runs by itself: whoever owns the clock (a ticker thread in production, a test here) calls
+`run_due()`, and the engine executes whatever is due at that instant and reports how many executions it made. Jobs may throw;
+a failing job is retried with growing delays and, when it runs out of attempts, lands on a dead-letter list. If the process
+was down for hours, a job must run once for the latest missed slot, not once per missed slot. Several threads may poll at the
+same time and an attempt must never run twice.
+
 ## Problem
 
 Implement the engine of a small job scheduler. Operators define named jobs with a cron-like schedule and a retry policy.
@@ -27,25 +37,94 @@ times to catch up. Several callers may poll at the same time and no execution ma
 6. If a slot becomes due while the job is still waiting for a retry, that slot is SKIPPED (recorded, not run). Slots never overlap.
 7. `pause(name)`: no runs, no retries, `nextSlot` is empty. `resume(name)`: the next slot is recomputed from now. `remove(name)` deletes the job.
 8. `nextSlot(name)` is the epoch minute of the next slot (empty if paused). `history(name)` lists `slot:attempt:OUTCOME` entries, oldest first. `deadLetters()` lists `name:slot` of jobs that ran out of attempts, in the order they died.
+9. The three cron fields must ALL match for a minute to be a slot: `minute` in 0-59, `hour` in 0-23, `weekday` in 0-6. `30 9 *` is every day at 09:30 UTC; `0 12 1` is every Monday at 12:00 UTC; `*/15 * *` is minutes 0, 15, 30, 45 of every hour of every day.
+10. A comma list may combine the other forms (`0,30 8-9 *` = minutes 0 and 30 of hours 8 and 9, i.e. 08:00, 08:30, 09:00, 09:30). A range `a-b` is inclusive on both ends.
+11. A job's `history` is never trimmed by retries: every attempt (`FAILED`, `OK`, `DEAD`) and every `SKIPPED` slot is one entry, oldest first. `dead_letters()` spans all jobs, in the order jobs died.
+12. `run_due()` called before any slot or retry is due returns 0 and records nothing. `SKIPPED` entries are not executions and are not counted in the return value; failed attempts are.
 
 ## Constraints
 
 - Several threads may call `runDue()` (and `pause`/`resume`/`define`) at the same time. An attempt must never run twice: 8 threads polling after each of 50 minute ticks execute the job exactly 50 times in total.
 - Time comes from the injected clock; "minute" is `epochMillis / 60_000` in UTC and epoch minute 0 is Thursday 1970-01-01 00:00 (so weekday of minute m is `(4 + m/1440) % 7`, 0 = Sunday).
-- Jobs run on the polling thread. Do not hold a global lock while running user code if you can avoid it, but a job must not run twice if two callers race.
-- Scale: 1,000 jobs polled every simulated minute over a day (1,440 polls), and a 3-week outage with a `* * *` job must produce exactly one run, quickly: finding the next slot must not iterate minute by minute for weeks if you can compute it directly (a bounded scan of a few days is acceptable).
+- Jobs run on the polling thread. A job must not run twice if two callers race.
+- Scale: 1,000 jobs polled every simulated minute over a day (1,440 polls), and a 3-week outage with a `* * *` job must produce exactly one run, quickly.
 - No real sleeping, no background threads.
+
+## Glossary
+
+- **Cron expression**: three space-separated fields `minute hour weekday` describing which minutes a job should run at (weekday 0 = Sunday ... 6 = Saturday). All times are UTC.
+- **Slot**: one scheduled minute of a job, identified by its epoch minute (`epoch_millis / 60000`). A slot may need several attempts.
+- **Attempt**: one execution of the job's code. `max_attempts` counts them all, including the first.
+- **Backoff**: the wait before the next attempt after a failure: `min(initial_backoff_ms * 2^(k-1), max_backoff_ms)` after the k-th failure.
+- **Dead letter**: a slot whose attempts were all used up and failed; recorded as `name:slot`.
+- **Skipped**: a slot that became due while the job was still waiting for a retry of an earlier slot; it is recorded but never run.
 
 ## Examples
 
-```
-clock = minute 0.  define("j", "*/5 * *", job, maxAttempts=1, ...)   nextSlot = 5
-runDue() at minute 4 -> 0;  at minute 5 -> 1;  again at minute 5 -> 0;  at minute 10 -> 1
-history = ["5:1:OK", "10:1:OK"],  nextSlot = 15
+**Example 1: a simple recurring job** (clock starts at minute 0)
 
-flaky job, maxAttempts 3, backoff 1s..60s, slot 10:
-10:1:FAILED, (1s later) 10:2:FAILED, (2s later) 10:3:OK
 ```
+define("j", "*/5 * *", job, max_attempts=1, initial_backoff_ms=1000, max_backoff_ms=1000)
+next_slot("j")            -> 5          // strictly after the minute of definition
+run_due() at minute 4     -> 0
+run_due() at minute 5     -> 1          // job ran
+run_due() at minute 5     -> 0          // nothing twice
+run_due() at minute 10    -> 1
+history("j")             -> ["5:1:OK", "10:1:OK"]
+next_slot("j")            -> 15
+```
+
+**Example 2: retries with exponential backoff** (`*/10 * *`, max_attempts 5, backoff 1 s .. 60 s, the job fails twice and then works)
+
+```
+minute 10        run_due() -> 1   history: 10:1:FAILED      (retry due 1 s later)
++999 ms          run_due() -> 0
++1 ms (1 s)      run_due() -> 1   history: 10:2:FAILED      (retry due 2 s later)
++1 999 ms        run_due() -> 0
++1 ms (2 s)      run_due() -> 1   history: 10:3:OK
+next_slot -> 20,  dead_letters() -> []
+```
+With `max_attempts 6`, backoff 1 s .. 3 000 ms and a job that always fails, the gaps between attempts are 1 s, 2 s, 3 s, 3 s, 3 s. With `max_attempts 3`, backoff 1 s and a job that fails every time, the third failure is recorded as `10:3:DEAD`, `dead_letters()` is `["j:10"]`, and the job still runs again at its next slot (20).
+
+**Example 3: downtime and skipped slots**
+
+```
+*/5 job, nobody calls run_due() until minute 17:
+run_due() -> 1;  history = ["15:1:OK"];  next_slot -> 20      // only the latest slot (15); 5 and 10 are forgotten
+
+*/5 job, max_attempts 3, backoff 8 min, fails once:
+minute 5   run_due() -> 1   5:1:FAILED   (retry due at minute 13)
+minute 10  run_due() -> 0   10:0:SKIPPED (slot 10 arrived during the retry wait)
+minute 13  run_due() -> 1   5:2:OK       (the retry keeps its original slot, 5)
+history = ["5:1:FAILED", "10:0:SKIPPED", "5:2:OK"];  next_slot -> 15
+```
+
+**Example 4: ordering and failures inside one `run_due`**
+
+```
+define b "*/10 * *", then a "*/5 * *", then c "*/10 * *"; at minute 10 call run_due()
+execution order: a (due since minute 5), b, c (due at 10, in definition order)
+a job that fails still counts as one execution and does not stop the others:
+two "* * *" jobs, one always throwing, at minute 1: run_due() -> 2
+```
+
+**Example 5: first slot of weekday schedules** (epoch minute 0 is Thursday 1970-01-01 00:00 UTC)
+
+```
+define "0 0 0"  -> next_slot = 4 320   (Sunday 1970-01-04 00:00)
+define "0 12 1" -> next_slot = 6 480   (Monday 1970-01-05 12:00)
+define "30 9 *" -> next_slot = 570;  after it ran, next_slot = 1 440 + 570
+define "* * *" at minute 0 -> next_slot = 1   (never the minute of definition)
+```
+
+## Edge cases
+
+- Invalid definitions are all `JobError::InvalidDefinition`: duplicate name, a cron string without exactly three fields, minute 60, hour 24, weekday 7, `*/0`, a reversed range `5-1`, `max_attempts` 0, an initial or max backoff of 0. Unknown names for `pause`, `resume`, `remove`, `next_slot`, `history` give `JobError::UnknownJob`.
+- Exponential growth must not overflow: with a large `k` the delay is simply `max_backoff_ms`.
+- A job that fails on its last allowed attempt is `DEAD` (never `FAILED`); with `max_attempts = 1` a single failure is `DEAD`.
+- A retry never changes the slot number shown in `history`; the next slot is computed from the current minute when the slot finishes (OK, DEAD) or is skipped.
+- While a job is paused, retries wait too; nothing is recorded; `next_slot` is empty.
+- After `remove`, `run_due` no longer runs the job, and `history` / `next_slot` for the name are errors.
 
 ## Behavioral contract
 
@@ -155,10 +234,6 @@ These tests are black-box: they only call the contract above, so any class desig
 - Ordering by due time then definition order; a failing job does not stop others and counts as an execution.
 - Pause, resume and remove; 8 threads calling `runDue` after each of 50 ticks execute exactly 50 times; 100 repeated races for a failing-then-OK job (`1:1:FAILED`, `1:2:OK`).
 - More edge cases (1,000 jobs over a day, a 3-week outage) are in `interviewer/`.
-
-## Language notes
-
-Store fields as `[bool; 60]`, `[bool; 24]`, `[bool; 7]` or bitmasks (`u64`, `u32`, `u8`); keep jobs in a `Vec` with an index for definition order. Take the `JobFn` out as an `Arc` clone while holding the lock, drop the guard, call it, then re-lock to record the outcome; use `saturating_mul`/`checked_shl` for the backoff.
 
 ## Running
 

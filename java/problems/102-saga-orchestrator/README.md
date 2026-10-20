@@ -15,6 +15,8 @@ An order flow touches inventory, payment and shipping, each its own service with
 
 Build that orchestrator. It must survive its own process dying at any moment: a new orchestrator started on the same durable log has to pick up the saga where the old one stopped, without re-running finished steps. Many sagas run concurrently on many threads.
 
+**In short:** one orchestrator object with `run(sagaId, steps)` and `status(sagaId)`. You call the steps (which are provided by the caller), call the injected sleeper for back-off, and write progress to the provided log so that a fresh orchestrator can finish a saga that an earlier one left half-done. The tests check the order of step and compensation calls, the exact sleeper values, restart behaviour and thread safety.
+
 ## Requirements
 
 1. `run(sagaId, steps)` runs the steps in order on the calling thread and returns the final status. Each step reports failure by returning false (Java: or by throwing; treated the same).
@@ -30,7 +32,7 @@ Build that orchestrator. It must survive its own process dying at any moment: a 
 - Not a network simulation: the orchestrator is an ordinary object called from several threads (up to 8 in the tests, 400 sagas in total). It must be thread-safe.
 - There is no clock: waiting is the injected sleeper (`LongConsumer` / `Fn(u64)`); the tests record the values instead of sleeping. Never call `Thread.sleep` / `thread::sleep` yourself.
 - The `SagaLog` (provided) is atomic and durable on return from `append`; a restart is a new orchestrator over the same log. In-memory state is lost on restart, so everything needed to resume must be derivable from the log.
-- Different sagas must not block each other; only two calls for the SAME saga id exclude each other. Do not hold a global lock while a step executes or while sleeping.
+- Different sagas must not block each other; only two calls for the SAME saga id exclude each other.
 - Steps and compensations are idempotent per saga id (the tests' steps are), because a crash can happen after a step ran but before it was logged.
 
 ## Examples
@@ -41,6 +43,67 @@ run("s1"):  exec reserve, exec charge, exec ship (fail) sleep 100, exec ship (fa
             comp charge, comp reserve   -> COMPENSATED      (ship itself is not compensated)
 compensation of charge fails all 5 attempts: sleeps 100,200,400,800 -> COMPENSATION_FAILED, reserve untouched
 ```
+
+A flaky step that recovers:
+
+```
+steps: a, flaky     flaky fails twice and succeeds on its 3rd attempt
+run("s1"): exec a, exec flaky (fail) sleep 100, exec flaky (fail) sleep 200, exec flaky (ok)   -> COMPLETED
+sleeper calls in order: 100, 200
+```
+
+First step fails, nothing to undo:
+
+```
+steps: reserve, charge              reserve fails every time
+run("s1"): exec reserve x3 (sleeps 100, 200)   -> COMPENSATED, no compensation is called, charge never runs
+```
+
+Compensation that needs retries:
+
+```
+steps: reserve, charge, ship        ship fails every time; charge's compensation succeeds on its 4th attempt
+sleeps in order: 100, 200            (retries of ship)
+                 100, 200, 400       (3 failed compensation attempts of charge, then the 4th succeeds)
+then comp reserve (ok)               -> COMPENSATED
+```
+
+Restart (the log is shared, the in-memory state is not):
+
+```
+First orchestrator ran reserve and charge and logged both, then the process died during ship.
+A new orchestrator on the same log: run("s1", [reserve, charge, ship]) executes only ship (and, if ship fails for good,
+compensates charge then reserve). If the first one died halfway through compensation, only the compensations that are not
+yet logged as done are run, still in reverse order. status("s1") is RUNNING until it finishes.
+```
+
+Concurrency:
+
+```
+Thread 1 is inside run("s1", ...) (a step is executing). Meanwhile on thread 2:
+  status("s1")              -> RUNNING
+  run("s1", steps)          -> RUNNING immediately, no step is called, thread 1's work is not disturbed
+Thread 2 may run "s2" at the same time without waiting for "s1".
+```
+
+## Edge cases
+
+- A step fails by returning false (Java: or throws); both count as one failed attempt.
+- Attempt counting: a step gets at most 3 attempts. The sleeper is called after attempt 1 fails (100) and after attempt 2 fails (200), never after attempt 3. A compensation gets at most 5 attempts with sleeps 100, 200, 400, 800 after attempts 1 to 4, none after attempt 5.
+- If the LAST step is the one that fails, all earlier steps are compensated in reverse order. Steps after the failed one were never started and are not compensated.
+- If a compensation fails for good, the saga ends as COMPENSATION_FAILED; earlier steps keep their effects (their compensations are not attempted).
+- An empty step list gives COMPLETED. `status` of an id the log never saw is NOT_FOUND (also right after a restart). `run` on a finished saga, with any step list, returns the stored final status and calls neither a step nor the sleeper.
+- The sleeper is only a callback that records or performs a delay: you pass it the number of milliseconds and keep going.
+- Two different saga ids never wait for each other, not even while one of them is sleeping or executing a slow step.
+
+## Glossary
+
+- **Saga**: a business operation made of ordered local steps across services, with no global transaction.
+- **Step / compensation**: a step does a piece of work (reserve stock); its compensation undoes it (release stock).
+- **Orchestrator**: the object that runs the steps, retries them and triggers compensations.
+- **Idempotent**: calling it again for the same saga id has no extra effect; this is why re-running a step that may have already happened is safe.
+- **Back-off / sleeper**: waiting longer between successive retries; the wait is performed by the injected sleeper function, not by you.
+- **Durable log**: stable storage (`SagaLog`) that survives a restart; progress must be recoverable from it alone.
 
 ## Behavioral contract
 
@@ -164,7 +227,7 @@ These tests are black-box and deterministic: every node runs inside a seeded sim
 
 ## Language notes
 
-`ConcurrentHashMap.newKeySet()` / `putIfAbsent` or `compute` gives a cheap per-saga 'currently running' guard without a global lock; remember that `records()` returns a copy.
+`records()` returns a copy.
 
 ## Running
 

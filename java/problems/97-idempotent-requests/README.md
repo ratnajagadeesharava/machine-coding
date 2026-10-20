@@ -2,12 +2,20 @@
 
 | Difficulty | Duration | Scaffolding |
 |---|---|---|
-| Medium-Hard | 60 min | Level 3 — infrastructure provided: a deterministic network and clock simulation (`SimNet`) runs your nodes; the protocol code is yours. |
+| Medium-Hard | 60 min | Level 2 — contract and tests provided; the domain model, the algorithms and the class design are yours. |
 
 > Read the requirements, then **design before you code**: which concepts, which owners, which API,
 > which state, which abstractions (if any). Nothing here tells you. See `INTERVIEW.md` for the process,
 > `HINTS.md` if you are stuck (three levels, smallest nudge first) and
 > `FOLLOWUPS.md` (open one at a time, after the previous version passes).
+
+## What you are building
+
+You are building the guard in front of a payments API. Mobile clients on flaky networks retry requests, and a retry must never
+charge a customer twice. Every request carries an idempotency key; the guard guarantees the business operation (a handler)
+runs at most once per key and that every retry with the same key gets exactly the first response. Retries often arrive while
+the first attempt is still running, a client sometimes reuses a key for a different request by mistake, handlers sometimes
+fail, and the service runs for months, so stored results expire after 24 hours and memory must not grow forever.
 
 ## Problem
 
@@ -26,25 +34,78 @@ so the bookkeeping must not grow forever.
 5. A stored response expires 24 hours after it was stored; afterwards the key can be used again, even with a different body.
 6. A null or blank key, or a null body, is rejected with `IllegalArgumentException` (Rust: `Err(InvalidInput)` for a blank key).
 7. Entries that expired must be reclaimed eventually; memory must not grow with the number of keys ever seen.
+8. A call's result is one of: the handler ran and its response is returned; a stored response is replayed; the call waited for another call's execution and shares its response; or an error (`KeyConflictException`, `IllegalArgumentException` or the handler's own exception).
+9. Validation happens first and runs no handler: null/blank key and null body are rejected before anything is stored.
+10. A conflict (same key, different body) never changes the stored or in-flight call: the original response stays replayable for the original body.
+11. The 24 h window starts when the response is stored and is not extended by replays. A new execution after expiry stores its response with a new 24 h window.
 
 ## Simulation rules and constraints
 
 - The processor is shared by many request threads; handlers may take long and may sleep. Treat them as black boxes that can block.
-- Never hold a processor-wide lock while a handler runs: 16 different keys with 150 ms handlers must finish in about 150 ms, not 16 x 150 ms.
+- Handlers for different keys must not wait on each other: 16 different keys with 150 ms handlers must finish in about 150 ms, not 16 x 150 ms.
 - Waiters of the same key share the one execution: 32 threads with a 100 ms handler finish in about 100 ms and the handler ran once.
 - Time comes from the injected clock (`FakeClock`); the tests move it by hand, handler `sleep`s are real but only used to keep calls overlapping.
 - No network simulation is involved: this is a thread-safety and exactly-once problem on one process. The distributed angle (what survives a crash) belongs to the follow-ups.
 
+## Glossary
+
+- **Idempotency key**: a client-chosen string identifying one logical request; all retries of it carry the same key.
+- **Handler**: the business operation (charge a card, create an order) that takes the request body and returns a response string or fails.
+- **Replay**: returning the stored response for a key without running the handler again.
+- **In flight**: a key whose handler is running right now and has not finished.
+- **Conflict**: a request using a known (stored or in-flight) key with a body different from the original.
+
 ## Examples
 
+**Example 1: run once, replay** (handler returns `"done:" + body + ":" + callNumber`)
+
 ```
-process("k1", "pay 10", h)   -> runs h, stores "done:pay 10:1"
-process("k1", "pay 10", h)   -> "done:pay 10:1"    (handler not run again)
-process("k1", "pay 99", h)   -> KeyConflictException
-h throws once:  process("k", "x", h) -> throws; process("k", "x", h) -> runs again, stores result
-32 threads, same key and body, handler takes 100 ms -> handler runs once, all get the same string
-24h - 1ms later: stored; at +24h: expired, the handler runs again
+process("k1", "pay 10", h) -> "done:pay 10:1"      handler runs
+process("k1", "pay 10", h) -> "done:pay 10:1"      replay, handler not run (calls = 1)
+process("k2", "pay 10", h) -> "done:pay 10:2"      a different key is independent
+process("k1", "pay 99", h) -> KeyConflictException   same key, different body; calls still 2
+process("k1", "pay 10", h) -> "done:pay 10:1"      the stored response is still replayable
 ```
+
+**Example 2: a failing handler stores nothing**
+
+```
+h throws "boom" on its first call and returns "ok:2" on the second
+process("k", "x", h) -> throws "boom" (to this caller)      nothing stored
+process("k", "x", h) -> "ok:2"                              handler runs again
+process("k", "x", h) -> "ok:2"                              replay; handler called 2 times in total
+```
+
+**Example 3: expiry after 24 hours** (stored at time 0)
+
+```
+at 24h - 1 ms: process("k","x",h) -> replayed response   (valid while now < storedAt + 24h)
+at 24h:        process("k","x",h) -> handler runs again (new response, new 24h window)
+```
+and, for a key whose response was stored at time 0 and is not used again:
+```
+at 25h:        process("k","new body",h) -> accepted; the key is free again, even with a different body
+```
+
+**Example 4: concurrency**
+
+```
+32 threads call process("same","body", handler that sleeps 100 ms) at once
+  -> the handler runs once; all 32 get the identical response; total time is about 100 ms
+16 threads with 16 different keys and 150 ms handlers -> about 150 ms in total, not 16 x 150 ms
+first call still inside its handler, another call with the same key and body "B" instead of "A"
+  -> KeyConflictException immediately (the handler of the second call does not run)
+8 threads, same key and body, the first handler run fails after 100 ms
+  -> 1 caller gets the failure, the other 7 get the successful response of the second handler run (2 handler runs in total)
+```
+
+## Edge cases
+
+- A null or blank key, or a null body, gives `IllegalArgumentException`; the handler is not run.
+- When the running handler fails, only the caller that ran it sees that failure (the same exception object type and message, unchanged); callers waiting for it do not fail, one of them runs the handler next and the rest share that outcome.
+- Bodies are compared by value (equal strings are equal bodies).
+- The stored response is returned byte for byte.
+- Entries that expired must be reclaimed eventually, so the bookkeeping does not grow with the number of keys ever seen.
 
 ## Behavioral contract
 
@@ -117,7 +178,7 @@ public final class Solution {
 
 ## What the tests check
 
-These tests are black-box and deterministic: every node runs inside a seeded simulation (one tick = 1 ms of simulated time, nothing sleeps), messages can be delayed, dropped, duplicated and reordered, nodes can crash and recover, the network can be partitioned, and safety invariants are checked after EVERY simulated millisecond. A failing seed reproduces exactly.
+These tests are black-box: they only call the contract above, so any class design behind it works. Time-dependent behaviour uses an injectable fake clock, never real sleeping. More edge-case scenarios exist in `interviewer/` (see `INTERVIEWER_NOTES.md`).
 
 - Run once and replay; different keys independent; conflict on a different body leaves the stored response replayable.
 - Invalid arguments: null key, blank key, null body.
@@ -127,10 +188,6 @@ These tests are black-box and deterministic: every node runs inside a seeded sim
 - A conflicting body is rejected while the first call is still blocked inside its handler.
 - **Repeat 100x**: 8 racing threads, exactly one handler call.
 - More edge cases and scale scenarios in `interviewer/` (see `INTERVIEWER_NOTES.md`).
-
-## Language notes
-
-`ConcurrentHashMap.compute` is atomic per key and cheap for the short decision; keep the waiting in a `CompletableFuture` or a per-record monitor rather than inside `compute`. Rethrow the handler's exception unchanged in the caller that ran it.
 
 ## Running
 

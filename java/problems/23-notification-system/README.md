@@ -10,11 +10,15 @@
 
 ## Problem
 
-Build the core of a notification service. Application code asks it to notify a user about something, giving a message
-template and the channels it would like to use in order of preference. The service renders the message, respects what the
-user has opted out of, tries the channels one by one and tells the caller what happened. The actual delivery to the
-outside world (email, SMS, push...) is performed by a **delivery gateway** that is given to you; it is the only
-outside dependency.
+You are building the core of the notification service behind an app, the part that sends "your login code is 42" or "your order shipped". Application code asks it to notify one user about something, giving a message template and the channels it would like to use (for example `email`, `sms`, `push`) in order of preference. The service fills in the template, honours what the user has opted out of, tries the channels one by one (retrying a flaky channel a few times) and tells the caller exactly what happened. The actual delivery to the outside world is performed by a **delivery gateway** that is given to you; it is the only outside dependency, and it is slow, so it must not be called needlessly.
+
+**Terms**
+
+- **Channel**: a way of reaching a user, named by a free-form, case-sensitive string such as `email`.
+- **Category**: the kind of message, such as `marketing` or `security`. Opt-outs are per channel *and* category.
+- **Eligible channel**: a requested channel for which the user has an address and which is not switched off for the message's category.
+- **Placeholder**: `{name}` in a template body, where `name` is one or more letters, digits or underscores.
+- **Attempt**: one call to the gateway. Accepted means it returned `true`, refused means `false`.
 
 ## Requirements
 
@@ -38,12 +42,41 @@ outside dependency.
 
 ## Examples
 
+User `u1` has `email -> a@x.com` and `sms -> 555-0100`; template `otp` is `Your code is {code}`.
+
+| Situation | `send("u1", "security", "otp", {code: "42"}, [email, sms])` | Gateway calls |
+|---|---|---|
+| gateway accepts everything | `DELIVERED:email` | `(email, a@x.com, "Your code is 42")` |
+| email refused twice, then accepted | `DELIVERED:email` | email, email, email |
+| email always refused | `DELIVERED:sms` | email, email, email, sms |
+| email and sms always refused | `FAILED` | 6 calls (3 + 3) |
+| `[sms, email]` requested instead | `DELIVERED:sms` | `(sms, 555-0100, "Your code is 42")` only |
+
+Checks that never reach the gateway:
+
 ```
-registerUser("u1", {email: "a@x.com", sms: "555"})      defineTemplate("otp", "Your code is {code}")
-send("u1", "security", "otp", {code: "42"}, [email, sms])      -> DELIVERED:email      gateway: ("email", "a@x.com", "Your code is 42")
-(email always refused)                                          -> DELIVERED:sms        gateway: email x3, then sms x1
-send("u1", "security", "otp", {}, [email])                      -> INVALID              gateway: no calls
+send("ghost","security","otp",{code:"1"},[email])      -> UNKNOWN_USER   (never registered)
+send("u1","security","otp",{},[email])                 -> INVALID        (placeholder {code} has no parameter)
+send("u1","security","nope",{},[email])                -> INVALID        (unknown template)
+send("u1","security","otp",{code:"1"},[])              -> INVALID        (empty channel list)
+setPreference("u1","email","marketing",false)
+send("u1","marketing","otp",{code:"1"},[email])        -> SUPPRESSED     (only channel is switched off)
+send("u1","security","otp",{code:"1"},[fax])           -> SUPPRESSED     (no address for fax)
+send("u1","marketing","otp",{code:"1"},[email, sms])   -> DELIVERED:sms  (email skipped for marketing only)
 ```
+
+Rendering, with template `echo` = `{a}-{a}-{b}`: params `{a:"1", b:"2", unused:"9"}` give `1-1-2`. With template `{a} {b}` and params `{a:"{b}", b:"x"}` the result is `{b} x`: the `{b}` that came from a value is not replaced again.
+
+Channel listed twice: `[email, email, sms]` with email always refused makes calls email, email, email, sms (email is not retried a second time).
+
+## Edge cases
+
+- Registering a user again replaces all their addresses (old ones are gone) but keeps their opt-out preferences.
+- `setPreference` for a user who was never registered is silently ignored; registering that user later does not apply it.
+- Preferences are per user: switching email off for `u1` does not affect `u2`.
+- Defining a template again replaces it; the next `send` uses the new body.
+- Attempt counts restart with every `send`: a channel that failed three times in one send gets three fresh attempts in the next.
+- Text in braces that is not a valid placeholder (for example `{}` or `{a b}`) is plain text and needs no parameter.
 
 ## Behavioral contract
 

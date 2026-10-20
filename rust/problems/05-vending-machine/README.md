@@ -10,19 +10,18 @@
 
 ## Problem
 
-Build the brain of a coin-operated vending machine: customers insert coins, pick a slot, receive a product and
-change, or cancel and get their money back.
+**What you are building.** The control logic of a coin-operated snack/drink vending machine. An operator loads product **slots** (like `A1`: chips, 65 cents, 2 units) and puts coins into the machine's change float. A customer inserts coins one at a time, the machine shows their running **balance**, and they press a slot's button. The machine either hands over the product and gives back **change**, or refuses and explains why (bad slot, sold out, not enough money, or it cannot give exact change). The customer can also cancel and get their own coins back. Money the machine gives back falls into a **tray**, which the customer empties by taking the coins.
 
 ## Requirements
 
-1. The machine has product **slots** (e.g. `A1`). An operator loads a slot with a product name, a price (in cents) and a quantity.
-2. The operator can load the machine's **coin inventory** (denominations 5, 10, 25, 100).
-3. A customer inserts coins; the machine tracks their **balance**. Only denominations 5, 10, 25 and 100 are accepted; anything else is rejected and the balance is unchanged.
+1. The machine has product **slots** (e.g. `A1`). An operator loads a slot with a product name, a price (in cents) and a quantity (`load_product(slot, name, price_cents, quantity)`). All money amounts are integer cents.
+2. The operator can load the machine's **coin inventory** (`load_coins(denomination, count)`, denominations 5, 10, 25, 100). This is the float used to make change; it starts empty.
+3. A customer inserts coins (`insert_coin(denomination)`, returns `true` when accepted); the machine tracks their **balance** (the sum of the inserted coins not yet spent or refunded). Only denominations 5, 10, 25 and 100 are accepted; anything else is rejected and the balance is unchanged.
 4. Selecting a slot attempts a purchase. Rules are checked in this order: invalid slot → sold out → insufficient funds → cannot make change.
 5. A successful purchase decrements the slot's quantity, adds the customer's coins to the coin inventory, resets the balance to 0 and returns **change** using the **fewest possible coins** from the inventory.
-6. If exact change cannot be made, the purchase is refused and nothing changes (the customer can cancel).
+6. If exact change cannot be made, the purchase is refused (`CANNOT_MAKE_CHANGE`) and nothing changes: balance, inserted coins, quantity, coin inventory and tray stay as they were, so the customer can cancel or insert other coins. Any other refusal likewise changes nothing.
 7. **Cancel** returns exactly the coins the customer inserted (not equivalent coins from inventory) and resets the balance to 0.
-8. Returned coins (change or refund) land in a **tray**; the customer collects them with `takeReturnedCoins`, which empties the tray.
+8. Returned coins (change or refund) land in a **tray**; the customer collects them with `take_returned_coins`, which empties the tray.
 
 ## Constraints
 
@@ -31,11 +30,61 @@ change, or cancel and get their money back.
 
 ## Examples
 
+Setup used by examples 1-4: `load_product(A1, "Chips", 65, 2)`, `load_product(B1, "Soda", 100, 1)`, and 4 coins each of 25, 10 and 5 loaded.
+
+**1. Purchase with change**
+
 ```
-loadProduct(A1, "Chips", 65, 2); loadCoins(25, 4); loadCoins(10, 4); loadCoins(5, 4)
-insertCoin(100) → true     balance() = 100
-select(A1) → "DISPENSED"   takeReturnedCoins() = [25, 10]   balance() = 0
+insert_coin(100)        -> true      balance() = 100
+select("A1")           -> "DISPENSED"
+take_returned_coins()    -> [25, 10]  (change 35 with the fewest coins)
+take_returned_coins()    -> []        (the tray was emptied)
+balance() = 0          stock_of("A1") = 1
 ```
+
+**2. Not enough money, then more coins**
+
+```
+insert_coin(25); select("A1") -> "INSUFFICIENT_FUNDS"   balance() = 25, stock_of("A1") = 2
+insert_coin(25); insert_coin(25)                          balance() = 75
+select("A1")           -> "DISPENSED"
+take_returned_coins()    -> [10]      (75 - 65)
+```
+
+**3. Cancel returns the very coins inserted**
+
+```
+insert_coin(25); insert_coin(100); insert_coin(5)
+cancel()               balance() = 0
+take_returned_coins()    -> [100, 25, 5]   (descending)
+```
+
+**4. Other refusals**
+
+```
+insert_coin(3) -> false; insert_coin(50) -> false     balance() = 0
+insert_coin(100); select("Z9") -> "INVALID_SLOT"     balance() = 100
+select("B1") -> "DISPENSED" (exact, tray empty); insert_coin(100); select("B1") -> "SOLD_OUT"   balance() = 100
+```
+
+**5. Cannot make change** (a fresh machine, coin inventory empty): `load_product(A1, "Chips", 65, 1)`, `insert_coin(100)`. Change of 35 is owed but the inventory only contains the customer's 100-coin, so `select("A1")` -> `"CANNOT_MAKE_CHANGE"`; balance stays 100, `stock_of("A1")` stays 1, tray is empty. With product B1 at 100 and four 25-coins inserted into an empty inventory, `select("B1")` -> `"DISPENSED"` (exact payment needs no change).
+
+**6. Fewest coins** (Gum 10 cents, inventory 2x25, 5x10, 5x5; customer inserts a 25): change is 15, returned as `[10, 5]` (two coins), not `[5, 5, 5]`.
+
+## Edge cases
+
+- Check order when several things are wrong: invalid slot, then sold out, then insufficient funds, then cannot make change.
+- Rejected coins never change the balance; `cancel` with nothing inserted leaves the tray unchanged.
+- Quantity 0 means sold out; `stock_of` of an unknown slot is 0.
+- Change is made from the inventory plus the coins the customer just inserted, because those coins join the inventory when the purchase succeeds.
+
+## Glossary
+
+- **Slot**: a named position (e.g. `A1`) holding one product at one price with a remaining quantity.
+- **Balance**: cents currently credited to the customer.
+- **Coin inventory**: the machine's own store of coins by denomination, used to give change.
+- **Tray**: where returned coins (change or cancel refund) wait until `take_returned_coins`.
+- **Change**: balance minus price, given back in coins.
 
 ## Behavioral contract
 
@@ -43,10 +92,12 @@ The tests rely on exactly the following behavior. Anything not stated is yours t
 
 - `select` returns exactly one of `DISPENSED`, `INVALID_SLOT`, `SOLD_OUT`, `INSUFFICIENT_FUNDS`, `CANNOT_MAKE_CHANGE`.
 - Change is computed from the inventory *after* adding the customer's inserted coins. If no combination of available coins equals the change, the result is `CANNOT_MAKE_CHANGE`.
-- `takeReturnedCoins` returns the tray content in descending order and clears it. Change and refunds both use the tray.
+- `take_returned_coins` returns the tray content in descending order and clears it. Change and refunds both use the tray.
 - `cancel` returns exactly the inserted coins (descending order) to the tray; with nothing inserted it does nothing.
-- `insertCoin` returns `false` for unsupported denominations.
-- `stockOf(slot)` is the remaining quantity, 0 for unknown slots.
+- `insert_coin` returns `false` for unsupported denominations.
+- `stock_of(slot)` is the remaining quantity, 0 for unknown slots.
+- Change is the whole balance minus the price (not just the last coin inserted), and it is given as coins of the four denominations only.
+- After a successful `select` the customer's inserted coins are part of the coin inventory and the balance is 0; after `cancel` they are not added to the inventory.
 
 ## Test entry point (Rust)
 

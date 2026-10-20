@@ -15,6 +15,8 @@ A payment spans three services, each with its own small key-value store. Either 
 
 The hard part is not the happy path. Messages are lost and duplicated, participants and the coordinator crash and are restarted from their durable logs, and the network partitions. Whatever happens, no two participants may ever disagree on the outcome of a transaction, a participant that voted YES must wait for the coordinator's decision, and nobody may hold locks forever once the system is healthy again.
 
+**In short:** you write two kinds of node: a coordinator (`begin`, `outcome`) and a participant (`get`, `is_locked`, `in_doubt`). They talk only through `send`, and each keeps a durable log that survives a restart. The tests check that every transaction ends COMMITTED on all participants or ABORTED on all, that locks are held and released at the right moments, and that restarts from the log do not change any decision.
+
 ## Requirements
 
 1. The coordinator's `begin(txId, writesByParticipant)` starts a transaction: it logs a BEGIN record (participants and writes) and sends PREPARE to every participant involved. Invalid calls (empty map, unknown participant, duplicate transaction id) are rejected.
@@ -27,7 +29,7 @@ The hard part is not the happy path. Messages are lost and duplicated, participa
 
 ## Simulation rules and constraints
 
-- Everything runs in a deterministic, single-threaded simulation (`SimNet`): the tests call `onMessage` / `onTick` on your object, never your own threads or timers. No locking is needed (the Rust traits take `&self`, so keep state in a `Mutex`).
+- Everything runs in a deterministic, single-threaded simulation (`SimNet`): the tests call `onMessage` / `onTick` on your object, never your own threads or timers. The Rust traits take `&self`.
 - Time is simulated: one tick = 1 ms, `onTick(nowMs)` is called once per millisecond with the current time. Never read the wall clock, never sleep; derive every timeout from the `nowMs` you were handed.
 - Network model: a message sent now is delivered after a latency of 1-5 ms by default (random per message, so messages can overtake each other). Tests can change the latency range, drop a fraction of the messages, duplicate a fraction, cut the network into partitions (messages across the cut are lost, including ones already in flight) and heal it.
 - Crash model: a crashed node gets no ticks and no messages and its sends are ignored, but its memory is kept (it is paused, not wiped). After `recover` it simply continues with its first tick.
@@ -45,6 +47,72 @@ t~9    A, B apply writes, release locks, log decision, ACK
 -- variant: K dies right after logging COMMIT, partitioned away:
 A, B stay in doubt (locks held, x/y unreadable) ... until K restarts from its log, re-announces COMMIT.
 ```
+
+A NO vote ends the transaction at once:
+
+```
+K.begin("t2", {A:{x:1}, B:{y:"REJECT"}, C:{z:3}})
+B refuses (a value equals "REJECT") and votes NO
+K decides ABORT immediately, without waiting for C's vote, logs it, and sends DECISION(ABORT) to A, B and C
+A and C release the locks they may have taken and write nothing; x, y and z stay unwritten everywhere
+```
+
+Lock conflict and release:
+
+```
+t1 is prepared on A and holds key "k"  -> A.is_locked("k") == true, A.in_doubt() == {"t1"}, A.get("k") still shows the OLD value
+K.begin("t2", {A:{k:"other"}})          -> A votes NO (k is locked by t1) -> t2 ABORTED; t1 is not affected
+t1 is decided and applied                   -> A.is_locked("k") == false, A.get("k") == t1's value
+K.begin("t3", {A:{k:"later"}})          -> now A votes YES; t3 can commit
+```
+
+Timeout:
+
+```
+B is down. K.begin("t1", {A:{x:1}, B:{y:2}})
+PREPARE goes to A (YES) and is re-sent to B every 100 ms, but B never answers
+outcome("t1") stays PENDING until 500 ms after begin, then K decides ABORT and keeps re-sending DECISION(ABORT) every 200 ms
+A releases its lock when it hears the decision; B learns the ABORT whenever it comes back
+```
+
+Restart and presumed abort:
+
+```
+K crashes after logging BEGIN but before any decision; a NEW coordinator is created on the same log
+-> outcome("t1") == ABORTED right away, DECISION(ABORT) is sent to the participants of t1
+A coordinator started on an EMPTY log that receives INQUIRE about "t1" answers ABORT (it has never heard of t1);
+outcome("t1") on that coordinator fails with `Err(TxError::UnknownTransaction)`
+```
+
+Late PREPARE:
+
+```
+A receives DECISION(ABORT) for "t9" although it never saw a PREPARE for t9, and remembers it
+a delayed PREPARE for "t9" then arrives -> A answers NO and takes no locks (otherwise they would be held forever)
+```
+
+## Edge cases
+
+- Invalid `begin` (`Err(TxError::InvalidTransaction)`): an empty map, a participant that is not one of the coordinator's participants, or a `tx_id` that was used before. `outcome` of an id that was never begun fails with `Err(TxError::UnknownTransaction)`.
+- Only the participants named in `writes` take part in a transaction (in the examples above, C is not involved in `t1`: it receives nothing and `C.get("x")` stays empty).
+- A duplicate or re-sent PREPARE for a transaction that is already prepared on this participant gets YES again; the transaction's own lock does not make it vote NO against itself.
+- A duplicate DECISION is acknowledged again but applied once. A DECISION is applied atomically: all keys of the transaction on that participant appear together.
+- "REJECT" is checked against the VALUES to write, not against keys.
+- A prepared transaction's writes are invisible to `get` until the COMMIT decision is applied; an ABORT leaves the old values untouched.
+- The coordinator does not answer an INQUIRE while the vote of that transaction is still running; the participant keeps asking every 200 ms.
+- Acknowledgements are not stored in the log, so after a restart a coordinator re-sends every decision until it has fresh acknowledgements.
+- `in_doubt()` lists only transactions that are prepared and not decided; after the decision it is empty again.
+
+## Glossary
+
+- **Coordinator**: the node that drives a transaction and makes the final COMMIT / ABORT decision.
+- **Participant (resource manager)**: a node with its own key-value store that votes on and applies its share of a transaction.
+- **PREPARE / vote**: the first phase. A participant that votes YES promises it can commit if told to and may not change its mind.
+- **Commit point**: the moment the coordinator has appended the decision to its log; from then on the outcome is fixed even if the coordinator crashes.
+- **In doubt**: a participant has voted YES but has not yet heard the decision; it must keep its locks and wait.
+- **Presumed abort**: when the coordinator has no record of a transaction, the answer is ABORT.
+- **Durable log**: stable storage that survives a restart; a restarted node is a new object created on the same log, and anything not in the log is gone.
+- **Write-ahead**: the log record is appended before the message that depends on it is sent.
 
 ## Behavioral contract
 
@@ -65,8 +133,8 @@ The tests drive your system through the thin contract below (`src/contract.rs`).
 ```rust
 //! Thin test entry point for two-phase commit. Both node types run inside the deterministic simulation
 //! (`playground_support::SimNet`): messages arrive through `on_message`, time through `on_tick` (once per simulated
-//! millisecond). Nodes talk to each other only through the `send` function they were created with. Use interior
-//! mutability (`Mutex`) for the state: the traits take `&self`.
+//! millisecond). Nodes talk to each other only through the `send` function they were created with. The traits
+//! take `&self`.
 
 use std::sync::Arc;
 
@@ -184,7 +252,7 @@ These tests are black-box and deterministic: every node runs inside a seeded sim
 
 ## Language notes
 
-Keep the per-transaction state in a `HashMap` inside a `Mutex`, and send messages after you finished updating the state (collect them first, send after releasing or at the end). Use `BTreeMap`/sorting for `in_doubt` output.
+The traits take `&self`. `in_doubt` output is in a deterministic order.
 
 ## Running
 

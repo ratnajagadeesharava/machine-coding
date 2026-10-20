@@ -17,6 +17,8 @@ sending heartbeats. The cluster must never have two leaders in the same term, no
 is partitioned or how many messages are lost or delayed, and it must get a new leader quickly once things calm down. Your node
 never sees real time or real sockets: a test harness drives it and the network.
 
+**In short:** you write one node object. The harness feeds it incoming messages and clock ticks; the node answers only by calling `send(to, payload)` and by reporting its `role()`, `term()` and `leader()`. Success means: across any pattern of crashes, partitions and message loss, at most one node is ever LEADER in a given term, and a leader reappears quickly once the network is healthy.
+
 ## Requirements
 
 1. A node is created with its id, the ids of its peers, a `send(to, payload)` function, and a random seed. It starts as a FOLLOWER in term 0.
@@ -50,6 +52,57 @@ every 50 ms: heartbeat -> followers reset their timers, leader() == "n3", term()
 crash n3 -> ~150-300 ms later n1 becomes CANDIDATE term 2, wins -> LEADER term 2
 recover n3 -> it is still LEADER term 1 until it hears term 2 -> FOLLOWER of n1
 ```
+
+Vote rules, seen from one voter n1 (a FOLLOWER in term 0 that has not voted yet):
+
+```
+vote request from n3 for term 1            -> n1 adopts term 1, grants the vote, resets its election timer
+vote request from n4 for term 1            -> refused: n1 already voted in term 1 (for n3)
+vote request from n3 for term 1 (duplicate)-> granted again: same candidate, same term
+vote request from n4 for term 2            -> n1 adopts term 2 (its old vote is forgotten) and grants the vote to n4
+```
+
+Stale messages, seen from n2 (a FOLLOWER in term 4):
+
+```
+heartbeat from n0 for term 3  -> n2 answers with "I am in term 4"; its role, term, timer and known leader do not change
+n0 (LEADER or CANDIDATE in term 3) receives that answer -> adopts term 4, becomes FOLLOWER
+```
+
+A leader that lost its majority (5 nodes, `{n0, n1} | {n2, n3, n4}` partition, n0 was LEADER of term 3):
+
+```
+n0 still gets replies from n1, so it counts 2 of 5 (itself + n1); a majority is 3.
+300 ms after it last had replies from a majority, n0 becomes FOLLOWER, still in term 3, and starts a fresh election timer.
+{n2, n3, n4} elect a leader in term 4. After the partition heals, n0 and n1 hear term 4 and follow that leader.
+```
+
+Majority sizes (always over the WHOLE cluster, crashed nodes included):
+
+| Cluster size | 1 | 3 | 5 | 7 | 11 |
+|---|---|---|---|---|---|
+| Votes / replies needed (self counts) | 1 | 2 | 3 | 4 | 6 |
+
+## Edge cases
+
+- Split vote: if two candidates start an election in the same term and neither reaches a majority, nobody becomes leader; the timers fire again (with fresh random timeouts) and a later term decides.
+- A candidate counts each voter at most once: a duplicated "vote granted" answer must not be counted twice, and an answer that belongs to an older term (or to an election you are no longer running) is not a vote for the current one.
+- A node that is not a candidate must ignore vote answers; a LEADER must ignore vote requests for its own term (it has already voted for itself) but must react to a higher term.
+- Several vote requests in one term, from different candidates: only the first is granted. A request for a higher term resets the "who did I vote for" memory.
+- Lower-term messages never reset the election timer, otherwise a stale leader could keep followers from ever electing a new one.
+- A heartbeat of the current term received by a CANDIDATE ends its candidacy: it becomes FOLLOWER of the sender.
+- After a check-quorum step-down `role()` is FOLLOWER and `term()` is unchanged. The tests do not look at `leader()` at that moment.
+- A one-node cluster sends nothing at all: when its timer fires it becomes CANDIDATE in term 1 and immediately LEADER, and `leader()` is its own id.
+- Randomness: each node draws its timeouts only from its own seeded generator; two runs with the same seeds must produce exactly the same roles and terms.
+
+## Glossary
+
+- **Term**: a logical election round counter. A larger term always beats a smaller one; every node stores the highest term it has seen.
+- **Election timeout**: how long a follower waits without hearing a leader (or granting a vote) before starting an election; random in [150, 300] ms so nodes rarely time out together.
+- **Heartbeat**: a small periodic message from the leader saying "I am still the leader of term T"; it is also what resets followers' timers.
+- **Majority (quorum)**: more than half of ALL nodes in the cluster, including the node itself and including nodes that are down.
+- **Check-quorum**: a leader's self-test: if it cannot get replies from a majority for 300 ms it must assume it was cut off and stop acting as leader.
+- **Partition**: the network is split into groups; messages between groups are lost.
 
 ## Behavioral contract
 
@@ -162,7 +215,7 @@ These tests are black-box and deterministic: every node runs inside a seeded sim
 
 ## Language notes
 
-Use a `java.util.Random(seed)` held by the node, never `Math.random()`; encode payloads however you like (for example `"VOTE_REQ|term"`). The harness calls you from a single thread, so plain fields suffice.
+The harness calls the node from a single thread. Randomness must come from the seed given to the constructor.
 
 ## Running
 

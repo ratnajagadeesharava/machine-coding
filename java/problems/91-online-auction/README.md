@@ -11,10 +11,17 @@
 
 ## Problem
 
-Build the bidding engine of an online auction site. A seller lists an item with a starting price, a hidden reserve
-price and an end time. Bidders compete; the highest bid wins if it reaches the reserve. To stop last-second sniping, a bid that
-arrives shortly before the end pushes the end back. People who are outbid should be told. Many bidders hit the same popular
-auction at once and everyone must see one consistent order of bids.
+You are building the bidding engine of an online auction site. A seller lists an item with a starting price, a hidden reserve price (the minimum the seller will accept) and an end time. Bidders compete; when the auction ends, the highest bid wins if it reaches the reserve. To stop last-second "sniping", a bid that arrives in the final 5 minutes pushes the end back. People who are outbid are notified. Many bidders hit the same popular auction at once and everyone must see one consistent order of bids.
+
+## Glossary
+
+- **Starting price**: the lowest acceptable first bid.
+- **Reserve price**: the seller's hidden minimum; if the top bid is below it the item is not sold.
+- **Leader**: the bidder who currently holds the highest accepted bid.
+- **Outbid**: a different bidder takes the lead from you. Raising your own leading bid is not being outbid.
+- **Accepted bid**: a bid that satisfies all rules and is recorded; a bid that is merely too low is *not accepted* (returns `false`), which is different from an invalid request (an error).
+- **Anti-sniping extension**: an accepted bid within 5 minutes of the end moves the end to *bid time + 5 minutes*.
+- **Time**: epoch milliseconds from an injected clock; an auction is open while `now < end`.
 
 ## Requirements
 
@@ -38,12 +45,46 @@ auction at once and everyone must see one consistent order of bids.
 ## Examples
 
 ```
-now = T, auction a1: start 100, reserve 500, ends T+60min
-placeBid(a1, ann, 99)  -> false      placeBid(a1, ann, 100) -> true
-placeBid(a1, bob, 100) -> false      placeBid(a1, bob, 150) -> true   (ann gets "OUTBID:a1:150")
-at T+56min: placeBid(a1, ann, 200) -> true; end moves to T+61min
-after the end: result(a1) = "RESERVE_NOT_MET" if the top bid is 400, "SOLD:ann:600" if 600
+now = T, a1: seller sam, start 100, reserve 500, ends T + 60 min
+
+placeBid(a1, ann, 99)   -> false   (below starting price)
+placeBid(a1, ann, 100)  -> true    (equal to the starting price is fine on an empty auction)
+placeBid(a1, bob, 100)  -> false   (not strictly higher)
+placeBid(a1, bob, 150)  -> true    ann is notified "OUTBID:a1:150"
+placeBid(a1, ann, 120)  -> false
+highestBid(a1) -> "bob:150"        bidHistory(a1) -> ["ann:100", "bob:150"]
+
+Errors (not "false")
+placeBid(a1, sam, 500) -> permission error (seller)     placeBid(a1, ann, 0) -> invalid input
+placeBid("nope", ann, 100) -> invalid input             placeBid(a1, bob, 500) at T + 60 min -> state error (ended)
+
+Notifications
+ann 100, bob 150, ann 200, cy 250  ->  ann: ["OUTBID:a1:150", "OUTBID:a1:250"]   bob: ["OUTBID:a1:200"]   cy: []
+ann bids 100 then 200 with nobody in between -> ann gets no notification
+
+Anti-sniping
+at T + 54 min (6 min left): accepted bid, end stays T + 60 min
+at T + 56 min (4 min left): accepted bid, end becomes T + 61 min
+at T + 60 min (old end passed, new one not): a higher bid is still accepted, end becomes T + 65 min
+a rejected bid (e.g. too low) never extends the end
+
+Result (after the end)
+top bid ann:600, reserve 500 -> "SOLD:ann:600"        top bid ann:400 -> "RESERVE_NOT_MET"
+no bids at all -> "NO_BIDS"                              result(a1) while still open -> state error
+
+Cancel
+cancel(a1, sam) with a bid on it -> state error      cancel(a2, ann) (not the seller) -> permission error
+cancel(a2, sam) with no bids -> ok; afterwards placeBid(a2, bob, 50) -> state error
 ```
+
+## Edge cases
+
+- `createAuction` with a duplicate id, starting price `0`, or an end time `<= now` is invalid input (reserve `0` is allowed and means any bid sells).
+- `result` uses `highest >= reserve` to decide SOLD.
+- Exactly 5 minutes left counts as "in the last 5 minutes" (end becomes `now + 5 min`); with 6 minutes left nothing changes.
+- A rejected bid is not recorded in the history and sends no notification.
+- Concurrent bidders: the history of one auction is strictly increasing in amount, and the bidder with the globally highest amount wins every time (for example 32 threads bidding `i*32 + t` end with `bidder31:3231`).
+- Notifications are oldest first; a user who was never outbid has an empty list.
 
 ## Behavioral contract
 
@@ -136,10 +177,6 @@ These tests are black-box: they only call the contract above, so any class desig
 - Cancel only by the seller and only without bids; a cancelled auction rejects bids.
 - Concurrency: 32 threads x 100 bids with unique amounts (strictly increasing history, the maximum wins); 8 threads x 200 bids (notification count equals history size minus 1 minus self-raises); 8 threads with different amounts repeated 100x (`b7:17` always wins).
 - More edge cases (many auctions at once, repeated extensions) are in `interviewer/`.
-
-## Language notes
-
-`ConcurrentHashMap<String, Auction>` with a `synchronized`/`ReentrantLock` per `Auction`; notifications in a `ConcurrentHashMap<String, List<String>>` using `computeIfAbsent` plus a synchronized or `CopyOnWriteArrayList`. Use `clock.millis()` once per call and reuse it.
 
 ## Running
 

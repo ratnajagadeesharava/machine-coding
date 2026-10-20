@@ -10,37 +10,95 @@
 
 ## Problem
 
-A service keeps expensive lookups in memory. Build a bounded, time-limited in-process cache for string keys and
-string values that can also *compute* missing values on demand — safely and efficiently when many threads ask for
-the same thing at once.
+**What you are building.** A service keeps the results of expensive lookups (a database row, a remote API answer) in
+memory so it does not repeat the work. You build a small in-process cache for string keys and string values. It
+holds a limited number of entries, forgets each entry after a fixed time, throws out the least recently used entry
+when it is full, and can also *compute* a missing value on demand by calling a loader the caller supplies. When many
+threads ask for the same missing key at once, the loader must run only once and everybody shares its result.
+
+### Terms used below
+
+- **ttl** ("time to live"): how many milliseconds an entry stays usable after it was stored.
+- **Live** entry: stored and not yet expired. An **expired** entry is treated exactly as if it were not there.
+- **Capacity**: the maximum number of live entries.
+- **LRU (least recently used)**: the live entry whose last "use" is the oldest.
+- **Loader**: a caller-supplied function that takes the key and produces the value (or fails).
+- **Computation in progress**: a loader call that has started and not finished yet for some key.
 
 ## Requirements
 
 1. The cache holds at most **capacity** entries and each entry lives for **ttl** milliseconds.
-2. `get` returns the value if the key is present and not expired.
-3. `put` stores (or overwrites) a value.
-4. `getOrCompute(key, loader)` returns the cached value if there is one; otherwise it obtains the value by calling the caller-supplied loader, stores it, and returns it.
-5. When many threads ask for the **same missing key** at the same moment, the expensive loader must not run once per thread — everybody should receive one shared result. Asking for **different** keys must not make threads wait for each other's loaders.
+2. `get(key)` returns the value if the key is present and not expired; otherwise "nothing" (empty `Optional` / `None`).
+3. `put(key, value)` stores (or overwrites) a value.
+4. `getOrCompute(key, loader)` returns the cached value if there is one; otherwise it obtains the value by calling the caller-supplied loader (with the key as argument), stores it, and returns it.
+5. When many threads ask for the **same missing key** at the same moment, the expensive loader must not run once per thread — everybody should receive one shared result. Asking for **different** keys must not make threads wait for each other's loaders (two loaders for two keys must be able to run at the same time).
 6. If a loader fails, the failure is reported to the callers that were waiting for that computation and nothing is cached, so the next request tries again.
 7. When the cache is full, making room for a new key removes the entry that was **least recently used**.
-8. `size` reports how many entries are currently usable.
+8. `size` reports how many entries are currently usable (live).
 
 ## Constraints
 
 - Thread-safe; many threads, hot keys, slow loaders (milliseconds to seconds).
-- A loader must never run while the cache holds a lock that blocks unrelated keys.
-- Time comes from the `Clock` given to the factory; never read the wall clock directly.
+- Time comes from the clock given to the factory; never read the wall clock directly.
 - Assume `capacity >= 1` and `ttl >= 1`; loaders never return null.
+- A loader may itself call the cache (for other keys) without deadlocking.
 
 ## Examples
 
+Time and expiry (ttl 1000 ms, clock reads 5000 when `put("a","1")` is called):
+
+| Clock | Call | Result |
+|---|---|---|
+| 5999 | `get("a")` | `1` (alive, age 999) |
+| 6000 | `get("a")` | nothing (expired, age 1000); `size()` = 0 |
+
+Reads do not extend the ttl; overwriting restarts it (ttl 1000):
+
 ```
-capacity 2, ttl 1000ms
-put(a,1) put(b,2) get(a)          → 1
-put(c,3)                          → b is evicted (a was used more recently)
-8 threads: getOrCompute(k, slowLoader) → the loader runs once, all 8 get its value
-loader throws → every waiting caller sees the failure; the following call runs a fresh loader
+t=0    put(a,1)
+t=600  get(a) → 1                     (the read does NOT extend the life)
+t=1000 get(a) → nothing               (expired, age 1000)
+
+t=0    put(a,1)
+t=600  put(a,2)                       (overwrite: the ttl restarts, a now lives until t=1600)
+t=1200 get(a) → 2
+t=1600 get(a) → nothing
 ```
+
+Least recently used (capacity 2):
+
+```
+put(a,1) put(b,2) get(a)          → 1      (a is now more recently used than b)
+put(c,3)                          → b is evicted
+get(b) → nothing    get(a) → 1    get(c) → 3    size → 2
+put(a,9) with a, b present        → overwrite only; nothing is evicted
+```
+
+Expired entries never take space (capacity 2, ttl 1000):
+
+```
+t=0    put(a,1)            t=600  put(b,2)      get(a)   → a is most recently used, b the least
+t=1000 a has expired (age 1000), b is alive (age 400)
+t=1000 put(c,3)            → a's slot is reclaimed; b is NOT evicted. get(b)=2, get(c)=3, size=2
+```
+
+Computing and sharing:
+
+```
+getOrCompute("k", key -> "v:" + key)   → "v:k"   (loader ran once; get("k") → "v:k")
+getOrCompute("k", anything)            → "v:k"   (hit; the second loader is never called)
+8 threads call getOrCompute("k", slowLoader) at once → the loader runs once, all 8 get its value
+loader throws "boom" → the computing caller and every waiting caller see "boom"; get("k") → nothing;
+                       the next getOrCompute("k", ...) runs a fresh loader
+```
+
+## Edge cases
+
+- A key whose entry expired is recomputed by `getOrCompute` (loader runs again, new value is stored with a fresh ttl).
+- `getOrCompute` on a present key counts as a use for the LRU order; a miss, an expired lookup or a failed load does not.
+- A computation in progress does not use up a slot, and does not show in `size()`, until its value is stored.
+- `size()` never exceeds `capacity`, not even while many threads work at once.
+- A loader that reads other keys through the same cache (`get`/`getOrCompute` on other keys) must work.
 
 ## Behavioral contract
 

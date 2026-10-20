@@ -15,6 +15,8 @@ Our cluster has no coordinator: any of a few dozen nodes may take a write, and e
 
 Build one gossip node. It stores a small key/value map, spreads it to the other nodes, and keeps a local opinion of who is alive. Your node is tested inside a simulated network where messages are lost, duplicated, delayed and reordered, nodes crash and recover, and the network splits in two and heals again.
 
+**In short:** one node object with `put`, `get` and `aliveMembers`. Each node periodically sends its whole state to two random peers, merges what it receives, and decides who is alive purely from heartbeat counters that arrive inside that state. The tests look at the data every node ends up with, at who each node believes is alive, and at how many messages each node sent.
+
 ## Requirements
 
 1. `put(key, value)` writes locally with version = (highest version this node knows for that key) + 1, tagged with the writer's id. `get(key)` returns the winning value, or empty.
@@ -26,7 +28,7 @@ Build one gossip node. It stores a small key/value map, spreads it to the other 
 
 ## Simulation rules and constraints
 
-- Everything runs in a deterministic, single-threaded simulation (`SimNet`): the tests call `onMessage` / `onTick` on your object, never your own threads or timers. No locking is needed (the Rust traits take `&self`, so keep state in a `Mutex`).
+- Everything runs in a deterministic, single-threaded simulation (`SimNet`): the tests call `onMessage` / `onTick` on your object, never your own threads or timers. The Rust traits take `&self`.
 - Time is simulated: one tick = 1 ms, `onTick(nowMs)` is called once per millisecond with the current time. Never read the wall clock, never sleep; derive every timeout from the `nowMs` you were handed.
 - Network model: a message sent now is delivered after a latency of 1-5 ms by default (random per message, so messages can overtake each other). Tests can change the latency range, drop a fraction of the messages, duplicate a fraction, cut the network into partitions (messages across the cut are lost, including ones already in flight) and heal it.
 - Crash model: a crashed node gets no ticks and no messages and its sends are ignored, but its memory is kept (it is paused, not wiped). After `recover` it simply continues with its first tick.
@@ -41,6 +43,55 @@ t~40    n0 pushes its state to n7, n3    -> both merge it, both answer with thei
 t~140   n7 and n3 push to 2 peers each   -> 1 -> 3 -> ~7 -> ~15 nodes: O(log N) rounds
 t=1000  n3.crash();  t=3000+: every other node's aliveMembers() no longer contains n3
 ```
+
+Versions and winners:
+
+```
+n0.put("k","a")                              -> n0 holds ("a", version 1, writer n0)
+n0 merges a state holding ("b", version 1, writer n4)
+                                             -> same version, n4 > n0, so "b" wins: n0.get("k") == "b"
+n0.put("k","c")                              -> version = highest known (1) + 1 = 2, writer n0: beats both
+every node that later merges ("c", 2, n0)    -> get("k") == "c"; an old ("a", 1, n0) arriving later never brings "a" back
+```
+
+One push-pull exchange (n0 gossips to n3):
+
+```
+n0 -> n3 : its whole state                  (n0 has just incremented its own heartbeat counter)
+n3 merges, then n3 -> n0 : its whole state  (the answer)
+n0 merges the answer and does NOT reply     (so a round costs 2 messages per chosen peer, never more)
+```
+
+Failure detection, seen from n0 (a peer is "alive" while its counter keeps increasing):
+
+```
+t=0      all peers are alive (benefit of the doubt)
+t=1000   n0 learns that n5's counter is now 10 (directly from n5, or relayed in n2's state)  -> n5 alive
+         ... n0 never sees a counter above 10 for n5 again (n5 crashed)
+t=2500   still alive: less than 2000 ms since the counter last increased
+t=3500   not alive: aliveMembers() no longer contains n5
+t=6000   n5 recovered and gossips again, n0 sees counter 31 -> n5 is alive again
+```
+
+## Edge cases
+
+- `get` of a key nobody wrote is empty. `put` on a node that has never heard of the key gets version 1.
+- A node with 0 or 1 peers still works: it sends to as many distinct peers as exist (up to 2). A node never sends to itself and never picks the same peer twice in one round.
+- A received state with a lower version for a key, or a lower heartbeat counter for a node, changes nothing (counters only go up, versions only go up). Receiving the same state many times is harmless.
+- Liveness evidence may arrive indirectly: if n2's state says n5's counter is 12 and you knew 10, then n5 made progress, even though you never heard from n5.
+- `aliveMembers()` always contains the node itself, even when it has been cut off from everybody.
+- During a 4+4 partition each side stops seeing the other side's counters; after about 2 seconds each node reports only its own side as alive. After the heal the counters flow again and everybody reports all 8.
+- The answer to a push is not answered again; if it were, two nodes would exchange messages forever.
+- Messages may be duplicated or arrive out of order; the final data must not depend on arrival order.
+
+## Glossary
+
+- **Gossip round**: every 100 ms a node picks a few random peers and sends them its state; information spreads like a rumour, in about log(N) rounds.
+- **Fan-out**: how many peers are contacted per round (here up to 2).
+- **Push-pull**: the sender pushes its state and the receiver pulls the sender up to date by answering with its own state.
+- **Heartbeat counter**: a number each node increments once per round; peers conclude "alive" when they see a higher number than before.
+- **Version / writer id**: the pair that orders competing writes of the same key: higher version first, then the larger writer id (string comparison).
+- **Converge**: after enough rounds without new writes, every node holds the same winner for every key.
 
 ## Behavioral contract
 
@@ -133,7 +184,7 @@ These tests are black-box and deterministic: every node runs inside a seeded sim
 
 ## Language notes
 
-Use a `java.util.Random` seeded from the constructor argument for the first round offset and the peer choice; never `Math.random()` or `ThreadLocalRandom`, or the replay test fails. A `TreeMap` gives a stable serialization order.
+Randomness must come from the seed given to the constructor; the replay test compares two runs with the same seed.
 
 ## Running
 
