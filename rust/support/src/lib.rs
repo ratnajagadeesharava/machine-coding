@@ -1,5 +1,8 @@
 //! Shared infrastructure for the playground problems. Not part of any design.
 
+pub mod sim;
+pub use sim::{MsgFn, Rng, SendFn, SimNet, TickFn};
+
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::{Arc, Barrier};
 use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};

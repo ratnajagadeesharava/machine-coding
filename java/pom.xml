@@ -99,6 +99,30 @@
     <module>problems/79-parallel-merge-sort</module>
     <module>problems/80-parallel-word-count</module>
     <module>problems/81-parallel-crawler</module>
+    <module>problems/82-url-shortener</module>
+    <module>problems/83-feature-flags</module>
+    <module>problems/84-file-system-permissions</module>
+    <module>problems/85-text-editor-undo</module>
+    <module>problems/86-document-versioning</module>
+    <module>problems/87-expense-groups</module>
+    <module>problems/88-event-calendar</module>
+    <module>problems/89-movie-ticketing</module>
+    <module>problems/90-food-delivery</module>
+    <module>problems/91-online-auction</module>
+    <module>problems/92-chat-system</module>
+    <module>problems/93-cron-job-scheduler</module>
+    <module>problems/94-api-gateway</module>
+    <module>problems/95-sql-engine</module>
+    <module>problems/96-consistent-hashing</module>
+    <module>problems/97-idempotent-requests</module>
+    <module>problems/98-lock-lease-fencing</module>
+    <module>problems/99-leader-election</module>
+    <module>problems/100-gossip-protocol</module>
+    <module>problems/101-two-phase-commit</module>
+    <module>problems/102-saga-orchestrator</module>
+    <module>problems/103-crdt-replication</module>
+    <module>problems/104-quorum-kv</module>
+    <module>problems/105-raft-log</module>
   </modules>
 
   <dependencies>
