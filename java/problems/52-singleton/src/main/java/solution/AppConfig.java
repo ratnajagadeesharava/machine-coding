@@ -11,11 +11,21 @@ public final class AppConfig {
     private AppConfig() {
         // The tests count how many times your constructor runs: make it increase the counter returned by
         // instancesCreated().
+        this.config = new HashMap<>();
+
     }
 
-    /** The single instance. Many threads may call this at the same moment; still only ONE instance is ever created. */
+    /**
+     * The single instance. Many threads may call this at the same moment; still only ONE instance is ever created.
+     */
     public static AppConfig getInstance() {
-        throw new UnsupportedOperationException("Not implemented yet");
+        if (instance == null) {
+            noOfInstances = 0;
+            instance = new AppConfig();
+        noOfInstances++;
+        }
+        return instance;
+
     }
 
     /** How many instances have been constructed since the last {@link #resetForTests()} (0 before the first getInstance). */
@@ -33,7 +43,9 @@ public final class AppConfig {
         throw new UnsupportedOperationException("Not implemented yet");
     }
 
-    /** Empty when the key was never set. Null key -> IllegalArgumentException. */
+    /**
+     * Empty when the key was never set. Null key -> IllegalArgumentException.
+     */
     public Optional<String> get(String key) {
         throw new UnsupportedOperationException("Not implemented yet");
     }
