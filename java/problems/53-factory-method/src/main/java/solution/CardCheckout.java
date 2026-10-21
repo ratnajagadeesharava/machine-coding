@@ -2,11 +2,13 @@ package solution;
 
 import contract.PaymentGateway;
 
-/** Card checkout. */
+/**
+ * Card checkout.
+ */
 public class CardCheckout extends CheckoutFlow {
 
     @Override
     protected PaymentGateway createGateway() {
-        throw new UnsupportedOperationException("Not implemented yet");
+        return new CardGateway();
     }
 }
