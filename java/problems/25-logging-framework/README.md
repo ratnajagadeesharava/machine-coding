@@ -36,7 +36,7 @@ Destinations are not yours to design: an output destination is something the *ca
 
 - Time comes from the clock given to the factory.
 - Expect hundreds of thousands of messages; filtering a message that is below the threshold must be cheap (do not format first and filter later).
-- The framework is used from a single thread in the tests.
+- `log`, `setLevel`, `addAppender` and `removeAppender` may be called from many threads at once (see the last bullet of the behavioral contract).
 
 ## Examples
 
@@ -103,6 +103,7 @@ The tests rely on exactly the following behavior. Anything not stated is yours t
 - `addAppender(name, sink, minLevel)` returns `true` if registered, `false` if the name is already in use, blank, or the level is unknown (nothing changes). A new appender only sees messages logged after it was added. `removeAppender(name)` returns `true` if it existed (it receives nothing afterwards, and the name can be reused) and `false` otherwise.
 - If a sink throws, the remaining appenders still receive the message, and `log` returns normally.
 - With no appenders registered a message goes nowhere (and nothing fails).
+- Concurrent use: calls from different threads never fail or lose data. Each `log` call that passes the filters delivers its complete, untorn line exactly once to every appender that is registered for the whole duration of the call; lines logged by one thread reach an appender in the order that thread logged them. A level change or an appender added or removed by a call that has returned is seen by every call that starts afterwards; a `log` call running at the same moment may or may not see it. Whether sinks are ever invoked concurrently with themselves is yours to decide (tests use thread-safe sinks).
 
 ## Test entry point (Java)
 

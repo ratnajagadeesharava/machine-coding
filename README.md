@@ -1,7 +1,7 @@
 # Machine Coding + LLD Interview Playground
 
 Senior-level (about 6 years of experience) practice for **machine-coding and low-level-design interviews**, in **Java 21** and **Rust**.
-105 problems, each with requirements, a behavioural contract, runnable tests, hints, follow-ups and a scoring rubric.
+114 problems, each with requirements, a behavioural contract, runnable tests, hints, follow-ups and a scoring rubric.
 
 > **Give me the requirements. Give me the tests. Give me the playground. Do NOT give me the architecture.**
 
@@ -104,7 +104,8 @@ Tick the problems off as you go; you are done with a problem when the tests pass
 | [1. Foundations](#track-1---foundations-principles-and-patterns-1-73) | 01-73 | OOP, design principles, SOLID, design patterns, classic LLD designs (parking lot, elevator, chess ...) | [Classes and Objects](java/problems/33-classes-objects/README.md) |
 | [2. Concurrency](#concurrency) | 74-81 (+ 13, 20, 22, 24, 27-31) | locks, deadlocks, wait/notify, thread pools, parallel algorithms | [Ordered Printer](java/problems/76-ordered-printer/README.md) |
 | [3. Classic product systems](#classic-product-systems) | 82-95 (+ 11, 15) | URL shortener, ticketing, food delivery, file system, text editor, SQL engine ... | [URL Shortener](java/problems/82-url-shortener/README.md) |
-| [4. Distributed systems](#distributed-systems-in-process-simulations) | 96-105 | consistent hashing, idempotency, leases, gossip, CRDTs, quorums, Raft, 2PC, sagas | [Consistent Hashing](java/problems/96-consistent-hashing/README.md) |
+| [4. Distributed systems](#distributed-systems-in-process-simulations) | 96-105 | consistent hashing, idempotency, leases, gossip, CRDTs, quorums, Raft, 2PC, sagas |
+| [5. Microsoft LLD round](#microsoft-lld-round-questions) | 106-114 | job scheduler, autofill, comments, document search, data-source layer, config service, parking strategies, multi-module logging, elevator feasibility | [Consistent Hashing](java/problems/96-consistent-hashing/README.md) |
 
 Suggested overall order: Track 1 first, then 2 and 3 in either order, then 4 (it assumes you are comfortable with concurrency and state machines).
 
@@ -530,6 +531,38 @@ These tests **fail until you implement the stubs** (they do not skip).
 | 103 | [CRDT Replicated Store](java/problems/103-crdt-replication/README.md) | Hard | 75 min | L3 |
 | 104 | [Quorum Key-Value Store](java/problems/104-quorum-kv/README.md) | Hard | 90 min | L3 |
 | 105 | [Raft Log Replication](java/problems/105-raft-log/README.md) | Hard | 120 min | L3 |
+
+### 106-114 Microsoft LLD round questions
+
+| # | Problem | Difficulty | Time | Level |
+|---|---|---|---|---|
+| 106 | [Job Scheduler (Capability Matching)](java/problems/106-job-scheduler/README.md) | Medium | 60 min | L2 |
+| 107 | [Excel-Like Autofill Engine](java/problems/107-excel-autofill/README.md) | Medium | 45 min | L2 |
+| 108 | [Document Comment Service](java/problems/108-document-comments/README.md) | Easy-Medium | 30 min | L2 |
+| 109 | [Document Line Search](java/problems/109-document-line-search/README.md) | Medium | 45 min | L2 |
+| 110 | [Runtime Data Source Access Layer](java/problems/110-data-source-layer/README.md) | Medium | 45 min | L2 |
+| 111 | [Configuration Management Service](java/problems/111-config-management/README.md) | Medium | 60 min | L2 |
+| 112 | [Parking Lot with Allocation Strategies](java/problems/112-parking-lot-strategies/README.md) | Medium-Hard | 75 min | L2 |
+| 113 | [Multi-Module Logging Framework](java/problems/113-multi-module-logging/README.md) | Hard | 90 min | L2 |
+| 114 | [Elevator Request Feasibility](java/problems/114-elevator-feasibility/README.md) | Hard | 90 min | L2 |
+
+## Microsoft LLD round questions
+
+Problems modelled on the Low Level Design questions reported for Microsoft interviews (several are DSA-flavoured: caches, autofill, search, schedulers). Do them in this order; each is Level 2 (thin entry point, your design) and has a Java and a Rust version.
+
+| Step | Problem | Difficulty | Time | Focus | Links | Done |
+|---|---|---|---|---|---|---|
+| Step 1 | [Job Scheduler (Capability Matching)](java/problems/106-job-scheduler/README.md) **new** | Medium | 60 min | machines with capability sets, pluggable machine-selection criteria, counters on completion, deterministic tie-break | [java](java/problems/106-job-scheduler/README.md) · [rust](rust/problems/106-job-scheduler/README.md) | ☐ |
+| Step 2 | [Excel-Like Autofill Engine](java/problems/107-excel-autofill/README.md) **new** | Medium | 45 min | numeric and letter series detection, case and sign preservation, number formatting, extensible series kinds | [java](java/problems/107-excel-autofill/README.md) · [rust](rust/problems/107-excel-autofill/README.md) | ☐ |
+| Step 3 | [Document Comment Service](java/problems/108-document-comments/README.md) **new** | Easy-Medium | 30 min | insertion-ordered comments, unknown-document rejection, concurrent adds | [java](java/problems/108-document-comments/README.md) · [rust](rust/problems/108-document-comments/README.md) | ☐ |
+| Step 4 | [Document Line Search](java/problems/109-document-line-search/README.md) **new** | Medium | 45 min | whole-word case-insensitive AND search, stable line ids across deletion, repeated-search efficiency | [java](java/problems/109-document-line-search/README.md) · [rust](rust/problems/109-document-line-search/README.md) | ☐ |
+| Step 5 | [Runtime Data Source Access Layer](java/problems/110-data-source-layer/README.md) **new** | Medium | 45 min | one stable interface over switchable sources with independent records, source-specific rules | [java](java/problems/110-data-source-layer/README.md) · [rust](rust/problems/110-data-source-layer/README.md) | ☐ |
+| Step 6 | [Configuration Management Service](java/problems/111-config-management/README.md) **new** | Medium | 60 min | versioned records, optimistic updates, history and rollback, validation before mutation | [java](java/problems/111-config-management/README.md) · [rust](rust/problems/111-config-management/README.md) | ☐ |
+| Step 7 | [Parking Lot with Allocation Strategies](java/problems/112-parking-lot-strategies/README.md) **new** | Medium-Hard | 75 min | two/four-wheeler spots, lowest-index vs most-free-floor allocation, lookup by registration or ticket | [java](java/problems/112-parking-lot-strategies/README.md) · [rust](rust/problems/112-parking-lot-strategies/README.md) | ☐ |
+| Step 8 | [Multi-Module Logging Framework](java/problems/113-multi-module-logging/README.md) **new** | Hard | 90 min | shared buffer, acknowledge after successful write, sequence-range retrieval, producer-consumer coordination | [java](java/problems/113-multi-module-logging/README.md) · [rust](rust/problems/113-multi-module-logging/README.md) | ☐ |
+| Step 9 | [Elevator Request Feasibility](java/problems/114-elevator-feasibility/README.md) **new** | Hard | 90 min | accept/reject against capacity and per-rider stop limits without breaking earlier promises | [java](java/problems/114-elevator-feasibility/README.md) · [rust](rust/problems/114-elevator-feasibility/README.md) | ☐ |
+
+Also practise the existing [Parking Lot](java/problems/01-parking-lot/README.md), [Vending Machine](java/problems/05-vending-machine/README.md), [Notification System](java/problems/23-notification-system/README.md), [Logging Framework](java/problems/25-logging-framework/README.md), [Elevator](java/problems/02-elevator/README.md) and [LRU Cache](java/problems/18-lru-cache/README.md) problems, which these interviews also ask.
 
 ## The `play` runner (rustlings-style)
 

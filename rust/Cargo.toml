@@ -107,4 +107,13 @@ members = [
     "problems/103-crdt-replication",
     "problems/104-quorum-kv",
     "problems/105-raft-log",
+    "problems/114-elevator-feasibility",
+    "problems/113-multi-module-logging",
+    "problems/112-parking-lot-strategies",
+    "problems/111-config-management",
+    "problems/110-data-source-layer",
+    "problems/109-document-line-search",
+    "problems/108-document-comments",
+    "problems/107-excel-autofill",
+    "problems/106-job-scheduler",
 ]

@@ -77,6 +77,8 @@ select("B1") -> "DISPENSED" (exact, tray empty); insert_coin(100); select("B1") 
 - Rejected coins never change the balance; `cancel` with nothing inserted leaves the tray unchanged.
 - Quantity 0 means sold out; `stock_of` of an unknown slot is 0.
 - Change is made from the inventory plus the coins the customer just inserted, because those coins join the inventory when the purchase succeeds.
+- Coins in the tray (change and refunds) stay there across operations until `takeReturnedCoins` is called; the next call returns all of them in descending order.
+- Each `loadCoins` call adds to the inventory; repeated loads of one denomination accumulate.
 
 ## Glossary
 

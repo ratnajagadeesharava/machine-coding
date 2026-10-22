@@ -77,6 +77,7 @@ Channel listed twice: `[email, email, sms]` with email always refused makes call
 - Defining a template again replaces it; the next `send` uses the new body.
 - Attempt counts restart with every `send`: a channel that failed three times in one send gets three fresh attempts in the next.
 - Text in braces that is not a valid placeholder (for example `{}` or `{a b}`) is plain text and needs no parameter.
+- A parameter whose value is the empty string counts as provided; the placeholder is replaced by nothing.
 
 ## Behavioral contract
 
