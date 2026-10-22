@@ -1,7 +1,7 @@
 # Machine Coding + LLD Interview Playground
 
 Senior-level (about 6 years of experience) practice for **machine-coding and low-level-design interviews**, in **Java 21** and **Rust**.
-114 problems, each with requirements, a behavioural contract, runnable tests, hints, follow-ups and a scoring rubric.
+119 problems, each with requirements, a behavioural contract, runnable tests, hints, follow-ups and a scoring rubric.
 
 > **Give me the requirements. Give me the tests. Give me the playground. Do NOT give me the architecture.**
 
@@ -563,6 +563,28 @@ Problems modelled on the Low Level Design questions reported for Microsoft inter
 | Step 9 | [Elevator Request Feasibility](java/problems/114-elevator-feasibility/README.md) **new** | Hard | 90 min | accept/reject against capacity and per-rider stop limits without breaking earlier promises | [java](java/problems/114-elevator-feasibility/README.md) · [rust](rust/problems/114-elevator-feasibility/README.md) | ☐ |
 
 Also practise the existing [Parking Lot](java/problems/01-parking-lot/README.md), [Vending Machine](java/problems/05-vending-machine/README.md), [Notification System](java/problems/23-notification-system/README.md), [Logging Framework](java/problems/25-logging-framework/README.md), [Elevator](java/problems/02-elevator/README.md) and [LRU Cache](java/problems/18-lru-cache/README.md) problems, which these interviews also ask.
+
+### 115-119 Search, typeahead and RAG
+
+| # | Problem | Difficulty | Time | Level |
+|---|---|---|---|---|
+| 115 | [Autocomplete Typeahead Service](java/problems/115-autocomplete-typeahead/README.md) | Hard | 75 min | L2 |
+| 116 | [In-Memory Search Engine](java/problems/116-inverted-index-search/README.md) | Hard | 90 min | L2 |
+| 117 | [Search Query Pipeline](java/problems/117-query-pipeline/README.md) | Medium-Hard | 60 min | L2 |
+| 118 | [Search Result Cache](java/problems/118-search-result-cache/README.md) | Hard | 75 min | L2 |
+| 119 | [Mini RAG Retrieval Component](java/problems/119-mini-rag-retriever/README.md) | Hard | 90 min | L2 |
+
+## Search, typeahead and RAG
+
+Search-system questions that interviews often build on a first-round design: typeahead, an inverted-index engine, a query pipeline, a result cache and a small retrieval-augmented-generation component. Each is Level 2 with a Java and a Rust version. Suggested order:
+
+| Step | Problem | Difficulty | Time | Focus | Links | Done |
+|---|---|---|---|---|---|---|
+| Step 1 | [Autocomplete Typeahead Service](java/problems/115-autocomplete-typeahead/README.md) **new** | Hard | 75 min | prefix lookup, frequency/recency/personalised ranking, deterministic ties, concurrent updates, scale | [java](java/problems/115-autocomplete-typeahead/README.md) · [rust](rust/problems/115-autocomplete-typeahead/README.md) | ☐ |
+| Step 2 | [In-Memory Search Engine](java/problems/116-inverted-index-search/README.md) **new** | Hard | 90 min | tokenisation, AND/OR queries, TF-IDF ranking, delete/update, pagination | [java](java/problems/116-inverted-index-search/README.md) · [rust](rust/problems/116-inverted-index-search/README.md) | ☐ |
+| Step 3 | [Search Query Pipeline](java/problems/117-query-pipeline/README.md) **new** | Medium-Hard | 60 min | parse, spell-correct, synonyms, filter, rank, highlight; adding a step without touching the others | [java](java/problems/117-query-pipeline/README.md) · [rust](rust/problems/117-query-pipeline/README.md) | ☐ |
+| Step 4 | [Search Result Cache](java/problems/118-search-result-cache/README.md) **new** | Hard | 75 min | normalised query keys, TTL and LRU, invalidation on index change, request coalescing | [java](java/problems/118-search-result-cache/README.md) · [rust](rust/problems/118-search-result-cache/README.md) | ☐ |
+| Step 5 | [Mini RAG Retrieval Component](java/problems/119-mini-rag-retriever/README.md) **new** | Hard | 90 min | chunking, swappable embedder and vector store, cosine retrieval, budgeted prompt building | [java](java/problems/119-mini-rag-retriever/README.md) · [rust](rust/problems/119-mini-rag-retriever/README.md) | ☐ |
 
 ## The `play` runner (rustlings-style)
 
