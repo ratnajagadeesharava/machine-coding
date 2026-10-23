@@ -9,6 +9,15 @@
 > `HINTS.md` if you are stuck (three levels, smallest nudge first) and
 > `FOLLOWUPS.md` (open one at a time, after the previous version passes).
 
+## What you are building
+
+You are building the messaging core of a chat app such as WhatsApp or Slack, without any network or UI: just the in-memory
+service behind it. People send direct messages to one other person or post into group chats. If the recipient is online the
+message arrives at once; if not, it waits and is delivered the moment they connect. The sender can ask for the status of a
+message (sent, delivered, read), and for a group that status reflects *all* the people the message was addressed to. Groups
+have an admin who manages membership, and someone who joins later must never see what was said before they joined. Many
+threads use the service at once, yet everybody in a chat must see the same messages in the same order.
+
 ## Problem
 
 Design the messaging core of a chat application. Users can talk one-to-one or in groups. A message is delivered right
@@ -27,25 +36,90 @@ people type at the same time.
 6. `history(user, chatId)` returns the messages the user took part in (sent, or was a recipient of when it was sent) in send order, each `messageId|sender|text`.
 7. `read(user, chatId)` marks every message addressed to the user in that chat as read (and delivered). `unreadCount(user, chatId)` counts the messages addressed to the user not yet read.
 8. `statusOf(messageId)` is the status from the sender's point of view: `SENT` (some recipient has not got it yet), `DELIVERED` (all recipients have it) or `READ` (all have read it). A message with no recipients is `READ`; recipients who have since left the group are ignored.
+9. Message statuses are only ever `SENT`, `DELIVERED` or `READ` (exact upper-case strings). "Delivered" means the recipient's device got the message (they were online when it was sent, or connected afterwards); "read" means they called `read` for that chat.
+10. `create_group` with a group id that already exists is an error (`ChatError::AlreadyExists`). The admin is a member automatically and receives the group's messages like any other member except their own.
 
 ## Constraints
 
 - Used from many threads: concurrent senders, readers and connect/disconnect toggles.
 - Within one chat every participant sees one single global order of messages (the same list for all members), and each sender's own messages appear in the order they were sent.
 - Every message is delivered exactly once per recipient, even when the recipient connects and disconnects repeatedly while messages arrive (hidden/behaviour test: 800 messages, one flapping recipient).
-- A group of 200 members with 10 concurrent senders posting 1,000 messages must stay consistent (hidden test); fan-out cost per message should be proportional to the recipients, not to total history.
+- A group of 200 members with 10 concurrent senders posting 1,000 messages must stay consistent (hidden test).
 - Message ids are unique; their format is yours (the tests only split `history` entries at the first two `|`, so the text may contain `|`).
+
+## Glossary
+
+- **Recipient**: someone a message is addressed to: the other person in a direct chat, or every *other* member of the group at the moment the message is sent. The sender is never a recipient of their own message.
+- **Online / offline**: a user is online between `connect` and `disconnect`. Registering does not connect.
+- **Delivered**: the recipient has the message (sent while they were online, or they connected afterwards). Reading also counts as delivered.
+- **Chat id**: the string naming a conversation: `dm:<smaller>:<larger>` for direct chats, `group:<group_id>` for groups. It is what `history`, `read` and `unread_count` take.
+- **Admin**: the creator of a group; the only person who may add members or remove others, and who can never leave.
 
 ## Examples
 
+**Example 1: group status aggregates over every recipient** (the test `should_aggregate_group_status_over_all_recipients`)
+
 ```
-register ann bob cy;   createGroup(g, ann, [bob, cy]);   bob connects
-m = sendGroup(ann, g, "hello")     status(m) = SENT        (cy has not got it)
-cy connects                        status(m) = DELIVERED
-read(bob, "group:g")               status(m) = DELIVERED   (cy has not read it)
-read(cy, "group:g")                status(m) = READ
-history(cy, "group:g") only has messages sent while cy was a member
+register ann, bob, cy
+create_group("g", ann, [bob, cy])            // chat id "group:g"; ann = admin
+connect(bob)                                // cy stays offline
+m = send_group(ann, "g", "hello all")        // addressed to bob and cy
+status_of(m)  -> SENT                        // cy has not got it yet
+connect(cy)
+status_of(m)  -> DELIVERED                   // both have it
+read(bob, "group:g")
+status_of(m)  -> DELIVERED                   // cy has not read it
+read(cy, "group:g")
+status_of(m)  -> READ                        // everybody addressed has read it
+unread_count(ann, "group:g") -> 0            // the sender is not a recipient
 ```
+
+**Example 2: direct chat, offline recipient**
+
+```
+register ann, bob;  (bob is offline)
+m = send_direct(ann, bob, "hi")              // chat id "dm:ann:bob" (same id for bob -> ann)
+status_of(m) -> SENT;   unread_count(bob, "dm:ann:bob") -> 1
+connect(bob)
+status_of(m) -> DELIVERED
+read(bob, "dm:ann:bob")
+status_of(m) -> READ;   unread_count(bob, "dm:ann:bob") -> 0
+history(bob, "dm:ann:bob") -> ["<id>|ann|hi"]
+```
+
+**Example 3: joining and leaving a group** (the tests `should_show_new_members_only_messages_sent_after_they_joined` and `should_stop_receiving_after_leaving_but_keep_what_was_already_there`)
+
+```
+create_group("g", ann, [bob, cy]);  send_group(ann, "g", "one")
+remove_member(cy, "g", cy)                   // cy leaves (any member may remove themselves)
+send_group(ann, "g", "two")
+history(bob, "group:g") -> texts: one, two
+history(cy,  "group:g") -> texts: one       // keeps what she had, gets nothing new
+unread_count(cy, "group:g") -> 1             // "one" is still unread
+send_group(cy, "g", "x") -> Err(NotAllowed)   // no longer a member
+add_member(ann, "g", dee); send_group(bob, "g", "after")
+history(dee, "group:g") -> texts: after     // nothing from before she joined
+```
+
+**Example 4: who may do what**
+
+```
+add_member(bob, "g", cy)       by a non-admin    -> Err(NotAllowed)
+remove_member(bob, "g", ann)   non-admin removes someone else -> Err(NotAllowed)
+remove_member(ann, "g", ann)   the admin leaving  -> Err(NotAllowed)
+send_group(cy, "g", "x")       cy is not a member -> Err(NotAllowed)
+send_group(ann, "nope", "x")   unknown group      -> Err(Unknown)
+```
+
+## Edge cases
+
+- A message sent to a group where the sender is the only member has no recipients: its status is `READ` straight away.
+- `history` of a user who has nothing to do with the chat (never sent, never a recipient) is an empty list; so is `history` of a chat with no messages.
+- A history entry is `messageId|sender|text`; the text may itself contain `|`, so the first two `|` are the separators.
+- Message ids are unique across the whole service; their format is yours.
+- A message sent while the recipient is offline stays `SENT` for the sender; disconnecting after having received it never "un-delivers" it.
+- If a recipient leaves the group before reading, the status is computed from the remaining recipients only (see the behavioural contract below).
+- Direct chat ids are symmetric: `send_direct(ann, bob, ..)` and `send_direct(bob, ann, ..)` land in the same chat `dm:ann:bob`; the comparison is plain string order (`"Bob" < "ann"`).
 
 ## Behavioral contract
 
@@ -144,10 +218,6 @@ These tests are black-box: they only call the contract above, so any class desig
 - Unknown users and message ids.
 - Concurrency: 8 senders x 100 group messages (800 unique messages, identical order for all 4 members, per-sender order preserved); one thread flapping connect/disconnect while 4 senders send 800 direct messages (exactly 800 delivered once, unread 800); 4 senders over 100 runs (identical 80-message histories).
 - More edge cases (200-member group, unread counts while reading and sending) are in `interviewer/`.
-
-## Language notes
-
-A `Mutex<Inner>` with `HashMap<String, User>`, `HashMap<String, Chat>` and a `Vec<Message>` log per chat; `Message` holds `recipients: Vec<UserId>` and a `HashMap<UserId, State>`; split the id format helper (`dm_id(a, b)`) from the logic.
 
 ## Running
 

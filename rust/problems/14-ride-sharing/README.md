@@ -10,18 +10,29 @@
 
 ## Problem
 
-Build the matching and trip-lifecycle core of a ride-hailing service on a city grid: riders request a ride, the
-nearest available driver is matched, the ride progresses through its stages, and a fare is computed on completion.
+You are building the matching and trip-lifecycle core of a ride-hailing service on a city laid out as an integer grid.
+Drivers are parked at grid points. When a rider asks for a ride from a pickup point to a drop point, the service
+assigns the **nearest free driver** (if one is close enough). The ride then moves through stages - matched, in progress,
+completed - or is cancelled before the trip starts. When a ride completes, the rider is charged a fare based on the
+distance and the driver is free again, now sitting at the drop point.
+
+### Terms
+
+- **Location** - an integer grid point `(x, y)`; coordinates can be any `int` (negative included).
+- **Manhattan distance** - `|x1 - x2| + |y1 - y2|`: blocks walked along the grid, no diagonals. `(0,0)` to `(4,4)` is 8.
+- **Available / busy driver** - a driver is *busy* from the moment they are matched until the ride is completed or cancelled; otherwise *available*. A new driver starts available.
+- **Active ride** - a ride whose status is `MATCHED` or `IN_PROGRESS`.
+- **Ride status** - `MATCHED`, `IN_PROGRESS`, `COMPLETED`, `CANCELLED`, or `UNKNOWN` (for an id the system has never issued).
 
 ## Requirements
 
 1. The city is an integer grid. Drivers have a location and are either available or busy.
-2. A rider **requests a ride** from a pickup point to a drop point. The system matches the **nearest available driver** (Manhattan distance to the pickup); ties are broken by the **smallest driver id**. Only drivers within distance **10** of the pickup are eligible; otherwise the request is refused.
-3. A rider can have **at most one active ride** (matched or in progress) at a time.
-4. A matched driver is **busy** until the ride is completed or cancelled.
-5. Ride lifecycle: `MATCHED → IN_PROGRESS → COMPLETED`, or `MATCHED → CANCELLED`. A ride that is in progress cannot be cancelled; a completed or cancelled ride cannot change.
+2. A rider **requests a ride** from a pickup point to a drop point. The system matches the **nearest available driver** (Manhattan distance to the pickup); ties are broken by the **smallest driver id** (plain string comparison, `"d3" < "d5" < "d9"`). Only drivers within distance **10** of the pickup (distance `<= 10`, so exactly 10 is allowed and 11 is not) are eligible; otherwise the request is refused. A successful request creates a ride in status `MATCHED`.
+3. A rider can have **at most one active ride** (matched or in progress) at a time. A rider with a completed or cancelled ride may request again.
+4. A matched driver is **busy** until the ride is completed or cancelled, and cannot be matched to another rider.
+5. Ride lifecycle: `MATCHED → IN_PROGRESS → COMPLETED`, or `MATCHED → CANCELLED`. A ride that is in progress cannot be cancelled; a completed or cancelled ride cannot change. Any other transition (starting twice, completing a ride that was never started, ...) is refused and changes nothing.
 6. On completion the fare is `500 + 100 × Manhattan(pickup, drop)`. The driver becomes available again **at the drop location**.
-7. Cancelling a matched ride makes its driver available again at their previous location.
+7. Cancelling a matched ride makes its driver available again at their previous location (the driver never moved).
 8. Queries: the status of a ride, the driver of a ride, the current location of a driver.
 
 ## Constraints
@@ -32,20 +43,43 @@ nearest available driver is matched, the ride progresses through its stages, and
 ## Examples
 
 ```
-addDriver(d1, 0, 0); addDriver(d2, 3, 0)
-requestRide(r1, pickup=(1,0), drop=(5,5)) → ride1, driver d1 (distance 1 < 2)
-requestRide(r2, pickup=(1,0), drop=(2,2)) → ride2, driver d2 (d1 is busy)
-startRide(ride1); completeRide(ride1) → 500 + 100×(4+5) = 1400    d1 is now at (5,5), available
+add_driver(d1, 0, 0); add_driver(d2, 3, 0)
+request_ride(r1, pickup=(1,0), drop=(5,5)) -> ride1, driver d1      d1 is 1 away, d2 is 2 away; status_of(ride1) = MATCHED
+request_ride(r2, pickup=(1,0), drop=(2,2)) -> ride2, driver d2      d1 is busy
+request_ride(r3, pickup=(1,0), drop=(2,2)) -> empty                 both drivers busy
+request_ride(r1, pickup=(1,0), drop=(2,2)) -> empty                 r1 already has an active ride
+complete_ride(ride1)                       -> empty                 still MATCHED, not started
+start_ride(ride1)                          -> true                  status IN_PROGRESS
+cancel_ride(ride1)                         -> false                 in progress cannot be cancelled
+complete_ride(ride1)                       -> 1400                  500 + 100 x (|1-5| + |0-5|) = 500 + 100 x 9
+                                                                   d1 is now at "5,5" and available again
 ```
+
+Tie-break and distance: drivers `d9` at (2,0), `d3` at (0,2), `d5` at (1,1), pickup (0,0): all are distance 2, so `d3` wins (smallest id).
+Manhattan, not straight-line: driver `far-diagonal` at (4,4) is distance 8 and `near-straight` at (7,0) is distance 7 from (0,0), so
+`near-straight` is chosen even though `far-diagonal` is closer in a straight line.
+
+Cancel: driver `d1` at (0,0), ride matched with pickup (1,0). `cancel_ride` -> `true`, status `CANCELLED`, `driver_location(d1)` is still `"0,0"`,
+and `d1` can be matched again immediately.
+
+Out of range: only drivers at (0,0) and (3,0); `request_ride(r, pickup=(50,50), ...)` -> empty.
+
+## Edge cases
+
+- Every transition from a final state fails: after `COMPLETED` or `CANCELLED`, `start_ride`, `complete_ride` and `cancel_ride` return `false`/empty.
+- `driver_location` returns the string `"x,y"` with no spaces (for example `"8,8"`, `"-3,4"`); empty for an unknown driver.
+- A driver's location changes only at completion (to the drop point), never at match or start.
+- Unknown ride ids: `status_of` is `"UNKNOWN"`, `driver_of` is empty, `start_ride` and `cancel_ride` are `false`, `complete_ride` is empty.
+- A rider can request a new ride right after their previous ride was cancelled or completed.
 
 ## Behavioral contract
 
 The tests rely on exactly the following behavior. Anything not stated is yours to decide (and to state as an assumption).
 
-- `requestRide` returns a ride id, or empty if no eligible driver exists, the rider already has an active ride, or an input is invalid.
-- `statusOf(ride)` is one of `MATCHED`, `IN_PROGRESS`, `COMPLETED`, `CANCELLED`, or `UNKNOWN`.
-- `startRide` returns `true` only from `MATCHED`. `completeRide` returns the fare only from `IN_PROGRESS`. `cancelRide` returns `true` only from `MATCHED`.
-- `driverLocation(id)` is `"x,y"` (e.g. `"5,5"`); empty for unknown drivers.
+- `request_ride` returns a ride id, or empty if no eligible driver exists, the rider already has an active ride, or an input is invalid.
+- `status_of(ride)` is one of `MATCHED`, `IN_PROGRESS`, `COMPLETED`, `CANCELLED`, or `UNKNOWN`.
+- `start_ride` returns `true` only from `MATCHED`. `complete_ride` returns the fare only from `IN_PROGRESS`. `cancel_ride` returns `true` only from `MATCHED`.
+- `driver_location(id)` is `"x,y"` (e.g. `"5,5"`); empty for unknown drivers.
 - Distance is Manhattan: `|x1 − x2| + |y1 − y2|`; eligibility is `distance ≤ 10`.
 
 ## Test entry point (Rust)
@@ -97,7 +131,7 @@ pub fn create() -> Option<Box<dyn RideSharingApi>> {
 
 ## Language notes
 
-`&mut self`. Consider an enum `RideStatus` with a transition method; use newtype IDs only if they pay for themselves.
+Updates take `&mut self`; queries take `&self`. Coordinates are `i32`; the fare is a `u64`. Status is returned as one of the plain strings listed above.
 
 ## Running
 

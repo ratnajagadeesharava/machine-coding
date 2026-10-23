@@ -9,6 +9,15 @@
 > `HINTS.md` if you are stuck (three levels, smallest nudge first) and
 > `FOLLOWUPS.md` (open one at a time, after the previous version passes).
 
+## What you are building
+
+You are building the edge gateway of a small platform: the one door every API call goes through. A client presents an
+API key and a path such as `/api/users/42`. The gateway works out who the client is, picks the backend group the path belongs to,
+enforces the client's rate limit, and forwards the call to one of the replicas of that backend, rotating between them. When
+a replica keeps failing the gateway stops sending it traffic for a while (a circuit breaker) and retries it carefully
+later. Every answer is an HTTP-like status code plus a text body. Many request threads call it at once and backends can be
+slow, so one slow backend call must not block unrelated requests.
+
 ## Problem
 
 You are building the edge gateway of a small platform. Clients present an API key and a path; the gateway decides who the
@@ -26,24 +35,81 @@ body. The gateway is called from many threads at once, and backends can be slow,
 6. If every candidate threw -> `502 "bad gateway"`. If every backend of the route has an open circuit -> `503 "service unavailable"` and nothing is called.
 7. Circuit breaker per backend: 3 consecutive failures open it for 30 s; afterwards exactly one trial request is let through (half-open): success closes it, failure re-opens it for another 30 s. Any success resets the failure count.
 8. `successCount(client)` counts requests answered 200 for that client; `callCount(backend)` counts calls made to the backend, successful or not.
+9. Order of checks in `handle`, and what each step costs: unknown key -> 401 (no token); no matching route -> 404 (no token); empty bucket -> 429 (no backend called); otherwise exactly one token is spent, even if the answer is then 502 or 503.
+10. Round-robin position is per route, not per client or per backend; a route registered with `[a, b, c]` rotates a, b, c, a, b, c, ... across all clients.
+11. A backend's circuit is per backend id, shared by every route that uses it, and its state does not depend on which client made the call.
+12. `successCount` counts only 200 answers for that client; 401, 404, 429, 502 and 503 do not count. `callCount` counts every call made into the backend, including failed ones and failover attempts, but never counts a call that was skipped because the circuit was open.
 
 ## Constraints
 
 - `handle` is called from many threads at once; token accounting must be exact: a bucket of N tokens admits exactly N requests, never N+1.
-- Backend calls may be slow. Do not hold a gateway-wide lock (or a lock shared by unrelated clients/backends) while calling a backend.
+- Backend calls may be slow. Requests for unrelated clients and backends must not wait on each other while a backend call is in progress.
 - Time comes only from the injected clock; the tests move it with `FakeClock.advance`. Never read the system clock and never sleep.
 - Round-robin must stay fair under concurrency: 1,600 concurrent requests over 4 backends reach each backend exactly 400 times.
 
+## Glossary
+
+- **API key / client**: the secret string a caller sends; each key is registered with a client name and a rate limit.
+- **Route / prefix**: a path prefix mapped to an ordered list of backend ids. `/api` matches `/api`, `/api/x` and `/apiary`; the longest matching prefix wins.
+- **Backend**: a function from a path to a body that may throw. Replicas of one service are several backends listed in one route.
+- **Token bucket**: a client's allowance: it holds up to `requestsPerMinute` tokens, each request spends one, and tokens trickle back continuously (1 per `60 000 / requestsPerMinute` ms).
+- **Failover**: if the chosen backend throws, the request is tried on the next candidate of the same route instead of failing at once.
+- **Circuit breaker**: per-backend protection. Closed = normal. Open = the backend is skipped for 30 s after 3 consecutive failures. Half-open = the 30 s are over and a single trial request is allowed: success closes the circuit, failure opens it again for 30 s.
+
 ## Examples
 
-```
-backends a, b, c on route /api, client key-1 (600 rpm)
-handle(key-1, /api/p) x6 -> 200 a/api/p, b/api/p, c/api/p, a/api/p, b/api/p, c/api/p
+**Example 1: round-robin** (backends `a`, `b`, `c` echo `name + path`; route `/api` -> [a, b, c]; client `key-1` with 600 rpm)
 
-a throws, route /api -> [a, b]:   handle -> 200 "b/api/1"   (a called once, b called once)
-after 3 consecutive failures of a: a is skipped for 30 000 ms (callCount stays 3)
-at +30 000 ms one request reaches a again; if it fails, a is open for another 30 s
 ```
+handle(key-1, "/api/p") six times -> 200 "a/api/p", 200 "b/api/p", 200 "c/api/p", 200 "a/api/p", 200 "b/api/p", 200 "c/api/p"
+successCount("acme") -> 6
+```
+
+**Example 2: status codes and cost in tokens** (client `tiny`, 1 request per minute; route `/api` -> [a])
+
+```
+handle("nope", "/api/x")   -> 401 "unauthorized"   (no token spent)
+handle("k", "/other")      -> 404 "no route"       (no token spent)
+handle("k", "/api/x")      -> 200 "a/api/x"        (the only token)
+handle("k", "/api/x")      -> 429 "rate limited"
+```
+
+**Example 3: token bucket with a refill** (60 rpm = 1 token per second)
+
+```
+60 requests -> 200 each;  the 61st -> 429
++1000 ms: 1 request -> 200, the next -> 429
++500 ms:  429 (half a token)       +500 ms more: 200
++1 hour idle: still only 60 tokens available, never more than the capacity
+```
+
+**Example 4: failover and circuit breaker** (route `/api` -> [a, b], `a` always throws, `b` works)
+
+```
+handle -> 200 "b/api/1"           // a was tried first and threw, the request failed over to b
+                                  // callCount(a) = 1, callCount(b) = 1
+20 requests in a row all give 200; callCount(a) stops at 3 once a has failed 3 times in a row
+the circuit of a is open: for the next 30 000 ms (up to and including +29 999) a gets no calls
+at +30 000 ms exactly one trial call reaches a; if it fails, a is open for another 30 000 ms;
+if it succeeds, a is closed again and takes its share of the rotation
+```
+
+**Example 5: 502 versus 503** (route `/api` -> [a] only, `a` always throws, plenty of tokens)
+
+```
+handle x3 -> 502 "bad gateway", 502, 502        // callCount(a) = 3, the third failure opens the circuit
+handle    -> 503 "service unavailable"          // a is not called, callCount(a) stays 3, but a token is spent
+```
+Two failures followed by a success never open a circuit: the success resets the consecutive-failure count.
+
+## Edge cases
+
+- `addRoute` with an unknown backend id or an empty list is rejected (`IllegalArgumentException`) and registers nothing.
+- A path that matches no prefix is 404 even if the client is out of tokens (the route check comes before the rate limit).
+- With two prefixes `/api` and `/api/users`, the path `/api/users/42` goes to the `/api/users` route and `/api/orders` to the `/api` route.
+- A `null` key (Java) is just an unknown key: 401.
+- 1,600 concurrent requests on a 1,000-rpm client: exactly 1,000 get through (200) and 600 get 429; 16 threads over four backends give each backend exactly 400 calls.
+- When every candidate backend of the route throws, the answer is 502 and each of those failures counts towards its backend's circuit.
 
 ## Behavioral contract
 
@@ -148,10 +214,6 @@ These tests are black-box: they only call the contract above, so any class desig
 - Concurrency with 16 threads: exactly 1,000 of 1,600 requests admitted at 1,000 rpm; four backends receive exactly 400 calls each.
 - **Repeat 100x**: 8 threads against a 50-token bucket admit exactly 50 requests and exactly 50 backend calls.
 - More edge cases in `interviewer/` (see `INTERVIEWER_NOTES.md`).
-
-## Language notes
-
-Use `AtomicInteger`/`AtomicLong` for the round-robin counter and counts, and a small `synchronized` block per bucket and per breaker; `ConcurrentHashMap` for the registries. Read time as `clock.now()` once per request and reuse it.
 
 ## Running
 

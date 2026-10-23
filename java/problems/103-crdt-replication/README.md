@@ -15,6 +15,8 @@ Our collaboration app keeps counters (likes), sets (tags) and single values (doc
 
 Build one replica of such a store. Replicas exchange whole-state snapshots as opaque strings and `merge` them, in any order, any number of times, possibly duplicated or stale. The store has three data types, each with its own conflict rule.
 
+**In short:** one replica object holding named counters, sets and registers. It must accept updates alone, produce a `snapshot()` string, and `merge(snapshot)` strings from other replicas so that all replicas eventually show identical values, whatever the order, duplication or staleness of the snapshots.
+
 ## Requirements
 
 1. PN-counter: `increment` / `decrement` by a non-negative amount (a negative amount is rejected); the value is the sum of all increments minus the sum of all decrements from all replicas. An untouched counter is 0. Concurrent updates on different replicas must not be lost.
@@ -28,7 +30,7 @@ Build one replica of such a store. Replicas exchange whole-state snapshots as op
 ## Simulation rules and constraints
 
 - No network simulation here: replicas are plain in-process objects; the tests move snapshots between them by hand, in any order, duplicated, stale or reordered (that is the simulated network).
-- The replica must be thread-safe: the tests hammer one replica from 8 threads at once (counter increments, set adds, register writes) and require that no update is lost. Java: any thread; Rust: the trait takes `&self`, so use a `Mutex` inside.
+- The replica must be thread-safe: the tests hammer one replica from 8 threads at once (counter increments, set adds, register writes) and require that no update is lost. Java: any thread; Rust: the trait takes `&self`.
 - Determinism: there is no wall clock, no randomness required. Timestamps are supplied by the caller and a replica never writes the same timestamp twice to one register.
 - `snapshot()` and `merge()` can be called concurrently with updates and with each other; a snapshot must be a consistent state, not a half-updated one.
 - Snapshots must stay compact: the counter state must not grow with the number of increments, and merging 20,000 set elements (half removed) must be fast.
@@ -40,6 +42,68 @@ a.increment("views",5)   b.increment("views",3)  b.decrement("views",1)   -> a.m
 a.add("s","x")  sync(a,b)   then  a.remove("s","x") || b.add("s","x")   -> after sync x is still in the set (add wins)
 a.write("r","from-a",10)  b.write("r","from-b",10)                         -> after sync both read "from-b" (larger id)
 ```
+
+(`sync(a, b)` = take both snapshots first, then each replica merges the other's.)
+
+Counters never double-count and never go backwards:
+
+```
+a.increment("c",1);  old = a.snapshot();  a.increment("c",4)
+b.merge(a.snapshot())      -> b reads 5
+b.merge(old)               -> b still reads 5 (old state is a subset of what b already has)
+b.merge(a.snapshot())      -> b still reads 5 (merging the same state again changes nothing)
+a.decrement("c",9)         -> a reads -4; negative values are fine
+```
+
+Observed remove:
+
+```
+a.add("s","x");  b.remove("s","x")  (b has never seen a's add, so there is nothing for b to remove)
+sync(a,b)                           -> x is in the set on both
+
+a.add("s","x"); stale = a.snapshot(); b.merge(stale); b.remove("s","x"); a.merge(b.snapshot())   -> x is gone on a and b
+b.merge(stale); a.merge(stale)      -> x stays gone: the removal is part of the state, an old snapshot cannot resurrect it
+
+a.add("s","x"); a.remove("s","x"); afterRemove = a.snapshot(); a.add("s","x"); b.merge(a.snapshot())
+b.merge(afterRemove)                -> x is present: the re-add is a new addition that the old remove never observed
+```
+
+Register with three writers:
+
+```
+a.write("r","from-a",5)   b.write("r","from-b",9)   c.write("r","from-c",7)
+any merge order, any repetition  -> every replica reads "from-b" (highest timestamp)
+a.write("r","older",3) on a replica that holds timestamp 5 or more -> ignored
+```
+
+Snapshots are values:
+
+```
+a.increment("c",1); snap = a.snapshot(); a.increment("c",100); a.add("s","x")
+b.merge(snap)   -> b.counter("c") == 1 and b.contains("s","x") == false
+```
+
+## Edge cases
+
+- A negative amount to `increment` / `decrement` is rejected with `IllegalArgumentException`; an amount of 0 is allowed and changes nothing.
+- Counters, sets and registers live in separate namespaces: `counter("x")`, `elements("x")` and `read("x")` are three independent things, even if all three exist in the same replica and travel in the same snapshot.
+- A counter nobody touched reads 0; a register nobody wrote reads empty; a set nobody touched has no elements. `remove` of an element that is not present does nothing.
+- `elements` returns a copy: adding to the set afterwards does not change a set you already received.
+- Names and values may contain newlines, `|`, `;`, `,`, quotes and non-ASCII characters (for example `"line1\nline2 | with ;,'\" and ünïcode ✓"`) and must survive `snapshot` followed by `merge` unchanged.
+- Merging an empty replica's snapshot, or your own snapshot, is harmless. Snapshots may be merged in any order and any number of times; the result is the same.
+- A replica never writes the same timestamp twice to one register, but different replicas can use the same timestamp: the larger replica id wins (compared as strings: `"b" > "a"`).
+- Concurrent use: 8 threads each doing 1,000 increments, adds and writes on one replica must lose nothing (the counter reads 8,000), and `snapshot` / `merge` may run at the same time as updates.
+- Size: the counter part of a snapshot must not grow with the NUMBER of increments, and merging a snapshot with 20,000 set elements (half of them removed) must be fast.
+
+## Glossary
+
+- **Replica**: one copy of the data store, with a unique id, that accepts writes on its own.
+- **State-based CRDT**: a data type whose replicas exchange their whole state and merge it; merging is idempotent (repeat is harmless), commutative (order does not matter) and associative (grouping does not matter).
+- **PN-counter**: a counter supporting both increments and decrements by keeping the two totals per replica.
+- **OR-set (observed-remove set)**: a set where `remove` only deletes the additions this replica has seen; an add that happens concurrently survives ("add wins").
+- **LWW-register (last-writer-wins)**: one value; the write with the highest (timestamp, replica id) pair wins.
+- **Concurrent**: two updates on different replicas where neither replica had seen the other's update.
+- **Stale snapshot**: an old snapshot delivered late; it must not undo anything newer.
 
 ## Behavioral contract
 
@@ -139,7 +203,7 @@ These tests are black-box and deterministic: every node runs inside a seeded sim
 
 ## Language notes
 
-Escape or length-prefix the strings in your snapshot (names can contain newlines and separators). `Collectors`/`TreeMap` give deterministic output; copy under a lock (or `synchronized`) so `snapshot` is consistent.
+Names can contain newlines and separator characters. `snapshot` must be consistent while other threads update the replica.
 
 ## Running
 

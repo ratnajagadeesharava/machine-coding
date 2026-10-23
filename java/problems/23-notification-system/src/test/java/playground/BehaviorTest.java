@@ -239,4 +239,192 @@ class BehaviorTest {
         assertThat(api.send("u2", "marketing", "otp", Map.of("code", "1"), List.of("email"))).isEqualTo("DELIVERED:email");
         assertThat(api.send("u1", "marketing", "otp", Map.of("code", "1"), List.of("email"))).isEqualTo("SUPPRESSED");
     }
+
+    @Test
+    void shouldSendOnlyOnceWhenADuplicatedChannelIsDelivered() {
+        NotificationApi api = system();
+
+        String result = api.send("u1", "security", "otp", Map.of("code", "1"), List.of("email", "email", "sms"));
+
+        assertThat(result).isEqualTo("DELIVERED:email");
+        assertThat(gateway.calls).containsExactly(new Call("email", "a@x.com", "Your code is 1"));
+    }
+
+    @Test
+    void shouldFailAfterThreeAttemptsWhenTheOnlyChannelIsListedTwice() {
+        NotificationApi api = system();
+        gateway.alwaysRefuse("email");
+
+        String result = api.send("u1", "security", "otp", Map.of("code", "1"), List.of("email", "email"));
+
+        assertThat(result).isEqualTo("FAILED");
+        assertThat(gateway.channelsCalled()).containsExactly("email", "email", "email");
+    }
+
+    @Test
+    void shouldKeepTheFirstPositionOfADuplicatedChannel() {
+        NotificationApi api = system();
+        gateway.alwaysRefuse("sms");
+        gateway.alwaysRefuse("email");
+
+        String result = api.send("u1", "security", "otp", Map.of("code", "1"), List.of("sms", "email", "sms", "push"));
+
+        assertThat(result).isEqualTo("DELIVERED:push");
+        assertThat(gateway.channelsCalled())
+                .containsExactly("sms", "sms", "sms", "email", "email", "email", "push");
+    }
+
+    @Test
+    void shouldNotCallADisabledChannelListedTwice() {
+        NotificationApi api = system();
+        api.setPreference("u1", "email", "security", false);
+
+        String result = api.send("u1", "security", "otp", Map.of("code", "1"), List.of("email", "email", "sms"));
+
+        assertThat(result).isEqualTo("DELIVERED:sms");
+        assertThat(gateway.channelsCalled()).containsExactly("sms");
+    }
+
+    @Test
+    void shouldTreatChannelNamesAsCaseSensitive() {
+        NotificationApi api = system();
+
+        assertThat(api.send("u1", "security", "otp", Map.of("code", "1"), List.of("EMAIL", "Sms"))).isEqualTo("SUPPRESSED");
+        assertThat(api.send("u1", "security", "otp", Map.of("code", "1"), List.of("Email", "email"))).isEqualTo("DELIVERED:email");
+
+        assertThat(gateway.channelsCalled()).containsExactly("email");
+    }
+
+    @Test
+    void shouldDeliverOnAnyChannelNameTheUserHasAnAddressFor() {
+        NotificationApi api = system();
+        api.registerUser("u3", Map.of("whatsapp", "+1-555-0100", "carrier-pigeon", "roof-7"));
+
+        String result = api.send("u3", "security", "otp", Map.of("code", "1"), List.of("telegram", "carrier-pigeon", "whatsapp"));
+
+        assertThat(result).isEqualTo("DELIVERED:carrier-pigeon");
+        assertThat(gateway.calls).containsExactly(new Call("carrier-pigeon", "roof-7", "Your code is 1"));
+    }
+
+    @Test
+    void shouldHandTheSameAddressAndBodyToEveryRetry() {
+        NotificationApi api = system();
+        gateway.refuseFirst("email", 2);
+
+        api.send("u1", "security", "otp", Map.of("code", "9"), List.of("email"));
+
+        Call expected = new Call("email", "a@x.com", "Your code is 9");
+        assertThat(gateway.calls).containsExactly(expected, expected, expected);
+    }
+
+    @Test
+    void shouldStopCallingTheGatewayAfterTheFirstAcceptedAttempt() {
+        NotificationApi api = system();
+        gateway.refuseFirst("email", 1);
+
+        String result = api.send("u1", "security", "otp", Map.of("code", "1"), List.of("email", "sms", "push"));
+
+        assertThat(result).isEqualTo("DELIVERED:email");
+        assertThat(gateway.channelsCalled()).containsExactly("email", "email");
+    }
+
+    @Test
+    void shouldReportFailedNotSuppressedWhenTheOnlyEligibleChannelRefuses() {
+        NotificationApi api = system();
+        api.setPreference("u1", "sms", "security", false);
+        gateway.alwaysRefuse("email");
+
+        String result = api.send("u1", "security", "otp", Map.of("code", "1"), List.of("email", "sms", "fax"));
+
+        assertThat(result).isEqualTo("FAILED");
+        assertThat(gateway.channelsCalled()).containsExactly("email", "email", "email");
+    }
+
+    @Test
+    void shouldForgetOldAddressesWhenRegisteringAgain() {
+        NotificationApi api = system();
+
+        api.registerUser("u1", Map.of("email", "new@x.com"));
+
+        assertThat(api.send("u1", "security", "otp", Map.of("code", "1"), List.of("sms", "push"))).isEqualTo("SUPPRESSED");
+        assertThat(gateway.calls).isEmpty();
+
+        api.registerUser("u1", Map.of());
+        assertThat(api.send("u1", "security", "otp", Map.of("code", "1"), List.of("email"))).isEqualTo("SUPPRESSED");
+        assertThat(gateway.calls).isEmpty();
+    }
+
+    @Test
+    void shouldKeepPreferencesIndependentPerChannelAndCategory() {
+        NotificationApi api = system();
+        api.setPreference("u1", "email", "marketing", false);
+        api.setPreference("u1", "sms", "security", false);
+
+        assertThat(api.send("u1", "marketing", "otp", Map.of("code", "1"), List.of("email", "sms"))).isEqualTo("DELIVERED:sms");
+        assertThat(api.send("u1", "security", "otp", Map.of("code", "1"), List.of("sms", "email"))).isEqualTo("DELIVERED:email");
+        assertThat(api.send("u1", "updates", "otp", Map.of("code", "1"), List.of("sms", "email"))).isEqualTo("DELIVERED:sms");
+        assertThat(gateway.channelsCalled()).containsExactly("sms", "email", "sms");
+    }
+
+    @Test
+    void shouldApplyPreferenceChangesToTheNextSend() {
+        NotificationApi api = system();
+        assertThat(api.send("u1", "marketing", "otp", Map.of("code", "1"), List.of("email"))).isEqualTo("DELIVERED:email");
+
+        api.setPreference("u1", "email", "marketing", false);
+        assertThat(api.send("u1", "marketing", "otp", Map.of("code", "1"), List.of("email"))).isEqualTo("SUPPRESSED");
+
+        api.setPreference("u1", "email", "marketing", true);
+        assertThat(api.send("u1", "marketing", "otp", Map.of("code", "1"), List.of("email"))).isEqualTo("DELIVERED:email");
+        assertThat(gateway.calls).hasSize(2);
+    }
+
+    @Test
+    void shouldDeliverToEachUsersOwnAddressInSendOrder() {
+        NotificationApi api = system();
+        api.registerUser("u2", Map.of("email", "b@x.com"));
+        api.registerUser("u3", Map.of("email", "c@x.com"));
+
+        api.send("u3", "security", "otp", Map.of("code", "3"), List.of("email"));
+        api.send("u1", "security", "otp", Map.of("code", "1"), List.of("email"));
+        api.send("u2", "security", "otp", Map.of("code", "2"), List.of("email"));
+        api.send("u3", "security", "otp", Map.of("code", "4"), List.of("email"));
+
+        assertThat(gateway.calls).containsExactly(
+                new Call("email", "c@x.com", "Your code is 3"),
+                new Call("email", "a@x.com", "Your code is 1"),
+                new Call("email", "b@x.com", "Your code is 2"),
+                new Call("email", "c@x.com", "Your code is 4"));
+    }
+
+    @Test
+    void shouldReturnInvalidWhenOnlySomeRequiredParametersAreGiven() {
+        NotificationApi api = system();
+        api.defineTemplate("two", "{a} and {b}");
+
+        assertThat(api.send("u1", "security", "two", Map.of("a", "1"), List.of("email"))).isEqualTo("INVALID");
+
+        assertThat(gateway.calls).isEmpty();
+    }
+
+    @Test
+    void shouldAcceptEmptyStringAsAParameterValue() {
+        NotificationApi api = system();
+        api.defineTemplate("t", "[{a}]");
+
+        String result = api.send("u1", "security", "t", Map.of("a", ""), List.of("email"));
+
+        assertThat(result).isEqualTo("DELIVERED:email");
+        assertThat(gateway.calls).extracting(Call::body).containsExactly("[]");
+    }
+
+    @Test
+    void shouldRecognisePlaceholderNamesWithDigitsAndUnderscores() {
+        NotificationApi api = system();
+        api.defineTemplate("t", "{user_1}/{A_b2}/{9}");
+
+        api.send("u1", "security", "t", Map.of("user_1", "x", "A_b2", "y", "9", "z"), List.of("email"));
+
+        assertThat(gateway.calls).extracting(Call::body).containsExactly("x/y/z");
+    }
 }

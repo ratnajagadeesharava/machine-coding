@@ -6,16 +6,55 @@
 
 ## Problem
 
-A shop prints three documents: a **quote** (an estimate), an **invoice** (final) and a **credit note** (a refund).
-They all use the same pricing and the same money formatting. Last quarter the tax rate changed and the credit notes
-were still using the old one.
+You are building the document printing of a shop. It prints three documents: a **quote** (an estimate), an
+**invoice** (final) and a **credit note** (a refund). They all use the same pricing (bulk discount, then tax) and the
+same money formatting. Last quarter the tax rate changed and the credit notes were still using the old one: after
+your change, changing a pricing rule must change all three documents consistently.
+
+## Glossary
+
+- **cents**: all amounts are whole cents in `long`; lines are the item prices of the document.
+- **bps (basis points)**: hundredths of a percent; 1800 bps = 18%, 10000 bps = 100%.
+- **net**: the sum of the lines.
+- **bulk discount**: a percentage off the net, applied only when the net reaches the threshold.
+- **taxable**: `net - discount`; tax is charged on this.
+- **round half up**: a fractional cent of exactly `.5` or more rounds up (180.9 becomes 181; 0.9 becomes 1).
+- **`PricingRules`** (provided): `discount(net)` and `tax(taxable)`, both in cents, both `>= 0`.
 
 ## Requirements
 
 1. `StandardRules(taxBps, bulkThresholdCents, bulkDiscountBps)`: `discount(net)` = `net * bulkDiscountBps / 10000` when `net >= threshold`, else 0; `tax(taxable)` = `taxable * taxBps / 10000`. Both **round half up** to whole cents.
-2. `Documents` formats the three documents exactly as shown in its Javadoc. `total = net - discount + tax` where tax is charged on the discounted amount; a credit note prints the total negated.
-3. Invalid input (null/empty lines, a negative line, a blank invoice number) is rejected with `IllegalArgumentException` — the same in all three documents.
-4. Money prints as `major.minor` with two digits (`0.05`, `12.40`), with `-` in front when negative.
+2. `Documents(rules)` produces the strings below, using whatever `PricingRules` it was given (the tests supply their own rules too):
+
+   ```
+   quote(lines)               "QUOTE net=50.00 discount=0.00 tax=9.00 total=59.00"
+   invoice("INV-1", lines)    "INVOICE #INV-1 net=50.00 discount=0.00 tax=9.00 total=59.00"
+   creditNote("INV-1", lines) "CREDIT NOTE #INV-1 net=50.00 discount=0.00 tax=9.00 total=-59.00"
+   ```
+
+   `net` = sum of lines; `discount = rules.discount(net)`; `tax = rules.tax(net - discount)`; `total = net - discount + tax`. A credit note prints the total negated (net, discount and tax stay positive).
+3. Invalid input (null or empty lines, any negative line, and for invoice and credit note a blank number) is rejected with `IllegalArgumentException` before anything is produced, the same in all three documents. A single line of `0` is valid.
+4. Money prints as `major.minor` with exactly two digits (`0.05`, `12.40`, `0.00`), with `-` in front when negative.
+
+## Examples
+
+With `StandardRules(1800, 10_000, 1000)` (18% tax; 10% off from 100.00):
+
+| Call | Result |
+|---|---|
+| `quote([5000])` | `QUOTE net=50.00 discount=0.00 tax=9.00 total=59.00` |
+| `invoice("INV-1", [12000, 8000])` | `INVOICE #INV-1 net=200.00 discount=20.00 tax=32.40 total=212.40` (net 20000, discount 2000, tax 18% of 18000 = 3240) |
+| `creditNote("INV-9", [5000])` | `CREDIT NOTE #INV-9 net=50.00 discount=0.00 tax=9.00 total=-59.00` |
+| `quote([1005])` | `... net=10.05 discount=0.00 tax=1.81 total=11.86` (180.9 rounds up to 181) |
+| `quote([5])` | `QUOTE net=0.05 discount=0.00 tax=0.01 total=0.06` |
+| `quote([9999])` / `quote([10000])` | discount `0.00` / `10.00` (threshold is inclusive) |
+| `quote([0])` | `QUOTE net=0.00 discount=0.00 tax=0.00 total=0.00` |
+
+With custom rules `discount = 100`, `tax = 7` (always), `quote([1000])` gives `QUOTE net=10.00 discount=1.00 tax=0.07 total=9.07`, and the invoice and credit note show the same figures.
+
+## Edge cases
+
+- `quote([])`, `quote(null)`, `invoice("A", [100, -1])`, `creditNote("A", [-5])`, `invoice(" ", [100])` and `creditNote("", [100])` all throw `IllegalArgumentException`.
 
 ## Running
 

@@ -10,9 +10,17 @@
 
 ## Problem
 
-Build an in-memory message broker. Publishers send text messages to named topics; every subscriber of a topic gets its own
-copy of each message and fetches (pulls) its messages whenever it likes. Many threads publish, subscribe and poll at the
-same time.
+You are building the heart of a small in-process messaging service, like a miniature Kafka/Google Pub/Sub that lives inside
+one program. Publishers send text messages to named topics. Every subscriber of a topic gets its **own copy** of each message
+and fetches (pulls) its messages whenever it likes; nothing is pushed to it. Many threads publish, subscribe, unsubscribe and
+poll at the same time, and the broker must stay correct and fast.
+
+**Terms**
+
+- **Topic**: a named channel that messages are published to.
+- **Subscriber**: a string id that has subscribed to one or more topics. Subscriptions are per topic: "ann on news" and "ann on sports" are separate.
+- **Pending messages**: the messages delivered to one subscriber on one topic that it has not polled yet.
+- **Poll**: pull-style fetch; it removes what it returns from the subscriber's pending messages.
 
 ## Requirements
 
@@ -35,12 +43,42 @@ same time.
 
 ## Examples
 
+Single-threaded traces on a `PubSubApi` value `api` (`api.` prefix omitted) (all of these follow from the rules and the tests):
+
 ```
-createTopic("news") -> true
-subscribe("news", "ann"); publish("news", "m1") -> 1       subscribe("news", "bob"); publish("news", "m2") -> 2
-poll("ann", "news", 10) -> [m1, m2]                       poll("bob", "news", 10) -> [m2]
-poll("ann", "news", 10) -> []                              publish("nope", "x") -> -1
+create_topic("news")  -> true            create_topic("news") -> false     create_topic("  ") -> false
+subscribe("news","ann") -> true         publish("news","m1") -> 1        // only ann is subscribed
+subscribe("news","bob") -> true         publish("news","m2") -> 2
+poll("ann","news",10) -> [m1, m2]       poll("bob","news",10) -> [m2]    // bob never sees m1
+poll("ann","news",10) -> []             // already consumed
+publish("nope","x")   -> -1             // unknown topic
 ```
+
+Batching and consumption:
+
+```
+subscriber "s" on "t", then publish m1..m5
+poll("s","t",2) -> [m1, m2]   poll("s","t",2) -> [m3, m4]   poll("s","t",2) -> [m5]   poll("s","t",2) -> []
+poll("s","t",0) -> []  and  poll("s","t",-3) -> []          // nothing consumed; m1.. would still be pending
+```
+
+Independence and unsubscribing:
+
+```
+a and b subscribed to "t"; publish m1, m2
+poll("a","t",10) -> [m1, m2]            poll("b","t",1) -> [m1]     poll("b","t",1) -> [m2]
+unsubscribe("t","a") -> true            unsubscribe("t","a") -> false
+publish("t","m3") -> 1                  poll("a","t",10) -> []      // a gets nothing, not even old pending messages
+```
+
+## Edge cases
+
+- Publishing to an existing topic with no subscribers returns `0` and the message is gone for good; subscribing afterwards does not recover it.
+- Publishing the same text twice produces two separate messages.
+- `poll` for an unknown topic, or by someone not subscribed to it, returns an empty list (no error is raised).
+- A list returned by `poll` is yours: later publishes or polls never change it.
+- Several threads polling the *same* subscriber together must between them receive each message exactly once.
+- 16 threads racing to create the same topic: exactly one gets `true`. Likewise for the same (topic, subscriber) subscription.
 
 ## Behavioral contract
 
@@ -88,7 +126,7 @@ pub fn create() -> Option<Arc<dyn PubSubApi>> {
 
 ## Language notes
 
-The trait is `&self` + `Send + Sync`. A `RwLock`/`Mutex`-protected map from topic to per-topic state is a reasonable start; think about whether the topic lock is held during the whole publish.
+The trait takes `&self` and is `Send + Sync`: every method is called from several threads. `max` is an `i32` and may be zero or negative; `publish` returns `-1` (not an error type) for an unknown topic.
 
 ## Running
 

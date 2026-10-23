@@ -10,10 +10,18 @@
 
 ## Problem
 
-Build one engine that can host several two-player grid games. A game is chosen by name when it is created; after
-that, two players take turns placing pieces until somebody wins or the board is full. Today the product ships three
-games, tomorrow a fourth and a fifth, so adding one must be cheap and must not mean touching the rules of the
-others.
+**What you are building.** A small game server hosts several two-player grid games behind one entry point. A game is
+chosen by name when it is created; after that, two players (`P1`, `P2`) take turns placing pieces until somebody
+completes a winning line or the board is full. Today the product ships three games, tomorrow a fourth and a fifth,
+so adding one must be cheap and must not mean touching the rules of the others. A UI polls the engine for the
+current board, whose turn it is, and the outcome of each attempted move.
+
+### Terms used below
+
+- **Cell / row / col**: a board square, addressed by zero-based `row` and `col`. For `tictactoe` and `gomoku`, row 0 is the top row. For `connect4`, row 0 is the **bottom** row.
+- **Line**: consecutive cells in a straight horizontal, vertical or diagonal run.
+- **Gravity** (connect4): a piece dropped in a column falls to the lowest empty cell of that column.
+- **Move text**: the string describing a placement; its format depends on the game.
 
 ## Requirements
 
@@ -28,9 +36,7 @@ others.
 
 ## Constraints
 
-- Single-threaded access. One game instance per `create`.
-- Checking for a win after a move must not rescan the whole board (gomoku is 225 cells).
-- Adding another grid game should not require editing the code paths of the existing ones.
+- Single-threaded access. One game instance per `create`; two instances never share state.
 
 ## Examples
 
@@ -39,6 +45,43 @@ create("tictactoe")   play("P1","1,1") → OK    play("P1","0,0") → NOT_YOUR_T
 create("connect4")    play("P1","3") → OK  (the piece falls to row 0 of column 3)    play("P2","3") → OK  (row 1)
 create("chess")       → no game
 ```
+
+Tic-tac-toe win (moves alternate P1, P2, P1, ...; the last one returns `WIN`, earlier ones `OK`):
+
+```
+0,0  1,0  0,1  1,1  0,2     → P1 completes the top row → WIN
+then play("P2","2,2")        → GAME_OVER      nextPlayer → empty      cellAt(2,2) → "."
+```
+
+Rendering (tictactoe after P1 `0,0`, P2 `1,1`, P1 `2,1`) — `render()` is `"X..\n.O.\n.X."`:
+
+```
+X..
+.O.
+.X.
+```
+
+Connect4 after P1 `3`, P2 `3`, P1 `0` — `cellAt(0,3)="X"`, `cellAt(1,3)="O"`, `cellAt(0,0)="X"`, and
+`render()` lists the top row first, so the bottom row (row 0) is **last**:
+
+```
+.......
+.......
+.......
+.......
+...O...
+X..X...
+```
+
+Gomoku: four in a row (`7,3 7,4 7,5 7,6` for P1) is still `OK`; the fifth (`7,7`) returns `WIN`. Six or more in a row also wins.
+
+## Edge cases
+
+- Checks run in a fixed order, first failing wins: game already over → `GAME_OVER` (even for garbage move text or the wrong player); wrong player or any player text other than `P1`/`P2` → `NOT_YOUR_TURN`; bad move → `INVALID_MOVE`.
+- Invalid `tictactoe`/`gomoku` move texts: `3,0` (off a 3x3 board), `-1,0`, `x`, empty string, `1, 2` (space), `1,2,0` (three parts). Invalid `connect4` texts: `7`, `-1`, `x`, empty, `3,3`, ` 3`. An occupied cell and a full connect4 column are invalid too.
+- A move that fills the last cell **and** completes a line is a `WIN`, not a `DRAW`.
+- `cellAt` with coordinates off the board returns `"."`, never an error.
+- Names are case-sensitive: `TicTacToe` and the empty string produce no game.
 
 ## Behavioral contract
 

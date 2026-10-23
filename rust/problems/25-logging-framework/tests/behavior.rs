@@ -426,3 +426,152 @@ fn should_be_fast_when_most_messages_are_below_the_threshold() {
     assert_eq!(got(&lines).len(), 100_000);
     assert!(start.elapsed() < Duration::from_secs(20));
 }
+
+struct FailOnce(Lines, std::sync::atomic::AtomicUsize);
+
+impl LogSink for FailOnce {
+    fn write(&self, line: &str) {
+        if self.1.fetch_add(1, std::sync::atomic::Ordering::SeqCst) == 0 {
+            panic!("first call fails");
+        }
+        self.0.lock().unwrap().push(line.to_string());
+    }
+}
+
+#[test]
+fn should_format_an_empty_message_and_empty_arguments() {
+    let clock = FakeClock::new(T0);
+    let lines = new_lines();
+    let mut api = sut!(collecting(&clock, &lines));
+
+    api.log("app", "INFO", "", &[]);
+    api.log("app", "INFO", "[{}]", &[""]);
+    api.log("app", "INFO", "{}{}{}", &["a", "b", "c"]);
+
+    assert_eq!(
+        got(&lines),
+        vec![
+            "1700000000123 [INFO] app - ",
+            "1700000000123 [INFO] app - []",
+            "1700000000123 [INFO] app - abc"
+        ]
+    );
+}
+
+#[test]
+fn should_log_under_the_root_logger_itself_using_the_root_threshold() {
+    let clock = FakeClock::new(T0);
+    let lines = new_lines();
+    let mut api = sut!(collecting(&clock, &lines));
+
+    api.log("root", "DEBUG", "dropped", &[]);
+    api.log("root", "INFO", "kept", &[]);
+    api.set_level("root", "DEBUG");
+    api.log("root", "DEBUG", "kept too", &[]);
+
+    assert_eq!(
+        got(&lines),
+        vec!["1700000000123 [INFO] root - kept", "1700000000123 [DEBUG] root - kept too"]
+    );
+}
+
+#[test]
+fn should_keep_an_own_level_when_the_root_threshold_changes() {
+    let clock = FakeClock::new(T0);
+    let lines = new_lines();
+    let mut api = sut!(collecting(&clock, &lines));
+    api.set_level("app", "DEBUG");
+
+    api.set_level("root", "ERROR");
+    api.log("app.db", "DEBUG", "own level of app still applies", &[]);
+    api.log("other", "WARN", "root now ERROR: dropped", &[]);
+
+    let out = got(&lines);
+    assert_eq!(out.len(), 1);
+    assert!(out[0].ends_with("[DEBUG] app.db - own level of app still applies"));
+}
+
+#[test]
+fn should_not_let_a_child_threshold_affect_its_parent_or_siblings() {
+    let clock = FakeClock::new(T0);
+    let lines = new_lines();
+    let mut api = sut!(collecting(&clock, &lines));
+    api.set_level("app.db", "ERROR");
+
+    api.log("app", "INFO", "parent kept", &[]);
+    api.log("app.web", "INFO", "sibling kept", &[]);
+    api.log("app.db", "INFO", "child dropped", &[]);
+
+    let out = got(&lines);
+    assert_eq!(out.len(), 2);
+    assert!(out[0].ends_with("app - parent kept"));
+    assert!(out[1].ends_with("app.web - sibling kept"));
+}
+
+#[test]
+fn should_deliver_to_an_appender_whose_minimum_equals_the_message_level_but_not_to_higher_ones() {
+    let clock = FakeClock::new(T0);
+    let errors = new_lines();
+    let mut api = sut!(create(clock.as_clock()));
+    api.add_appender("errors", collect(&errors), "ERROR");
+
+    api.log("app", "WARN", "w", &[]);
+    api.log("app", "ERROR", "e", &[]);
+
+    let out = got(&errors);
+    assert_eq!(out.len(), 1);
+    assert!(out[0].ends_with("[ERROR] app - e"));
+}
+
+#[test]
+fn should_put_a_re_added_appender_at_the_end_of_the_delivery_order() {
+    let clock = FakeClock::new(T0);
+    let order = new_lines();
+    let mut api = sut!(create(clock.as_clock()));
+    api.add_appender("a", Arc::new(Tag(order.clone(), "a")), "TRACE");
+    api.add_appender("b", Arc::new(Tag(order.clone(), "b")), "TRACE");
+    api.add_appender("c", Arc::new(Tag(order.clone(), "c")), "TRACE");
+
+    assert!(api.remove_appender("a"));
+    api.log("app", "INFO", "x", &[]);
+    assert_eq!(got(&order), vec!["b", "c"]);
+
+    order.lock().unwrap().clear();
+    assert!(api.add_appender("a", Arc::new(Tag(order.clone(), "a")), "TRACE"));
+    api.log("app", "INFO", "y", &[]);
+    assert_eq!(got(&order), vec!["b", "c", "a"]);
+}
+
+#[test]
+fn should_keep_delivering_when_the_first_or_last_sink_fails() {
+    let clock = FakeClock::new(T0);
+    let middle = new_lines();
+    let mut api = sut!(create(clock.as_clock()));
+    api.add_appender("first", Arc::new(Failing), "TRACE");
+    api.add_appender("middle", collect(&middle), "TRACE");
+    api.add_appender("last", Arc::new(Failing), "TRACE");
+
+    api.log("app", "INFO", "one", &[]);
+    api.log("app", "ERROR", "two", &[]);
+
+    assert_eq!(got(&middle).len(), 2);
+}
+
+#[test]
+fn should_still_deliver_to_a_sink_that_failed_on_an_earlier_message() {
+    let clock = FakeClock::new(T0);
+    let seen = new_lines();
+    let mut api = sut!(create(clock.as_clock()));
+    api.add_appender(
+        "flaky",
+        Arc::new(FailOnce(seen.clone(), std::sync::atomic::AtomicUsize::new(0))),
+        "TRACE",
+    );
+
+    api.log("app", "INFO", "one", &[]);
+    api.log("app", "INFO", "two", &[]);
+
+    let out = got(&seen);
+    assert_eq!(out.len(), 1);
+    assert!(out[0].ends_with("two"));
+}

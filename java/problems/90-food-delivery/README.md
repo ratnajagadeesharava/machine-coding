@@ -11,11 +11,15 @@
 
 ## Problem
 
-You are building the backend of a small food-delivery app on a city grid. Restaurants serve a cuisine and keep a limited
-stock of every dish. Customers find restaurants near them and place an order; the order is cooked and, once it is ready, a
-delivery partner has to carry it. Partners are a scarce resource: each can carry only one order at a time, the closest free
-one should get it, and when everybody is busy the ready orders must wait their turn and be dispatched as soon as somebody
-finishes. Customers may cancel until the food is on its way, and a cancelled order must give back everything it took.
+You are building the backend of a small food-delivery app on a city grid. Restaurants serve a cuisine and keep a limited stock of every dish. Customers find restaurants near them and place an order; the restaurant accepts and cooks it, and once it is ready a delivery partner has to carry it to the customer. Partners are scarce: each carries one order at a time, the closest free one gets the order, and when everybody is busy ready orders wait in line and are dispatched the moment somebody becomes free. Customers can cancel until the food is on its way, and a cancelled order must give back everything it took (stock and partner).
+
+## Glossary
+
+- **Grid / Manhattan distance**: restaurants and partners sit at integer `(x, y)` points; distance between `(x1,y1)` and `(x2,y2)` is `|x1-x2| + |y1-y2|`. Partners do not move.
+- **Order lifecycle**: `PLACED -> ACCEPTED -> READY -> PICKED_UP -> DELIVERED`, or `CANCELLED`.
+- **Free partner**: a partner with no assigned order. A partner is busy from assignment until the order is delivered or cancelled.
+- **Waiting queue**: READY orders that found no free partner, served first-come-first-served by the moment they became READY.
+- **Reserve**: taking dish quantities out of stock when the order is placed; stock goes back on cancel.
 
 ## Requirements
 
@@ -40,12 +44,40 @@ finishes. Customers may cancel until the food is on its way, and a cancelled ord
 ## Examples
 
 ```
-r1 (pizza, 0,0): margherita 250 x10, cola 50 x100;  partner p1 at (0,0)
-placeOrder(ann, r1, {margherita:2, cola:3}) -> o1, total 650, stock margherita 8, cola 97
-accept(o1) -> markReady(o1) -> partnerOf(o1) = p1
-o2 becomes READY too -> partnerOf(o2) = empty (p1 busy), queued
-pickUp(o1), deliver(o1)  -> p1 is free and takes o2 automatically
+Setup: r1 (pizza, 0,0): margherita 250 x10, cola 50 x100;  r2 (pizza, 5,5);  r3 (sushi, 1,1);  partner p1 at (0,0)
+
+searchRestaurants("pizza", 1, 1, 100) -> [r1, r2]   (distances 2 and 8)
+searchRestaurants("pizza", 5, 4, 100) -> [r2, r1]   (distances 1 and 9)
+searchRestaurants("pizza", 1, 1, 3)   -> [r1]       searchRestaurants("sushi", 0, 0, 1) -> []  (r3 is 2 away)
+
+placeOrder(ann, r1, {margherita:2, cola:3}) -> o1    totalOf(o1) = 2*250 + 3*50 = 650, status PLACED
+stockOf(r1, margherita) = 8, stockOf(r1, cola) = 97
+placeOrder(ann, r1, {cola:5, margherita:11}) -> out-of-stock error; stock stays cola 100, margherita 10 (nothing reserved)
+
+Queueing for a partner
+accept(o1); markReady(o1)  -> partnerOf(o1) = p1
+accept(o2); markReady(o2)  -> partnerOf(o2) = none (p1 busy, o2 waits)
+pickUp(o2) -> state error (no partner yet)
+pickUp(o1); deliver(o1)    -> p1 is free again and immediately takes o2: partnerOf(o2) = p1
+
+Nearest free partner, ties by id
+partners far(9,9), pb(1,0), pa(0,1); restaurant at (0,0); three orders become READY one after another
+-> served by pa, pb, far (pa and pb are both distance 1; "pa" < "pb")
+
+Cancel
+o1 READY and holding p1, o2 READY and waiting; cancel(o1, ann) -> o1 CANCELLED, stock restored, p1 goes to o2
+o1, o2, o3 READY with one partner, o2 cancelled while waiting -> after o1 is delivered, p1 takes o3 (o2 left the queue)
+cancel(o, other customer) -> not allowed; cancel after PICKED_UP, or a second cancel -> state error
 ```
+
+## Edge cases
+
+- `placeOrder` with an unknown restaurant or item, an empty item map, or any quantity `< 1` is invalid input; not enough stock for any line is an out-of-stock error and nothing is reserved for the other lines.
+- Order total is fixed at placement (later `addItem` price changes do not affect it). Re-adding an item replaces its price and adds to its stock.
+- Only the exact next transition is allowed: e.g. `markReady` on a PLACED order, `accept` twice, `deliver` before `pickUp`, or `pickUp` on a READY order with no partner yet are state errors. An unknown order id is an error of its own kind (unknown id).
+- `partnerOf` is empty for orders that are waiting, never got a partner, or were cancelled while waiting.
+- 50 threads each ordering one portion of a dish with stock 10: exactly 10 succeed and the stock ends at 0.
+- With `n` partners and many orders becoming READY concurrently, no partner ever holds two orders and every waiting order is eventually assigned when a partner frees up.
 
 ## Behavioral contract
 
@@ -148,10 +180,6 @@ These tests are black-box: they only call the contract above, so any class desig
 - Cancel restores stock, frees the partner so the waiting order gets it, a second cancel fails; cancelling a waiting order removes it from the queue; only the customer can cancel.
 - Concurrency: 50 threads for 10 portions (exactly 10 win); 12 threads x 25 complete order flows with 4 partners (no partner ever holds two orders; all 300 delivered); 6 threads making orders READY with 2 partners, repeated 100x (exactly two get distinct partners).
 - More edge cases (500 concurrent cancels restoring stock, bursts of READY orders with few partners) are in `interviewer/`.
-
-## Language notes
-
-A single `ReentrantLock`/`synchronized` guarding stock, orders, free partners and the waiting `ArrayDeque` is the safe start; `Optional<String>` from `partnerOf` must be a snapshot taken under the lock. `Map.of` has no stable order, so validate every line before mutating.
 
 ## Running
 

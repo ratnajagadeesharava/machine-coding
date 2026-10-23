@@ -9,6 +9,10 @@
 > `HINTS.md` if you are stuck (three levels, smallest nudge first) and
 > `FOLLOWUPS.md` (open one at a time, after the previous version passes).
 
+## What you are building
+
+A marketing team wants short links such as `https://sho.rt/Ab3` instead of long campaign URLs. You are building the **core of that service**, without any web layer: `shorten` turns a long URL into a short code; `resolve` turns a code back into the URL and counts the visit; `clicks` reports the visit count; `delete` retires a code. Customers may also pick their own code (an *alias* like `summer-sale`). Many request threads use the service at once, so the same URL must always get one code, two people cannot win the same alias, and no click may be lost.
+
 ## Problem
 
 Marketing wants short links for campaign emails and SMS. Build the core of a link-shortening service: give it a long
@@ -47,6 +51,49 @@ resolve("summer-sale") x3               -> the URL; clicks("summer-sale") == 3
 resolve("nope")                         -> empty; clicks("nope") -> error / None
 delete("1") -> true; delete("1") -> false; a later shorten never returns "1"
 ```
+
+### Worked traces
+
+```
+shorten("https://example.com/a?b=c#d")  -> Ok(X)  (X is 1-6 chars of 0-9 A-Z a-z)
+resolve(X)                              -> Some("https://example.com/a?b=c#d")  (query and fragment intact)
+
+shorten_with_alias(u1, "promo") -> Ok("promo")   again with the same URL -> Ok("promo")
+resolve("promo") x2                     -> Some(u1);  clicks("promo") = Some(2)
+shorten_with_alias(u1, "promo") again   -> Ok("promo"); clicks("promo") is still Some(2) (not reset)
+shorten_with_alias(u2, "promo")         -> Err(AliasTaken); resolve("promo") is still Some(u1)
+
+shorten_with_alias(u3, "ab")        -> Err(InvalidAlias)   (2 chars: too short)
+shorten_with_alias(u3, "x" * 21)    -> Err(InvalidAlias)   (21 chars: too long)
+shorten_with_alias(u3, "has space") -> Err(InvalidAlias)   (illegal character)
+shorten_with_alias(u3, X)           -> Err(AliasTaken) or Err(InvalidAlias)   (X is an existing generated code)
+shorten("") / shorten("   ") / shorten("example.com/a") / shorten("ftp://example.com/a") -> Err(InvalidUrl)
+
+5 x resolve(X) + resolve("unknown")     -> clicks(X) = Some(5)   (the unknown resolve counts nowhere)
+delete(X) -> true; delete(X) -> false; resolve(X) -> None; clicks(X) -> None
+shorten(u_new) for 490 more URLs        -> none of them is X
+shorten(url_of_X)                       -> Ok(code) that resolves to it again (and is not X)
+```
+
+### Edge cases
+
+- Shortening the same URL twice returns the same code; two different URLs never share a code.
+- A URL is valid only if it starts with `http://` or `https://`; null, empty, blank and every other scheme are invalid.
+- An alias may contain `-` and `_`, but generated codes never do; generated codes are at most 6 characters even after a million URLs.
+- A rejected `shorten` (bad URL, bad alias, taken alias) changes nothing: existing mappings and click counts stay as they were.
+- An unknown or deleted code: `resolve` gives nothing and counts nothing; `clicks` reports an error (Java) / `None` (Rust).
+- Re-registering an alias for the URL it already points to is a success and keeps its click count.
+- `delete` of an unknown or already-deleted code returns `false` and changes nothing.
+- A deleted generated code is never given to another URL, but its original URL can be shortened again and gets a working code.
+- Racing callers: 16 threads shortening the same URL end up with one code; 16 threads claiming one alias leave exactly one winner.
+
+## Glossary
+
+- **Short code**: the short string that stands for a long URL.
+- **Generated code**: a code the service picks itself; only characters `0-9A-Za-z`, at most 6 long.
+- **Alias (vanity code)**: a code the caller chooses; `A-Za-z0-9_-`, 3 to 20 characters.
+- **Resolve**: look up the URL behind a code, which counts as one click (one visit).
+- **Click**: one successful `resolve`.
 
 ## Behavioral contract
 
@@ -114,10 +161,6 @@ These tests are black-box: they only call the contract above, so any class desig
 - Delete returns true then false, the code stops resolving, `clicks` fails, and 490 later codes never contain the deleted one.
 - Concurrency: 16 threads x 2,000 distinct URLs give 32,000 distinct codes that resolve back correctly; 16 threads on one URL get one code; 16 threads racing for one alias produce exactly one winner; 8,000 concurrent clicks are all counted; a 100x repeat with 8 threads x 50 URLs yields exactly 50 codes.
 - More edge cases (a large URL volume, aliases colliding with the generator under load) are in `interviewer/`.
-
-## Language notes
-
-`Mutex<Inner>` (or `RwLock`) around two `HashMap`s plus a `u64` counter is enough; clicks can be `AtomicU64` inside an `Arc` if you want resolves to avoid the write lock. Return owned `String`s, never references into the maps.
 
 ## Running
 

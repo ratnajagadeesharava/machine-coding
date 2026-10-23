@@ -10,15 +10,14 @@
 
 ## Problem
 
-Model a configurable coffee machine that prepares drinks from a pool of ingredients. The recipes and the stock are
-not hard-coded: operators define recipes and refill ingredients at runtime.
+**What you are building.** The software inside a multi-outlet coffee machine, like the ones in an office kitchen. Nothing is hard-coded: an operator teaches the machine **recipes** ("latte = 30 units water + 2 coffee + 5 milk") and tops up the **ingredient** tanks at any time. Users then ask for a drink by name at any of several outlets, possibly at the same moment. A drink is served only if every ingredient is sufficient; otherwise the user is told which ingredient is short and the stock is left untouched. Operators can also ask which ingredients are running low so they know what to refill.
 
 ## Requirements
 
-1. Ingredients are named (`water`, `milk`, `coffee`, …) and tracked as integer unit counts.
+1. Ingredients are named (`water`, `milk`, `coffee`, …) and tracked as integer unit counts. An ingredient that was never refilled has stock 0.
 2. A **recipe** is a drink name plus the units of each ingredient it needs. Operators can add recipes at runtime; adding a recipe with an existing name replaces it.
-3. Operators **refill** ingredients; refills accumulate.
-4. A user can **dispense** a drink. It succeeds only if *every* ingredient is sufficient. A successful dispense consumes the ingredients; a failed one consumes **nothing**.
+3. Operators **refill** ingredients (`refill(ingredient, units)`); refills accumulate (5 then 7 gives 12).
+4. A user can **dispense** a drink. It succeeds only if *every* ingredient is sufficient (stock `>=` the recipe quantity, so stock may drop exactly to 0). A successful dispense consumes the recipe's quantities; a failed one consumes **nothing**, not even the ingredients that were sufficient.
 5. When a dispense fails because of stock, the result names the missing ingredient (the alphabetically first one if several are short).
 6. Operators can list the ingredients that are **running low** (stock strictly below a threshold).
 7. The machine has several **outlets** that may serve users at the same time. Stock must never go negative, and no ingredient may be consumed for a drink that was refused.
@@ -31,23 +30,74 @@ not hard-coded: operators define recipes and refill ingredients at runtime.
 
 ## Examples
 
+**1. Success, then shortage** (the machine starts empty)
+
 ```
-refill(water, 100); refill(coffee, 10); refill(milk, 5)
-addRecipe("latte", {water: 30, coffee: 2, milk: 5}) → true
-dispense("latte") → "OK"       stock(milk) = 0
-dispense("latte") → "INSUFFICIENT:milk"      (nothing consumed)
-dispense("tea")   → "UNKNOWN_DRINK"
+refill("water", 100); refill("coffee", 10); refill("milk", 5)
+add_recipe("latte", {water: 30, coffee: 2, milk: 5})  -> true
+dispense("latte") -> "OK"                  stock: water 70, coffee 8, milk 0
+dispense("latte") -> "INSUFFICIENT:milk"   stock unchanged: water 70, coffee 8, milk 0
+dispense("tea")   -> "UNKNOWN_DRINK"
 ```
+
+**2. Nothing is consumed on failure**
+
+```
+refill("water", 100); refill("coffee", 10); refill("milk", 2)
+add_recipe("latte", {water: 30, coffee: 2, milk: 5})
+dispense("latte") -> "INSUFFICIENT:milk"
+stock: water 100, coffee 10, milk 2          (water and coffee were enough, still untouched)
+```
+
+**3. Replacing a recipe and invalid recipes**
+
+```
+refill("water", 100); refill("coffee", 100)
+add_recipe("mix", {water: 10}) -> true
+add_recipe("mix", {coffee: 4}) -> true        (replaces the earlier recipe)
+dispense("mix") -> "OK"                      water 100, coffee 96
+add_recipe("nothing", {})          -> false   (no ingredients)
+add_recipe("bad", {water: 0})      -> false   (quantity must be positive)
+add_recipe("worse", {water: -3})   -> false
+dispense("bad") -> "UNKNOWN_DRINK"           (rejected recipes are not stored)
+```
+
+**4. Low stock** (water 100, milk 3, coffee 4, sugar 10)
+
+| Call | Result |
+|---|---|
+| `low_stock(5)` | `["coffee", "milk"]` |
+| `low_stock(4)` | `["milk"]` (4 is not strictly below 4) |
+| `low_stock(1)` | `[]` |
+
+**5. Several outlets racing** (milk 50, recipe "latte" = 5 milk, 40 simultaneous `dispense("latte")`): exactly 10 return `OK`, exactly 30 return `INSUFFICIENT:milk`, and final milk stock is 0.
+
+## Edge cases
+
+- Two drinks that share an ingredient compete for it: with water 50 and two recipes of 30 water each, the first dispense is `OK` and the second is `INSUFFICIENT:water`.
+- Several ingredients short at once: the reported name is the alphabetically first short one (e.g. short on both `milk` and `coffee` gives `INSUFFICIENT:coffee`).
+- Consuming an ingredient down to 0 keeps it known, so `low_stock` still lists it (0 is below any positive threshold).
+- Under concurrent mixed drinks, final stock always equals the starting stock minus what the successful dispenses consumed, and never goes negative.
+
+## Glossary
+
+- **Ingredient**: a named consumable with an integer unit count.
+- **Recipe**: a drink name mapped to the units of each ingredient it needs.
+- **Outlet**: one place a user can request a drink from; several may be used at the same time.
+- **Low stock**: an ingredient whose current units are strictly less than the threshold you pass.
 
 ## Behavioral contract
 
 The tests rely on exactly the following behavior. Anything not stated is yours to decide (and to state as an assumption).
 
 - `dispense` returns exactly `OK`, `UNKNOWN_DRINK`, or `INSUFFICIENT:<ingredient>` (first missing ingredient in alphabetical order; an ingredient never refilled has stock 0).
-- `addRecipe` returns `false` (and changes nothing) for an empty ingredient set or any quantity ≤ 0; `true` otherwise.
+- `add_recipe` returns `false` (and changes nothing) for an empty ingredient set or any quantity ≤ 0; `true` otherwise.
 - `stock(ingredient)` is 0 for unknown ingredients.
-- `lowStock(threshold)` lists ingredients whose stock is **strictly below** the threshold, sorted alphabetically. It includes ingredients that were refilled and then fully consumed.
+- `low_stock(threshold)` lists ingredients whose stock is **strictly below** the threshold, sorted alphabetically. It includes ingredients that were refilled and then fully consumed.
 - All operations must be safe to call concurrently from multiple threads.
+- The drink name in `dispense` is matched exactly (case-sensitive) against recipe names.
+- When several ingredients are short, the single name returned in `INSUFFICIENT:<ingredient>` is the alphabetically smallest short ingredient.
+- Replacing a recipe affects later dispenses only; stock already consumed is not refunded.
 
 ## Test entry point (Rust)
 

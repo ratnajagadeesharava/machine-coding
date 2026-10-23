@@ -10,18 +10,28 @@
 
 ## Problem
 
-Build a fixed-capacity in-memory cache that, when full, throws away the entry that has been used the **fewest times**.
-Popular entries must survive a stream of one-off keys. Operations must stay fast however large the cache is.
+You are building a fixed-capacity in-memory cache that, when full, throws away the entry that has been used the
+**fewest times** (least frequently used, "LFU"). Where an LRU cache forgets whatever was touched longest ago, an LFU
+cache lets popular entries survive a long stream of one-off keys, because each popular entry has a high use count.
+Operations must stay fast however large the cache is.
+
+## Glossary
+
+- **Capacity**: the maximum number of entries; fixed when the cache is created.
+- **Use**: a successful `get`, or a `put` of the key (insert or replace).
+- **Use count**: how many times an entry has been used since it was inserted. An insert counts as the first use, so a new entry has count 1.
+- **Tie**: several entries share the lowest use count; the one used **least recently** (oldest last use) loses.
+- **Evict**: discard an entry automatically to make room.
 
 ## Requirements
 
 1. The cache maps keys to values and holds at most `capacity` entries; the capacity is fixed when the cache is created.
 2. Every entry has a **use count**. A newly inserted entry starts at 1.
-3. A lookup of a present key returns its value and increases its use count by 1. A lookup of an absent key returns nothing and changes nothing.
-4. Storing a key that is already present replaces its value and also increases its use count by 1. It never discards anything.
-5. Storing a key that is not present adds it. If that would exceed the capacity, the entry with the **lowest use count** is discarded first. If several entries share the lowest count, the one that was **used least recently** is discarded.
+3. A lookup (`get`) of a present key returns its value and increases its use count by 1. A lookup of an absent key returns nothing and changes nothing.
+4. Storing (`put`) a key that is already present replaces its value and also increases its use count by 1. It never discards anything (even when the cache is full).
+5. Storing a key that is not present adds it. If that would exceed the capacity, the entry with the **lowest use count** is discarded first. If several entries share the lowest count, the one that was **used least recently** is discarded. The newly inserted key is never the one discarded.
 6. An entry can be removed explicitly. Its use count is forgotten: if the key is stored again later it starts at 1 like any new key. The same holds for a key that was discarded by eviction.
-7. The current number of entries can be queried at any time.
+7. The current number of entries can be queried at any time and is never above the capacity.
 8. The capacity must be at least 1.
 
 ## Constraints
@@ -31,6 +41,8 @@ Popular entries must survive a stream of one-off keys. Operations must stay fast
 
 ## Examples
 
+Count first, then recency as tie-break:
+
 ```
 capacity 2:  put(1,A)  put(2,B)  get(1) -> A      // use counts: 1 -> 2, 2 -> 1
              put(3,C)                              // 2 has the lowest count, so 2 is discarded
@@ -38,6 +50,37 @@ capacity 2:  put(1,A)  put(2,B)  get(1) -> A      // use counts: 1 -> 2, 2 -> 1
              put(4,D)                              // tie at 2: key 1 was used less recently, so 1 is discarded
              get(1) -> empty    get(3) -> C    get(4) -> D
 ```
+
+All new keys have count 1, so the oldest one goes:
+
+```
+capacity 2:  put(a,1)  put(b,2)  put(c,3)          // a and b tie at 1, a is older: a is discarded
+```
+
+A heavily used key survives; a fresh key is the next victim:
+
+```
+capacity 2:  put(a,1)  get(a)  get(a)  // a: count 3
+             put(b,2)                  // b: count 1
+             put(c,3)                  // b is discarded, not a; now c (count 1) is the next victim
+```
+
+Replacing counts as a use; removing forgets the count:
+
+```
+capacity 2:  put(a,1) put(b,2) put(a,10)   // a: count 2 (value now 10), b: count 1
+             put(c,3)                       // b is discarded
+capacity 2:  put(a,1) get(a) get(a)  remove(a) -> true   put(a,1)   // a is brand new again: count 1
+             put(b,2)  put(c,3)             // a and b tie at 1; a is older: a is discarded
+```
+
+## Edge cases
+
+- Capacity `1`: every insert of a new key replaces the only entry, whatever its count.
+- A lookup of an absent key changes no counts and no recency.
+- A `put` that replaces never evicts, even when the cache is full.
+- Recency for tie-breaking is the time of the last `get` or `put` of the key (insertion counts).
+- Creating a cache with capacity `0` or negative is invalid (see the language notes).
 
 ## Behavioral contract
 

@@ -10,9 +10,15 @@
 
 ## Problem
 
-Build the in-process metrics library that a service embeds: request handlers record **counters** (how many requests,
-split by tags such as `route=/pay`), and **timings/sizes** (a distribution of observed values, queried for
-percentiles). Dashboards and alerts read the numbers back, including "how many in the last minute".
+You are building the in-process metrics library that a service embeds, the kind of thing Prometheus or Micrometer clients provide. Request handlers record **counters** ("how many requests", split by **tags** such as `route=/pay` and `status=200`) and **observations** such as latencies or payload sizes, which form a distribution you query for percentiles ("what is the 99th-percentile latency?"). Dashboards and alerts read the numbers back, including "how many in the last minute". Many threads record and read at once, and a histogram may hold millions of values.
+
+**Terms**
+
+- **Counter**: a named total that only goes up, in increments of a positive amount.
+- **Tags**: key/value pairs attached to an increment. `{route=/pay}` and `{route=/pay, status=200}` are two different tag sets, and so is the empty set `{}`.
+- **Histogram**: a named collection of recorded whole-number values (negative and repeated values are allowed).
+- **Percentile (nearest-rank)**: sort the `n` recorded values; the p-th percentile is the value at 1-based position `ceil(p * n / 100)`. It is always one of the recorded values (no interpolation).
+- **Window**: "the last N milliseconds", i.e. times `t` with `now - N < t <= now`.
 
 ## Requirements
 
@@ -32,17 +38,53 @@ percentiles). Dashboards and alerts read the numbers back, including "how many i
 
 ## Examples
 
-```
-increment("http.requests", 1, {route=/pay, status=200})
-increment("http.requests", 2, {route=/pay, status=500})
-counter("http.requests", {route=/pay, status=200})   → 1
-counter("http.requests", {route=/pay})                → 0     (exact tag match only)
-counterTotal("http.requests")                         → 3
+Counters (clock at `10000`):
 
-observe("latency", 15) observe("latency", 20) observe("latency", 35) observe("latency", 40) observe("latency", 50)
-percentile("latency", 40)                             → 20
-percentile("latency", 50)                             → 35
 ```
+increment("http", 1, {route=/pay, status=200})     -> true
+increment("http", 2, {route=/pay, status=500})     -> true
+increment("http", 4, {route=/pay, status=200})     -> true
+increment("http", 10, {route=/pay})                -> true
+increment("http", 100, {})                         -> true
+increment("http", 0, {})  -> false     increment("  ", 1, {}) -> false     (nothing recorded)
+counter("http", {route=/pay, status=200})          -> 5      (1 + 4)
+counter("http", {status=200})                      -> 0      (exact tag set only)
+counter("http", {route=/pay})                      -> 10     (not the 1 + 2 + 4 under longer tag sets)
+counter("http", {})                                -> 100
+counterTotal("http")                               -> 117
+counter("nope", {})  -> 0     counterTotal("nope") -> 0
+```
+
+Percentiles. Observe `50, 15, 40, 20, 35` (sorted: 15 20 35 40 50, `n = 5`):
+
+| p | rank = ceil(p * 5 / 100) | result |
+|---|---|---|
+| 1 | 1 | 15 |
+| 20 | 1 | 15 |
+| 30 | 2 | 20 |
+| 40 | 2 | 20 |
+| 50 | 3 | 35 |
+| 75 | 4 | 40 |
+| 100 | 5 | 50 |
+
+`percentile` with `p = 0`, `p = 101`, a negative `p`, or an unknown/empty histogram gives an empty result. With values `-3, 5, 5, 5, 5, 5, 5, 5, 5, 100` (`n = 10`): p10 = -3, p11 = 5, p90 = 5, p91 = 100.
+
+Window (clock `10000`; `increment("c", 5, {})`; clock advances to `11000`; `increment("c", 3, {k=v})`):
+
+```
+countInWindow("c", 1000)  -> 3     window (10000, 11000]: the first increment, at exactly 10000, is excluded
+countInWindow("c", 1001)  -> 8     window (9999, 11000]
+countInWindow("c", 0)     -> 0     countInWindow("c", -10) -> 0     countInWindow("nope", 1000) -> 0
+```
+
+## Edge cases
+
+- A counter and a histogram with the same name are independent of each other.
+- Tag order does not matter, and later changes the caller makes to the tag map/slice it passed in do not affect what was recorded.
+- `increment` with `delta <= 0` or a blank name, and `observe` with a blank name, return `false` and record nothing.
+- A window query adds up all tag sets of that counter name; other counters never count.
+- Events leave the window as the clock advances: an increment made at time `t` is counted until `now - window` reaches `t`, and is excluded exactly at `t = now - window`.
+- Percentile queries interleaved with new observations always reflect every value recorded so far.
 
 ## Behavioral contract
 

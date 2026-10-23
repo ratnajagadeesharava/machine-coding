@@ -10,14 +10,24 @@
 
 ## Problem
 
-Components of one application need to talk without knowing each other. Build an in-process, asynchronous
-publish/subscribe facility: parties register interest in a named topic, other parties announce events on that
-topic, and every interested party gets to react — without a slow or broken party hurting the rest.
+**What you are building.** Parts of one application (orders, billing, notifications) need to react to each other's
+events without knowing each other. You build an in-process, asynchronous **publish/subscribe bus**: a party
+subscribes to a named topic with a callback, any party can publish a text event to a topic, and every party that is
+subscribed gets its callback invoked with that event. One slow or crashing callback must never hurt anyone else, and
+callbacks are allowed to publish more events themselves.
+
+### Terms used below
+
+- **Topic**: a name (string) events are published under.
+- **Event**: an arbitrary string payload.
+- **Subscription**: one registration of a callback on a topic; identified by a **subscription id**.
+- **Callback / handler**: the function run with the event text.
+- **Idle**: nothing is left to do — every published event has been handled or discarded and no callback is running.
 
 ## Requirements
 
 1. A party **subscribes** to a topic with a callback and receives a **subscription id**; it can **unsubscribe** with that id.
-2. Anyone can **publish** a string event to a topic. Every party subscribed to that topic **at the moment of publishing** receives the event exactly once.
+2. Anyone can **publish** a string event to a topic. Every party subscribed to that topic **at the moment of publishing** receives the event exactly once. Subscribers of other topics receive nothing.
 3. Publishing is asynchronous: `publish` hands the event over and returns; it never waits for callbacks to finish and never drops an event because callbacks are slow.
 4. A party sees events in the order they were published (for events announced one after another by the same thread).
 5. A callback that blocks for a long time must not prevent other subscribers — on the same topic or others — from receiving their events.
@@ -29,7 +39,7 @@ topic, and every interested party gets to react — without a slow or broken par
 ## Constraints
 
 - Many threads publishing, subscribing and unsubscribing at once; thousands of subscriptions and events.
-- Tests must be able to observe progress without sleeping: `awaitIdle` is the synchronisation point.
+- Tests observe progress without sleeping: `await_idle` is the synchronisation point.
 - Bounded resource use: do not assume one thread per subscription is acceptable beyond a toy.
 
 ## Examples
@@ -41,6 +51,37 @@ A blocks forever           → B (and C) still receive every later event
 A publishes "billing" events from inside its callback → C gets them, no deadlock
 ```
 
+Snapshot and ordering:
+
+```
+publish("t","e1")                       (nobody subscribed → silently discarded)
+await_idle(10000)                        → true
+subscribe("t", X)
+publish("t","e2")  publish("t","e3")
+await_idle(10000)                        → true;  X saw exactly ["e2","e3"], in that order
+```
+
+Unsubscribe while events are pending (X's callback is blocked inside "e1"):
+
+```
+publish("t","e1")   (X starts it and blocks)   publish("t","e2")   publish("t","e3")
+unsubscribe(idOfX)  → true      (does not wait for the running "e1")
+let X finish        → X saw only "e1"; "e2" and "e3" are discarded for X
+unsubscribe(idOfX)  → false     unsubscribe("no-such-id") → false
+```
+
+Chained publishing: with `a`-subscriber re-publishing `e + "!"` to `b`, and a `b`-subscriber re-publishing to `c`,
+`publish("a","x")` followed by `await_idle` leaves the `c` subscriber with exactly `["x!!"]`.
+
+## Edge cases
+
+- Subscribing the same callback twice creates two independent subscriptions with different ids; each event reaches the callback twice.
+- Topics are case-sensitive exact strings; empty events are fine; an event with no subscribers is silently dropped.
+- A subscription's callback is never run at the same time as itself, even with many concurrent publishers.
+- A callback may unsubscribe itself; it still finishes the current event and is never started again.
+- `await_idle(0)` on a bus with nothing pending returns `true`; with a callback still blocked it returns `false` after the timeout.
+- After `close()`: earlier events are still delivered, later publishes are silently ignored (no error), `await_idle` keeps working.
+
 ## Behavioral contract
 
 The tests rely on exactly the following behavior. Anything not stated is yours to decide (and to state as an assumption).
@@ -50,8 +91,8 @@ The tests rely on exactly the following behavior. Anything not stated is yours t
 - **Ordering:** for one subscription, events are handled in the order the `publish` calls happened, for calls that are ordered with respect to each other (same thread, or otherwise happens-before). No order is promised between events from unrelated concurrent publishers. A single subscription's callback is **never run concurrently with itself**; different subscriptions run independently.
 - **Unsubscribe:** `unsubscribe(id)` returns `true` the first time for a known id, `false` for unknown or already removed ids. After it returns, the callback is never *started* again — events that were published earlier but not yet started are discarded for that subscription. An invocation that is already running is allowed to finish; `unsubscribe` does not wait for it (so it may be called from inside a callback, including the subscription's own).
 - **Failures:** a callback that throws/panics counts as having handled that event; later events are still delivered to it.
-- **`awaitIdle(timeoutMillis)`:** returns `true` as soon as there is nothing left to do: every event published so far (by anyone, including callbacks) has been handled or discarded and no callback is running. Returns `false` if that has not happened within the timeout. On a bus with nothing pending it returns `true` immediately (also for timeout 0).
-- **`close()`:** idempotent. Events published before `close` are still delivered; `publish` after `close` silently discards the event (no error); `subscribe` after `close` still returns an id but the callback never receives anything. `awaitIdle` keeps working after `close`.
+- **`await_idle(timeout_millis)`:** returns `true` as soon as there is nothing left to do: every event published so far (by anyone, including callbacks) has been handled or discarded and no callback is running. Returns `false` if that has not happened within the timeout. On a bus with nothing pending it returns `true` immediately (also for timeout 0).
+- **`close()`:** idempotent. Events published before `close` are still delivered; `publish` after `close` silently discards the event (no error); `subscribe` after `close` still returns an id but the callback never receives anything. `await_idle` keeps working after `close`.
 
 ## Test entry point (Rust)
 
@@ -93,7 +134,7 @@ pub fn create() -> Option<Arc<dyn EventBusApi>> {
 
 ## Language notes
 
-The trait is `&self` + `Send + Sync`. Handlers are `Arc<dyn Fn(&str) + Send + Sync>`; they run on threads you own, so `catch_unwind` around them. Make sure dropping the bus does not leave workers running forever.
+The trait is `&self` + `Send + Sync`. Handlers are `Arc<dyn Fn(&str) + Send + Sync>`; a handler that panics is not allowed to affect anything else. Dropping the bus must not leave work running forever.
 
 ## Running
 

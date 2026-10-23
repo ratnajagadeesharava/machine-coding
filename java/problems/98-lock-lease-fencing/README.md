@@ -2,12 +2,21 @@
 
 | Difficulty | Duration | Scaffolding |
 |---|---|---|
-| Medium-Hard | 50 min | Level 3 — infrastructure provided: a deterministic network and clock simulation (`SimNet`) runs your nodes; the protocol code is yours. |
+| Medium-Hard | 50 min | Level 2 — contract and tests provided; the domain model, the algorithms and the class design are yours. |
 
 > Read the requirements, then **design before you code**: which concepts, which owners, which API,
 > which state, which abstractions (if any). Nothing here tells you. See `INTERVIEW.md` for the process,
 > `HINTS.md` if you are stuck (three levels, smallest nudge first) and
 > `FOLLOWUPS.md` (open one at a time, after the previous version passes).
+
+## What you are building
+
+You are building a lock service for workers that must not run the same job concurrently. A lock is a lease: it is granted for a
+number of milliseconds and expires unless renewed, so a crashed worker cannot hold it forever. Expiry alone is not enough: a
+worker can freeze (a long garbage-collection pause) and wake up after its lease ran out, when another worker already
+holds the lock, and still believe it is the owner. So every grant also returns a *fencing token*, a number that only ever
+grows for that lock. A storage system can then refuse writes that carry an older token than one it has already seen, which makes a
+stale owner harmless. Nothing in the service blocks or waits: a caller who cannot get the lock simply receives an empty answer.
 
 ## Problem
 
@@ -27,6 +36,10 @@ the service blocks; callers that do not get the lock simply get an empty answer.
 6. `release(lock, owner, token)` frees the lock and returns true only if that owner and token still hold an unexpired lease; otherwise nothing changes. A later `acquire` gets `token + 1`.
 7. `holder(lock)` is the owner of the unexpired lease, if any. `latestToken(lock)` is the highest token ever issued (0 if never taken).
 8. Locks are independent of one another.
+9. `acquire` for a free or expired lock always issues a new token, even when the new owner is the same as the previous one. Only an unexpired lease held by the same owner is extended with the same token.
+10. `renew` and `release` need ALL of: the right owner, the right token, and an unexpired lease; a failed call changes nothing. A successful `renew` keeps the token.
+11. `latestToken(lock)` counts grants that issued a token; extending a lease, renewing, releasing and expiry never change it.
+12. Lease times use the injected clock: a lease granted at time `t` for `d` ms is valid for `now` in `[t, t + d)`.
 
 ## Simulation rules and constraints
 
@@ -36,17 +49,62 @@ the service blocks; callers that do not get the lock simply get an empty answer.
 - The 'fenced store' in the tests, which rejects writes with a token lower than one it has seen, stands for the downstream system that makes a paused owner harmless; the service itself cannot stop a stale owner from running, only make it detectable.
 - No faults are injected into the service; the faults are the stalls modelled by advancing the clock past a lease while an owner is 'paused'.
 
+## Glossary
+
+- **Lease**: permission to hold the lock for a limited time; expires on its own unless extended.
+- **Fencing token**: a number issued with each new grant of a lock; strictly greater than any token issued before for the same lock. The first token is 1.
+- **Stale owner**: an owner whose lease has expired (and possibly been taken over) but who has not noticed yet.
+- **Fenced store**: a downstream system that remembers the highest token it has seen and rejects writes with a lower one. In the tests it is a simple class that does exactly this.
+
 ## Examples
 
-```
-acquire("job","ann",1000) @t=0     -> Optional[1]
-acquire("job","bob",1000) @t=999   -> empty            (ann's lease is valid)
-holder("job") @t=1000              -> empty            (expired exactly at t+d)
-acquire("job","bob",1000) @t=1000  -> Optional[2]      (new, higher token)
-renew("job","ann",1, 1000)         -> false            (stale owner)
+**Example 1: takeover at expiry** (clock starts at 0)
 
-fenced store: bob writes with token 2 -> accepted; ann wakes up and writes with token 1 -> rejected
 ```
+acquire("job","ann",1000) @ t=0     -> Optional[1]     holder("job") = ann, latestToken("job") = 1
+acquire("job","bob",1000) @ t=999   -> Optional.empty      ann's lease is still valid
+holder("job") @ t=1000              -> empty               expired exactly at t + d
+acquire("job","bob",1000) @ t=1000  -> Optional[2]     new, higher token
+renew("job","ann",1,1000)           -> false                       stale owner
+release("job","ann",1)              -> false                       holder is still bob
+```
+
+**Example 2: the owner re-acquires and renews**
+
+```
+acquire("job","ann",1000) @ t=0     -> token 1, valid until 1000
+acquire("job","ann",1000) @ t=900   -> token 1 again; valid until 1900 (now + lease, not 1000 + lease)
+holder("job") @ t=1800              -> ann
+renew("job","bob",1,1000)           -> false (wrong owner);   renew("job","ann",2,1000) -> false (wrong token)
+renew("job","ann",1,1000) @ t=1800  -> true; valid until 2800, still token 1
+renew("job","ann",1,1000) @ t=2800  -> false (too late: expired exactly then)
+acquire("job","ann",1000) @ t=2800  -> token 2 (her own lease had expired, so this is a new grant)
+```
+
+**Example 3: release**
+
+```
+acquire("job","ann",1000) -> 1;   release("job","bob",1) -> false;   release("job","ann",9) -> false
+release("job","ann",1) -> true;   release("job","ann",1) -> false (already released)
+acquire("job","bob",1000) -> 2    (tokens are not reused after a release)
+```
+
+**Example 4: why the token matters** (the fenced store from the tests rejects writes with a token lower than one it has seen)
+
+```
+ann acquires "db" (token 1), then stalls for 2 000 ms (lease 1 000 ms)
+bob acquires "db" (token 2) and writes with token 2   -> accepted
+ann wakes up and writes with token 1                   -> rejected; the stored value is still bob's
+```
+Contention: 16 threads that race for one free lock produce exactly one winner; 16 threads each taking and releasing one lock 100 times never overlap, and the 1 600 tokens they receive are strictly increasing (`latestToken` = 1 600).
+
+## Edge cases
+
+- A lease length of 0 or less is rejected (`IllegalArgumentException`) before anything changes.
+- `holder` of a lock that was never taken, released, or expired is empty; `latestToken` of a never-taken lock is 0.
+- Locks have independent state and independent token counters: `acquire("b", ..)` is token 1 even if `"a"` is at token 5.
+- Release by the holder frees the lock immediately: another owner can acquire it at the same instant and gets `token + 1`.
+- Eight threads racing for a free lock: exactly one wins; after the lease expires and eight race again, exactly one more wins (two winners, `latestToken` = 2).
 
 ## Behavioral contract
 
@@ -114,7 +172,7 @@ public final class Solution {
 
 ## What the tests check
 
-These tests are black-box and deterministic: every node runs inside a seeded simulation (one tick = 1 ms of simulated time, nothing sleeps), messages can be delayed, dropped, duplicated and reordered, nodes can crash and recover, the network can be partitioned, and safety invariants are checked after EVERY simulated millisecond. A failing seed reproduces exactly.
+These tests are black-box: they only call the contract above, so any class design behind it works. Time-dependent behaviour uses an injectable fake clock, never real sleeping. More edge-case scenarios exist in `interviewer/` (see `INTERVIEWER_NOTES.md`).
 
 - First grant returns token 1 and sets holder/latestToken; another owner is refused while valid (at lease - 1 ms); locks are independent and an untouched lock has token 0.
 - Takeover exactly at expiry with token 2; re-acquire by the same owner keeps its token and extends the lease; re-acquire after its own expiry gives a new token.
@@ -127,7 +185,7 @@ These tests are black-box and deterministic: every node runs inside a seeded sim
 
 ## Language notes
 
-`ConcurrentHashMap.compute` gives you a per-name atomic read-modify-write; return the result via a holder object or `AtomicReference`. Use `long` for time and tokens.
+Time and tokens are `long`.
 
 ## Running
 

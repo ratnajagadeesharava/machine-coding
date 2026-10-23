@@ -6,16 +6,48 @@
 
 ## Problem
 
-A library charges late fees. The rule is tiny and has not changed in ten years.
+**What you are building.** A public library charges a late fee when a member returns an item after its due date. The rule is tiny and has not changed in ten years: a fixed amount per day late, with a ceiling so nobody pays an absurd amount, and a cheaper rate for premium members. You write one function that takes how many days late the item is and whether the member is premium, and returns the fee in cents.
 
 ## Requirements
 
-`LateFees.fee(daysLate, premium)` returns the fee in cents:
+`LateFees.fee(daysLate, premium)` takes an `int` number of days late and a boolean, and returns the fee in **cents** as `long` (a whole number, never negative).
 
-1. `daysLate <= 0` → 0.
+| Member | Rate per late day | Fee ceiling (cap) |
+|---|---|---|
+| Standard (`premium = false`) | 25 cents | 1000 cents |
+| Premium (`premium = true`) | 10 cents | 500 cents |
+
+1. `daysLate <= 0` (on time or returned early) → fee is 0, for both member types.
 2. Standard member: 25 cents per day, **capped at 1000**.
 3. Premium member: 10 cents per day, **capped at 500**.
-4. Huge values (`Integer.MAX_VALUE`) must not overflow.
+4. The fee is `min(rate × daysLate, cap)`. The cap is reached at 40 days for standard and 50 days for premium; every value beyond that returns the cap.
+5. Huge values (`Integer.MAX_VALUE`) must not overflow: they simply return the cap.
+6. No errors or exceptions: every input has a defined answer.
+
+## Examples
+
+| Call | Result | Why |
+|---|---|---|
+| `LateFees.fee(0, false)` | 0 | on time |
+| `LateFees.fee(-3, true)` | 0 | returned early |
+| `LateFees.fee(1, false)` | 25 | 1 × 25 |
+| `LateFees.fee(10, false)` | 250 | 10 × 25, under the cap |
+| `LateFees.fee(30, true)` | 300 | 30 × 10, under the cap |
+| `LateFees.fee(40, false)` | 1000 | 40 × 25 = 1000, exactly the cap |
+| `LateFees.fee(41, false)` | 1000 | 1025 would exceed the cap |
+| `LateFees.fee(51, true)` | 500 | 510 would exceed the cap |
+| `LateFees.fee(Integer.MAX_VALUE, true)` | 500 | no overflow |
+
+## Edge cases
+
+- Exactly 0 days late is free; 1 day late is the first charged day.
+- The cap is inclusive: reaching it exactly (40 days standard, 50 days premium) is not an error, the fee is just the cap.
+
+## Glossary
+
+- **Cents**: the smallest currency unit; all amounts here are whole cents (1000 cents = 10.00).
+- **Cap**: the maximum fee a member can ever be charged, regardless of how late the item is.
+- **Premium member**: a member on the higher membership tier, with a lower rate and lower cap.
 
 ## Running
 

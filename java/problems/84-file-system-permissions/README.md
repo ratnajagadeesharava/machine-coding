@@ -9,6 +9,10 @@
 > `HINTS.md` if you are stuck (three levels, smallest nudge first) and
 > `FOLLOWUPS.md` (open one at a time, after the previous version passes).
 
+## What you are building
+
+You are building the storage core of a small multi-user, in-memory file system, like a toy Unix. Users belong to groups; every file and directory has an owner, a group and a permission mode such as `rwxr-xr-x`. Users create directories and files, read and write file content, list directories, move and delete entries, and change permissions. If a user is not allowed to do something, the call fails and the file system is left exactly as it was. The superuser `root` is allowed everything. Many sessions use the file system concurrently, so for example two users creating the same path can never both succeed.
+
 ## Problem
 
 Build the storage core of a small multi-user, in-memory file system, in the spirit of a Unix machine. Users belong
@@ -51,6 +55,73 @@ chmod(alice, "/shared", 0775)
 createFile(bob, "/shared/g", "x")       -> ok (group dev now has rwx)
 chmod(alice, "/shared/f", 0640); read(carol, "/shared/f") -> denied; read(bob, ...) -> ok
 ```
+
+### Worked traces
+
+**Modes as bits**: each octal digit is owner / group / other; `r` = 4, `w` = 2, `x` = 1. So `0755` = `rwxr-xr-x`, `0644` = `rw-r--r--`, `0640` = `rw-r-----`, `0077` = `---rwxrwx`.
+
+**Who is checked** (`alice` in groups [dev, ops], `bob` in [dev], `carol` in [hr]; root has made `/` mode 0777)
+```
+createFile(alice, "/f", "x"); chmod(alice, "/f", 0640)      f: owner alice, group dev, rw-r-----
+read(alice, "/f") ok    write(alice, "/f", "y") ok          (owner bits rw-)
+read(bob, "/f") ok      write(bob, "/f", "z") -> SecurityException   (group bits r--)
+read(carol, "/f") -> SecurityException                      (other bits ---)
+chmod(alice, "/f", 0077): read(alice, "/f") -> SecurityException     (owner bits ---; no fall-through to group/other)
+chmod(alice, "/f", 0407): alice reads ok; bob (group, bits ---) -> SecurityException even though other is rwx
+read(root, "/f") ok                                         (root bypasses all checks)
+```
+
+**Reaching a path needs `x` on every ancestor**
+```
+mkdir(alice,"/a"); mkdir(alice,"/a/b"); createFile(alice,"/a/b/f","x"); chmod(alice,"/a",0744)
+read(carol, "/a/b/f") -> SecurityException     (carol has only r-- on /a: no x, cannot pass through)
+list(carol, "/a")     -> ["b"]                 (listing /a needs r on /a, not x on /a)
+list(carol, "/a/b")   -> SecurityException     (cannot reach /a/b)
+```
+
+**Errors**
+```
+mkdir(alice, "a/b"), "/a/../b", "/a//b"         -> IllegalArgumentException (invalid path)
+mkdir(alice, "/missing/child")                   -> IllegalArgumentException (parent missing)
+createFile(alice, "/f", ...) when /f exists      -> IllegalArgumentException
+mkdir(alice, "/f/sub") with /f a file            -> IllegalArgumentException
+list(alice, "/f") with /f a file; read(alice, "/")  -> IllegalArgumentException
+read("nobody", "/f")                             -> IllegalArgumentException (unknown user)
+delete(alice, "/d") with /d non-empty            -> IllegalArgumentException; delete(alice, "/") -> IllegalArgumentException
+chmod(alice, "/f", 01000)                        -> IllegalArgumentException; chown(alice, "/f", "bob", "dev") -> SecurityException
+```
+
+**Move**
+```
+move(alice, "/src/inner", "/dst/moved")   -> ok; /dst/moved/f is readable, list(/src) is empty
+move(alice, "/dst", "/dst/moved/loop")    -> IllegalArgumentException (into its own subtree)
+move(alice, "/x", "/dst")                 -> IllegalArgumentException (target exists)
+move(carol, "/ro/f", "/y")                -> SecurityException (carol cannot remove entries from /ro)
+```
+
+### Edge cases
+
+- Failed operations change nothing: no half-created entry, no half-moved subtree.
+- Only one permission class is consulted: owner if the user is the owner, otherwise group if the entry's group is in the user's group list, otherwise other. An owner with fewer bits than the group is still denied.
+- `x` is needed on **every ancestor directory** of the target (starting at `/`); `list` additionally needs `r` on the directory being listed, but not `x` on it.
+- Creating or deleting an entry needs `w` and `x` on the parent directory; changing a file's own content needs only `w` on the file.
+- `delete` removes files and empty directories only. `/` can never be deleted.
+- `chmod` accepts 0 to 0777 and is allowed to the owner or root. `chown` is for root only, even if the caller owns the entry.
+- A move's target must not already exist; the user needs `w`+`x` on both the source parent and the target parent; a directory cannot move into itself or its own subtree.
+- `list` returns plain entry names (not paths), sorted ascending; `/` lists its children.
+- `mode`, `owner` and `group` skip all permission checks and fail only if the path does not exist.
+- Every new entry is owned by the caller, with the caller's primary group (the first group given to `addUser`). `/` starts root-owned with mode 0755, so ordinary users can create nothing in `/` until root `chmod`s it.
+- Racing callers: of 16 threads creating the same path exactly one succeeds; 8 threads adding 2,000 files to one directory lose none.
+
+## Glossary
+
+- **Mode**: the permission bits of an entry, written as an octal number (`0755`).
+- **Owner / group / other**: the three classes of user a mode talks about; each has its own `r`, `w`, `x` bits.
+- **Primary group**: the first group in a user's group list; new entries get it as their group.
+- **`r` / `w` / `x`**: read (view a file's content, or list a directory), write (change a file's content, or add/remove entries in a directory), execute (on a directory: pass through it to reach what is inside).
+- **Ancestor**: any directory on the path above an entry (`/a` and `/a/b` are ancestors of `/a/b/f`).
+- **Root**: the superuser account `root`; it bypasses every permission check.
+- **Empty directory**: a directory with no entries.
 
 ## Behavioral contract
 
@@ -143,10 +214,6 @@ These tests are black-box: they only call the contract above, so any class desig
 - chmod owner-only, chown root-only, chmod range check; move of a directory, move into its own subtree, existing target, and a permission failure on the source parent.
 - Concurrency: one winner among 16 creators of one path; 2,000 files added by 8 threads in one directory; 8 threads x 300 create/move/delete cycles end with an empty `/`.
 - More edge cases (500-level deep paths, first-matching-class permission semantics) are in `interviewer/`.
-
-## Language notes
-
-A `TreeMap<String, Node>` per directory gives sorted `list` for free; `chmod` takes an `int`, so `0755` is an octal literal. A single `ReentrantReadWriteLock` around the whole tree is a legitimate first design.
 
 ## Running
 

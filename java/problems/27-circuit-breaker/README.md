@@ -10,10 +10,17 @@
 
 ## Problem
 
-Your service calls a flaky downstream dependency. When it keeps failing, hammering it only makes things worse and makes
-your own callers wait for doomed calls. Build a guard that wraps an arbitrary operation: while the dependency looks
-healthy calls go through; after repeated failures calls are refused instantly for a cool-down period; afterwards the guard
-carefully probes the dependency before trusting it again.
+Your service calls a flaky downstream dependency (a payment provider, say). When it keeps failing, hammering it only makes things worse and makes your own callers wait for doomed calls. You are building a **circuit breaker**: a guard that wraps an arbitrary operation. While the dependency looks healthy, calls go straight through. After repeated failures the guard "trips" and refuses calls instantly (without running them) for a cool-down period. When the cool-down is over, the guard carefully probes the dependency with single trial calls before trusting it again.
+
+The guard has three states, reported as text: `CLOSED` (normal), `OPEN` (tripped, cooling down), `HALF_OPEN` (cool-down over, probing with trial calls).
+
+**Terms**
+
+- **Failure threshold `N`**: how many *consecutive* failures trip the guard.
+- **Cool-down**: how many milliseconds the guard stays `OPEN` after tripping.
+- **Trial**: a call let through while `HALF_OPEN`; only one trial may run at a time.
+- **Probe successes required `K`**: how many consecutive successful trials close the guard again.
+- **Refused / `REJECTED`**: the guard did not run the operation at all.
 
 ## Requirements
 
@@ -28,19 +35,52 @@ carefully probes the dependency before trusting it again.
 
 ## Constraints
 
-- Thread-safe. The guard must never run the operation while holding a lock that blocks other callers or state queries: a slow trial must not freeze the others (they get refused immediately).
+- Thread-safe. A slow trial must not freeze the others: other callers are refused immediately and state queries still answer.
 - Time comes from the clock given to the factory; do not read the system clock directly.
 - Refused calls have no effect on any counter or timer.
 
 ## Examples
 
+All with `N = 3`, cool-down `1000` ms, `K = 2`, clock at `10000`. `fail` / `ok` are operations that report failure / success.
+
 ```
-threshold 3, cool-down 1000 ms, 2 trial successes required
-fail, fail, fail            → tripped (3 consecutive failures)
-call at +500 ms             → refused, operation not run
-call at +1000 ms            → trial runs, succeeds → still probing (1 of 2)
-call                        → trial runs, succeeds → back to normal
+state()          -> CLOSED
+call(ok)         -> SUCCESS
+call(fail)       -> FAILURE     call(fail) -> FAILURE     state() -> CLOSED   (2 failures, below N)
+call(ok)         -> SUCCESS     (the success resets the failure count to 0)
+call(fail) x3    -> FAILURE x3  state() -> OPEN             (3rd consecutive failure trips it; cool-down starts now, at 10000)
+call(ok)         -> REJECTED    (operation not run, and the refusal changes nothing)
+clock 10999:  state() -> OPEN        call(ok) -> REJECTED
+clock 11000:  state() -> HALF_OPEN   (no call needed to notice; elapsed time 1000 >= cool-down)
+call(ok)         -> SUCCESS     state() -> HALF_OPEN   (trial 1 of 2)
+call(ok)         -> SUCCESS     state() -> CLOSED      (trial 2 of 2; failure count is fresh: it takes 3 new failures to trip again)
 ```
+
+A failed trial:
+
+```
+tripped at 10000; clock 11000 (HALF_OPEN)
+call(ok) -> SUCCESS (1 of 2)      call(fail) -> FAILURE      state() -> OPEN   (cool-down restarts at 11000)
+clock 11999: OPEN                 clock 12000: HALF_OPEN
+the earlier trial success is forgotten: two new successful trials are needed to close
+```
+
+One trial at a time:
+
+```
+HALF_OPEN, 20 threads call at once with a slow operation:
+exactly 1 operation runs (and returns SUCCESS); the other 19 calls return REJECTED immediately; state() stays HALF_OPEN
+while that trial is still running, any further call -> REJECTED; once it finishes, the next call may become the next trial
+```
+
+## Edge cases
+
+- While `CLOSED`, many calls may run in parallel; only `HALF_OPEN` limits it to one at a time.
+- 100 threads failing at once while `CLOSED`: the guard trips once the 3rd failure completes; calls arriving after that are `REJECTED`, so the number of `FAILURE` results is at least 3 and equals the number of operations that actually ran.
+- The cool-down is measured from the moment the tripping failure *completes*, not from when its call started.
+- A call admitted before a state change but finishing after it (for example a slow call that began while `CLOSED` and ends after the guard tripped) does not change the new state.
+- `HALF_OPEN` also covers the time a trial is running: `state()` reports `HALF_OPEN` throughout.
+- Java: an operation that throws counts as a failure; `call` returns `FAILURE` and the exception does not escape. Rust: operations are plain closures returning `bool`; panics are out of scope.
 
 ## Behavioral contract
 
