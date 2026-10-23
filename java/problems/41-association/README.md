@@ -2,11 +2,7 @@
 
 | Difficulty | Duration | Scaffolding |
 |---|---|---|
-| Medium | 40 min | Level 2 — `Student` and `Course` stubs. Bodies throw `UnsupportedOperationException`. |
-
-> **Concept:** association is a *uses/knows-about* relationship between independent objects. Here it is
-> **many-to-many and bidirectional**: students know their courses and courses know their students, and neither owns
-> the other. The hard part is keeping both directions consistent.
+| Medium | 40 min | Level 2 — `Student` and `Course` stubs are provided; you write the bodies. |
 
 ## Problem
 
@@ -21,10 +17,6 @@ side can be asked about the other.
 4. `student.drop(course)` / `course.drop(student)` remove the link on both sides and return whether it existed. A freed seat can be taken by someone else.
 5. `courses()` and `students()` are read-only views.
 6. Neither side owns the other: a course keeps existing with zero students, a student with zero courses.
-
-## Constraints
-
-- After any sequence of operations from either side, `s.courses().contains(c) == c.students().contains(s)` for every pair (the tests run 300 random operations and check this).
 
 ## Running
 

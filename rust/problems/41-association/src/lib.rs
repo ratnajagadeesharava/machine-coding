@@ -1,7 +1,4 @@
-//! Association — students and courses know about each other (many-to-many) but neither owns the other.
-//!
-//! Rust adaptation: two-way references (`Rc<RefCell<..>>` pointing at each other) leak and fight the borrow
-//! checker. The idiomatic model keeps the association in ONE place - `School` - and refers to things by id.
+//! Association — students and courses (many-to-many).
 #![allow(unused_variables)]
 
 pub mod contract;

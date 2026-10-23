@@ -1,9 +1,6 @@
 package contract;
 
-/**
- * Provided contract. Note {@link #getWallet()}: it exists, but code that only wants a customer to pay should
- * ask the CUSTOMER ({@link #canAfford}, {@link #pay}) instead of reaching through to the wallet.
- */
+/** Provided contract. */
 public interface Customer {
 
     String name();

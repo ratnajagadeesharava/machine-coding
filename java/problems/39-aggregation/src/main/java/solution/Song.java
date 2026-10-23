@@ -1,9 +1,8 @@
 package solution;
 
-/** A song exists on its own, independent of any playlist. */
+/** A song. */
 public class Song {
 
-    /** Blank title or seconds <= 0 -> IllegalArgumentException. */
     public Song(String title, int seconds) {
         throw new UnsupportedOperationException("Not implemented yet");
     }
@@ -16,7 +15,6 @@ public class Song {
         throw new UnsupportedOperationException("Not implemented yet");
     }
 
-    /** Blank title -> IllegalArgumentException. */
     public void rename(String newTitle) {
         throw new UnsupportedOperationException("Not implemented yet");
     }

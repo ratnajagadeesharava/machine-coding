@@ -1,6 +1,6 @@
 package solution;
 
-/** The caretaker for undo/redo of one character. It stores snapshots only. */
+/** Undo/redo for one character. */
 public class UndoHistory {
 
     /** Null character or {@code maxCheckpoints < 1} -> IllegalArgumentException. */
@@ -8,23 +8,17 @@ public class UndoHistory {
         throw new UnsupportedOperationException("Not implemented yet");
     }
 
-    /**
-     * Remembers the character's CURRENT state as something to go back to, and forgets everything that could be
-     * redone. When more than {@code maxCheckpoints} are remembered the oldest is dropped.
-     */
+    /** Remembers the current state. */
     public void checkpoint() {
         throw new UnsupportedOperationException("Not implemented yet");
     }
 
-    /**
-     * Goes back to the newest checkpoint (which is consumed). The state the character had just before going back is
-     * kept so that {@link #redo()} can return to it. False (doing nothing) when there is no checkpoint.
-     */
+    /** Goes back one checkpoint. */
     public boolean undo() {
         throw new UnsupportedOperationException("Not implemented yet");
     }
 
-    /** Returns to the state left by the latest undo; that undo's target becomes undoable again. False if nothing to redo. */
+    /** Re-applies the latest undone state. */
     public boolean redo() {
         throw new UnsupportedOperationException("Not implemented yet");
     }

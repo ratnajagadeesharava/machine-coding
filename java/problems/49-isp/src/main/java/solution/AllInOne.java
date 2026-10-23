@@ -4,12 +4,7 @@ import contract.FaxMachine;
 import contract.Printer;
 import contract.Scanner;
 
-/**
- * Does everything. It implements the three small interfaces directly: no combined "Machine" interface.
- * print: "PRINTED: " + document (blank -> IllegalArgumentException). scan: "SCAN-1", "SCAN-2", ...
- * fax: a blank document -> IllegalArgumentException; the number must look like an optional '+' followed by
- * 7 to 15 digits, otherwise returns false; a good number returns true.
- */
+/** All-in-one office machine. */
 public class AllInOne implements Printer, Scanner, FaxMachine {
 
     @Override

@@ -2,20 +2,13 @@
 
 | Difficulty | Duration | Scaffolding |
 |---|---|---|
-| Hard | 60 min | Level 2 — the `Aircraft` trait and `TowerError` are provided; `ControlTower` is a stub. |
+| Hard | 60 min | Level 2 — the `Aircraft` trait and `TowerError` are provided; you write `ControlTower`. |
 
-> **Pattern:** *Mediator* — define an object that encapsulates how a set of objects interact. The colleagues no
-> longer refer to each other (many-to-many becomes one-to-many); all the coordination logic lives in the mediator.
->
-> **Rust adaptation:** the Java version also asks for a `PassengerJet` class whose fields are checked by reflection;
-> in Rust the aircraft are `Rc<dyn Aircraft>` test types that only ever receive callbacks, and the tower identifies
-> them by `id()`.
 
 ## Problem
 
-An airport has one runway and many aircraft. If aircraft negotiated with each other directly, every plane would need
-to know every other plane. Instead, planes talk only to the **control tower**, which decides who lands next and tells
-everyone their position.
+An airport has one runway and many aircraft. The **control tower** decides who lands next and tells every aircraft
+its position.
 
 ## Requirements
 
@@ -26,10 +19,6 @@ everyone their position.
 3. `cancel(id)`: a diversion. On the runway → same as `landed`. Waiting → removed, and each aircraft **behind** it gets `on_hold(new_position)`. Returns `false` if the id is unknown.
 4. `declare_emergency(id)`: moves a waiting aircraft to the front; it gets `on_hold(1)` **first**, then each aircraft it overtook gets its new position, in queue order. Already first → nothing happens. Unknown or already cleared → `Err(TowerError::Unknown)`.
 5. `on_runway()` / `queue()` report the current state (ids).
-
-## Constraints (what the tests catch)
-
-- The test aircraft log every callback, so the exact order and numbers of notifications are asserted.
 
 ## Running
 

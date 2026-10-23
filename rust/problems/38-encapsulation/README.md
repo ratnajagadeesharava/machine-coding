@@ -2,10 +2,7 @@
 
 | Difficulty | Duration | Scaffolding |
 |---|---|---|
-| Medium | 30 min | Level 2 — one stub type, `StockItem`, with `todo!()` bodies; `StockError` is provided. |
-
-> **Concept:** keep state private and expose behaviour, so the object's rules (invariants) cannot be broken from
-> outside. In Rust, fields are private by default; do not make them `pub`.
+| Medium | 30 min | Level 2 — a `StockItem` stub and `StockError` are provided; you write the bodies. |
 
 ## Problem
 
@@ -20,11 +17,6 @@ invalid state**.
 3. `transfer_to(&mut other, n)` is atomic: if either item would break its rules, neither changes (and neither history changes).
 4. `add_tag` trims and lower-cases; blank and duplicate tags are ignored. `tags()` returns a read-only slice.
 5. `history()` records every *successful* change in order (`"+5"`, `"-2"`, `"-1 (transfer)"` for the source, `"+1 (transfer)"` for the target).
-
-## Constraints
-
-- No `pub` fields. The tests only use the methods above, so an invalid state must be unreachable through them.
-- **Rust adaptation:** you cannot reflect over fields, so privacy is checked by the compiler instead; returning `&[String]` is how Rust hands out a view that callers cannot change.
 
 ## Running
 

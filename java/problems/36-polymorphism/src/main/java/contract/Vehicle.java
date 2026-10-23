@@ -1,6 +1,6 @@
 package contract;
 
-/** Provided contract. Every vehicle knows its own toll. */
+/** Provided contract. */
 public interface Vehicle {
 
     String plate();

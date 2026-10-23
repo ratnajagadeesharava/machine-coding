@@ -1,4 +1,4 @@
-//! SRP — one calculator, one renderer, one service that only coordinates.
+//! Invoice issuing.
 #![allow(unused_variables)]
 
 pub mod contract;
@@ -32,7 +32,7 @@ impl TotalsCalculator for StandardCalculator {
 /// TOTAL 14.75
 /// ```
 ///
-/// It prints the totals it is GIVEN. It must not add up anything itself (except each line's quantity * price).
+/// It prints the totals it is given.
 pub struct TextRenderer;
 
 impl TextRenderer {
@@ -47,7 +47,7 @@ impl InvoiceRenderer for TextRenderer {
     }
 }
 
-/// Coordinates the three collaborators. It does no maths, no layout and no storage itself.
+/// Issues and looks up invoices.
 pub struct InvoiceService;
 
 impl InvoiceService {

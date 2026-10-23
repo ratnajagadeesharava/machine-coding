@@ -1,6 +1,6 @@
 package contract;
 
-/** Provided contract: only some payment methods can give money back, so refunding is a separate, small interface. */
+/** Provided contract: something that can refund a charge. */
 public interface Refundable {
 
     /** @return true if {@code amountCents} was refunded against that charge reference. */

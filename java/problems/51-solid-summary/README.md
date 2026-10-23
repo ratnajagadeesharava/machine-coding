@@ -2,18 +2,7 @@
 
 | Difficulty | Duration | Scaffolding |
 |---|---|---|
-| Hard | 75 min | Level 2 — value records and seven small interfaces are provided; five classes are stubs. |
-
-> **One mini-system, all five principles.** Each class below exists to demonstrate one principle; the tests are
-> built so that a design that breaks any of them fails.
-
-| Principle | Where it shows up |
-|---|---|
-| **S**ingle Responsibility | `OrderPricer` only prices; `OrderProcessor` only coordinates; storing and notifying are other types' jobs. |
-| **O**pen/Closed | New `DeliveryFeePolicy` / `PaymentMethod` implementations (written in the tests) work with no edits. |
-| **L**iskov Substitution | `CardPayment` and `CashOnDelivery` both pass one shared `PaymentMethod` contract suite. |
-| **I**nterface Segregation | `Refundable` is separate: cash is not refundable, and `refund` asks for a `Refundable`, not a whole payment method. |
-| **D**ependency Inversion | `OrderProcessor` receives `OrderPricer`, `OrderRepository`, `Notifier`; fakes are injected. |
+| Hard | 75 min | Level 2 — value records and seven small interfaces are provided; the rest is yours to write. |
 
 ## Problem
 

@@ -8,7 +8,7 @@ pub struct Appointment {
     pub time_ms: u64,
 }
 
-/// How a text message gets out. Could be an SMS gateway, a test fake, anything.
+/// How a text message gets out.
 pub trait MessageSender {
     /// True if the message was accepted for delivery.
     fn send(&self, phone: &str, text: &str) -> bool;

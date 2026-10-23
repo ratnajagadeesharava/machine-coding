@@ -2,16 +2,13 @@
 
 | Difficulty | Duration | Scaffolding |
 |---|---|---|
-| Hard | 60 min | Level 2 — the `Aircraft` and `Tower` interfaces are provided; `ControlTower` and `PassengerJet` are stubs. |
+| Hard | 60 min | Level 2 — the `Aircraft` and `Tower` interfaces are provided; you write `ControlTower` and `PassengerJet`. |
 
-> **Pattern:** *Mediator* — define an object that encapsulates how a set of objects interact. The colleagues no
-> longer refer to each other (many-to-many becomes one-to-many); all the coordination logic lives in the mediator.
 
 ## Problem
 
-An airport has one runway and many aircraft. If aircraft negotiated with each other directly, every plane would need
-to know every other plane. Instead, planes talk only to the **control tower**, which decides who lands next and tells
-everyone their position.
+An airport has one runway and many aircraft. The **control tower** decides who lands next and tells every aircraft
+its position.
 
 ## Requirements
 
@@ -23,11 +20,6 @@ everyone their position.
 4. `declareEmergency(a)`: moves a waiting aircraft to the front; it gets `onHold(1)` **first**, then each aircraft it overtook gets its new position, in queue order. Already first → nothing happens. Unknown or already cleared → `IllegalArgumentException`.
 5. `onRunway()` / `queue()` report the current state (ids).
 6. `PassengerJet(id, tower)` is a real aircraft: `requestLanding()`, `touchdown()` (tells the tower, status `LANDED`), `divert()` (status `DIVERTED`), `status()` ∈ `AIRBORNE`, `HOLDING #n`, `CLEARED`, `LANDED`, `DIVERTED`; the callbacks set `CLEARED` / `HOLDING #n`.
-
-## Constraints (what the tests catch)
-
-- The tests use test-defined aircraft that log every callback, so the exact order and numbers of notifications are asserted.
-- Reflection: `PassengerJet` has **no field** whose type is an `Aircraft`/`PassengerJet` — colleagues only know the tower.
 
 ## Running
 

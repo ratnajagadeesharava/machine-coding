@@ -22,17 +22,14 @@ pub enum InvoiceError {
     InvalidId,
 }
 
-/// Knows the maths, nothing about text or storage.
 pub trait TotalsCalculator {
     fn calculate(&self, lines: &[InvoiceLine], tax_bps: u64) -> Result<InvoiceTotals, InvoiceError>;
 }
 
-/// Knows the layout, nothing about maths or storage.
 pub trait InvoiceRenderer {
     fn render(&self, invoice_id: &str, lines: &[InvoiceLine], totals: &InvoiceTotals) -> String;
 }
 
-/// Knows storage, nothing about maths or layout.
 pub trait InvoiceRepository {
     fn save(&self, invoice_id: &str, text: &str);
     fn find(&self, invoice_id: &str) -> Option<String>;

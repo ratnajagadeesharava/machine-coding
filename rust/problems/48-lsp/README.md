@@ -2,16 +2,11 @@
 
 | Difficulty | Duration | Scaffolding |
 |---|---|---|
-| Medium | 40 min | Level 2 — the `Coupon` trait, its documented contract and `CouponError` are provided; three coupons and `checkout_total` are stubs. |
-
-> **Principle:** anything that accepts a `&dyn Coupon` must work with *every* `Coupon`. An implementor must keep the
-> promises of the trait: accept at least what the trait accepts, and return at least what it promises.
+| Medium | 40 min | Level 2 — the `Coupon` trait, its documented contract and `CouponError` are provided; the rest is yours to write. |
 
 ## Problem
 
-A web shop has several kinds of coupons. Checkout should not know which kind it is holding. Two classic mistakes
-break that: a flat coupon larger than the price that produces a **negative** total, and a minimum-spend coupon that
-returns an **error** when the basket is too small instead of simply not applying.
+A web shop has several kinds of coupons. Checkout should work with any of them without knowing which kind it is holding.
 
 ## Requirements
 

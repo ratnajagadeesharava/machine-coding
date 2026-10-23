@@ -1,6 +1,6 @@
 package contract;
 
-/** Provided contract. Anything that can report a measurement is a Sensor. */
+/** Provided contract. */
 public interface Sensor {
 
     String id();

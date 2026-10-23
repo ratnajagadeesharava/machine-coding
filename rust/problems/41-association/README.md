@@ -2,14 +2,7 @@
 
 | Difficulty | Duration | Scaffolding |
 |---|---|---|
-| Medium | 40 min | Level 2 — a `School` stub in `src/lib.rs` (`todo!()` bodies). Ids, the limit constant and `EnrollError` are provided. |
-
-> **Concept:** association is a *knows-about* relationship between independent things. Here it is **many-to-many**:
-> students take several courses and courses have several students, and neither owns the other.
->
-> **Rust adaptation:** Java models this with two objects pointing at each other. In Rust, two-way pointers
-> (`Rc<RefCell<..>>` cycles) are awkward and leak, so the association is stored **in one place** (`School`, an
-> "association manager") and students/courses are referred to by id. One source of truth cannot get out of sync.
+| Medium | 40 min | Level 2 — a `School` stub is provided; ids, the limit constant and `EnrollError` are provided. |
 
 ## Problem
 

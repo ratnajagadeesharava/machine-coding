@@ -7,7 +7,7 @@ import contract.TotalsCalculator;
 import java.util.List;
 import java.util.Optional;
 
-/** Coordinates the three collaborators. It does no maths, no layout and no storage itself. */
+/** Issues and looks up invoices. */
 public class InvoiceService {
 
     public InvoiceService(TotalsCalculator calculator, InvoiceRenderer renderer, InvoiceRepository repository) {

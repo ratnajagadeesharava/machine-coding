@@ -1,4 +1,4 @@
-//! OCP — extend by adding a `FeePolicy`, never by editing the calculator.
+//! Parking fee pricing.
 
 pub mod calculator;
 pub mod contract;

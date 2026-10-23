@@ -2,7 +2,7 @@ package contract;
 
 import java.util.List;
 
-/** Provided contract: knows the maths, nothing about text or storage. */
+/** Provided contract. */
 public interface TotalsCalculator {
 
     InvoiceTotals calculate(List<InvoiceLine> lines, int taxBps);

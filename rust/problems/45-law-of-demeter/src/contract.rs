@@ -1,7 +1,4 @@
 //! Provided: the traits and error types.
-//!
-//! `Customer::wallet()` and `Order::customer()` exist, but code that only wants a customer to pay should ask the
-//! customer (`can_afford`, `pay`) - and code that wants the shipping city should ask the order (`shipping_city`).
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum PayError {

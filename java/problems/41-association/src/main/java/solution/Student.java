@@ -2,7 +2,7 @@ package solution;
 
 import java.util.List;
 
-/** A student can be enrolled in several courses (at most {@link #MAX_COURSES}). Neither side owns the other. */
+/** A student can be enrolled in several courses (at most {@link #MAX_COURSES}). */
 public class Student {
 
     public static final int MAX_COURSES = 3;
@@ -17,14 +17,14 @@ public class Student {
     }
 
     /**
-     * Enrols in the course; both sides must know about it afterwards. Returns false (and changes nothing) if
+     * Enrols in the course. Returns false (and changes nothing) if
      * already enrolled, the course is full or the student already has MAX_COURSES. Null -> IllegalArgumentException.
      */
     public boolean enroll(Course course) {
         throw new UnsupportedOperationException("Not implemented yet");
     }
 
-    /** Leaves the course on both sides. Returns whether the student was enrolled. */
+    /** Leaves the course. Returns whether the student was enrolled. */
     public boolean drop(Course course) {
         throw new UnsupportedOperationException("Not implemented yet");
     }

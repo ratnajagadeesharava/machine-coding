@@ -4,8 +4,7 @@ import contract.PricingRules;
 import java.util.List;
 
 /**
- * Produces the three customer documents. They all price the same way and format money the same way, so the
- * calculation and the formatting should each exist exactly once.
+ * Produces the three customer documents.
  *
  * <pre>
  * quote(lines)               "QUOTE net=50.00 discount=0.00 tax=9.00 total=59.00"

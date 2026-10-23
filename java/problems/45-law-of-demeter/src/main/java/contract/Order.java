@@ -1,9 +1,6 @@
 package contract;
 
-/**
- * Provided contract. {@link #getCustomer()} exists, but a caller that needs the shipping city should ask the
- * ORDER ({@link #shippingCity()}) instead of walking order -> customer -> address -> city.
- */
+/** Provided contract. */
 public interface Order {
 
     Customer getCustomer();

@@ -1,6 +1,6 @@
 package solution;
 
-/** Keep it simple: the whole solution is this one small class. */
+/** Late fee calculator. */
 public final class LateFees {
     private LateFees() {}
 

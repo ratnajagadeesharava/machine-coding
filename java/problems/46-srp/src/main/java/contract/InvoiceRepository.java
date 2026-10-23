@@ -2,7 +2,7 @@ package contract;
 
 import java.util.Optional;
 
-/** Provided contract: knows storage, nothing about maths or layout. */
+/** Provided contract. */
 public interface InvoiceRepository {
 
     void save(String invoiceId, String text);
