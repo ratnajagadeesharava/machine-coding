@@ -2,12 +2,7 @@ package solution;
 
 import java.util.List;
 
-/**
- * The originator. It can save its state into an opaque {@link Snapshot} (the memento) and restore from one,
- * without ever exposing its internals. All fields are private; no setters.
- *
- * <p>Initial state: hp 100, level 1, position (0, 0), empty inventory.
- */
+/** A game character. Initial state: hp 100, level 1, position (0, 0), empty inventory. */
 public class GameCharacter {
 
     public static final int MAX_HP = 100;
@@ -38,7 +33,7 @@ public class GameCharacter {
         throw new UnsupportedOperationException("Not implemented yet");
     }
 
-    /** Items in pick-up order. Callers cannot modify the character through the returned list. */
+    /** Items in pick-up order. */
     public List<String> inventory() {
         throw new UnsupportedOperationException("Not implemented yet");
     }
@@ -71,24 +66,17 @@ public class GameCharacter {
         throw new UnsupportedOperationException("Not implemented yet");
     }
 
-    /**
-     * Captures hp, level, position and inventory. The snapshot must be a DEEP, independent copy: later changes to the
-     * character never alter it.
-     */
+    /** Captures the character's state. */
     public Snapshot save() {
         throw new UnsupportedOperationException("Not implemented yet");
     }
 
-    /** Puts the character back into the saved state (the name is not part of the state). Null -> IllegalArgumentException. */
+    /** Restores a saved state. */
     public void restore(Snapshot snapshot) {
         throw new UnsupportedOperationException("Not implemented yet");
     }
 
-    /**
-     * The memento: opaque to everybody except {@link GameCharacter}. It must have NO public methods, NO public
-     * fields and NO public constructor - nobody else can read or forge a saved state. Add private fields to hold
-     * the state; the enclosing class can read them.
-     */
+    /** A saved character state. */
     public static final class Snapshot {
         private Snapshot() { }
     }

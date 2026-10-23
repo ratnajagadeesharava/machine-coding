@@ -1,4 +1,4 @@
-//! Composition — an `Order` OWNS its `LineItem`s (a `Vec<LineItem>` by value). When the order is dropped, so are they.
+//! Composition.
 #![allow(unused_variables)]
 
 pub mod contract;
@@ -16,9 +16,6 @@ impl Order {
         todo!()
     }
 
-    /// Creates the line INSIDE the order (use `LineItem::new`, which only this crate can call).
-    /// Blank sku / zero quantity / zero price -> `InvalidLine`. Same SKU again -> adds to that line's quantity
-    /// (`LineItem::add_quantity`); a different unit price -> `PriceMismatch`. Cancelled -> `Cancelled`.
     pub fn add_line(&mut self, sku: &str, quantity: u32, unit_price: u64) -> Result<(), OrderError> {
         todo!()
     }
@@ -27,7 +24,6 @@ impl Order {
         todo!()
     }
 
-    /// Removes and destroys the line for that SKU. Returns whether it existed.
     pub fn remove_line(&mut self, sku: &str) -> bool {
         todo!()
     }
@@ -36,7 +32,6 @@ impl Order {
         todo!()
     }
 
-    /// Destroys all lines and blocks further `add_line` calls.
     pub fn cancel(&mut self) {
         todo!()
     }

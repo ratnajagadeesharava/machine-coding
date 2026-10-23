@@ -1,8 +1,4 @@
 //! Provided: the part (`LineItem`) and the error type.
-//!
-//! `LineItem` counts how many instances are alive (`LineItem::live_count()`) so a test can see whether parts are
-//! destroyed together with their owner. Only code inside this crate can create one (`pub(crate)`): your `Order`
-//! creates its lines, nobody else can.
 
 use std::sync::atomic::{AtomicUsize, Ordering};
 

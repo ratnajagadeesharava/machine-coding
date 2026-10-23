@@ -1,4 +1,4 @@
-//! DRY — one pricing path, one money formatter, one validator.
+//! DRY — pricing documents.
 #![allow(unused_variables)]
 
 pub mod contract;

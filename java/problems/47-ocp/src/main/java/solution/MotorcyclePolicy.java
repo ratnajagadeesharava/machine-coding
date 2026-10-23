@@ -2,7 +2,7 @@ package solution;
 
 import contract.FeePolicy;
 
-/** Supports "motorcycle" (any letter case). Charges half of what a car would pay (integer division). */
+/** Parking fee policy for motorcycles. */
 public class MotorcyclePolicy implements FeePolicy {
 
     @Override

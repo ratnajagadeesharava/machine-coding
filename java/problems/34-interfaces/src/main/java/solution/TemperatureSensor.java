@@ -3,7 +3,7 @@ package solution;
 import contract.Sensor;
 import java.util.function.DoubleSupplier;
 
-/** Unit "C". Faulty (IllegalStateException on read) when the probe returns less than -273.15. */
+/** Temperature sensor. */
 public class TemperatureSensor implements Sensor {
 
     public TemperatureSensor(String id, DoubleSupplier probe) {

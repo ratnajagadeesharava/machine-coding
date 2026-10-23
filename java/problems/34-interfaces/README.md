@@ -2,15 +2,12 @@
 
 | Difficulty | Duration | Scaffolding |
 |---|---|---|
-| Easy | 30 min | Level 2 — the `Sensor` interface is provided; the classes you write are stubs that throw `UnsupportedOperationException`. |
-
-> **Concept:** an interface is a contract. Code that depends on the interface works with every implementation,
-> including ones that do not exist yet.
+| Easy | 30 min | Level 2 — the `Sensor` interface is provided; the rest is yours to write. |
 
 ## Problem
 
 A building-monitoring system collects readings from many kinds of sensors. Write two sensors and a `SensorHub`
-that collects readings **without knowing which concrete sensor types exist**.
+that collects readings from whatever sensors are registered.
 
 ## Requirements
 
@@ -21,10 +18,6 @@ that collects readings **without knowing which concrete sensor types exist**.
 5. `readAll()` returns `id -> reading` in **registration order**, leaving out faulty sensors. `lastFaults()` lists the ids that were faulty during the last `readAll()`.
 6. `average(unit)` is the mean of the healthy sensors with that unit, or empty if there are none.
 7. `sensors()` returns the sensors in registration order; callers cannot modify the returned list.
-
-## Constraints
-
-- `SensorHub` may use only the `Sensor` interface. The tests register a sensor class that exists only in the test file.
 
 ## Examples
 

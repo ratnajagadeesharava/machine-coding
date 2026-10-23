@@ -2,10 +2,7 @@
 
 | Difficulty | Duration | Scaffolding |
 |---|---|---|
-| Easy | 30 min | Level 2 — four stub classes with the `extends` relationships already declared. Bodies throw `UnsupportedOperationException`. |
-
-> **Concept:** a subclass *is-a* base class. It reuses the parent's state and behaviour, adds to it, and overrides
-> only what differs (calling `super` where it helps).
+| Easy | 30 min | Level 2 — four stub classes with the `extends` relationships declared; you write the bodies. |
 
 ## Problem
 
@@ -19,12 +16,7 @@ the pay rule and the role label differ.
 3. `Intern(name, base)`: pay = `base / 2`. Role `"Intern"`.
 4. `Manager(name, base, reports)`: pay = **own base pay + (sum of the reports' `monthlyPay()`) / 20**. Role `"Manager"`. A report can itself be a manager.
 5. `describe()` returns `"{role}: {name} earns {monthlyPay}"`, e.g. `"Engineer: E earns 1400"`.
-6. `describe()` is written **once**, in `Employee`. No subclass may declare its own `describe()`: the tests check this with reflection.
-
-## Constraints
-
-- Any subclass instance can be used where an `Employee` is expected.
-- Hint: `Manager` can build on `super.monthlyPay()`.
+6. The tests check with reflection that no subclass declares its own `describe()`.
 
 ## Examples
 

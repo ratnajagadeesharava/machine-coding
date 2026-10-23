@@ -2,7 +2,7 @@ package solution;
 
 import contract.Order;
 
-/** Prices shipping from the order alone. */
+/** Prices shipping for an order. */
 public class ShippingCalculator {
 
     /**

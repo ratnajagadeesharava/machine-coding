@@ -1,6 +1,6 @@
 package contract;
 
-/** Provided contract: how delivery is priced. New policies are added, existing code is not edited. */
+/** Provided contract: how delivery is priced. */
 public interface DeliveryFeePolicy {
 
     long fee(int distanceMeters);

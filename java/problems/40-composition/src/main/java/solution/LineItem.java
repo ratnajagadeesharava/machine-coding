@@ -1,9 +1,6 @@
 package solution;
 
-/**
- * One line of an order. It is a PART of {@link Order}: only the order can create one (keep the constructor
- * non-public) and it cannot live without its order.
- */
+/** One line of an order. */
 public class LineItem {
     private int quantity;
     private final long unitPriceCents;

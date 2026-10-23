@@ -1,4 +1,4 @@
-//! Classes and Objects — implement `Money` here. Keep the public signatures: the tests compile against them.
+//! Classes and Objects.
 #![allow(unused_variables)]
 
 pub mod contract;
@@ -7,7 +7,6 @@ use contract::MoneyError;
 use std::cmp::Ordering;
 use std::fmt;
 
-// Keep these derives: the tests use `==`, `HashSet`, `{:?}` and `.clone()`. Add your own fields.
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Money {
     currency: String,

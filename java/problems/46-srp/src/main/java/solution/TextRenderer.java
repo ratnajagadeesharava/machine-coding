@@ -15,7 +15,7 @@ import java.util.List;
  * TAX 2.25
  * TOTAL 14.75
  * </pre>
- * It prints the totals it is GIVEN. It must not add up anything itself (except each line's quantity * price).
+ * It prints the totals it is given.
  */
 public class TextRenderer implements InvoiceRenderer {
 

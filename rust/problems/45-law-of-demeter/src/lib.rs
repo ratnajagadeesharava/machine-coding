@@ -1,4 +1,4 @@
-//! Law of Demeter — talk to your direct collaborators only.
+//! Checkout and shipping services.
 #![allow(unused_variables)]
 
 pub mod contract;
@@ -23,7 +23,7 @@ impl Wallet for SimpleWallet {
     }
 }
 
-/// A customer that pays out of its own wallet. `can_afford` / `pay` are answered by the customer itself.
+/// A customer that pays out of its own wallet.
 pub struct StandardCustomer;
 
 impl StandardCustomer {
@@ -47,7 +47,7 @@ impl Customer for StandardCustomer {
     }
 }
 
-/// Takes payments. Talks to the customer only - never to the customer's wallet.
+/// Takes payments.
 pub struct Cashier;
 
 impl Cashier {
@@ -67,7 +67,7 @@ impl Cashier {
     }
 }
 
-/// Prices shipping from the order alone.
+/// Prices shipping for an order.
 pub struct ShippingCalculator;
 
 impl ShippingCalculator {
