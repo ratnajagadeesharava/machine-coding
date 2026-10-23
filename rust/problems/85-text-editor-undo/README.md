@@ -11,10 +11,16 @@
 
 ## Problem
 
-You are writing the editing core of a small text editor, the part below the UI. There is one buffer of text, a cursor,
-an optional selection, and a clipboard. Users type, backspace, move the cursor, select a range, copy, cut and paste, and use
-find-and-replace-all. Undo and redo must feel natural: typing a word is one undo step, not one per letter, and after undo the
-text and the cursor must be exactly where they were. A new edit after an undo discards the redo history, as in every editor.
+You are building the editing core of a small text editor, the part below the UI: one text buffer, a cursor, an optional selection and a clipboard. A user types, backspaces, moves the cursor, selects a range, copies/cuts/pastes and runs find-and-replace-all; the UI (not part of this problem) calls your methods and reads back `text()` and `cursor()`.
+
+The hard part is undo/redo that feels natural. Typing a whole word is a single undo step (not one per letter), and after an undo both the text and the cursor must be exactly where they were before that step. Making a new edit after an undo throws the redo history away, as in every editor.
+
+## Glossary
+
+- **Cursor**: an index *between* characters, `0 <= cursor <= length`. In `"abc"`, cursor 0 is before `a`, cursor 3 is after `c`.
+- **Selection**: the half-open range `[from, to)` of characters highlighted by the user; `select(from, to)` also puts the cursor at `to`. There is either one selection or none.
+- **Clipboard**: one string, initially empty, written by `copy`/`cut` and read by `paste`.
+- **Step**: one unit that a single `undo()` reverts and a single `redo()` re-applies. A *group* is a run of calls that together form one step.
 
 ## Requirements
 
@@ -38,16 +44,47 @@ text and the cursor must be exactly where they were. A new edit after an undo di
 
 ## Examples
 
-```
-type("hello"); moveCursor(2); type("XY")   -> text "heXYllo", cursor 4
-select(0, 2); cut()                         -> text "llo", cursor 0, clipboard "he" (one step)
-type("a"); type("b"); type("c")             -> one group
-undo()                                      -> text "" , cursor 0 (all three typed chars revert together)
-redo()                                      -> text "abc", cursor 3
+All traces start from a fresh, empty editor unless stated.
 
-type("hello"); backspace(); backspace(); type("p")
-undo() -> "hel"   undo() -> "hello" (both backspaces)   undo() -> ""
 ```
+Insert at cursor
+type_text("hello"); move_cursor(2); type_text("XY")   -> text "heXYllo", cursor 4
+
+Copy / cut / paste
+type_text("abcdef"); select(1, 3); copy(); move_cursor(6); paste()
+                                           -> text "abcdefbc", cursor 8
+select(0, 2); cut()                        -> text "cdefbc", cursor 0, clipboard "ab"
+move_cursor(6); paste()                     -> text "cdefbcab", cursor 8
+
+Typing is grouped
+type_text("a"); type_text("b"); type_text("c")            -> text "abc", cursor 3 (one step)
+undo()                                     -> true, text "", cursor 0
+undo()                                     -> false (nothing left)
+redo()                                     -> true, text "abc", cursor 3
+
+Typing vs backspace groups
+type_text("hello"); backspace(); backspace(); type_text("p")   -> text "help"
+undo() -> "hel" (cursor 3)    undo() -> "hello" (cursor 5, both backspaces undone together)    undo() -> ""
+
+Cut then paste are single steps
+type_text("abcdef"); select(2, 4); cut(); paste()   -> text "abcdef", cursor 4
+undo() -> "abef", cursor 2      undo() -> "abcdef", cursor 4 (where the cursor was before the cut)
+
+replace_all
+type_text("aaaa b aa"); replace_all("aa", "X")   -> returns 3, text "XX b X"
+undo() -> "aaaa b aa"    redo() -> "XX b X"
+replace_all("zzz", "y")                     -> returns 0, no step: the next undo() reverts the first replace_all
+```
+
+## Edge cases
+
+- `backspace()` at cursor 0 with no selection does nothing and creates no step.
+- `type_text("a")` over a selection, then `select(0, 1)` and `type_text("b")`, are two separate steps: typing over a selection never joins a group.
+- `type_text("ab"); move_cursor(0); type_text("X"); type_text("Y")` is two groups: `"ab"`, then `"XY"`.
+- `cut()` / `copy()` without a selection do nothing (no step, clipboard unchanged); `paste()` with an empty clipboard is `type_text("")` and does nothing.
+- `move_cursor(pos)` rejects `pos < 0` or `pos > length`; `select(from, to)` rejects `from > to`, `from < 0` and `to > length`. `replace_all("", x)` is rejected.
+- `replace_all` keeps the cursor index but clamps it to the new text length; the selection is cleared.
+- After `undo()`/`redo()` the selection is always cleared.
 
 ## Behavioral contract
 
@@ -145,10 +182,6 @@ These tests are black-box: they only call the contract above, so any class desig
 - `replaceAll` of overlapping patterns (`aaaa b aa` with `aa` -> 3), undo/redo of it, and a zero-count replace creating no step.
 - Empty `type`, `select`, `copy`, `moveCursor` do not create undo steps; 200 undo/redo cycles.
 - More edge cases (a 1,000-operation randomized comparison against a model, 20,000 typed characters in one group) are in `interviewer/`.
-
-## Language notes
-
-Store steps as `struct Step { pos: usize, removed: String, inserted: String, cursor_before: usize, cursor_after: usize }` in two `Vec`s; positions in `char`s are not byte offsets (index with `char_indices` or keep the text as `Vec<char>`).
 
 ## Running
 

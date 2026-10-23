@@ -10,16 +10,15 @@
 
 ## Problem
 
-A multi-storey car park needs software that decides where arriving vehicles go, issues tickets, and charges
-for the time spent when they leave. Design and build it.
+**What you are building.** A multi-storey car park needs the software behind its entrance and exit barriers. When a vehicle arrives, the system chooses a free parking spot for it and hands back a **ticket**. When the driver leaves, they present the ticket, the spot is freed and the system returns the **fee** for the time spent. Gate staff and a "spaces left" display also ask how many spots could currently take a given kind of vehicle. Design and build the system that does this, correctly even when several gates operate at the same time.
 
 ## Requirements
 
-1. The car park has one or more floors. Every floor has some number of **small**, **medium** and **large** spots.
+1. The car park has one or more floors, numbered from 0 (lowest). Every floor has the same number of **small**, **medium** and **large** spots (any of the three counts may be 0).
 2. Vehicles are motorcycles, cars or trucks. A motorcycle fits any spot, a car fits a medium or large spot, a truck fits only a large spot.
-3. When a vehicle enters, the system picks a spot for it and returns a ticket. If nothing fits, entry is refused.
+3. When a vehicle enters, the system picks a spot for it and returns a ticket. If nothing fits, entry is refused and nothing changes.
 4. Spots are allocated so that the **smallest sufficient spot size** is used first; among spots of that size, the **lowest floor** wins.
-5. A vehicle (identified by plate) can be parked at most once at a time.
+5. A vehicle (identified by plate) can be parked at most once at a time. Once it has exited, the same plate may enter again.
 6. On exit the ticket is presented, the spot becomes available again, and the fee is returned.
 7. Fees are charged per started hour with a minimum of one hour. Hourly rates: motorcycle 1000, car 2000, truck 5000 (smallest currency unit).
 8. A ticket can be used to exit exactly once.
@@ -33,14 +32,59 @@ for the time spent when they leave. Design and build it.
 
 ## Examples
 
+Notation: `S/M/L` = small/medium/large spots per floor. Time starts at 0 unless stated.
+
+**1. Spot choice and fee** (1 floor, 1 S, 1 M, 1 L)
+
 ```
-lot: 1 floor, 1 small, 1 medium, 1 large
 enter(MOTORCYCLE, "M-1")  -> ticket T1   (goes into the small spot)
 enter(CAR, "C-1")         -> ticket T2   (medium)
 enter(CAR, "C-2")         -> ticket T3   (large; medium is taken)
-enter(CAR, "C-3")         -> refused
-after 90 minutes: exit(T2) -> fee 4000   (2 started hours × 2000)
+enter(CAR, "C-3")         -> empty      (no free spot a car fits)
+availableSpots(MOTORCYCLE) = 0
+after 90 minutes: exit(T2) -> fee 4000   (2 started hours x 2000)
+availableSpots(CAR)        = 1           (the medium spot is free again)
 ```
+
+**2. Lowest floor wins among equal sizes** (3 floors, 0 S, 1 M, 0 L per floor)
+
+```
+enter(CAR, "A") -> floorOf = 0
+enter(CAR, "B") -> floorOf = 1
+enter(CAR, "C") -> floorOf = 2
+```
+
+**3. Fee boundaries** (1 floor, 0 S, 2 M, 0 L; both cars enter at time 0)
+
+| Exit after | Started hours | Fee for a car |
+|---|---|---|
+| 0 min | 1 (minimum) | 2000 |
+| 60 min exactly | 1 | 2000 |
+| 61 min | 2 | 4000 |
+
+**4. Refusals** (1 floor, 0 S, 3 M, 0 L)
+
+```
+enter(CAR, "SAME") -> ticket         availableSpots(CAR) = 2
+enter(CAR, "SAME") -> empty         (plate already parked; availableSpots(CAR) still 2)
+enter(HOVERCRAFT, "H-1") -> empty   (unknown type)
+exit("no-such-ticket") -> empty
+exit(ticket); exit(ticket) -> fee, then empty   (second exit frees nothing)
+```
+
+## Edge cases
+
+- A lot with no large spots refuses every truck and reports `availableSpots(TRUCK) = 0`.
+- A refused entry (full, duplicate plate, unknown type) must not use up a spot or change any later answer.
+- A ticket that has been used for exit no longer has a floor: `floorOf` returns empty.
+- Under concurrent entry, with 10 large spots and 50 simultaneous truck arrivals exactly 10 tickets are issued, all distinct, and none shares a spot.
+
+## Glossary
+
+- **Ticket**: the opaque string returned by `enter`; it identifies one stay and is the only thing needed to exit.
+- **Plate**: the vehicle's registration string; identifies a vehicle for the "parked at most once" rule.
+- **Started hour**: any part of an hour counts as a whole hour, so 61 minutes is 2 hours.
+- **Smallest currency unit**: fees are whole integers (e.g. cents), never fractions.
 
 ## Behavioral contract
 
@@ -53,6 +97,9 @@ The tests rely on exactly the following behavior. Anything not stated is yours t
 - `availableSpots(type)` = number of currently free spots that could accept that type (spots are counted per fitting size, not reserved). Unknown type → 0.
 - `floorOf(ticket)` is the 0-based floor of the spot held by an active ticket; empty for unknown/used tickets.
 - Spot choice: smallest fitting size first, then lowest floor.
+- `availableSpots` counts a free spot once per type it could accept: with 1 free small, 1 free medium and 1 free large spot the answers are MOTORCYCLE 3, CAR 2, TRUCK 1. These are not additive totals.
+- Elapsed time for the fee is `exit time - enter time` as read from the supplied `Clock`.
+- Total spots = `floors x (small + medium + large)`; the plate rule applies across the whole lot, not per floor.
 
 ## Test entry point (Java)
 

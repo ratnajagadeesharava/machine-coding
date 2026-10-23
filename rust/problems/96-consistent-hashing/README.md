@@ -2,12 +2,21 @@
 
 | Difficulty | Duration | Scaffolding |
 |---|---|---|
-| Medium-Hard | 60 min | Level 3 — infrastructure provided: a deterministic network and clock simulation (`SimNet`) runs your nodes; the protocol code is yours. |
+| Medium-Hard | 60 min | Level 2 — contract and tests provided; the domain model, the algorithms and the class design are yours. |
 
 > Read the requirements, then **design before you code**: which concepts, which owners, which API,
 > which state, which abstractions (if any). Nothing here tells you. See `INTERVIEW.md` for the process,
 > `HINTS.md` if you are stuck (three levels, smallest nudge first) and
 > `FOLLOWUPS.md` (open one at a time, after the previous version passes).
+
+## What you are building
+
+You are building the routing component in front of a sharded cache fleet. Today a key goes to machine `hash(key) % N`, so
+adding or removing one machine remaps almost every key, empties the caches and floods the database. Your component maps keys to
+nodes so that when a node joins or leaves only the keys that must move do move, keys are spread evenly, a node with weight 3
+gets about three times the keys of a node with weight 1, and for replication it can name the next few distinct nodes for a
+key. Two processes holding the same membership must route every key to the same node. Lookups run constantly from many threads
+while nodes are added and removed.
 
 ## Problem
 
@@ -27,24 +36,71 @@ must route every key identically, and lookups run constantly while nodes join an
 6. Adding a node only moves keys to that node; removing a node only moves the keys that node owned. No key moves between two untouched nodes.
 7. The ring is created with a virtual-node count per unit of weight (`create(vnodes)`); a node of weight w gets `w * vnodes` points on the ring. Keys spread evenly across nodes.
 8. `nodes()` returns the current node names.
+9. `create(vnodes)` takes the number of ring points a weight-1 node gets (at least 1); a node of weight `w` gets `w * vnodes` points. A blank name means empty or whitespace only.
+10. Ownership is a pure function of the membership (the set of node names with their weights) and the key. Removing a node and adding it back with the same weight restores exactly the previous ownership of every key.
+11. The tests do not fix which node owns which key (the hash function is yours); they check the properties above: determinism, evenness, minimal movement, replica order, weight proportions.
+12. `nodes_for(key, n)` is a prefix-stable list: `nodes_for(k, 2)` is the first two entries of `nodes_for(k, 3)`.
 
 ## Simulation rules and constraints
 
 - This component runs as plain in-process code (no network simulation); the tests exercise it from real threads.
 - `nodeFor` and `nodesFor` are called continuously from many threads while one thread adds and removes nodes. A lookup must see either the membership before or after a change, never a torn ring, and never throw because of a concurrent change.
-- Lookups vastly outnumber changes: reads should not queue behind each other.
-- Determinism is part of the contract: no `Random`, no use of `hashCode()` of strings across runtimes, no iteration-order dependence. Use a hash function whose output you control.
+- Lookups vastly outnumber changes.
+- Determinism is part of the contract: the same nodes and keys give the same results in every run and on every runtime.
+
+## Glossary
+
+- **Ring**: the circle of positions that keys and nodes are hashed onto. A key belongs to the first node position met going *clockwise* from the key's position, wrapping around at the end.
+- **Virtual node (vnode)**: one of the many positions a physical node occupies on the ring; more positions = smoother balance.
+- **Weight**: a positive integer multiplier on the number of positions, so the node owns proportionally more keys.
+- **Primary / replicas**: the primary is `node_for(key)`; the replicas are the next *different* nodes found continuing clockwise.
+- **Minimal movement**: after a membership change, a key changes owner only if the change forces it (the new node takes it, or its old owner left).
 
 ## Examples
 
+**Example 1: basics** (`create(vnodes = 200)`, nodes `node-0` .. `node-9` added with weight 1; the exact owners depend on your hash)
+
 ```
-create(vnodes = 200); addNode n0..n9
-nodeFor("key-1") -> "node-4"        (same answer in every process and every insertion order)
-addNode("newcomer") -> about 1/11 of the keys move, all of them to "newcomer"
-removeNode("node-3") -> only keys owned by node-3 move
-nodesFor("key-1", 3) -> ["node-4", "node-7", "node-1"]   // distinct, primary first
-if node-4 leaves, nodeFor("key-1") == "node-7" (the next replica was promoted)
+node_for("key-1")            -> some node, always the same one, in every process and for any insertion order of the nodes
+over 50 000 keys            -> every node owns between 65% and 135% of 5 000 keys
+node_for on an empty ring    -> None;   nodes_for on an empty ring -> []
 ```
+
+**Example 2: a node joins, a node leaves**
+
+```
+before = owner of each of 50 000 keys
+add_node("newcomer")  (11 nodes)
+after  = owner of each key
+  every key whose owner changed now belongs to "newcomer";  4% .. 15% of keys changed (about 1/11)
+remove_node("node-3") -> true
+  keys owned by node-3 go to other nodes; every other key keeps its owner
+remove_node("nope")   -> false (no error)
+```
+
+**Example 3: replicas**
+
+```
+nodes_for(k, 3) -> [p, r1, r2]    three DISTINCT nodes, p == node_for(k)
+nodes_for(k, 1) -> [p]            nodes_for(k, 0) -> []
+nodes_for(k, 10) on a ring of 6 nodes -> all 6 nodes, no duplicates
+remove_node(p)  -> node_for(k) is now r1 (the old second replica is promoted)
+```
+
+**Example 4: weights**
+
+```
+add_node("small-1"); add_node("small-2"); add_node("big", 3)
+over 50 000 keys: big owns about 60% (between 48% and 72% of all keys), each small node about 20%
+```
+
+## Edge cases
+
+- Rejected with `Err(RingError::InvalidNode)`: a node name that is already on the ring, a blank name, a weight below 1 (e.g. `add_node("x", 0)`). A rejected call changes nothing.
+- A ring with a single node sends every key to it; `nodes_for(k, 5)` then returns just that one node.
+- A lookup that runs while another thread adds or removes nodes returns an owner that is a member either before or after that change, never an error and never a node that never existed.
+- `nodes()` returns the names sorted alphabetically.
+- Several threads adding different nodes at the same time all succeed; afterwards the ring has all of them.
 
 ## Behavioral contract
 
@@ -104,7 +160,7 @@ pub fn create(_virtual_nodes: usize) -> Option<Arc<dyn HashRing>> { ... }
 
 ## What the tests check
 
-These tests are black-box and deterministic: every node runs inside a seeded simulation (one tick = 1 ms of simulated time, nothing sleeps), messages can be delayed, dropped, duplicated and reordered, nodes can crash and recover, the network can be partitioned, and safety invariants are checked after EVERY simulated millisecond. A failing seed reproduces exactly.
+These tests are black-box: they only call the contract above, so any class design behind it works. Time-dependent behaviour uses an injectable fake clock, never real sleeping. More edge-case scenarios exist in `interviewer/` (see `INTERVIEWER_NOTES.md`).
 
 - Empty ring: `nodeFor` fails, `nodesFor` is empty; a single node owns everything.
 - Duplicate node, blank name, weight 0 rejected; unknown removal returns false.
@@ -112,10 +168,6 @@ These tests are black-box and deterministic: every node runs inside a seeded sim
 - Balance with 10 nodes and 50,000 keys; minimal movement on join and on leave; replica distinctness and promotion; weight proportionality.
 - Concurrency: 7 reader threads x 20,000 lookups while a writer adds 20 and removes some nodes - owners are always known nodes and replicas are never empty. **Repeat 100x**: four threads adding nodes concurrently end with a consistent ring of 8 nodes.
 - More edge cases and scale scenarios in `interviewer/` (see `INTERVIEWER_NOTES.md`).
-
-## Language notes
-
-Do not use `DefaultHasher` for ring positions: it is allowed to change between releases and is randomly keyed in `HashMap`. Write a small FNV-1a/murmur-style hash over the bytes. A sorted `Vec<(u64, Arc<str>)>` behind `RwLock<Arc<Ring>>` makes snapshotting cheap.
 
 ## Running
 

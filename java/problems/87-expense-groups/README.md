@@ -11,11 +11,18 @@
 
 ## Problem
 
-Build the backend of a Splitwise-like app for flatmates and travel groups. People share expenses: one person pays the
-restaurant bill for everyone, another pays the rent for two. The app tracks who owes whom, shows each person's net balance, lets
-people pay each other back, and at the end of the trip computes the smallest number of payments that makes everybody square.
-Money is whole currency units, so a bill of 100 split three ways cannot be 33.33 each: it has to come out to exactly 100
-and be reproducible.
+You are building the backend of a Splitwise-like app for flatmates and travel groups. People share expenses: one person pays the restaurant bill for everyone, another pays the rent for two. The app tracks who owes whom as a net balance per person, lets people pay each other back (settlements), and at the end of the trip computes the smallest possible list of payments that makes everybody square.
+
+Money is whole currency units (integers). A bill of 100 split three ways cannot be 33.33 each: it must add up to exactly 100 and be reproducible, so the leftover units are handed out by a fixed rule.
+
+## Glossary
+
+- **Group**: a named set of members who share expenses; groups are independent of each other.
+- **Balance**: a member's net position in a group. Positive means the group owes them money, negative means they owe the group. All balances in a group always sum to 0.
+- **Expense**: someone (the payer) paid an amount on behalf of some members (participants), who now owe their share.
+- **Share**: the part of an expense a participant owes.
+- **Settlement**: a real payment between two members that reduces the debt (it is not an expense).
+- **Square**: balance exactly 0.
 
 ## Requirements
 
@@ -39,15 +46,39 @@ and be reproducible.
 ## Examples
 
 ```
-group flat = [ann, bob, cy]
-addExpense(flat, payer=ann, 100, [cy, ann, bob])    -> shares in name order: ann 34, bob 33, cy 33
-balances(flat) -> {ann: +66, bob: -33, cy: -33}      totalSpent -> 100
-settle(flat, from=bob, to=ann, 20)                   -> {ann: +46, bob: -13, cy: -33}
-settleUp(flat) -> ["bob>ann:13", "cy>ann:33"]
+Equal split with remainder
+createGroup("flat", [ann, bob, cy])
+addExpense("flat", payer=ann, 100, [cy, ann, bob])   -> shares by name order: ann 34, bob 33, cy 33
+balances("flat")   -> {ann: +66, bob: -33, cy: -33}   (ann paid 100, owes 34 herself)
+totalSpent("flat") -> 100
 
-balances {a:+2, b:+3, c:-4, d:-5, e:+4}   (sum 0)
-greedy matching takes 4 payments; the optimum is 3: ["c>e:4", "d>a:2", "d>b:3"]
+Exact shares, payer outside the split
+addExactExpense("g", payer=ann, {bob: 30, cy: 70}) -> balances {ann: +100, bob: -30, cy: -70}
+
+Settlements
+settle("flat", from=bob, to=ann, 20)   -> {ann: +46, bob: -13, cy: -33}   totalSpent still 100
+settleUp("flat") -> ["bob>ann:13", "cy>ann:33"]    (payments sorted ascending; "from>to:amount")
+After both are paid, balances("flat") -> {} and settleUp("flat") -> []
+
+Fewest payments (greedy is not enough)
+balances {a:+2, b:+3, c:-4, d:-5, e:+4}
+greedy matching needs 4 payments; the optimum is 3: ["c>e:4", "d>a:2", "d>b:3"]
+
+Leaving a group
+createGroup("g", [ann, bob, cy]); addExpense("g", ann, 90, [ann, bob])   -> ann +45, bob -45
+removeMember("g", bob) -> false (owes 45)     removeMember("g", cy) -> true (never took part)
+addExpense("g", ann, 10, [cy])                -> error (cy was removed)
+settle("g", from=bob, to=ann, 45); removeMember("g", bob) -> true; removeMember("g", ann) -> true
 ```
+
+## Edge cases
+
+- An expense where the payer is also a participant: the payer's balance goes up by the whole amount and down by their own share (net `amount - share`).
+- Participant order in the input never matters; the remainder always goes to the smallest names first (`10` over `[d, a, c, b]` -> a 3, b 3, c 2, d 2).
+- `balances` omits members whose balance is 0, so an empty group (or one that is fully settled) returns an empty map. `totalSpent` does not change on `settle`.
+- Rejected, with nothing changed (including `totalSpent`): unknown group or member (payer, participant, `from`, `to`), a duplicate in a list, `amount <= 0`, a share `<= 0`, an empty participant list, `from == to`, creating a group that exists or with no members, adding an existing member.
+- Overpaying in `settle` is allowed: it just flips the sign of the balances involved.
+- `settleUp` does not change any balance; it only reports what would have to be paid. If everyone is square it returns an empty list.
 
 ## Behavioral contract
 
@@ -135,10 +166,6 @@ These tests are black-box: they only call the contract above, so any class desig
 - `settleUp`: nothing when square, one payment for a pair, three payments (not four) for the greedy trap, and the optimum on 20 random 12-person groups (verified by applying the payments and comparing the count with an independent bitmask solver).
 - Concurrency: 8 threads x 500 expenses (4,000 expenses with exact expected balances and sum 0); a 100x repeat of concurrent expenses and settlements.
 - More edge cases (20 people within 10 seconds, five independent pairs need exactly five payments) are in `interviewer/`.
-
-## Language notes
-
-Use `long` everywhere and `Math.floorMod` only if you ever see negatives; sort participants with `Collections.sort`/`TreeMap` before the remainder. A per-group lock (`ConcurrentHashMap<String, Group>` plus `synchronized (group)`) is enough.
 
 ## Running
 

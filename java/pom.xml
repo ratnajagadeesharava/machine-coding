@@ -123,6 +123,20 @@
     <module>problems/103-crdt-replication</module>
     <module>problems/104-quorum-kv</module>
     <module>problems/105-raft-log</module>
+    <module>problems/114-elevator-feasibility</module>
+    <module>problems/115-autocomplete-typeahead</module>
+    <module>problems/116-inverted-index-search</module>
+    <module>problems/117-query-pipeline</module>
+    <module>problems/118-search-result-cache</module>
+    <module>problems/119-mini-rag-retriever</module>
+    <module>problems/113-multi-module-logging</module>
+    <module>problems/112-parking-lot-strategies</module>
+    <module>problems/111-config-management</module>
+    <module>problems/110-data-source-layer</module>
+    <module>problems/109-document-line-search</module>
+    <module>problems/108-document-comments</module>
+    <module>problems/107-excel-autofill</module>
+    <module>problems/106-job-scheduler</module>
   </modules>
 
   <dependencies>

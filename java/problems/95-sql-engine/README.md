@@ -9,6 +9,15 @@
 > `HINTS.md` if you are stuck (three levels, smallest nudge first) and
 > `FOLLOWUPS.md` (open one at a time, after the previous version passes).
 
+## What you are building
+
+You are building a tiny in-memory SQL database for an embedded product: a few tables, a deliberately small SQL dialect, no
+persistence. The caller hands the engine one statement as a string and gets back column names and rows as text, or an error.
+The dialect is small but must be implemented exactly: it supports creating tables, inserting, selecting (with filtering, joining
+two tables, grouping, aggregating, ordering and limiting), updating and deleting. Anything outside the dialect is rejected with a
+clear error, and a rejected statement must change nothing. Several threads may issue statements at the same time and each
+statement must behave as if it ran alone.
+
 ## Problem
 
 We want a tiny in-memory SQL database for an embedded product: a handful of tables, a restricted SQL dialect, no persistence.
@@ -28,6 +37,10 @@ a statement, and stay usable when several threads issue statements at the same t
 8. `JOIN ... ON a = b` is an inner equi-join of exactly two tables; matched row pairs follow the left table's row order, then the right table's.
 9. Result values are text: integers in decimal, text as is. `affected` is the number of rows inserted, updated or deleted (0 for SELECT and CREATE TABLE).
 10. Statements are serialised: each behaves as if it ran alone, before or after any other concurrent statement.
+11. `QueryResult.columns` is empty and `rows` is empty for `CREATE TABLE`, `INSERT`, `UPDATE` and `DELETE`; only `affected` is meaningful there (`CREATE TABLE` reports 0, `INSERT` 1).
+12. Comparisons are `column OP literal` with the literal on the right; INT columns compare numerically, TEXT columns compare alphabetically by code point (so `'Z' < 'a'`). `=` and `!=`/`<>` are equality and inequality.
+13. Evaluation order of the clauses: filter rows (`WHERE`), group/aggregate (`GROUP BY`), sort (`ORDER BY`), cut (`LIMIT`).
+14. On `SELECT` with a `JOIN`, a `WHERE`/`ORDER BY`/`GROUP BY` column may be written qualified (`orders.amount`) or, when only one table has it, unqualified (`amount`). Rows whose join columns have no partner on the other side are dropped (inner join).
 
 ## Constraints
 
@@ -36,19 +49,74 @@ a statement, and stay usable when several threads issue statements at the same t
 - Reads should not see a half-applied statement; whether readers run in parallel is up to you.
 - No clocks and no randomness are involved; behaviour must be deterministic.
 
+## Glossary
+
+- **Literal**: a constant value in the statement: an integer (`42`, `-7`) or a single-quoted text (`'ann'`, `'it''s'` means `it's`).
+- **Primary key**: a column whose values must be unique within the table; inserting or updating a row into a duplicate fails.
+- **Aggregate**: a function over several rows giving one value: `COUNT(*)` rows, `SUM(col)` of an INT column, `MIN(col)` / `MAX(col)` of an INT or TEXT column.
+- **GROUP BY**: splits the rows by the value of one column and computes the aggregates per group; groups come out in order of first appearance unless `ORDER BY` says otherwise.
+- **Inner equi-join**: pairs every row of the left table with every row of the right table whose joined column has an equal value.
+- **Stable sort**: rows that compare equal under `ORDER BY` keep their relative insertion order.
+
 ## Examples
+
+Each example assumes the `users` table below freshly created (they are independent, not one running session):
 
 ```
 CREATE TABLE users (id INT PRIMARY KEY, name TEXT, age INT, city TEXT)
-INSERT INTO users VALUES (1, 'ann', 31, 'blr')     -- affected = 1
-SELECT city, COUNT(*), SUM(age) FROM users GROUP BY city ORDER BY city
-  columns: city | COUNT(*) | SUM(age)
-  rows:    blr, 2, 71  /  del, 1, 25  /  mum, 1, 25
-SELECT id FROM users WHERE id = 1 OR id = 2 AND age = 99     -- id=1 OR (id=2 AND age=99)
-SELECT users.name, orders.amount FROM users JOIN orders ON users.id = orders.uid
-  columns: users.name | orders.amount
-UPDATE users SET age = age + 1 WHERE city = 'blr'            -- affected = 2
+INSERT INTO users VALUES (1, 'ann', 31, 'blr')      -- affected = 1
+INSERT INTO users VALUES (2, 'bob', 25, 'del')
+INSERT INTO users VALUES (3, 'cy',  40, 'blr')
+INSERT INTO users VALUES (4, 'dee', 25, 'mum');     -- optional trailing ';'
 ```
+
+| Statement | columns | rows (each row in `[...]`) |
+|---|---|---|
+| `SELECT * FROM users` | id, name, age, city | [1,ann,31,blr] [2,bob,25,del] [3,cy,40,blr] [4,dee,25,mum] |
+| `select city, name from users where id = 3` | city, name | [blr,cy] |
+| `SELECT name FROM users WHERE age > 25` | name | [ann] [cy] |
+| `SELECT id FROM users WHERE id = 1 OR id = 2 AND age = 99` | id | [1]  (`AND` first: `id=1 OR (id=2 AND age=99)`) |
+| `SELECT id FROM users WHERE (id = 1 OR id = 2) AND age = 25` | id | [2] |
+| `SELECT name FROM users ORDER BY age` | name | [bob] [dee] [ann] [cy]  (ties in insertion order) |
+| `SELECT id FROM users ORDER BY id DESC LIMIT 2` | id | [4] [3] |
+| `SELECT COUNT(*), SUM(age), MIN(age), MAX(name) FROM users WHERE city = 'blr'` | COUNT(*), SUM(age), MIN(age), MAX(name) | [2,71,31,cy] |
+| `SELECT COUNT(*) FROM users WHERE id = 99` | COUNT(*) | [0] |
+| `SELECT city, COUNT(*), SUM(age) FROM users GROUP BY city ORDER BY city` | city, COUNT(*), SUM(age) | [blr,2,71] [del,1,25] [mum,1,25] |
+
+**Updates, deletes and failures**
+
+```
+UPDATE users SET age = age + 1 WHERE city = 'blr'            -- affected = 2 (ann 32, cy 41)
+UPDATE users SET city = 'pune', age = age - 5 WHERE id = 2   -- affected = 1
+UPDATE users SET age = 0 WHERE id = 999                      -- affected = 0 (no error)
+DELETE FROM users WHERE age = 25                             -- affected = number of removed rows
+DELETE FROM users                                            -- removes all rows
+INSERT INTO users VALUES (1, 'dup', 1, 'x')                  -- error: primary key 1 exists, nothing changes
+UPDATE users SET id = 7                                      -- error: four rows would share key 7; no row changes
+INSERT INTO users VALUES (5, 'it''s', 1, 'a,b')              -- stores name  it's  and city  a,b
+SELECT name, COUNT(*) FROM users                             -- error: plain column next to an aggregate without GROUP BY
+```
+
+**Join** (with `orders (oid INT PRIMARY KEY, uid INT, amount INT)` holding (100,1,50) (101,1,70) (102,3,20) (103,99,5))
+
+```
+SELECT users.name, orders.amount FROM users JOIN orders ON users.id = orders.uid ORDER BY orders.amount DESC
+  columns: users.name | orders.amount        rows: [ann,70] [ann,50] [cy,20]      (order 103 has no user)
+SELECT name, SUM(amount) FROM users JOIN orders ON id = uid GROUP BY name ORDER BY name
+  rows: [ann,120] [cy,20]
+SELECT * FROM users JOIN orders ON users.id = orders.uid
+  columns: users.id, users.name, users.age, users.city, orders.oid, orders.uid, orders.amount
+```
+
+## Edge cases
+
+- Keywords are case-insensitive (`select`, `Select`); table and column names are case-sensitive (`Users` is not `users`).
+- Errors are `SqlException` for: an unknown statement or syntax error (`SELEC ...`, an empty string, `WHERE` with nothing after it), unknown table or column, type mismatch (`age > 'x'`, `'six'` into an INT column, `name = name + 1`), wrong number of values in `INSERT`, `SUM` of a TEXT column, creating a table twice, a column type other than `INT`/`TEXT` (`FLOAT`), a primary-key duplicate, `LIMIT -1`.
+- An error never leaves partial changes: a multi-row `UPDATE` that fails on the third row leaves the first two rows unchanged; a failed `CREATE TABLE` creates nothing.
+- `SELECT` aggregates without `GROUP BY` always return exactly one row, also on an empty table (`COUNT(*)` = `0`).
+- Output column names are the select items as written: `city`, `users.name`, and the canonical `COUNT(*)`, `SUM(age)`, `MIN(age)`, `MAX(name)`.
+- No arithmetic anywhere except `SET col = col + n` / `col - n` on INT columns.
+- Values come back as text: integers in decimal (`-7`), text exactly as stored (without the quotes).
 
 ## Behavioral contract
 
@@ -139,10 +207,6 @@ These tests are black-box: they only call the contract above, so any class desig
 - A list of 16 invalid statements all raise `SqlException`.
 - Concurrency: 8 threads x 250 inserts lose nothing; 16 threads racing for one primary key - exactly one wins; 16 x 250 `n = n + 1` end at exactly 4000; readers summing balances while writers update never see a torn single statement; **repeat 100x** a mixed insert/update workload.
 - More edge cases and scale scenarios in `interviewer/` (see `INTERVIEWER_NOTES.md`).
-
-## Language notes
-
-A hand-written tokenizer plus recursive descent is shorter than regex soup; keep `''` handling inside the string-literal scanner. `LinkedHashMap` gives first-seen order for groups and `List.sort` is stable, which is exactly the tie rule.
 
 ## Running
 

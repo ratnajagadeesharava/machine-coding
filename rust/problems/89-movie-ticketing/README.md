@@ -11,11 +11,16 @@
 
 ## Problem
 
-Design the booking engine of a movie-ticketing app. Theatres have screens with seat grids, screens run shows, and
-customers search for a movie in their city, pick seats and pay. Because payment takes a while, picking seats must reserve them
-for a short time so nobody else can buy them in the meantime; if the customer does not complete in time the seats must become
-available again by themselves. Premium rows cost more than regular rows. Customers can cancel a booking and get a refund that
-depends on how close the show is. On a Friday night thousands of people fight for the same seats.
+You are building the booking engine of a movie-ticketing app. Theatres have screens with seat grids, screens run shows (a movie at a start time), and customers search for a movie in their city, pick seats and pay. Because payment takes a while, picking seats must *hold* them for a short time (5 minutes) so nobody else can buy them in the meantime; if the customer does not confirm in time, the seats become available again by themselves. Premium rows cost more than regular rows. Customers can cancel a booking and get a refund that depends on how close the show is. On a Friday night thousands of people fight for the same seats, so a seat must never be sold twice.
+
+## Glossary
+
+- **Screen**: a room with `rows x seatsPerRow` seats. Row A is the first row; seat labels are the row letter plus a 1-based number (`A1`, `C10`).
+- **Show**: one screening of a movie on a screen, occupying minutes `[start, start + duration)`.
+- **Hold**: a temporary reservation of seats by one user. It lasts exactly 5 minutes from the moment it is made, then lapses.
+- **Booking**: the result of confirming a live hold; its seats are sold.
+- **Premium / regular**: rows A and B are premium, all other rows regular; each show has one price for each.
+- **Now**: the injected clock's milliseconds divided by 60,000, in whole minutes.
 
 ## Requirements
 
@@ -39,12 +44,38 @@ depends on how close the show is. On a Friday night thousands of people fight fo
 ## Examples
 
 ```
-screen s1: 4 rows x 5 seats (A,B premium), show1 starts at minute 600, regular 200, premium 350
-hold(show1, ann, [B2, A1, C3])     -> holdId       (available: 17 seats left)
-  4 minutes later: still held;  5 minutes later: seats free again, confirm(holdId) -> IllegalStateException
-confirm(holdId, ann)  -> bookingId;  seatsOf -> [A1, B2, C3];  totalOf -> 350+350+200 = 900
-cancel(bookingId, ann): 100% (600 min away), 50% (100 min away), 0 (25 min away)
+Setup: screen s1 = 4 rows x 5 seats (rows A,B premium); show1 starts at minute 600, regular 200, premium 350. Clock at 0.
+
+available_seats(show1)               -> 20 seats: A1..A5, B1..B5, C1..C5, D1..D5
+hold(show1, ann, [B2, A1, C3])      -> holdId     available_seats now has 17 seats
+hold(show1, bob, [A1, A2])          -> conflict error (A1 held); A2 is NOT left held, available_seats still contains A2
+hold(show1, ann, ["A6"]) or ["Z9"]  -> invalid input (no such seat), not a conflict
+
+Expiry
+hold(show1, ann, [A1]) at minute 0; at minute 4 A1 is still unavailable;
+at minute 5 A1 is available again, confirm(holdId, ann) fails (gone / IllegalStateException), bob can hold A1
+
+Confirm and prices
+confirm(holdId, ann)   -> bookingId
+seats_of(bookingId)     -> [A1, B2, C3]
+total_of(bookingId)     -> 350 + 350 + 200 = 900
+Confirmed seats never return by waiting; only cancel frees them.
+
+Refund (show at minute 600, booking A1 = 350, C1+C2+C3 = 600, D1 = 200)
+cancel(A1 booking) at minute 0   (600 min away) -> 350 (100%)
+cancel(C booking)  at minute 500 (100 min away) -> 300 (50% of 600)
+cancel(D1 booking) at minute 575 (25 min away)  -> 0     seats are still freed
+cancel(D1 booking) again                        -> error (already cancelled)
 ```
+
+## Edge cases
+
+- Refund thresholds by minutes until the show starts: `>= 120` full, `30..=119` half (rounded down, e.g. 50% of 351 = 175), `< 30` including already started: 0. The seats are freed in every case.
+- A show that has started (`now >= start`) can no longer be held and is no longer returned by `search_shows`.
+- `add_show` that overlaps another show on the same screen is a conflict (e.g. show1 runs 600..750, a new show at 700 conflicts, one at 750 is fine); a duplicate show id, unknown screen or a duration/price of 0 is invalid input.
+- `hold` with an empty list, a duplicate seat in the list, an unknown show, or a non-existent seat is invalid input; a sold or currently held seat, or a started show, is a conflict.
+- `confirm`/`release` by someone other than the holder: not allowed. A second `confirm`/`release` of the same hold, or `confirm` after expiry: gone. `cancel` by someone else: not allowed; `cancel` twice: gone.
+- 16 threads holding the same seat at the same moment: exactly one succeeds, the rest get the conflict error.
 
 ## Behavioral contract
 
@@ -158,10 +189,6 @@ These tests are black-box: they only call the contract above, so any class desig
 - Hold refused after the show started; refund at 600, 100 and 25 minutes before the show (350, 300, 0), seats come back, second cancel fails, other users cannot cancel.
 - Concurrency: 16 threads hold one seat (exactly one wins); 16 threads randomly hold-and-confirm pairs of seats in a 200-seat show (no seat sold twice, available == 200 - sold); 8 threads hold the same two seats (exactly one winner, 18 seats left; repeated 100x).
 - More edge cases (holds expiring while others keep booking, 2,000 shows) are in `interviewer/`.
-
-## Language notes
-
-A `Mutex<ShowState>` per show inside a `HashMap<String, Arc<Mutex<..>>>` (or one `Mutex` around everything to start); read time from the injected clock inside the guard, and use an `enum SeatState { Free, Held(HoldId), Sold(BookingId) }`.
 
 ## Running
 

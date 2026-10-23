@@ -9,6 +9,10 @@
 > `HINTS.md` if you are stuck (three levels, smallest nudge first) and
 > `FOLLOWUPS.md` (open one at a time, after the previous version passes).
 
+## What you are building
+
+A search engine's crawler starts from one URL, downloads that page, reads the links on it, then visits those pages, and so on until nothing new turns up. You are building that **crawler** for a simulated web: the caller supplies a `Fetcher` that returns the links of a page (slowly, and sometimes with an error), and you use up to `workers` threads to visit everything reachable. Pages link to each other in cycles and many pages share the same targets, so every URL must be fetched exactly once. The crawl must also decide for itself when it is finished and only then return the set of URLs it reached.
+
 ## Problem
 
 Crawl a web of pages starting from one URL, following every link, using up to N worker threads. A page may be linked
@@ -29,7 +33,7 @@ busy fetching.
 
 ## Constraints and thread-safety requirements
 
-- Visited check and insertion must be one atomic step (two workers discovering the same URL must not both fetch it).
+- Two workers discovering the same URL must not both fetch it.
 - Termination: the crawl is over when the queue is empty **and** no worker is fetching. An idle worker must not exit while another worker may still add links.
 - Deep chains (200 pages, one busy worker at a time) and wide fans (1 page linking to 100) both finish.
 - Idle workers do not burn CPU.
@@ -44,6 +48,42 @@ crawl("a", 3 workers)  -> {a, b, c, d, e}, each fetched once
 b is broken, d is broken:  a -> b, c; c -> d
 -> {a, b, c, d}   (e is unknown because d failed)
 ```
+
+### Worked traces
+
+```
+web: a -> [b, c, b, a]   b -> [d]   c -> [d, a]   d -> [a, e]   e -> []   lonely -> [a]
+crawl("a", 3, fetcher)   -> {a, b, c, d, e}       each of the five fetched exactly once
+                           ("lonely" links to a but nothing reachable links to it, so it is not included)
+
+web: a -> [b, c]  b -> [d]  c -> [d]  d -> [e]; fetching b and d throws
+crawl("a", 4, fetcher)   -> {a, b, c, d}          b and d are reached but contribute no links, e is never seen
+                           b and d were each fetched once, not retried
+
+web: a -> []
+crawl("a", 4, fetcher)   -> {a}
+
+chain p0 -> p1 -> ... -> p199, 8 workers   -> all 200 pages (only one fetch can run at a time here, the crawl must not stop early)
+crawl("a", 0, fetcher)   -> IllegalArgumentException
+```
+
+### Edge cases
+
+- The start URL is always in the result, even if its own fetch fails.
+- A failed fetch is never retried; the URL still counts as fetched once and as reached.
+- Duplicate links, links to the page itself and links back to earlier pages cause no extra fetches.
+- URLs are compared as exact strings (`a` and `A` are different pages; no normalisation).
+- `workers` larger than the number of pages is fine; `workers = 1` means fetches never overlap.
+- The order in which pages are fetched is not specified.
+- Several crawls may run at the same time on the same crawler, each with its own fetcher; they must not mix up their results.
+- When `crawl` returns, no fetch is still running and none starts later.
+
+## Glossary
+
+- **Reached**: the start URL, plus every URL listed on a page that was fetched successfully. A page whose own fetch failed is still reached.
+- **Fetch**: one call to `Fetcher.links(url)`, which returns the outgoing links of that page.
+- **Broken page**: a page whose fetch fails (Java: throws a `RuntimeException`; Rust: returns `Err(FetchError)`).
+- **Worker**: one of the at most `workers` threads doing fetches at the same time.
 
 ## Behavioral contract
 
@@ -115,10 +155,6 @@ These tests are black-box: they only call the contract above, so any class desig
 - After `crawl` returns, no more fetches happen (150 ms later).
 - Four crawls running at once through the same crawler.
 - **Repeat 100x** on random graphs with random worker counts: result equals a reference BFS and every page is fetched once.
-
-## Language notes
-
-An executor where each discovered URL is a submitted task + an `AtomicInteger pending` + a latch is the shortest correct version; a hand-written worker loop over a `BlockingQueue` teaches more about termination. `ConcurrentHashMap.newKeySet().add(url)` is the atomic visited check.
 
 ## Running
 

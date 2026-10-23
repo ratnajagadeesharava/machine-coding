@@ -10,11 +10,17 @@
 
 ## Problem
 
-Build a small logging framework like the ones every application uses: code emits messages under a **logger name** at
-a **severity level**, and the framework decides whether each message is kept and where it goes.
+You are building a small logging framework like the ones every application uses (think SLF4J/Log4j in miniature). Code emits a message under a **logger name** (say `app.db`) at a **severity level** (say `WARN`). The framework decides whether the message is worth keeping, using a per-logger threshold that can be inherited down a dotted-name hierarchy; if it is, it formats it into one line of text and hands that line to every output destination that wants it.
 
-Destinations are not yours to design: an output destination is something the *caller* supplies (it implements the
-small `LogSink` contract below and receives finished text lines). Your job is everything in between.
+Destinations are not yours to design: an output destination is something the *caller* supplies (it implements the small `LogSink` contract below and receives finished text lines, for example a file writer or an in-memory list in tests). Your job is everything in between: levels, the logger hierarchy, message formatting, and routing to the registered destinations.
+
+**Terms**
+
+- **Logger**: a dotted name such as `app.db.pool`; the thing messages are emitted under. Never needs to be created first.
+- **Threshold**: the minimum level a logger accepts. A message below it is dropped.
+- **Effective threshold**: the threshold that actually applies to a logger: its own if it has one, else its nearest ancestor's, else the root's.
+- **Appender**: a named destination (a sink plus a minimum level), added to and removed from the framework at runtime.
+- **Template**: message text with `{}` placeholders, filled from the arguments given with the message.
 
 ## Requirements
 
@@ -30,16 +36,59 @@ small `LogSink` contract below and receives finished text lines). Your job is ev
 
 - Time comes from the clock given to the factory.
 - Expect hundreds of thousands of messages; filtering a message that is below the threshold must be cheap (do not format first and filter later).
-- The framework is used from a single thread in the tests.
+- `log`, `setLevel`, `addAppender` and `removeAppender` may be called from many threads at once (see the last bullet of the behavioral contract).
 
 ## Examples
 
+Clock reads `1700000000123` and one appender (minimum level `TRACE`) collects lines. Root threshold is the default `INFO`.
+
 ```
-log("app", "INFO", "started")                         → "1700000000123 [INFO] app - started"
+log("app", "INFO", "started")
+    -> line "1700000000123 [INFO] app - started"
 log("app.db", "WARN", "slow query {}ms on {}", "850", "orders")
-                                                      → "1700000000123 [WARN] app.db - slow query 850ms on orders"
-setLevel("app", "ERROR"); log("app.db", "WARN", "x")  → (nothing: app.db inherits ERROR from app)
+    -> line "1700000000123 [WARN] app.db - slow query 850ms on orders"
+log("app", "DEBUG", "hidden")                         -> nothing (DEBUG < INFO, the root default)
 ```
+
+Threshold inheritance:
+
+```
+setLevel("app", "ERROR") -> true
+log("app.db.pool", "WARN", "x")          -> nothing (inherits ERROR from app)
+log("app.db.pool", "ERROR", "x")         -> line
+log("application", "INFO", "x")          -> line  (application is NOT a child of app)
+setLevel("app.db", "DEBUG")
+log("app.db.pool", "DEBUG", "x")         -> line  (nearest configured ancestor is now app.db)
+log("app", "DEBUG", "x")                 -> nothing (still ERROR)
+setLevel("app", "LOUD") -> false         setLevel("app", "info") -> false   (names are upper case only)
+```
+
+Appenders (root threshold `DEBUG`; appender `w` has minimum `WARN`, appender `e` has minimum `TRACE`):
+
+```
+log("app", "TRACE", "t")  -> nobody (below the logger threshold)
+log("app", "DEBUG", "d")  -> e only
+log("app", "WARN",  "w")  -> w, then e (in the order they were added)
+```
+
+Template filling:
+
+```
+"a={} b={} c={}"  with ["1"]            -> "a=1 b={} c={}"      (missing arguments leave {} as is)
+"only {}"         with ["x","y","z"]    -> "only x"             (extra arguments ignored)
+"x={} y={}"       with ["{}","2"]       -> "x={} y=2"           (an inserted "{}" is not filled again)
+"{ } { } } {{}} $1 \ {}"  with ["A"]   -> "{ } { } } {A} $1 \ {}"   (only an exact "{}" is a placeholder)
+```
+
+## Edge cases
+
+- The root logger is named `root`; `setLevel("root", ...)` changes the default for every logger without an ancestor that has its own level.
+- A threshold change takes effect immediately, even for loggers that were already used.
+- An unknown level name or blank logger name in `log` is silently ignored; no line is produced and nothing is thrown.
+- Adding an appender with a taken or blank name, or an unknown minimum level, returns `false` and leaves everything unchanged; after `removeAppender` the name can be reused.
+- A new appender sees only messages logged after it was added; no appenders means the message simply goes nowhere.
+- A sink that throws (panics in Rust) must not stop later appenders from receiving the line, and `log` still returns normally.
+- The timestamp is the clock's epoch milliseconds at the moment of each `log` call.
 
 ## Behavioral contract
 
@@ -54,6 +103,7 @@ The tests rely on exactly the following behavior. Anything not stated is yours t
 - `addAppender(name, sink, minLevel)` returns `true` if registered, `false` if the name is already in use, blank, or the level is unknown (nothing changes). A new appender only sees messages logged after it was added. `removeAppender(name)` returns `true` if it existed (it receives nothing afterwards, and the name can be reused) and `false` otherwise.
 - If a sink throws, the remaining appenders still receive the message, and `log` returns normally.
 - With no appenders registered a message goes nowhere (and nothing fails).
+- Concurrent use: calls from different threads never fail or lose data. Each `log` call that passes the filters delivers its complete, untorn line exactly once to every appender that is registered for the whole duration of the call; lines logged by one thread reach an appender in the order that thread logged them. A level change or an appender added or removed by a call that has returned is seen by every call that starts afterwards; a `log` call running at the same moment may or may not see it. Whether sinks are ever invoked concurrently with themselves is yours to decide (tests use thread-safe sinks).
 
 ## Test entry point (Java)
 

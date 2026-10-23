@@ -1,7 +1,7 @@
 # Machine Coding + LLD Interview Playground
 
 Senior-level (about 6 years of experience) practice for **machine-coding and low-level-design interviews**, in **Java 21** and **Rust**.
-105 problems, each with requirements, a behavioural contract, runnable tests, hints, follow-ups and a scoring rubric.
+119 problems, each with requirements, a behavioural contract, runnable tests, hints, follow-ups and a scoring rubric.
 
 > **Give me the requirements. Give me the tests. Give me the playground. Do NOT give me the architecture.**
 
@@ -94,6 +94,171 @@ STRICT=1 cargo test        # Rust  (PowerShell: $env:STRICT=1; cargo test)
 Visible tests teach you the contract; they do not enumerate every edge case. Each problem also ships
 `interviewer/` scenarios that use the same contract: `mvn test -Phidden` / `cargo test --features hidden`.
 
+## My progress checklist
+
+Tick a box when the tests pass **and** you can explain your design. In your own clone edit `[ ]` to `[x]` (GitHub and most editors render these as checkboxes). Regenerate from the repo with `cargo play list` for the real pass/fail status.
+
+<details>
+<summary><b>1-32 Classic designs</b></summary>
+
+- [ ] 01 · [Parking Lot](java/problems/01-parking-lot/README.md) · [rust](rust/problems/01-parking-lot/README.md)
+- [ ] 02 · [Elevator System](java/problems/02-elevator/README.md) · [rust](rust/problems/02-elevator/README.md)
+- [ ] 03 · [Library Management](java/problems/03-library/README.md) · [rust](rust/problems/03-library/README.md)
+- [ ] 04 · [Coffee Machine](java/problems/04-coffee-machine/README.md) · [rust](rust/problems/04-coffee-machine/README.md)
+- [ ] 05 · [Vending Machine](java/problems/05-vending-machine/README.md) · [rust](rust/problems/05-vending-machine/README.md)
+- [ ] 06 · [ATM](java/problems/06-atm/README.md) · [rust](rust/problems/06-atm/README.md)
+- [ ] 07 · [Chess](java/problems/07-chess/README.md) · [rust](rust/problems/07-chess/README.md)
+- [ ] 08 · [Tic-Tac-Toe](java/problems/08-tic-tac-toe/README.md) · [rust](rust/problems/08-tic-tac-toe/README.md)
+- [ ] 09 · [Snake and Ladder](java/problems/09-snake-and-ladder/README.md) · [rust](rust/problems/09-snake-and-ladder/README.md)
+- [ ] 10 · [Flight Booking](java/problems/10-flight-booking/README.md) · [rust](rust/problems/10-flight-booking/README.md)
+- [ ] 11 · [Hotel Booking](java/problems/11-hotel-booking/README.md) · [rust](rust/problems/11-hotel-booking/README.md)
+- [ ] 12 · [Travel Itinerary Planner](java/problems/12-travel-itinerary/README.md) · [rust](rust/problems/12-travel-itinerary/README.md)
+- [ ] 13 · [Bus / Train Seat Booking](java/problems/13-seat-booking/README.md) · [rust](rust/problems/13-seat-booking/README.md)
+- [ ] 14 · [Ride Sharing](java/problems/14-ride-sharing/README.md) · [rust](rust/problems/14-ride-sharing/README.md)
+- [ ] 15 · [Splitwise](java/problems/15-splitwise/README.md) · [rust](rust/problems/15-splitwise/README.md)
+- [ ] 16 · [Digital Wallet](java/problems/16-wallet/README.md) · [rust](rust/problems/16-wallet/README.md)
+- [ ] 17 · [Stock Exchange Order Book](java/problems/17-order-book/README.md) · [rust](rust/problems/17-order-book/README.md)
+- [ ] 18 · [LRU Cache](java/problems/18-lru-cache/README.md) · [rust](rust/problems/18-lru-cache/README.md)
+- [ ] 19 · [LFU Cache](java/problems/19-lfu-cache/README.md) · [rust](rust/problems/19-lfu-cache/README.md)
+- [ ] 20 · [Rate Limiter](java/problems/20-rate-limiter/README.md) · [rust](rust/problems/20-rate-limiter/README.md)
+- [ ] 21 · [In-Memory Key-Value Store](java/problems/21-key-value-store/README.md) · [rust](rust/problems/21-key-value-store/README.md)
+- [ ] 22 · [Pub-Sub Message Broker](java/problems/22-pub-sub/README.md) · [rust](rust/problems/22-pub-sub/README.md)
+- [ ] 23 · [Notification System](java/problems/23-notification-system/README.md) · [rust](rust/problems/23-notification-system/README.md)
+- [ ] 24 · [Task Scheduler](java/problems/24-task-scheduler/README.md) · [rust](rust/problems/24-task-scheduler/README.md)
+- [ ] 25 · [Logging Framework](java/problems/25-logging-framework/README.md) · [rust](rust/problems/25-logging-framework/README.md)
+- [ ] 26 · [Metrics Collector](java/problems/26-metrics/README.md) · [rust](rust/problems/26-metrics/README.md)
+- [ ] 27 · [Circuit Breaker](java/problems/27-circuit-breaker/README.md) · [rust](rust/problems/27-circuit-breaker/README.md)
+- [ ] 28 · [Bounded Blocking Buffer](java/problems/28-blocking-queue/README.md) · [rust](rust/problems/28-blocking-queue/README.md)
+- [ ] 29 · [Worker Pool](java/problems/29-worker-pool/README.md) · [rust](rust/problems/29-worker-pool/README.md)
+- [ ] 30 · [Concurrent Cache with Loaders](java/problems/30-concurrent-cache/README.md) · [rust](rust/problems/30-concurrent-cache/README.md)
+- [ ] 31 · [In-Process Event Bus](java/problems/31-event-bus/README.md) · [rust](rust/problems/31-event-bus/README.md)
+- [ ] 32 · [Board Game Engine](java/problems/32-board-game-engine/README.md) · [rust](rust/problems/32-board-game-engine/README.md)
+
+</details>
+
+<details>
+<summary><b>33-73 OOP, principles and patterns</b></summary>
+
+- [ ] 33 · [Classes and Objects](java/problems/33-classes-objects/README.md) · [rust](rust/problems/33-classes-objects/README.md)
+- [ ] 34 · [Interfaces](java/problems/34-interfaces/README.md) · [rust](rust/problems/34-interfaces/README.md)
+- [ ] 35 · [Inheritance](java/problems/35-inheritance/README.md) · [rust](rust/problems/35-inheritance/README.md)
+- [ ] 36 · [Polymorphism](java/problems/36-polymorphism/README.md) · [rust](rust/problems/36-polymorphism/README.md)
+- [ ] 37 · [Abstraction](java/problems/37-abstraction/README.md) · [rust](rust/problems/37-abstraction/README.md)
+- [ ] 38 · [Encapsulation](java/problems/38-encapsulation/README.md) · [rust](rust/problems/38-encapsulation/README.md)
+- [ ] 39 · [Aggregation](java/problems/39-aggregation/README.md) · [rust](rust/problems/39-aggregation/README.md)
+- [ ] 40 · [Composition](java/problems/40-composition/README.md) · [rust](rust/problems/40-composition/README.md)
+- [ ] 41 · [Association](java/problems/41-association/README.md) · [rust](rust/problems/41-association/README.md)
+- [ ] 42 · [DRY — Don't Repeat Yourself](java/problems/42-dry/README.md) · [rust](rust/problems/42-dry/README.md)
+- [ ] 43 · [KISS — Keep It Simple](java/problems/43-kiss/README.md) · [rust](rust/problems/43-kiss/README.md)
+- [ ] 44 · [YAGNI — You Aren't Gonna Need It](java/problems/44-yagni/README.md) · [rust](rust/problems/44-yagni/README.md)
+- [ ] 45 · [Law of Demeter](java/problems/45-law-of-demeter/README.md) · [rust](rust/problems/45-law-of-demeter/README.md)
+- [ ] 46 · [SRP — Single Responsibility Principle](java/problems/46-srp/README.md) · [rust](rust/problems/46-srp/README.md)
+- [ ] 47 · [OCP — Open/Closed Principle](java/problems/47-ocp/README.md) · [rust](rust/problems/47-ocp/README.md)
+- [ ] 48 · [LSP — Liskov Substitution Principle](java/problems/48-lsp/README.md) · [rust](rust/problems/48-lsp/README.md)
+- [ ] 49 · [ISP — Interface Segregation Principle](java/problems/49-isp/README.md) · [rust](rust/problems/49-isp/README.md)
+- [ ] 50 · [DIP — Dependency Inversion Principle](java/problems/50-dip/README.md) · [rust](rust/problems/50-dip/README.md)
+- [ ] 51 · [SOLID Summary — Meal Order Checkout](java/problems/51-solid-summary/README.md) · [rust](rust/problems/51-solid-summary/README.md)
+- [ ] 52 · [Singleton](java/problems/52-singleton/README.md) · [rust](rust/problems/52-singleton/README.md)
+- [ ] 53 · [Factory Method](java/problems/53-factory-method/README.md) · [rust](rust/problems/53-factory-method/README.md)
+- [ ] 54 · [Abstract Factory](java/problems/54-abstract-factory/README.md) · [rust](rust/problems/54-abstract-factory/README.md)
+- [ ] 55 · [Builder](java/problems/55-builder/README.md) · [rust](rust/problems/55-builder/README.md)
+- [ ] 56 · [Prototype](java/problems/56-prototype/README.md) · [rust](rust/problems/56-prototype/README.md)
+- [ ] 57 · [Adapter](java/problems/57-adapter/README.md) · [rust](rust/problems/57-adapter/README.md)
+- [ ] 58 · [Facade](java/problems/58-facade/README.md) · [rust](rust/problems/58-facade/README.md)
+- [ ] 59 · [Decorator](java/problems/59-decorator/README.md) · [rust](rust/problems/59-decorator/README.md)
+- [ ] 60 · [Composite](java/problems/60-composite/README.md) · [rust](rust/problems/60-composite/README.md)
+- [ ] 61 · [Proxy](java/problems/61-proxy/README.md) · [rust](rust/problems/61-proxy/README.md)
+- [ ] 62 · [Bridge](java/problems/62-bridge/README.md) · [rust](rust/problems/62-bridge/README.md)
+- [ ] 63 · [Flyweight](java/problems/63-flyweight/README.md) · [rust](rust/problems/63-flyweight/README.md)
+- [ ] 64 · [Iterator](java/problems/64-iterator/README.md) · [rust](rust/problems/64-iterator/README.md)
+- [ ] 65 · [Observer](java/problems/65-observer/README.md) · [rust](rust/problems/65-observer/README.md)
+- [ ] 66 · [Strategy](java/problems/66-strategy/README.md) · [rust](rust/problems/66-strategy/README.md)
+- [ ] 67 · [Command](java/problems/67-command/README.md) · [rust](rust/problems/67-command/README.md)
+- [ ] 68 · [State](java/problems/68-state/README.md) · [rust](rust/problems/68-state/README.md)
+- [ ] 69 · [Template Method](java/problems/69-template-method/README.md) · [rust](rust/problems/69-template-method/README.md)
+- [ ] 70 · [Visitor](java/problems/70-visitor/README.md) · [rust](rust/problems/70-visitor/README.md)
+- [ ] 71 · [Mediator](java/problems/71-mediator/README.md) · [rust](rust/problems/71-mediator/README.md)
+- [ ] 72 · [Memento](java/problems/72-memento/README.md) · [rust](rust/problems/72-memento/README.md)
+- [ ] 73 · [Chain of Responsibility](java/problems/73-chain-of-responsibility/README.md) · [rust](rust/problems/73-chain-of-responsibility/README.md)
+
+</details>
+
+<details>
+<summary><b>74-81 Concurrency</b></summary>
+
+- [ ] 74 · [Concurrent LRU Cache (Read-Write Lock)](java/problems/74-rw-lock-lru-cache/README.md) · [rust](rust/problems/74-rw-lock-lru-cache/README.md)
+- [ ] 75 · [Bank Transfers Without Deadlock](java/problems/75-bank-transfer/README.md) · [rust](rust/problems/75-bank-transfer/README.md)
+- [ ] 76 · [Ordered Printer (Turn Taking)](java/problems/76-ordered-printer/README.md) · [rust](rust/problems/76-ordered-printer/README.md)
+- [ ] 77 · [Dining Philosophers](java/problems/77-dining-philosophers/README.md) · [rust](rust/problems/77-dining-philosophers/README.md)
+- [ ] 78 · [Bounded Connection Pool](java/problems/78-connection-pool/README.md) · [rust](rust/problems/78-connection-pool/README.md)
+- [ ] 79 · [Parallel Merge Sort](java/problems/79-parallel-merge-sort/README.md) · [rust](rust/problems/79-parallel-merge-sort/README.md)
+- [ ] 80 · [Parallel Word Count](java/problems/80-parallel-word-count/README.md) · [rust](rust/problems/80-parallel-word-count/README.md)
+- [ ] 81 · [Parallel Web Crawler](java/problems/81-parallel-crawler/README.md) · [rust](rust/problems/81-parallel-crawler/README.md)
+
+</details>
+
+<details>
+<summary><b>82-95 Classic product systems</b></summary>
+
+- [ ] 82 · [URL Shortener](java/problems/82-url-shortener/README.md) · [rust](rust/problems/82-url-shortener/README.md)
+- [ ] 83 · [Feature Flag Service](java/problems/83-feature-flags/README.md) · [rust](rust/problems/83-feature-flags/README.md)
+- [ ] 84 · [In-Memory File System with Permissions](java/problems/84-file-system-permissions/README.md) · [rust](rust/problems/84-file-system-permissions/README.md)
+- [ ] 85 · [Text Editor with Undo/Redo](java/problems/85-text-editor-undo/README.md) · [rust](rust/problems/85-text-editor-undo/README.md)
+- [ ] 86 · [Document Versioning with Merge](java/problems/86-document-versioning/README.md) · [rust](rust/problems/86-document-versioning/README.md)
+- [ ] 87 · [Expense Groups (Splitwise)](java/problems/87-expense-groups/README.md) · [rust](rust/problems/87-expense-groups/README.md)
+- [ ] 88 · [Shared Event Calendar](java/problems/88-event-calendar/README.md) · [rust](rust/problems/88-event-calendar/README.md)
+- [ ] 89 · [Movie Ticket Booking](java/problems/89-movie-ticketing/README.md) · [rust](rust/problems/89-movie-ticketing/README.md)
+- [ ] 90 · [Food Delivery Dispatch](java/problems/90-food-delivery/README.md) · [rust](rust/problems/90-food-delivery/README.md)
+- [ ] 91 · [Online Auction](java/problems/91-online-auction/README.md) · [rust](rust/problems/91-online-auction/README.md)
+- [ ] 92 · [Chat System](java/problems/92-chat-system/README.md) · [rust](rust/problems/92-chat-system/README.md)
+- [ ] 93 · [Cron Job Scheduler](java/problems/93-cron-job-scheduler/README.md) · [rust](rust/problems/93-cron-job-scheduler/README.md)
+- [ ] 94 · [API Gateway](java/problems/94-api-gateway/README.md) · [rust](rust/problems/94-api-gateway/README.md)
+- [ ] 95 · [Mini SQL Engine](java/problems/95-sql-engine/README.md) · [rust](rust/problems/95-sql-engine/README.md)
+
+</details>
+
+<details>
+<summary><b>96-105 Distributed systems</b></summary>
+
+- [ ] 96 · [Consistent Hash Ring](java/problems/96-consistent-hashing/README.md) · [rust](rust/problems/96-consistent-hashing/README.md)
+- [ ] 97 · [Idempotent Request Processor](java/problems/97-idempotent-requests/README.md) · [rust](rust/problems/97-idempotent-requests/README.md)
+- [ ] 98 · [Lease Lock with Fencing Tokens](java/problems/98-lock-lease-fencing/README.md) · [rust](rust/problems/98-lock-lease-fencing/README.md)
+- [ ] 99 · [Raft Leader Election](java/problems/99-leader-election/README.md) · [rust](rust/problems/99-leader-election/README.md)
+- [ ] 100 · [Gossip Protocol with Failure Detection](java/problems/100-gossip-protocol/README.md) · [rust](rust/problems/100-gossip-protocol/README.md)
+- [ ] 101 · [Two-Phase Commit](java/problems/101-two-phase-commit/README.md) · [rust](rust/problems/101-two-phase-commit/README.md)
+- [ ] 102 · [Saga Orchestrator](java/problems/102-saga-orchestrator/README.md) · [rust](rust/problems/102-saga-orchestrator/README.md)
+- [ ] 103 · [CRDT Replicated Store](java/problems/103-crdt-replication/README.md) · [rust](rust/problems/103-crdt-replication/README.md)
+- [ ] 104 · [Quorum Key-Value Store](java/problems/104-quorum-kv/README.md) · [rust](rust/problems/104-quorum-kv/README.md)
+- [ ] 105 · [Raft Log Replication](java/problems/105-raft-log/README.md) · [rust](rust/problems/105-raft-log/README.md)
+
+</details>
+
+<details>
+<summary><b>106-114 Microsoft LLD round</b></summary>
+
+- [ ] 106 · [Job Scheduler](java/problems/106-job-scheduler/README.md) · [rust](rust/problems/106-job-scheduler/README.md)
+- [ ] 107 · [Excel-Like Autofill Engine](java/problems/107-excel-autofill/README.md) · [rust](rust/problems/107-excel-autofill/README.md)
+- [ ] 108 · [Document Comment Service](java/problems/108-document-comments/README.md) · [rust](rust/problems/108-document-comments/README.md)
+- [ ] 109 · [Document Line Search](java/problems/109-document-line-search/README.md) · [rust](rust/problems/109-document-line-search/README.md)
+- [ ] 110 · [# 110 Runtime Data Source Access Layer](java/problems/110-data-source-layer/README.md) · [rust](rust/problems/110-data-source-layer/README.md)
+- [ ] 111 · [Configuration Management Service](java/problems/111-config-management/README.md) · [rust](rust/problems/111-config-management/README.md)
+- [ ] 112 · [Parking Lot with Allocation Strategies](java/problems/112-parking-lot-strategies/README.md) · [rust](rust/problems/112-parking-lot-strategies/README.md)
+- [ ] 113 · [Multi-Module Logging Framework](java/problems/113-multi-module-logging/README.md) · [rust](rust/problems/113-multi-module-logging/README.md)
+- [ ] 114 · [Elevator Request Feasibility](java/problems/114-elevator-feasibility/README.md) · [rust](rust/problems/114-elevator-feasibility/README.md)
+
+</details>
+
+<details>
+<summary><b>115-119 Search, typeahead and RAG</b></summary>
+
+- [ ] 115 · [Autocomplete / Typeahead Service](java/problems/115-autocomplete-typeahead/README.md) · [rust](rust/problems/115-autocomplete-typeahead/README.md)
+- [ ] 116 · [In-Memory Search Engine](java/problems/116-inverted-index-search/README.md) · [rust](rust/problems/116-inverted-index-search/README.md)
+- [ ] 117 · [Search Query Pipeline](java/problems/117-query-pipeline/README.md) · [rust](rust/problems/117-query-pipeline/README.md)
+- [ ] 118 · [Search Result Cache](java/problems/118-search-result-cache/README.md) · [rust](rust/problems/118-search-result-cache/README.md)
+- [ ] 119 · [Mini RAG Retrieval Component](java/problems/119-mini-rag-retriever/README.md) · [rust](rust/problems/119-mini-rag-retriever/README.md)
+
+</details>
+
 ## Learning tracks
 
 Each track is ordered by **what you need to know first**, not by difficulty (difficulty is shown for reference and goes up and down on purpose).
@@ -104,7 +269,8 @@ Tick the problems off as you go; you are done with a problem when the tests pass
 | [1. Foundations](#track-1---foundations-principles-and-patterns-1-73) | 01-73 | OOP, design principles, SOLID, design patterns, classic LLD designs (parking lot, elevator, chess ...) | [Classes and Objects](java/problems/33-classes-objects/README.md) |
 | [2. Concurrency](#concurrency) | 74-81 (+ 13, 20, 22, 24, 27-31) | locks, deadlocks, wait/notify, thread pools, parallel algorithms | [Ordered Printer](java/problems/76-ordered-printer/README.md) |
 | [3. Classic product systems](#classic-product-systems) | 82-95 (+ 11, 15) | URL shortener, ticketing, food delivery, file system, text editor, SQL engine ... | [URL Shortener](java/problems/82-url-shortener/README.md) |
-| [4. Distributed systems](#distributed-systems-in-process-simulations) | 96-105 | consistent hashing, idempotency, leases, gossip, CRDTs, quorums, Raft, 2PC, sagas | [Consistent Hashing](java/problems/96-consistent-hashing/README.md) |
+| [4. Distributed systems](#distributed-systems-in-process-simulations) | 96-105 | consistent hashing, idempotency, leases, gossip, CRDTs, quorums, Raft, 2PC, sagas |
+| [5. Microsoft LLD round](#microsoft-lld-round-questions) | 106-114 | job scheduler, autofill, comments, document search, data-source layer, config service, parking strategies, multi-module logging, elevator feasibility | [Consistent Hashing](java/problems/96-consistent-hashing/README.md) |
 
 Suggested overall order: Track 1 first, then 2 and 3 in either order, then 4 (it assumes you are comfortable with concurrency and state machines).
 
@@ -530,6 +696,60 @@ These tests **fail until you implement the stubs** (they do not skip).
 | 103 | [CRDT Replicated Store](java/problems/103-crdt-replication/README.md) | Hard | 75 min | L3 |
 | 104 | [Quorum Key-Value Store](java/problems/104-quorum-kv/README.md) | Hard | 90 min | L3 |
 | 105 | [Raft Log Replication](java/problems/105-raft-log/README.md) | Hard | 120 min | L3 |
+
+### 106-114 Microsoft LLD round questions
+
+| # | Problem | Difficulty | Time | Level |
+|---|---|---|---|---|
+| 106 | [Job Scheduler (Capability Matching)](java/problems/106-job-scheduler/README.md) | Medium | 60 min | L2 |
+| 107 | [Excel-Like Autofill Engine](java/problems/107-excel-autofill/README.md) | Medium | 45 min | L2 |
+| 108 | [Document Comment Service](java/problems/108-document-comments/README.md) | Easy-Medium | 30 min | L2 |
+| 109 | [Document Line Search](java/problems/109-document-line-search/README.md) | Medium | 45 min | L2 |
+| 110 | [Runtime Data Source Access Layer](java/problems/110-data-source-layer/README.md) | Medium | 45 min | L2 |
+| 111 | [Configuration Management Service](java/problems/111-config-management/README.md) | Medium | 60 min | L2 |
+| 112 | [Parking Lot with Allocation Strategies](java/problems/112-parking-lot-strategies/README.md) | Medium-Hard | 75 min | L2 |
+| 113 | [Multi-Module Logging Framework](java/problems/113-multi-module-logging/README.md) | Hard | 90 min | L2 |
+| 114 | [Elevator Request Feasibility](java/problems/114-elevator-feasibility/README.md) | Hard | 90 min | L2 |
+
+## Microsoft LLD round questions
+
+Problems modelled on the Low Level Design questions reported for Microsoft interviews (several are DSA-flavoured: caches, autofill, search, schedulers). Do them in this order; each is Level 2 (thin entry point, your design) and has a Java and a Rust version.
+
+| Step | Problem | Difficulty | Time | Focus | Links | Done |
+|---|---|---|---|---|---|---|
+| Step 1 | [Job Scheduler (Capability Matching)](java/problems/106-job-scheduler/README.md) **new** | Medium | 60 min | machines with capability sets, pluggable machine-selection criteria, counters on completion, deterministic tie-break | [java](java/problems/106-job-scheduler/README.md) · [rust](rust/problems/106-job-scheduler/README.md) | ☐ |
+| Step 2 | [Excel-Like Autofill Engine](java/problems/107-excel-autofill/README.md) **new** | Medium | 45 min | numeric and letter series detection, case and sign preservation, number formatting, extensible series kinds | [java](java/problems/107-excel-autofill/README.md) · [rust](rust/problems/107-excel-autofill/README.md) | ☐ |
+| Step 3 | [Document Comment Service](java/problems/108-document-comments/README.md) **new** | Easy-Medium | 30 min | insertion-ordered comments, unknown-document rejection, concurrent adds | [java](java/problems/108-document-comments/README.md) · [rust](rust/problems/108-document-comments/README.md) | ☐ |
+| Step 4 | [Document Line Search](java/problems/109-document-line-search/README.md) **new** | Medium | 45 min | whole-word case-insensitive AND search, stable line ids across deletion, repeated-search efficiency | [java](java/problems/109-document-line-search/README.md) · [rust](rust/problems/109-document-line-search/README.md) | ☐ |
+| Step 5 | [Runtime Data Source Access Layer](java/problems/110-data-source-layer/README.md) **new** | Medium | 45 min | one stable interface over switchable sources with independent records, source-specific rules | [java](java/problems/110-data-source-layer/README.md) · [rust](rust/problems/110-data-source-layer/README.md) | ☐ |
+| Step 6 | [Configuration Management Service](java/problems/111-config-management/README.md) **new** | Medium | 60 min | versioned records, optimistic updates, history and rollback, validation before mutation | [java](java/problems/111-config-management/README.md) · [rust](rust/problems/111-config-management/README.md) | ☐ |
+| Step 7 | [Parking Lot with Allocation Strategies](java/problems/112-parking-lot-strategies/README.md) **new** | Medium-Hard | 75 min | two/four-wheeler spots, lowest-index vs most-free-floor allocation, lookup by registration or ticket | [java](java/problems/112-parking-lot-strategies/README.md) · [rust](rust/problems/112-parking-lot-strategies/README.md) | ☐ |
+| Step 8 | [Multi-Module Logging Framework](java/problems/113-multi-module-logging/README.md) **new** | Hard | 90 min | shared buffer, acknowledge after successful write, sequence-range retrieval, producer-consumer coordination | [java](java/problems/113-multi-module-logging/README.md) · [rust](rust/problems/113-multi-module-logging/README.md) | ☐ |
+| Step 9 | [Elevator Request Feasibility](java/problems/114-elevator-feasibility/README.md) **new** | Hard | 90 min | accept/reject against capacity and per-rider stop limits without breaking earlier promises | [java](java/problems/114-elevator-feasibility/README.md) · [rust](rust/problems/114-elevator-feasibility/README.md) | ☐ |
+
+Also practise the existing [Parking Lot](java/problems/01-parking-lot/README.md), [Vending Machine](java/problems/05-vending-machine/README.md), [Notification System](java/problems/23-notification-system/README.md), [Logging Framework](java/problems/25-logging-framework/README.md), [Elevator](java/problems/02-elevator/README.md) and [LRU Cache](java/problems/18-lru-cache/README.md) problems, which these interviews also ask.
+
+### 115-119 Search, typeahead and RAG
+
+| # | Problem | Difficulty | Time | Level |
+|---|---|---|---|---|
+| 115 | [Autocomplete Typeahead Service](java/problems/115-autocomplete-typeahead/README.md) | Hard | 75 min | L2 |
+| 116 | [In-Memory Search Engine](java/problems/116-inverted-index-search/README.md) | Hard | 90 min | L2 |
+| 117 | [Search Query Pipeline](java/problems/117-query-pipeline/README.md) | Medium-Hard | 60 min | L2 |
+| 118 | [Search Result Cache](java/problems/118-search-result-cache/README.md) | Hard | 75 min | L2 |
+| 119 | [Mini RAG Retrieval Component](java/problems/119-mini-rag-retriever/README.md) | Hard | 90 min | L2 |
+
+## Search, typeahead and RAG
+
+Search-system questions that interviews often build on a first-round design: typeahead, an inverted-index engine, a query pipeline, a result cache and a small retrieval-augmented-generation component. Each is Level 2 with a Java and a Rust version. Suggested order:
+
+| Step | Problem | Difficulty | Time | Focus | Links | Done |
+|---|---|---|---|---|---|---|
+| Step 1 | [Autocomplete Typeahead Service](java/problems/115-autocomplete-typeahead/README.md) **new** | Hard | 75 min | prefix lookup, frequency/recency/personalised ranking, deterministic ties, concurrent updates, scale | [java](java/problems/115-autocomplete-typeahead/README.md) · [rust](rust/problems/115-autocomplete-typeahead/README.md) | ☐ |
+| Step 2 | [In-Memory Search Engine](java/problems/116-inverted-index-search/README.md) **new** | Hard | 90 min | tokenisation, AND/OR queries, TF-IDF ranking, delete/update, pagination | [java](java/problems/116-inverted-index-search/README.md) · [rust](rust/problems/116-inverted-index-search/README.md) | ☐ |
+| Step 3 | [Search Query Pipeline](java/problems/117-query-pipeline/README.md) **new** | Medium-Hard | 60 min | parse, spell-correct, synonyms, filter, rank, highlight; adding a step without touching the others | [java](java/problems/117-query-pipeline/README.md) · [rust](rust/problems/117-query-pipeline/README.md) | ☐ |
+| Step 4 | [Search Result Cache](java/problems/118-search-result-cache/README.md) **new** | Hard | 75 min | normalised query keys, TTL and LRU, invalidation on index change, request coalescing | [java](java/problems/118-search-result-cache/README.md) · [rust](rust/problems/118-search-result-cache/README.md) | ☐ |
+| Step 5 | [Mini RAG Retrieval Component](java/problems/119-mini-rag-retriever/README.md) **new** | Hard | 90 min | chunking, swappable embedder and vector store, cosine retrieval, budgeted prompt building | [java](java/problems/119-mini-rag-retriever/README.md) · [rust](rust/problems/119-mini-rag-retriever/README.md) | ☐ |
 
 ## The `play` runner (rustlings-style)
 

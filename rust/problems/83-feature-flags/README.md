@@ -9,6 +9,10 @@
 > `HINTS.md` if you are stuck (three levels, smallest nudge first) and
 > `FOLLOWUPS.md` (open one at a time, after the previous version passes).
 
+## What you are building
+
+A company wants to switch features on and off without redeploying. A **feature flag** is a named on/off switch that application code checks with "is this flag on for this user?". You are building the evaluation core: product managers define flags with a default, add targeting rules ("users with `country = IN` get it"), roll the flag out to a percentage of users, and can flip a kill switch that turns it off for everyone at once. The answer for a given user has to be stable (no flickering between calls, and widening a rollout never switches anyone off), and the service must serve many concurrent checks while admins edit flags.
+
 ## Problem
 
 Your company ships behind feature flags. Product managers create a boolean flag, target it at specific groups of users
@@ -50,6 +54,56 @@ isEnabled("beta", "u1", {})   -> true for roughly 30% of user ids, the same answ
 setRollout("beta", 60)        -> everyone who was on at 30% is still on
 setKilled("beta", true)       -> false for everybody, including {country: IN}
 ```
+
+### Worked traces
+
+```
+define("on", true); define("off", false)
+is_enabled("on", "u1", &[])  -> Ok(true)     is_enabled("off", "u1", &[]) -> Ok(false)   (defaults)
+
+define("beta", false)
+add_rule("beta","country","IN",true); add_rule("beta","country","IN",false)
+add_rule("beta","plan","free",false); add_rule("beta","plan","pro",true)
+is_enabled("beta","u",&[("country","IN")])                -> Ok(true)   (rule 1 matches first; rule 2 is never reached)
+is_enabled("beta","u",&[("plan","pro")])                  -> Ok(true)
+is_enabled("beta","u",&[("plan","free"),("country","US")]) -> Ok(false) (rule 3 is the first match)
+is_enabled("beta","u",&[("country","US")])                -> Ok(false)  (no rule matches: default)
+
+define("x", true); set_rollout("x", 0)
+is_enabled("x", any user, &[]) -> Ok(false)              (rollout set: the default true is ignored)
+add_rule("x","vip","yes",true)
+is_enabled("x","anyone",&[("vip","yes")]) -> Ok(true)    (a matching rule beats the rollout)
+set_rollout("x", 100)          -> everybody without a matching rule is on, even if the default is false
+
+define("k", true); add_rule("k","vip","yes",true); set_rollout("k",100); set_killed("k", true)
+is_enabled("k","u",&[("vip","yes")]) -> Ok(false);  is_enabled("k","u",&[]) -> Ok(false)
+set_killed("k", false)       -> is_enabled("k","u",&[]) -> Ok(true)   (everything is back as it was)
+
+set_rollout("x", 101)        -> Err(InvalidArgument)     is_enabled("nope", ...) -> Err(UnknownFlag)
+define("x", ..) twice        -> Err(AlreadyDefined)      define(" ", ..) -> Err(InvalidArgument)
+```
+
+### Edge cases
+
+- Evaluation order, strictly: killed, then the first matching rule, then the rollout (only if one was ever set), then the default.
+- A rule matches when the user's attribute with that exact name has exactly that value (exact string equality). If the user does not supply the attribute, the rule does not match.
+- With no rollout set, the default is used for users that match no rule. Once a rollout has been set (even `0`), the default is ignored for those users.
+- Rollout `0` turns it off and `100` turns it on for every user without a matching rule.
+- Percentages are approximate over many users: 30% of 20,000 users must give 5,400 to 6,600 enabled, and the 30% to 60% growth over 10,000 users must give 5,600 to 6,400 with nobody turned off.
+- Two flags with the same percentage must pick largely different users: two 50% flags overlap in 4,400 to 5,600 of 20,000 users (not ~10,000).
+- The same user, flag and rollout always give the same answer, in every run and process (no randomness, no clock).
+- Adding a rule changes neither the rollout nor the default. Adding a rule to an unknown flag is an error.
+- A blank flag name, a null/blank user id, or a rollout outside 0..100 is an error. Empty attributes are fine; null attributes are not (Java).
+
+## Glossary
+
+- **Flag**: a named boolean switch with a default value.
+- **Default**: the answer when nothing else applies (and no rollout has been set).
+- **Attributes**: the facts about the user passed with each check, e.g. `country = IN`, `plan = pro`.
+- **Targeting rule**: "if attribute A equals value V, the answer is R".
+- **Rollout**: enabling the flag for a percentage of users who matched no rule.
+- **Bucket**: the fixed slot (think 0-99) a given user and flag always map to; a user is in the rollout when their slot falls inside the percentage.
+- **Kill switch**: an override that forces the flag off for everyone until switched back.
 
 ## Behavioral contract
 
@@ -128,10 +182,6 @@ These tests are black-box: they only call the contract above, so any class desig
 - Percentage accuracy (30% of 20,000), stability over repeated calls, monotonic growth 30% -> 60%, independence of two flags.
 - Concurrency: 16 threads appending rules lose none; 8 threads defining 200 flags each while evaluating; a 100x repeat of 8 threads adding rules and setting the rollout.
 - More edge cases (heavy evaluation during rule edits, kill switch under concurrent toggling) are in `interviewer/`.
-
-## Language notes
-
-`RwLock<HashMap<String, Arc<FlagConfig>>>` lets readers clone the `Arc` and release the lock before evaluating. Do not use `DefaultHasher` with a random seed for buckets (`RandomState` differs per process); write or import a fixed hash such as FNV-1a.
 
 ## Running
 

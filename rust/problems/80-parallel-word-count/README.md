@@ -9,11 +9,14 @@
 > `HINTS.md` if you are stuck (three levels, smallest nudge first) and
 > `FOLLOWUPS.md` (open one at a time, after the previous version passes).
 
+## What you are building
+
+A search team needs word-frequency statistics over a big pile of text: thousands of documents, or a single enormous one. You are building the **word counter**: given a list of documents, it returns how many times each distinct word occurs across all of them, using up to `parallelism` threads to finish faster. The answer must always be exactly what a simple one-thread loop would produce, regardless of how many threads you use or how the text is divided between them.
+
 ## Problem
 
 Count how often every word occurs across a large collection of text documents using several threads. The sequential
-solution is five lines; the real question is how the threads combine their results without losing counts and without
-turning one shared map into a bottleneck. A document can also be huge - splitting *inside* a document must never cut a
+solution is five lines; the threads' results must be combined without losing counts. A document can also be huge - splitting *inside* a document must never cut a
 word in two.
 
 ## Requirements
@@ -27,7 +30,6 @@ word in two.
 ## Constraints and thread-safety requirements
 
 - The result must equal the sequential answer exactly, every time: no lost updates, no double counting.
-- Workers must not fight over one hot map entry for every word (think about what happens to 'the' in 1,000 documents).
 - A split point inside a document must not turn one word into two.
 - The counter may be used from several threads at once for different inputs.
 - Scale: 200 documents x 500 words and one 300,000-word document within a second or two; the hidden tests use millions of words.
@@ -40,6 +42,38 @@ docs: ["Hello, hello WORLD!", "world of Hello"]   parallelism 2
 
 "abc123def a-b_c"   ->  abc, def, a, b, c       (digits, '-' and '_' separate words)
 ```
+
+### Worked traces
+
+```
+["Hello, hello WORLD!", "world of Hello"]  parallelism 2
+  -> Ok({hello: 3, world: 2, of: 1})                  (case folded, punctuation ignored)
+
+["abc123def a-b_c\nd\te", "x.y,z;é"]       parallelism 1
+  -> Ok({abc:1, def:1, a:1, b:1, c:1, d:1, e:1, x:1, y:1, z:1})
+     digits, '-', '_', newline, tab, ';' and the non-ASCII 'é' all separate words
+
+["café"]                                    -> Ok({caf: 1})        ('é' ends the word, is not part of one)
+["ab", "cd"]                                -> Ok({ab: 1, cd: 1})  (a word never continues into the next document)
+["", "   ", "123 !!"]  or  []               -> Ok({})              (empty map, no zero entries)
+count(&["a"], 0)                            -> Err(InvalidParallelism)
+```
+
+### Edge cases
+
+- A word ends at the end of its document: the last word of one document and the first word of the next are never joined.
+- Any non-ASCII-letter character is a separator, including accented letters and digits; `x2y` is two words, `x` and `y`.
+- Upper and lower case are the same word; keys are always lower case.
+- The sum of all counts equals the total number of words in all documents.
+- Fewer documents than threads, or a single huge document, still gives the exact answer; `parallelism` is only an upper bound.
+- The input list is not modified and may be immutable. Different threads may call `count` on different inputs at once.
+
+## Glossary
+
+- **Word**: a maximal run of consecutive ASCII letters `a-z` / `A-Z`; "maximal" means it cannot be extended on either side.
+- **Separator**: any character that is not an ASCII letter.
+- **Case-insensitive**: `Hello`, `HELLO` and `hello` are the same word, reported as `hello`.
+- **Parallelism**: the maximum number of worker threads.
 
 ## Behavioral contract
 
@@ -93,10 +127,6 @@ These tests are black-box: they only call the contract above, so any class desig
 - Fewer documents than threads; immutable input; total of counts equals total words.
 - Six threads counting different inputs through the same counter.
 - **Repeat 100x** with random shapes and parallelism - a lost update shows up as a wrong count.
-
-## Language notes
-
-`std::thread::scope` with each worker returning its own `HashMap`; merge on the main thread. Chunks of `&[String]` or `&str` can be borrowed without cloning.
 
 ## Running
 

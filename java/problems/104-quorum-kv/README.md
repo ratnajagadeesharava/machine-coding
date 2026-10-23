@@ -15,6 +15,8 @@ We are building a small replicated key-value store in the style of Dynamo/Cassan
 
 Build one node. Clients are asynchronous: they start a request with an id and poll for the reply. The network loses, duplicates and delays messages, and nodes crash and recover (keeping their memory). Your job is to make acknowledged writes visible to every later read, to repair replicas that fall behind, and to fail cleanly (not hang, not lie) when no majority is reachable.
 
+**In short:** one replica of a leaderless key-value store. A client calls `put` / `get` on any node with a fresh request id and later polls `reply(requestId)`. You make a put succeed once a majority has stored it, make a get consult a majority and return the newest value it sees, repair stale replicas, and give up with FAILED about a second after a request began if no majority answers.
+
 ## Requirements
 
 1. `put(requestId, key, value)` and `get(requestId, key)` start a request on this node; `reply(requestId)` polls the result: PENDING, OK (with the value for a get), NOT_FOUND, or FAILED. A reply for an unknown id is PENDING.
@@ -27,7 +29,7 @@ Build one node. Clients are asynchronous: they start a request with an id and po
 
 ## Simulation rules and constraints
 
-- Everything runs in a deterministic, single-threaded simulation (`SimNet`): the tests call `onMessage` / `onTick` on your object, never your own threads or timers. No locking is needed (the Rust traits take `&self`, so keep state in a `Mutex`).
+- Everything runs in a deterministic, single-threaded simulation (`SimNet`): the tests call `onMessage` / `onTick` on your object, never your own threads or timers. The Rust traits take `&self`.
 - Time is simulated: one tick = 1 ms, `onTick(nowMs)` is called once per millisecond with the current time. Never read the wall clock, never sleep; derive every timeout from the `nowMs` you were handed.
 - Network model: a message sent now is delivered after a latency of 1-5 ms by default (random per message, so messages can overtake each other). Tests can change the latency range, drop a fraction of the messages, duplicate a fraction, cut the network into partitions (messages across the cut are lost, including ones already in flight) and heal it.
 - Crash model: a crashed node gets no ticks and no messages and its sends are ignored, but its memory is kept (it is paused, not wiped). After `recover` it simply continues with its first tick.
@@ -44,6 +46,62 @@ t~4    n2 acks -> majority (n1+n2) -> reply(r1) = OK ;   n3 crashed: re-sent eve
 t=900  n3 recovers, receives the re-sent write, acks
 t=950  n3.get(r2,"k") : n3 answers itself + n1/n2 -> highest version (0,n1) -> OK "v1"
 ```
+
+In Java, `Reply(status, value)` carries `value` only for a successful get; a successful put is `OK` with no value.
+
+No majority reachable (n2 and n3 crashed, request started on n1 at t=0):
+
+```
+n1.put(r1,"k","v") and n1.get(r2,"k")
+t=500   both replies are still PENDING   (one answer out of 3 is not a majority; a request must not fail early)
+t~1000  both replies become FAILED      (observed by t=1100); the failed put may still sit on n1's own copy
+```
+
+Same millisecond, two coordinators:
+
+```
+t=0 (same tick)  n1.put(r1,"k","from-n1")   and   n3.put(r2,"k","from-n3")
+versions (0,n1) and (0,n3): equal time, the larger id wins -> every replica ends with "from-n3"
+```
+
+Read repair:
+
+```
+n3 was down while n1.put(...,"k","v1") succeeded on n1+n2; n3 is back and n3.local("k") is empty
+n1.get(r9,"k"): n1 and n2 answer "v1" with version (t,n1) -> majority -> OK "v1"
+n3's answer says "I have nothing" (older) -> n1 sends the winning entry to n3 as a write
+shortly after, n3.local("k") == "v1"   (this also happens if n3's answer arrives after the reply was already decided)
+```
+
+Partition `{n1} | {n2, n3}`:
+
+```
+n1.put(...)  -> FAILED after ~1000 ms (only 1 of 3 acks)        n2.put(...) -> OK (n2 + n3 = 2 of 3)
+after heal: n1.get(...) returns the majority's value (n1 asks n2, n3 and gets the newest version)
+```
+
+Quorum sizes: 3 nodes need 2 answers, 5 nodes need 3, always counting the coordinator itself as one.
+
+## Edge cases
+
+- `get` of a key that no answering replica holds is `NOT_FOUND`, but only once a majority has answered; before that it is `PENDING`.
+- `reply` of a request id that was never started is `PENDING`. Starting a request with an id that is already known does nothing, even with a different key or value, and the stored reply stays as it was.
+- A put keeps being re-sent to non-acknowledging nodes until all have acknowledged or 1000 ms have passed since the request began, even after the reply is already OK.
+- A replica acknowledges every write it receives, also one with an older version than it holds, but keeps the entry with the higher version (a stale re-send must never overwrite newer data).
+- An acknowledgement or answer from the same node counted twice (duplicate message) must not fake a majority.
+- The version time `t` is the last time passed to `onTick` on the coordinating node. A node that was crashed and recovered learns the time again with its first tick.
+- The guarantee the tests check: a get that starts after an OK put returns that value or a later one, from any live coordinator, even if the replicas that were up during the write are not the ones that are up during the read.
+- `local(key)` only looks at this node's own copy and never sends anything.
+
+## Glossary
+
+- **Coordinator**: the node a client happened to contact; it drives that one request.
+- **Replica**: a node holding a full copy of the data.
+- **Quorum / majority**: more than half of the cluster; any two majorities overlap in at least one node, which is why a read sees the last acknowledged write.
+- **Version**: (time of the coordinator's last tick, coordinator id); higher time wins, then the larger id.
+- **Ack**: a replica's confirmation that it received a write.
+- **Read repair**: after a get, sending the winning entry to replicas that answered with an older entry (or none).
+- **Request id**: the client's handle for an asynchronous request; used once.
 
 ## Behavioral contract
 
@@ -159,7 +217,7 @@ These tests are black-box and deterministic: every node runs inside a seeded sim
 
 ## Language notes
 
-Use `Set<String>` of responders per request so a duplicated ack is counted once; compare versions with a small `record`/`Comparable` (time, then id). Keep requests in a `LinkedHashMap` so iteration is deterministic.
+A duplicated ack counts once. Versions order by time, then id. Iteration order over pending requests must be deterministic.
 
 ## Running
 

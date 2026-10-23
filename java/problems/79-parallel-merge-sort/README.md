@@ -9,12 +9,14 @@
 > `HINTS.md` if you are stuck (three levels, smallest nudge first) and
 > `FOLLOWUPS.md` (open one at a time, after the previous version passes).
 
+## What you are building
+
+A batch job must sort an array of millions of 32-bit integers, and the machine has several cores sitting idle. You are building a sorter that sorts the array **in place** (the caller's array ends up sorted, no new array is returned) by dividing the work between at most `parallelism` threads and combining the sorted pieces. The caller picks `parallelism`; the sorter must respect it as an upper bound, still work for tiny or odd inputs, and be safe to call from several threads at once as long as each call has its own array.
+
 ## Problem
 
 Sort a large `int` array in place using several threads. Split the work recursively, sort the pieces in
-parallel, merge them. The interesting parts are not the sort: when to stop splitting (a thread per element is slower
-than no threads at all), how to bound the number of threads, and how to share one array between threads without any
-synchronisation because each thread only touches its own range.
+parallel, merge them. The result must be correct for any input and any `parallelism`, and the thread count must stay bounded.
 
 ## Requirements
 
@@ -26,9 +28,9 @@ synchronisation because each thread only touches its own range.
 
 ## Constraints and thread-safety requirements
 
-- The pieces handled by different threads must be disjoint; no locks should be needed while sorting a range.
+- The pieces handled by different threads must be disjoint.
 - The merge of two halves may only start after both halves are completely sorted *and visible* to the merging thread.
-- No thread may be spawned per split below a sensible threshold; the thread count is bounded by `parallelism`.
+- The thread count is bounded by `parallelism`.
 - Scale: 1-3 million elements in a few seconds; the hidden tests use millions.
 
 ## Examples
@@ -39,6 +41,35 @@ synchronisation because each thread only touches its own range.
   right half [7 3 8 4] -> thread B -> [3 4 7 8]
   merge -> [1 2 3 4 5 7 8 9]
 ```
+
+### Worked traces
+
+```
+sort([5, 2, 9, 1, 7, 3, 8, 4], 1)   -> [1, 2, 3, 4, 5, 7, 8, 9]    (no extra thread needed)
+sort([], 4)                          -> []            sort([42], 8) -> [42]
+sort([3, 1, 2], 8)                   -> [1, 2, 3]     (more threads allowed than elements)
+sort([MAX_VALUE, MIN_VALUE, 0, -1], 4) -> [MIN_VALUE, -1, 0, MAX_VALUE]
+sort([2, 2, 1, 2], 2)                -> [1, 2, 2, 2]  (duplicates all kept)
+sort([2, 1], 0) and sort([2, 1], -3) -> IllegalArgumentException
+```
+
+### Edge cases
+
+- Length 0 and 1 are valid and return immediately with the data unchanged.
+- `parallelism` larger than the array length is fine; it is only an upper bound.
+- Extreme values (`MIN_VALUE`, `MAX_VALUE`) must order correctly; do not let comparing two values overflow.
+- The result is the same multiset of values as the input, ascending (non-decreasing). Nothing is added, dropped or duplicated.
+- When `sort` returns, all work is finished; no helper keeps touching the array afterwards.
+- Different threads may sort different arrays through the same sorter at the same time; the calls must not affect each other.
+- The thread limits in the contract count extra threads alive during a big sort (about `parallelism`, plus 1 of slack). A solution that stays on the calling thread fails the "really runs in parallel" check for `parallelism = 4` on a large array.
+
+## Glossary
+
+- **In place**: the sorted result is written back into the array that was passed in.
+- **Parallelism**: the maximum number of worker threads that may be doing sorting work at once.
+- **Merge**: combining two already-sorted neighbouring ranges into one sorted range.
+- **Range / piece**: a contiguous part of the array (from index `lo` up to but not including `hi`) given to one worker.
+- **Helper thread**: a thread other than the one that called `sort`.
 
 ## Behavioral contract
 
@@ -88,10 +119,6 @@ These tests are black-box: they only call the contract above, so any class desig
 - Six threads sorting six different arrays through the same sorter at the same time.
 - Thread-count sampling during a multi-million-element sort (Rust: reads `/proc/self/status`, Linux only), both an upper bound and a 'something ran in parallel' lower bound.
 - **Repeat 100x** with random sizes and parallelism.
-
-## Language notes
-
-`ForkJoinPool(parallelism)` with a `RecursiveAction` is the natural fit; `invokeAll` forks one half and runs the other in the current thread. `Arrays.sort(a, lo, hi)` is a fine base case.
 
 ## Running
 

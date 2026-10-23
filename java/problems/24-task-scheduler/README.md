@@ -10,11 +10,17 @@
 
 ## Problem
 
-Build an in-process task scheduler: callers hand it units of work to run **later** (once, or repeatedly), may
-cancel them, and the host application periodically asks the scheduler to run whatever has become due.
+You are building the scheduling core of an application, similar to a tiny `ScheduledExecutorService`, but with no threads of its own. Callers hand it pieces of work to run **later**, either once after a delay or repeatedly with a fixed period, and may cancel them by id. The host application (a game loop, a request handler, a test) periodically calls **run-due**, and the scheduler runs, right then and on that calling thread, every task whose time has come, then reports how many executions it performed.
 
-There are no worker threads of your own: time is driven by an injected clock and execution is driven by the caller,
-which makes the whole thing deterministic and testable.
+Because time comes only from an injected clock and execution only happens inside run-due, behaviour is fully deterministic: the tests move a fake clock and call run-due.
+
+**Terms**
+
+- **Due time**: the clock time (epoch milliseconds) at which a task, or one occurrence of a recurring task, may run. A task is *due* when its due time is less than or equal to the current time.
+- **Occurrence**: one planned run of a recurring task. A one-shot task has exactly one occurrence.
+- **Fixed-rate**: occurrence `k` of a recurring task is planned at `scheduleTime + initialDelay + k * period`, regardless of when earlier occurrences actually ran.
+- **Catch-up**: when run-due is called late, every missed occurrence still runs (one execution each), not just one.
+- **Submission order**: the order in which tasks were scheduled; used to break ties on equal due times.
 
 ## Requirements
 
@@ -37,14 +43,55 @@ which makes the whole thing deterministic and testable.
 
 ## Examples
 
+The clock starts at `1000` (so "now + delay" below is `1000 + delay`).
+
 ```
-now = 1000
-scheduleOnce(100, A)                 → id1        (due 1100)
-scheduleRecurring(100, 10, R)        → id2        (due 1100, 1110, 1120, ...)
-runDue() at 1000                     → 0
-runDue() at 1135                     → 5          (A, R@1100, R@1110, R@1120, R@1130 — in due-time order)
-runDue() at 1140                     → 1          (R@1140)
+scheduleOnce(100, A)             -> id1    due 1100
+scheduleRecurring(100, 10, R)    -> id2    due 1100, 1110, 1120, ...
+runDue() at 1000                 -> 0
+runDue() at 1135                 -> 5      order: A@1100, R@1100, R@1110, R@1120, R@1130   (A first: same due time, submitted earlier)
+runDue() at 1135 (again)         -> 0
+runDue() at 1140                 -> 1      R@1140
 ```
+
+Fixed rate when the host is late (`scheduleRecurring(0, 100, R)` at 1000):
+
+```
+runDue() at 1000 -> 1      (1000)
+runDue() at 1250 -> 2      (1100, 1200)
+runDue() at 1299 -> 0
+runDue() at 1300 -> 1      (1300 - not 1350: the schedule is anchored on planned times)
+```
+
+Interleaving and cancelling:
+
+```
+scheduleRecurring(10, 10, "r")  and  scheduleOnce(25, "o"), then the clock moves to 1030:
+runDue() -> 4      order: r@1010, r@1020, o@1025, r@1030
+
+A = scheduleOnce(10, a), B = scheduleOnce(10, b); clock +50 (both overdue, run-due not yet called)
+cancel(A) -> true      runDue() -> 1      only b ran
+cancel(A) -> false     cancel("nope") -> false
+```
+
+A task using the scheduler while running (all at time 1000):
+
+```
+task X (delay 0) schedules task Y (delay 0), and task Z (delay 0) was scheduled after X
+runDue() -> 3      order: X, Z, Y     (Y is due now, so it runs in this same call, after the earlier-submitted Z)
+```
+
+## Edge cases
+
+- Delay `0` means due immediately; a task with delay `100` is not run at `+99` but is run at `+100`.
+- `scheduleRecurring` with a period of zero or less is refused (empty result in Java, `None` in Rust) and nothing is scheduled.
+- A task that throws or panics still counts as one execution, does not stop other tasks, and (if recurring) keeps its later occurrences.
+- A recurring task cancelling itself during its own run: `cancel` returns `true`, and none of its later occurrences run, including missed ones that were still waiting in the current run-due call. (Example: due every 10 with 10 occurrences missed, cancelling itself on its 3rd run makes that run-due return 3.)
+- A task cancelling another task that is due but not yet run stops it; `cancel` returns `true`.
+- Cancelling a one-shot that has already started or finished, a task already cancelled, or an unknown id returns `false`.
+- Run-due reads the clock once when it starts; work scheduled during the call that is due at that time runs in the same call, anything later waits for a later call.
+- Ids are unique across one-shot and recurring tasks.
+- With several threads calling run-due at once, every occurrence still runs exactly once in total, and a task whose `cancel` returned `true` never runs afterwards.
 
 ## Behavioral contract
 

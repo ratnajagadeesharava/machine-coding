@@ -191,4 +191,228 @@ class BehaviorTest {
         assertThat(m.stockOf("B1")).isEqualTo(1);
         assertThat(m.stockOf("C7")).isZero();
     }
+
+    @Test
+    void shouldRefuseSelectionWithoutCreditAndChangeNothing() {
+        VendingMachineApi m = stockedMachine();
+
+        assertThat(m.select("A1")).isEqualTo("INSUFFICIENT_FUNDS");
+
+        assertThat(m.balance()).isZero();
+        assertThat(m.stockOf("A1")).isEqualTo(2);
+        assertThat(m.takeReturnedCoins()).isEmpty();
+    }
+
+    @Test
+    void shouldLeaveBalanceStockAndTrayUntouchedByEveryRefusal() {
+        VendingMachineApi m = stockedMachine();
+        m.insertCoin(100);
+        m.select("B1"); // sells the only soda, exact payment
+        m.insertCoin(25);
+
+        assertThat(m.select("B1")).isEqualTo("SOLD_OUT");
+        assertThat(m.select("Z9")).isEqualTo("INVALID_SLOT");
+        assertThat(m.select("A1")).isEqualTo("INSUFFICIENT_FUNDS");
+
+        assertThat(m.balance()).isEqualTo(25);
+        assertThat(m.stockOf("A1")).isEqualTo(2);
+        assertThat(m.stockOf("B1")).isZero();
+        assertThat(m.takeReturnedCoins()).isEmpty();
+    }
+
+    @Test
+    void shouldSellEveryUnitOfASlotThenReportSoldOut() {
+        VendingMachineApi m = stockedMachine();
+
+        m.insertCoin(100);
+        assertThat(m.select("A1")).isEqualTo("DISPENSED");
+        m.insertCoin(100);
+        assertThat(m.select("A1")).isEqualTo("DISPENSED");
+        m.insertCoin(100);
+
+        assertThat(m.stockOf("A1")).isZero();
+        assertThat(m.select("A1")).isEqualTo("SOLD_OUT");
+        assertThat(m.balance()).isEqualTo(100);
+    }
+
+    @Test
+    void shouldKeepCustomerCoinsRefundableAfterCannotMakeChange() {
+        VendingMachineApi m = machine();
+        m.loadProduct("A1", "Chips", 65, 1);
+        m.insertCoin(100);
+        assertThat(m.select("A1")).isEqualTo("CANNOT_MAKE_CHANGE");
+
+        m.cancel();
+
+        assertThat(m.balance()).isZero();
+        assertThat(m.takeReturnedCoins()).containsExactly(100);
+        assertThat(m.stockOf("A1")).isEqualTo(1);
+    }
+
+    @Test
+    void shouldBuyWithExactCoinsAfterAChangeRefusalWasCancelled() {
+        VendingMachineApi m = machine();
+        m.loadProduct("A1", "Chips", 65, 1);
+        m.insertCoin(100);
+        m.select("A1");
+        m.cancel();
+        m.takeReturnedCoins();
+
+        m.insertCoin(25);
+        m.insertCoin(25);
+        m.insertCoin(10);
+        m.insertCoin(5);
+
+        assertThat(m.select("A1")).isEqualTo("DISPENSED");
+        assertThat(m.takeReturnedCoins()).isEmpty();
+        assertThat(m.stockOf("A1")).isZero();
+    }
+
+    @Test
+    void shouldNotAddCoinsToInventoryWhenPurchaseIsRefused() {
+        VendingMachineApi m = machine();
+        m.loadProduct("A1", "Chips", 75, 1);
+        m.insertCoin(25);
+        assertThat(m.select("A1")).isEqualTo("INSUFFICIENT_FUNDS");
+        m.cancel();
+        m.takeReturnedCoins();
+
+        m.insertCoin(100); // change 25 would need the refused quarter
+
+        assertThat(m.select("A1")).isEqualTo("CANNOT_MAKE_CHANGE");
+    }
+
+    @Test
+    void shouldNotAddRefundedCoinsToInventory() {
+        VendingMachineApi m = machine();
+        m.loadProduct("A1", "Chips", 75, 1);
+        m.insertCoin(25);
+        m.cancel();
+        assertThat(m.takeReturnedCoins()).containsExactly(25);
+
+        m.insertCoin(100); // change 25 would need the cancelled quarter
+
+        assertThat(m.select("A1")).isEqualTo("CANNOT_MAKE_CHANGE");
+    }
+
+    @Test
+    void shouldUseCustomersOwnCoinsAsChangeWhenInventoryIsEmpty() {
+        VendingMachineApi m = machine();
+        m.loadProduct("A1", "Chips", 50, 1);
+        m.insertCoin(25);
+        m.insertCoin(25);
+        m.insertCoin(25);
+
+        assertThat(m.select("A1")).isEqualTo("DISPENSED");
+
+        assertThat(m.takeReturnedCoins()).containsExactly(25);
+    }
+
+    @Test
+    void shouldUseCoinsFromEarlierPurchasesAsChange() {
+        VendingMachineApi m = machine();
+        m.loadProduct("A1", "Water", 100, 1);
+        m.loadProduct("B1", "Chips", 50, 1);
+        for (int i = 0; i < 4; i++) {
+            m.insertCoin(25);
+        }
+        assertThat(m.select("A1")).isEqualTo("DISPENSED");
+        assertThat(m.takeReturnedCoins()).isEmpty();
+
+        m.insertCoin(100);
+
+        assertThat(m.select("B1")).isEqualTo("DISPENSED");
+        assertThat(m.takeReturnedCoins()).containsExactly(25, 25);
+    }
+
+    @Test
+    void shouldMakeChangeWithSmallerCoinsWhenLargestCoinCannotComplete() {
+        VendingMachineApi m = machine();
+        m.loadProduct("A1", "Chips", 70, 1);
+        m.loadCoins(25, 1);
+        m.loadCoins(10, 3);
+        m.insertCoin(100);
+
+        assertThat(m.select("A1")).isEqualTo("DISPENSED"); // 30 = 10+10+10, not 25+5
+
+        assertThat(m.takeReturnedCoins()).containsExactly(10, 10, 10);
+    }
+
+    @Test
+    void shouldUseFewestCoinsAmongThoseAvailable() {
+        VendingMachineApi m = machine();
+        m.loadProduct("A1", "Chips", 70, 1);
+        m.loadCoins(25, 1);
+        m.loadCoins(10, 3);
+        m.loadCoins(5, 1);
+        m.insertCoin(100);
+
+        assertThat(m.select("A1")).isEqualTo("DISPENSED");
+
+        assertThat(m.takeReturnedCoins()).containsExactly(25, 5);
+    }
+
+    @Test
+    void shouldAddCoinsToInventoryOnEveryLoad() {
+        VendingMachineApi m = machine();
+        m.loadProduct("A1", "Chips", 50, 1);
+        m.loadCoins(25, 1);
+        m.loadCoins(25, 1);
+        m.insertCoin(100);
+
+        assertThat(m.select("A1")).isEqualTo("DISPENSED");
+
+        assertThat(m.takeReturnedCoins()).containsExactly(25, 25);
+    }
+
+    @Test
+    void shouldKeepReturnedCoinsInTrayUntilTheyAreTaken() {
+        VendingMachineApi m = stockedMachine();
+        m.insertCoin(100);
+        m.select("A1");        // change 25, 10
+        m.insertCoin(25);
+        m.cancel();            // refund 25
+
+        assertThat(m.takeReturnedCoins()).containsExactly(25, 25, 10);
+        assertThat(m.takeReturnedCoins()).isEmpty();
+    }
+
+    @Test
+    void shouldRefundOnlyCoinsInsertedSinceThePreviousPurchase() {
+        VendingMachineApi m = stockedMachine();
+        m.insertCoin(100);
+        m.select("B1");
+
+        m.insertCoin(25);
+        m.cancel();
+
+        assertThat(m.takeReturnedCoins()).containsExactly(25);
+    }
+
+    @Test
+    void shouldNotRefundRejectedCoins() {
+        VendingMachineApi m = stockedMachine();
+        m.insertCoin(3);
+        m.insertCoin(25);
+        m.insertCoin(50);
+
+        m.cancel();
+
+        assertThat(m.takeReturnedCoins()).containsExactly(25);
+    }
+
+    @Test
+    void shouldRefundRepeatedDenominationsInDescendingOrder() {
+        VendingMachineApi m = stockedMachine();
+        m.insertCoin(5);
+        m.insertCoin(25);
+        m.insertCoin(5);
+        m.insertCoin(25);
+        m.insertCoin(100);
+
+        m.cancel();
+
+        assertThat(m.balance()).isZero();
+        assertThat(m.takeReturnedCoins()).containsExactly(100, 25, 25, 5, 5);
+    }
 }

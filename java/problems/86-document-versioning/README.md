@@ -11,11 +11,16 @@
 
 ## Problem
 
-You are building the storage core of a collaborative document tool, like a wiki. Every save creates a new version
-and old versions are never changed. Two people may open version 3, edit it for a while, and save - the second save is
-based on a stale version. Instead of rejecting it, the system should merge the two sets of changes when they touch different
-lines and report a conflict only when both people changed the same place. Users also want to see what changed between two
-versions and to restore an old version.
+You are building the storage core of a collaborative document tool, like a wiki. Every save creates a new, immutable version of a document; old versions stay readable forever and a user can restore any of them. Two people may open version 3, edit for a while and both save: the second save is based on a stale version. Instead of rejecting it, the store must merge the two sets of changes when they touch different lines, and report a conflict only when both people changed the same place. Users also ask for a line-by-line diff between any two versions.
+
+## Glossary
+
+- **Version**: a numbered, never-modified snapshot of the full text (1, 2, 3, ... no gaps).
+- **Base version**: the version the author started editing from. An edit is *stale* when its base is older than the current latest.
+- **Line**: the document text split on `\n`; `"a\nb"` has 2 lines, `""` has 1 empty line, `"a\n"` has 2 lines (`"a"` and `""`).
+- **Three-way merge**: combine the changes made `base -> latest` (by others) with the changes made `base -> newContent` (by this author), both measured against the same base.
+- **Hunk**: one changed region: base lines `[start, end)` replaced by some new lines. A pure insertion has `start == end`.
+- **Conflict**: both sides changed overlapping places, so the merge cannot decide which text wins.
 
 ## Requirements
 
@@ -40,14 +45,44 @@ versions and to restore an old version.
 ## Examples
 
 ```
-v1 = "l1\nl2\nl3\nl4\nl5"
-ann edits base 1 -> "L1\nl2\nl3\nl4\nl5"                  => v2
-bob edits base 1 -> "l1\nl2\nl3\nl4\nL5"  (stale)            => merged v3 = "L1\nl2\nl3\nl4\nL5"
-cy  edits base 1 -> "l1\nl2\nCY\nl4\nl5" after ann changed line 3 as well  => conflict, nothing created
+create("doc", "ann", "a")                 -> v1
+edit("doc", "bob", 1, "b")                -> returns 2   history: ["1:ann", "2:bob"]
+edit("doc", "cy", 2, "b")                 -> returns 2   (unchanged at latest: nothing created)
+restore("doc", "cy", 1)                   -> returns 3, content(3) = "a", history ends "3:cy"
+restore("doc", "cy", 3)                   -> returns 3   (already the latest content)
 
-diff("a\nb\nc\nd", "a\nB\nc\nd\ne"):
+Merge, different lines (v1 = "l1\nl2\nl3\nl4\nl5")
+ann: edit(base 1) -> "L1\nl2\nl3\nl4\nl5"                          => v2
+bob: edit(base 1) -> "l1\nl2\nl3\nl4\nL5"   (stale, other line)     => returns 3, content "L1\nl2\nl3\nl4\nL5", author bob
+
+Merge, adjacent lines are fine
+ann: base 1 -> "l1\nl2\nX\nl4\nl5" (line 3)   bob: base 1 -> "l1\nY\nl3\nl4\nl5" (line 2)
+                                         => merged "l1\nY\nX\nl4\nl5"
+
+Merge, insertion and deletion elsewhere
+ann: base 1 -> "l1\nnew\nl2\nl3\nl4\nl5"   bob: base 1 -> "l1\nl2\nl3\nl5" (deletes l4)
+                                         => merged "l1\nnew\nl2\nl3\nl5"
+
+Conflicts (nothing created, latest unchanged)
+ann: base 1 -> "l1\nl2\nANN\nl4\nl5"; bob: base 1 -> "l1\nl2\nBOB\nl4\nl5"   => conflict error
+v1 = "a\nb"; ann inserts "x" between, bob inserts "y" between (both base 1)    => conflict error
+
+Same change twice is accepted
+ann and bob both turn line 3 into "SAME" from base 1 -> bob's call returns 2, history stays length 2
+
+diff(from = "a\nb\nc\nd", to = "a\nB\nc\nd\ne")
   "  a", "- b", "+ B", "  c", "  d", "+ e"
+diff in the other direction:
+  "  a", "- B", "+ b", "  c", "  d", "- e"
+diff of a version with itself: every line prefixed with two spaces
 ```
+
+## Edge cases
+
+- Invalid input is an error (Java `IllegalArgumentException`, Rust `UnknownDocument` / `UnknownVersion` / `AlreadyExists`): creating an existing document; `latest`, `content`, `edit`, `restore`, `history` or `diff` on an unknown document; version `0` or `latest + 1` for `content`; a base of `0` or `latest + 1` for `edit`.
+- Eight concurrent stale edits from base 1, each changing a different line of an 8-line document, must all succeed and end as version 9 with all eight changes applied.
+- Eight concurrent edits from base 1 changing the same line: exactly one succeeds, the other seven get the conflict error, and latest is 2.
+- Under concurrent writers and readers, `latest(d)` always names a version whose `content` and `history` entry already exist, and `history` entry `i` (1-based) starts with `i:`.
 
 ## Behavioral contract
 
@@ -143,10 +178,6 @@ These tests are black-box: they only call the contract above, so any class desig
 - Merge: stale edits on different lines, insertion before + deletion after, adjacent lines (no conflict), same line (conflict), two insertions at the same place (conflict), same change twice (accepted, no duplicate version).
 - Concurrency: 8 threads edit 8 different lines from base 1 and all are merged (9 versions); 8 threads edit the same line, exactly one wins; mixed writers/readers keep history gapless; 100x repeat with 4 threads.
 - More edge cases (200 versions of a 2,000-line document, two stale edits against a moved base) are in `interviewer/`.
-
-## Language notes
-
-`split("\n", -1)` keeps trailing empty lines; `String.join("\n", lines)` reverses it. A `ReentrantLock` per document (or `synchronized (doc)`) around read-merge-append is enough; the concurrency tests only need atomic compare-and-append.
 
 ## Running
 

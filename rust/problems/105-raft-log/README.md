@@ -15,6 +15,8 @@ We need a replicated log that keeps accepting commands as long as a majority of 
 
 Clients send commands to whichever node they believe is the leader; a node that is not the leader refuses. The cluster runs in a simulated network that loses, duplicates, delays and reorders messages, crashes nodes (paused, memory kept) and splits into partitions. The tests check the Raft safety properties after EVERY simulated millisecond, so being right most of the time is not enough.
 
+**In short:** one Raft node. It elects a leader, accepts commands on the leader with `propose`, replicates them to followers, and exposes the commands that are safely committed through `committed()`. The tests check after every simulated millisecond that no term has two leaders and that committed lists never change and never disagree between nodes.
+
 ## Requirements
 
 1. Election: a follower that hears nothing for a randomly drawn timeout in [150, 300] ms (from the node's seeded generator, redrawn after every reset) becomes a candidate in a new term and asks for votes. One vote per term. A higher term seen in any message makes the node adopt it and become a FOLLOWER. A majority of votes makes the candidate LEADER.
@@ -28,7 +30,7 @@ Clients send commands to whichever node they believe is the leader; a node that 
 
 ## Simulation rules and constraints
 
-- Everything runs in a deterministic, single-threaded simulation (`SimNet`): the tests call `onMessage` / `onTick` on your object, never your own threads or timers. No locking is needed (the Rust traits take `&self`, so keep state in a `Mutex`).
+- Everything runs in a deterministic, single-threaded simulation (`SimNet`): the tests call `onMessage` / `onTick` on your object, never your own threads or timers. The Rust traits take `&self`.
 - Time is simulated: one tick = 1 ms, `onTick(nowMs)` is called once per millisecond with the current time. Never read the wall clock, never sleep; derive every timeout from the `nowMs` you were handed.
 - Network model: a message sent now is delivered after a latency of 1-5 ms by default (random per message, so messages can overtake each other). Tests can change the latency range, drop a fraction of the messages, duplicate a fraction, cut the network into partitions (messages across the cut are lost, including ones already in flight) and heal it.
 - Crash model: a crashed node gets no ticks and no messages and its sends are ignored, but its memory is kept (it is paused, not wiped). After `recover` it simply continues with its first tick.
@@ -41,11 +43,74 @@ Clients send commands to whichever node they believe is the leader; a node that 
 
 ```
 3 nodes, leader n1 (term 3).   n1.propose("a") -> returns index 2   (index 1 is n1's hidden no-op)
-n1 -> n2,n3: AppendEntries(prev=(1,term3), entries=[a@2])   n2 acks   -> majority (n1+n2) -> commitIndex=2
+n1 -> n2,n3: AppendEntries(prev=(1,term3), entries=[a@2])   n2 acks   -> majority (n1+n2) -> commit_index=2
 next heartbeat carries leaderCommit=2 -> n2, n3 commit; committed() == ["a"] on all nodes
 n1 partitioned alone: propose("doomed") accepted at index 3, never committed.
-n2 elected term 4, commits "winner" at index 3 -> on heal n1 steps down, its entry 3 (term 3) is overwritten.
+n2 elected term 4: appends its own no-op at index 3 (term 4), then commits "winner" at index 4 ->
+on heal n1 steps down, its entry 3 ("doomed", term 3) is overwritten; committed() == ["a","winner"] everywhere.
 ```
+
+Index versus command list (no-ops take an index but are hidden):
+
+```
+log (index:term:command)  1:t1:<no-op>  2:t1:"a"  3:t2:<no-op>  4:t2:"b"
+commit_index() == 4  ->  committed() == ["a", "b"]      commit_index() == 2 -> committed() == ["a"]
+```
+
+Voting with logs (voter's log ends at index 5 in term 2):
+
+```
+candidate's last entry is (index 3, term 3)  -> granted: higher last term wins even though its log is shorter
+candidate's last entry is (index 4, term 2)  -> refused: same last term but shorter
+candidate's last entry is (index 5, term 2)  -> granted: same last term, same length ("at least as up to date")
+(the term and one-vote-per-term rules of problem 99 apply on top of this)
+```
+
+Rejecting and backing off (leader log has entries 1..5; follower has 1..2 only; "t" stands for each entry's term):
+
+```
+leader first tries prev=(5,t) with no entries -> follower has no entry at index 5: rejects
+leader lowers that follower's nextIndex by one and retries: prev=(4,t) with entries [5]     -> rejected
+                                                           prev=(3,t) with entries [4,5]   -> rejected
+                                                           prev=(2,t) with entries [3,4,5] -> prev matches: follower appends 3,4,5 and acknowledges
+```
+
+Conflicts, and stale AppendEntries that must not shorten the log:
+
+```
+follower log: 1:t1  2:t2 (written by an old leader)  3:t2
+new leader (term 3) sends prev=(1,t1), entries [2:t3]
+  -> index 2 exists with a different term: CONFLICT, so entries 2 and 3 are deleted and 2:t3 is appended
+a delayed duplicate AppendEntries carrying only prev=(1,t1), entries [2:t3] arrives when the follower already has 1:t1 2:t3 3:t3
+  -> every carried entry already matches: nothing is deleted, entry 3 stays
+```
+
+Commit only counts own-term entries:
+
+```
+leader n1 in term 4 holds entry 2 (term 3) on a majority, and its new no-op 3 (term 4) only on itself
+  -> commit_index stays below 2 (an older-term entry is not committed by counting replicas)
+no-op 3 reaches a majority -> commit_index becomes 3; entries 2 and 3 commit together
+```
+
+## Edge cases
+
+- `propose` returns `None` on a FOLLOWER or CANDIDATE; on the leader it returns the index of the new entry. Consecutive proposals on the same leader (same term) return consecutive indexes. Accepted is not committed.
+- A node that lost leadership (step-down or higher term) keeps its uncommitted entries only until a new leader's log overwrites them; they never show up in `committed()` if they were overwritten.
+- A follower's commit index is min(leaderCommit, index of the last entry it verified in this AppendEntries); a heartbeat claiming leaderCommit = 10 to a follower that only verified up to index 6 moves it to 6. A commit index never decreases.
+- Check-quorum: replies from a majority (counting the leader itself) must have arrived within the last 300 ms, otherwise the leader steps down. A leader isolated from its followers cannot commit and stops being leader within about 700 ms of the isolation.
+- A restarted/recovered node sees time jump forward; it must not start a burst of elections because of that.
+
+## Glossary
+
+- **Term**: election round counter; higher terms override lower ones.
+- **Log entry / index**: a command tagged with the term it was created in and a 1-based position in the log.
+- **No-op**: a placeholder entry a new leader appends at the start of its term; it counts in indexes, not in `committed()`.
+- **AppendEntries**: the leader's message that both replicates entries and acts as heartbeat; it names the entry just before the new ones (prevIndex, prevTerm).
+- **nextIndex**: the leader's guess of the next index to send to a given follower; lowered after a rejection.
+- **Commit index**: the highest index known to be safely stored on a majority (of a current-term entry); everything up to it is final.
+- **Up to date**: log comparison for votes: the log whose last entry has the higher term is newer; with equal last terms the longer log is newer.
+- **Deposed leader**: a leader that has learned of a higher term or lost its majority.
 
 ## Behavioral contract
 
@@ -68,7 +133,7 @@ The tests drive your system through the thin contract below (`src/contract.rs`).
 //! Thin test entry point. One instance is ONE node of a Raft cluster; the tests run the nodes inside a deterministic
 //! simulation (`playground_support::SimNet`): they deliver messages with `on_message`, advance time with `on_tick`
 //! (once per simulated millisecond) and read the state through the getters. Nodes may only communicate through the
-//! `send` function they were created with. Use interior mutability (`Mutex`) for the state: the trait takes `&self`.
+//! `send` function they were created with. The trait takes `&self`.
 //! A crashed node is only paused (it keeps its memory, so you need no disk), messages to it are lost, and it sees time
 //! jump on recovery.
 //!
@@ -151,7 +216,7 @@ These tests are black-box and deterministic: every node runs inside a seeded sim
 
 ## Language notes
 
-Use a `Vec<Entry>` with a sentinel entry at 0 so indexes are 1-based; keep everything in one `Mutex<Inner>` and collect outgoing messages in a Vec, sending them after the state update. Your own xorshift/`Rng` seeded from `seed` for the timeouts.
+Log indexes are 1-based. Election timeouts come from the seed given to the constructor.
 
 ## Running
 
