@@ -276,7 +276,7 @@ Tick the problems off as you go; you are done with a problem when the tests pass
 | Track | Problems | Focus | Start with |
 |---|---|---|---|
 | [1. Foundations](#track-1---foundations-principles-and-patterns-1-73) | 01-73 | OOP, design principles, SOLID, design patterns, classic LLD designs (parking lot, elevator, chess ...) | [Classes and Objects](java/problems/33-classes-objects/README.md) |
-| [2. Concurrency](#concurrency) | 74-81 (+ 13, 20, 22, 24, 27-31) | locks, deadlocks, wait/notify, thread pools, parallel algorithms | [Ordered Printer](java/problems/76-ordered-printer/README.md) |
+| [2. Concurrency](#concurrency) | 74-81, 120-122 (+ 13, 20, 22, 24, 27-31, 115, 118) | locks, deadlocks, wait/notify, thread pools, parallel algorithms, concurrent data structures | [Ordered Printer](java/problems/76-ordered-printer/README.md) |
 | [3. Classic product systems](#classic-product-systems) | 82-95 (+ 11, 15) | URL shortener, ticketing, food delivery, file system, text editor, SQL engine ... | [URL Shortener](java/problems/82-url-shortener/README.md) |
 | [4. Distributed systems](#distributed-systems-in-process-simulations) | 96-105 | consistent hashing, idempotency, leases, gossip, CRDTs, quorums, Raft, 2PC, sagas |
 | [5. Microsoft LLD round](#microsoft-lld-round-questions) | 106-114 | job scheduler, autofill, comments, document search, data-source layer, config service, parking strategies, multi-module logging, elevator feasibility | [Consistent Hashing](java/problems/96-consistent-hashing/README.md) |
@@ -408,7 +408,7 @@ Open-ended problems that reuse the patterns above. Small games and caches first,
 
 Multithreading and parallel-programming practice at SDE-3 level (Java and Rust). **Work top to bottom** - this is the order of
 learning, not of difficulty: each step uses an idea the earlier ones introduced. Difficulty is shown for reference only.
-Problems marked **new** (74-81) were added for this track; the others already live in the foundations track above and are reused here.
+Problems marked **new** (74-81, 120-122) were added for this track; the others already live in the foundations track above and are reused here.
 Tick the box when the tests pass **and** you can explain your locking choices and the follow-ups out loud.
 
 ### Stage 1 - Waiting and waking
@@ -462,6 +462,18 @@ Tick the box when the tests pass **and** you can explain your locking choices an
 | Step 15 | [Task Scheduler](java/problems/24-task-scheduler/README.md) | Hard | 90 min | delayed and recurring tasks, delay queue, cancellation | [java](java/problems/24-task-scheduler/README.md) · [rust](rust/problems/24-task-scheduler/README.md) | ☐ |
 | Step 16 | [Pub-Sub Message Broker](java/problems/22-pub-sub/README.md) | Medium-Hard | 90 min | topics, subscribers, delivery ordering | [java](java/problems/22-pub-sub/README.md) · [rust](rust/problems/22-pub-sub/README.md) | ☐ |
 | Step 17 | [In-Process Event Bus](java/problems/31-event-bus/README.md) | Hard | 120 min | multiple subscribers, back-pressure, failure isolation, async delivery | [java](java/problems/31-event-bus/README.md) · [rust](rust/problems/31-event-bus/README.md) | ☐ |
+
+### Stage 6 - Concurrent data structures
+
+*Classic structures made safe for many threads: shared state, snapshots and thundering herds. Problems marked **new** were added for this stage.*
+
+| Step | Problem | Difficulty | Time | Key concepts | Code | Done |
+|---|---|---|---:|---|---|:---:|
+| Step 18 | [Concurrent Bloom Filter](java/problems/121-concurrent-bloom-filter/README.md) **new** | Hard | 60 min | atomic bit updates, no false negatives under concurrency, deterministic hashing, bounded false-positive rate | [java](java/problems/121-concurrent-bloom-filter/README.md) · [rust](rust/problems/121-concurrent-bloom-filter/README.md) | ☐ |
+| Step 19 | [Thread-Safe Trie](java/problems/120-thread-safe-trie/README.md) **new** | Hard | 75 min | atomic and snapshot-consistent reads and writes on a shared tree, lock granularity, linearisable operations | [java](java/problems/120-thread-safe-trie/README.md) · [rust](rust/problems/120-thread-safe-trie/README.md) | ☐ |
+| Step 20 | [Versioned Value Store](java/problems/122-versioned-value-store/README.md) **new** | Hard | 75 min | gap-free global versions, consistent snapshots, compare-and-set, atomic batches, compaction | [java](java/problems/122-versioned-value-store/README.md) · [rust](rust/problems/122-versioned-value-store/README.md) | ☐ |
+| Step 21 | [Autocomplete Typeahead Service](java/problems/115-autocomplete-typeahead/README.md) | Hard | 75 min | hot counters under concurrent writers, readers during updates, ranking rules | [java](java/problems/115-autocomplete-typeahead/README.md) · [rust](rust/problems/115-autocomplete-typeahead/README.md) | ☐ |
+| Step 22 | [Search Result Cache](java/problems/118-search-result-cache/README.md) | Hard | 75 min | request coalescing, invalidation racing with in-flight loads, TTL and LRU under contention | [java](java/problems/118-search-result-cache/README.md) · [rust](rust/problems/118-search-result-cache/README.md) | ☐ |
 
 ### How these tests work
 
@@ -768,15 +780,6 @@ Search-system questions that interviews often build on a first-round design: typ
 | 121 | [Concurrent Bloom Filter](java/problems/121-concurrent-bloom-filter/README.md) | Hard | 60 min | L2 |
 | 122 | [Versioned Value Store](java/problems/122-versioned-value-store/README.md) | Hard | 75 min | L2 |
 
-## Concurrent data structures
-
-Interview favourites that combine a classic data structure with thread safety. Each is Level 2 with a Java and a Rust version. Suggested order:
-
-| Step | Problem | Difficulty | Time | Focus | Links | Done |
-|---|---|---|---|---|---|---|
-| Step 1 | [Thread-Safe Trie](java/problems/120-thread-safe-trie/README.md) **new** | Hard | 75 min | atomic and snapshot-consistent concurrent operations, prefix queries, delete, scale | [java](java/problems/120-thread-safe-trie/README.md) · [rust](rust/problems/120-thread-safe-trie/README.md) | ☐ |
-| Step 2 | [Concurrent Bloom Filter](java/problems/121-concurrent-bloom-filter/README.md) **new** | Hard | 60 min | fixed sizing formulas, no false negatives under concurrency, bounded false-positive rate, deterministic hashing | [java](java/problems/121-concurrent-bloom-filter/README.md) · [rust](rust/problems/121-concurrent-bloom-filter/README.md) | ☐ |
-| Step 3 | [Versioned Value Store](java/problems/122-versioned-value-store/README.md) **new** | Hard | 75 min | gap-free global versions, point-in-time reads, compare-and-set, snapshots, atomic batches, compaction | [java](java/problems/122-versioned-value-store/README.md) · [rust](rust/problems/122-versioned-value-store/README.md) | ☐ |
 
 ## The `play` runner (rustlings-style)
 
