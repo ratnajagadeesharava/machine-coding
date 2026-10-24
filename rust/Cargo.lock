@@ -220,6 +220,27 @@ dependencies = [
 ]
 
 [[package]]
+name = "p120_thread_safe_trie"
+version = "0.1.0"
+dependencies = [
+ "playground-support",
+]
+
+[[package]]
+name = "p121_concurrent_bloom_filter"
+version = "0.1.0"
+dependencies = [
+ "playground-support",
+]
+
+[[package]]
+name = "p122_versioned_value_store"
+version = "0.1.0"
+dependencies = [
+ "playground-support",
+]
+
+[[package]]
 name = "p12_travel_itinerary"
 version = "0.1.0"
 dependencies = [

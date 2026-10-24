@@ -129,6 +129,9 @@
     <module>problems/117-query-pipeline</module>
     <module>problems/118-search-result-cache</module>
     <module>problems/119-mini-rag-retriever</module>
+    <module>problems/120-thread-safe-trie</module>
+    <module>problems/121-concurrent-bloom-filter</module>
+    <module>problems/122-versioned-value-store</module>
     <module>problems/113-multi-module-logging</module>
     <module>problems/112-parking-lot-strategies</module>
     <module>problems/111-config-management</module>

@@ -1,7 +1,7 @@
 # Machine Coding + LLD Interview Playground
 
 Senior-level (about 6 years of experience) practice for **machine-coding and low-level-design interviews**, in **Java 21** and **Rust**.
-119 problems, each with requirements, a behavioural contract, runnable tests, hints, follow-ups and a scoring rubric.
+122 problems, each with requirements, a behavioural contract, runnable tests, hints, follow-ups and a scoring rubric.
 
 > **Give me the requirements. Give me the tests. Give me the playground. Do NOT give me the architecture.**
 
@@ -256,6 +256,15 @@ Tick a box when the tests pass **and** you can explain your design. In your own 
 - [ ] 117 · [Search Query Pipeline](java/problems/117-query-pipeline/README.md) · [rust](rust/problems/117-query-pipeline/README.md)
 - [ ] 118 · [Search Result Cache](java/problems/118-search-result-cache/README.md) · [rust](rust/problems/118-search-result-cache/README.md)
 - [ ] 119 · [Mini RAG Retrieval Component](java/problems/119-mini-rag-retriever/README.md) · [rust](rust/problems/119-mini-rag-retriever/README.md)
+
+</details>
+
+<details>
+<summary><b>120-122 Concurrent data structures</b></summary>
+
+- [ ] 120 · [Thread-Safe Trie](java/problems/120-thread-safe-trie/README.md) · [rust](rust/problems/120-thread-safe-trie/README.md)
+- [ ] 121 · [Concurrent Bloom Filter](java/problems/121-concurrent-bloom-filter/README.md) · [rust](rust/problems/121-concurrent-bloom-filter/README.md)
+- [ ] 122 · [Versioned Value Store](java/problems/122-versioned-value-store/README.md) · [rust](rust/problems/122-versioned-value-store/README.md)
 
 </details>
 
@@ -750,6 +759,24 @@ Search-system questions that interviews often build on a first-round design: typ
 | Step 3 | [Search Query Pipeline](java/problems/117-query-pipeline/README.md) **new** | Medium-Hard | 60 min | parse, spell-correct, synonyms, filter, rank, highlight; adding a step without touching the others | [java](java/problems/117-query-pipeline/README.md) · [rust](rust/problems/117-query-pipeline/README.md) | ☐ |
 | Step 4 | [Search Result Cache](java/problems/118-search-result-cache/README.md) **new** | Hard | 75 min | normalised query keys, TTL and LRU, invalidation on index change, request coalescing | [java](java/problems/118-search-result-cache/README.md) · [rust](rust/problems/118-search-result-cache/README.md) | ☐ |
 | Step 5 | [Mini RAG Retrieval Component](java/problems/119-mini-rag-retriever/README.md) **new** | Hard | 90 min | chunking, swappable embedder and vector store, cosine retrieval, budgeted prompt building | [java](java/problems/119-mini-rag-retriever/README.md) · [rust](rust/problems/119-mini-rag-retriever/README.md) | ☐ |
+
+### 120-122 Concurrent data structures
+
+| # | Problem | Difficulty | Time | Level |
+|---|---|---|---|---|
+| 120 | [Thread-Safe Trie](java/problems/120-thread-safe-trie/README.md) | Hard | 75 min | L2 |
+| 121 | [Concurrent Bloom Filter](java/problems/121-concurrent-bloom-filter/README.md) | Hard | 60 min | L2 |
+| 122 | [Versioned Value Store](java/problems/122-versioned-value-store/README.md) | Hard | 75 min | L2 |
+
+## Concurrent data structures
+
+Interview favourites that combine a classic data structure with thread safety. Each is Level 2 with a Java and a Rust version. Suggested order:
+
+| Step | Problem | Difficulty | Time | Focus | Links | Done |
+|---|---|---|---|---|---|---|
+| Step 1 | [Thread-Safe Trie](java/problems/120-thread-safe-trie/README.md) **new** | Hard | 75 min | atomic and snapshot-consistent concurrent operations, prefix queries, delete, scale | [java](java/problems/120-thread-safe-trie/README.md) · [rust](rust/problems/120-thread-safe-trie/README.md) | ☐ |
+| Step 2 | [Concurrent Bloom Filter](java/problems/121-concurrent-bloom-filter/README.md) **new** | Hard | 60 min | fixed sizing formulas, no false negatives under concurrency, bounded false-positive rate, deterministic hashing | [java](java/problems/121-concurrent-bloom-filter/README.md) · [rust](rust/problems/121-concurrent-bloom-filter/README.md) | ☐ |
+| Step 3 | [Versioned Value Store](java/problems/122-versioned-value-store/README.md) **new** | Hard | 75 min | gap-free global versions, point-in-time reads, compare-and-set, snapshots, atomic batches, compaction | [java](java/problems/122-versioned-value-store/README.md) · [rust](rust/problems/122-versioned-value-store/README.md) | ☐ |
 
 ## The `play` runner (rustlings-style)
 
