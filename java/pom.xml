@@ -132,6 +132,27 @@
     <module>problems/120-thread-safe-trie</module>
     <module>problems/121-concurrent-bloom-filter</module>
     <module>problems/122-versioned-value-store</module>
+    <module>problems/123-snake-game</module>
+    <module>problems/124-kafka-streaming</module>
+    <module>problems/125-music-streaming</module>
+    <module>problems/126-alert-monitoring</module>
+    <module>problems/127-browser-history</module>
+    <module>problems/128-local-search-ranking</module>
+    <module>problems/129-job-candidate-matching</module>
+    <module>problems/130-ludo</module>
+    <module>problems/131-landmark-distances</module>
+    <module>problems/132-word-processor</module>
+    <module>problems/133-spreadsheet-grid</module>
+    <module>problems/134-dictionary-app</module>
+    <module>problems/135-container-orchestrator</module>
+    <module>problems/136-fantasy-leaderboard</module>
+    <module>problems/137-hit-counter-window</module>
+    <module>problems/138-page-visit-counter</module>
+    <module>problems/139-shopping-cart</module>
+    <module>problems/140-custom-hashmap</module>
+    <module>problems/141-matrix-traversal</module>
+    <module>problems/142-restaurant-tokens</module>
+    <module>problems/143-excel-formulas</module>
     <module>problems/113-multi-module-logging</module>
     <module>problems/112-parking-lot-strategies</module>
     <module>problems/111-config-management</module>
