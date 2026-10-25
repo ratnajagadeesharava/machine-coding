@@ -21,7 +21,7 @@ Data structures · Ownership of state · Concurrency model · Implementation · 
 READMEs describe **what** to build (observable behaviour, examples, edge cases), never **how**. Design advice lives only in each
 problem's opt-in `HINTS.md`, so you can try first and open one hint level at a time when stuck. See [CONTRIBUTING.md](CONTRIBUTING.md).
 
-> **Also in this repo: [HLD Room](hld/README.md)** - a whiteboard site where an AI interviewer (Claude) runs high-level system design interviews with you. 26 questions, live feedback, a scored report. Needs Node.js and an Anthropic API key.
+> **Also in this repo: [HLD Room](hld/README.md)** - a whiteboard site where an AI interviewer (Claude) runs high-level system design interviews with you. 26 questions, live feedback, a scored report, plus quizzes (with an AI tutor and an AI quiz generator). Needs Node.js and an Anthropic API key.
 
 ## Contents
 

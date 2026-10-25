@@ -7,6 +7,7 @@ import { fileURLToPath } from 'node:url';
 import { chromium } from 'playwright-core';
 import { createAi } from '../server/ai.js';
 import { createServer, loadQuestions } from '../server/index.js';
+import { loadQuizzes } from '../server/quiz.js';
 import { createMockClient } from '../server/mock.js';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
@@ -25,7 +26,7 @@ function findChrome() {
 
 const server = createServer({
   ai: createAi({ client: createMockClient(), model: 'mock', effort: 'none' }),
-  questions: loadQuestions(), mode: 'mock', model: 'mock',
+  questions: loadQuestions(), quizzes: loadQuizzes(path.join(here, '..', 'quizzes')), mode: 'mock', model: 'mock',
 });
 await new Promise((r) => server.listen(0, '127.0.0.1', r));
 const url = `http://127.0.0.1:${server.address().port}/`;
@@ -116,6 +117,105 @@ try {
   if (shots) await page.screenshot({ path: path.join(shots, 'report.png') });
   await page.click('#report-close');
   assert.equal(await page.locator('#btn-feedback:not([hidden])').count(), 1);
+
+
+  // ---------- quiz page ----------
+  const quizDef = await (await fetch(`${url}api/quizzes/scaling-reads`)).json();
+  const byPrompt = new Map(quizDef.questions.map((q) => [q.prompt, q]));
+  await page.goto(url);
+  await page.click('.nav a[href="/quiz.html"]');
+  await page.waitForSelector('.card');
+  assert.match(await page.textContent('.card h3'), /Scaling Reads/);
+  assert.equal(await page.locator('#btn-quit:not([hidden])').count(), 0);
+
+  const answer = async (right) => {
+    const prompt = (await page.textContent('#q-prompt')).trim();
+    const q = byPrompt.get(prompt);
+    assert.ok(q, `unknown prompt: ${prompt}`);
+    const texts = (await page.locator('.opt .txt').allTextContents()).map((t) => t.trim());
+    const text = (o) => o.text;
+    const want = right ? q.options.filter((o) => q.correct.includes(o.id)) : [q.options.find((o) => !q.correct.includes(o.id))];
+    for (const o of want) {
+      const idx = texts.findIndex((t) => t === text(o));
+      assert.ok(idx >= 0, `option not found: ${o.text}`);
+      await page.locator('.opt').nth(idx).click();
+    }
+    await page.click('#btn-check');
+    return q;
+  };
+
+  await page.click('.card .btn:has-text("Quick 10")');
+  await page.waitForSelector('#q-options .opt');
+  assert.match(await page.textContent('#run-count'), /Question 1 of 10/);
+  assert.equal(await page.locator('#btn-check').isDisabled(), true, 'cannot check without choosing');
+
+  // question 1 right, question 2 wrong (and ask the tutor about it), the rest right except one more
+  let wrongCount = 0;
+  for (let i = 0; i < 10; i++) {
+    const right = !(i === 1 || i === 6);
+    if (!right) wrongCount += 1;
+    await answer(right);
+    assert.match(await page.textContent('#q-verdict'), right ? /Correct!/ : /Not quite|Partly right/);
+    assert.equal(await page.locator('.opt .why').count() > 0, true, 'every option explains itself after checking');
+    if (i === 1) {
+      await page.click('#btn-tutor');
+      await page.waitForFunction(() => /Mock tutor: let us look at/.test(document.querySelector('#tutor-text')?.textContent || ''));
+      await page.fill('#tutor-input', 'Can you give an example?');
+      await page.press('#tutor-input', 'Enter');
+      await page.waitForFunction(() => /Mock tutor follow-up: Can you give an example\?/.test(document.querySelector('#tutor-text')?.textContent || ''));
+    }
+    await page.click('#btn-next');
+  }
+  await page.waitForSelector('#view-result:not([hidden])');
+  assert.match(await page.textContent('#ring-pct'), /80%/);
+  assert.match(await page.textContent('#result-sub'), /8 of 10 correct/);
+  assert.ok((await page.locator('#by-concept .bc-row').count()) >= 3);
+  assert.equal(await page.locator('#review .rv').count(), wrongCount, 'review shows only wrong answers by default');
+  await page.uncheck('#only-wrong');
+  assert.equal(await page.locator('#review .rv').count(), 10);
+  if (shots) await page.screenshot({ path: path.join(shots, 'quiz-result.png') });
+
+  // retry the two missed questions, then everything is on the home page with a best score
+  await page.click('#btn-retry-missed');
+  await page.waitForSelector('#q-options .opt');
+  assert.match(await page.textContent('#run-count'), /Question 1 of 2/);
+  await answer(true); await page.click('#btn-next');
+  await answer(true); await page.click('#btn-next');
+  await page.waitForSelector('#view-result:not([hidden])');
+  assert.match(await page.textContent('#ring-pct'), /100%/);
+  assert.equal(await page.locator('#btn-retry-missed:not([hidden])').count(), 0, 'nothing left to retry');
+  await page.click('#btn-home');
+  assert.equal(await page.locator('.card .btn:has-text("Retry missed")').count(), 0);
+
+  // exam mode: no feedback until the end
+  await page.click('.card .btn:has-text("Quick 10")');
+  await page.waitForSelector('#q-options .opt');
+  await page.uncheck('#instant');
+  assert.equal(await page.locator('#btn-check:not([hidden])').count(), 0);
+  await page.locator('.opt').first().click();
+  await page.click('#btn-next');
+  assert.match(await page.textContent('#run-count'), /Question 2 of 10/);
+  assert.equal(await page.locator('#q-feedback:not([hidden])').count(), 0, 'no feedback in exam mode');
+  await page.click('#btn-quit');
+  await page.click('#confirm-yes');
+  await page.waitForSelector('.card');
+  await page.check('#instant').catch(() => {});
+
+  // generate a quiz with the (mock) AI, start it, delete it
+  await page.fill('#gen-topic', 'Database sharding');
+  await page.selectOption('#gen-count', '5');
+  await page.click('#gen-btn');
+  await page.waitForFunction(() => /Created/.test(document.querySelector('#gen-status')?.textContent || ''));
+  assert.equal(await page.locator('.card:has-text("AI generated")').count(), 1);
+  await page.click('.card:has-text("AI generated") .btn:has-text("Start")');
+  await page.waitForSelector('#q-options .opt');
+  assert.match(await page.textContent('#run-count'), /Question 1 of 5/);
+  await page.click('#btn-quit');
+  await page.click('#confirm-yes');
+  await page.waitForSelector('.card');
+  await page.click('.card:has-text("AI generated") .btn:has-text("Delete")');
+  await page.click('#confirm-yes');
+  await page.waitForFunction(() => document.querySelectorAll('.card').length === 1);
 
   assert.deepEqual(errors, [], `browser errors: ${errors.join(' | ')}`);
   console.log('e2e ok');

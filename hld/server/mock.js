@@ -53,12 +53,47 @@ function mockEvaluation(params) {
   };
 }
 
+function isTutor(params) {
+  const sys = params.system;
+  const text = Array.isArray(sys) ? sys.map((b) => b.text || '').join('') : String(sys || '');
+  return text.includes('quiz tutor');
+}
+
+function mockExplain(params) {
+  const text = lastUserText(params);
+  const concept = /Concept: (.+)/.exec(text)?.[1] || 'this concept';
+  const chose = /Learner chose: (.+)/.exec(text)?.[1] || '(nothing)';
+  if (!text.includes('Explain this to me.')) return `Mock tutor follow-up: ${text.slice(0, 80)}`;
+  return `Mock tutor: let us look at ${concept}. You chose ${chose}. The reference explanation is the key idea to remember.`;
+}
+
+function mockQuiz(params) {
+  const content = lastUserText(params);
+  const topic = /Topic: (.+)/.exec(content)?.[1] || 'Mock topic';
+  const count = Number(/exactly (\d+) questions/.exec(content)?.[1]) || 5;
+  const questions = Array.from({ length: count }, (_, i) => ({
+    concept: `Mock concept ${(i % 3) + 1}`,
+    type: 'single',
+    difficulty: (i % 3) + 1,
+    prompt: `Mock question ${i + 1} about ${topic}: which option is correct?`,
+    options: ['The right answer', 'A plausible distractor', 'Another distractor', 'A third distractor'].map((text, k) => ({ text: `${text} (${i + 1})`, why: k === 0 ? 'This is the right one.' : 'This one is wrong.' })),
+    correct_indexes: [i % 4],
+    explanation: 'Mock explanation for the generated question.',
+  }));
+  // keep the correct option text consistent with its position
+  for (const q of questions) {
+    const c = q.correct_indexes[0];
+    [q.options[0], q.options[c]] = [q.options[c], q.options[0]];
+  }
+  return { title: `Mock quiz: ${topic.slice(0, 40)}`, description: 'A canned quiz from demo mode.', questions };
+}
+
 export function createMockClient({ delayMs = 3 } = {}) {
   const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
   return {
     messages: {
       stream(params) {
-        const text = mockReply(params);
+        const text = isTutor(params) ? mockExplain(params) : mockReply(params);
         let aborted = false;
         const iterator = (async function* () {
           for (const word of text.split(/(?<= )/)) {
@@ -75,7 +110,7 @@ export function createMockClient({ delayMs = 3 } = {}) {
       },
       async create(params) {
         const props = params.output_config?.format?.schema?.properties || {};
-        const body = 'speak' in props ? mockWatch(params) : mockEvaluation(params);
+        const body = 'speak' in props ? mockWatch(params) : 'questions' in props ? mockQuiz(params) : mockEvaluation(params);
         return { stop_reason: 'end_turn', content: [{ type: 'text', text: JSON.stringify(body) }] };
       },
     },

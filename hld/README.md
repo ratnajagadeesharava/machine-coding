@@ -26,6 +26,26 @@ trying the whiteboard, timer and layout.
 > **Your key stays on the server.** It is read from `hld/.env` (git-ignored) or the `ANTHROPIC_API_KEY` environment
 > variable. The browser never sees it, and the server only listens on `127.0.0.1` unless you change `HLD_HOST`.
 
+## Quizzes
+
+The **Quizzes** tab (`/quiz.html`) is for checking what you know between interviews.
+
+- **Scaling Reads** ships with the app: 29 questions (single choice, select-all, true/false) covering indexing, denormalisation,
+  read replicas, sharding, caching, invalidation, CDNs, hot keys and stampedes, and interview judgement.
+- **Modes:** full quiz, **Quick 10** (a random ten), and **Retry missed** (only what you got wrong last time). A toggle switches between
+  feedback after every question and exam style with everything revealed at the end.
+- **Every option explains itself** once you have answered, and a summary shows your score by concept, weakest first, with a review
+  of each answer. Options are shuffled each attempt.
+- **Explain more with Claude** opens a tutor on any question: it explains why the right answer is right and why your pick was
+  tempting, and you can ask follow-ups.
+- **Create a quiz with AI:** give a topic, or paste your own study notes, choose the length and level, and Claude writes a quiz
+  (validated against the same quality rules). Generated quizzes are saved in your browser and can be deleted.
+
+![Quiz question with explanations](docs/quiz.png)
+
+Your scores and generated quizzes live in the browser (localStorage). To add a quiz to the bundled set see
+[quizzes/AUTHORING.md](quizzes/AUTHORING.md).
+
 ## Using it
 
 | Do this | What happens |
@@ -71,15 +91,17 @@ choose; the question's interviewer notes are cached between requests.
 
 ```
 hld/
-  server/        index.js (HTTP + SSE API), ai.js (Claude calls), prompts.js (Aria's instructions), mock.js, env.js, check.js
-  shared/        board.js - board model, text description for the AI, validation (used by browser and server)
-  public/        index.html, styles.css, app.js (UI, timer, chat), whiteboard.js (SVG editor)
-  questions/     questions.json - the question bank (26 questions)
+  server/        index.js (HTTP + SSE API), ai.js (Claude calls), prompts.js (Aria's instructions), quiz.js (quiz loading, tutor and generator prompts), mock.js, env.js, check.js
+  shared/        board.js (board model, text description for the AI), quiz.js (quiz validation and grading), used by browser and server
+  public/        index.html + app.js (interview room), whiteboard.js (SVG editor), quiz.html + quiz.js (quizzes), styles.css, quiz.css
+  questions/     questions.json - the interview question bank (26 questions)
+  quizzes/       the bundled quizzes (JSON) and AUTHORING.md
   test/          unit and API tests, plus an end-to-end browser test
 ```
 
-API (all JSON except chat, which streams Server-Sent Events): `GET /api/health`, `GET /api/questions`,
-`POST /api/chat`, `POST /api/watch`, `POST /api/evaluate`.
+API (all JSON except the two streaming endpoints, which use Server-Sent Events): `GET /api/health`, `GET /api/questions`,
+`POST /api/chat` (stream), `POST /api/watch`, `POST /api/evaluate`, `GET /api/quizzes`, `GET /api/quizzes/:id`,
+`POST /api/quiz/explain` (stream), `POST /api/quiz/generate`.
 
 ## Adding or editing questions
 
@@ -95,9 +117,9 @@ Edit `questions/questions.json`. Each entry has:
 ## Tests
 
 ```bash
-npm test        # unit + API tests (board model, prompts, Claude request shapes with a fake client, HTTP/SSE server)
-npm run e2e     # drives the real UI in headless Chromium against the demo-mode server (set HLD_CHROME if Chromium is not found)
-npm run check   # live check of your API key and model (makes two tiny real requests)
+npm test        # unit + API tests (board model, prompts, quiz model and bank quality rules, Claude request shapes with a fake client, HTTP/SSE server)
+npm run e2e     # drives the real UI (interview room and quizzes) in headless Chromium against the demo-mode server (set HLD_CHROME if Chromium is not found)
+npm run check   # live check of your API key and model (three tiny real requests; add "-- --quiz" to also generate a quiz)
 ```
 
 ## Troubleshooting
