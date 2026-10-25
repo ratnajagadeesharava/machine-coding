@@ -6,136 +6,148 @@
   <title>HLD Room</title>
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%230f6b63'/%3E%3Crect x='6' y='7' width='9' height='8' rx='2' fill='none' stroke='white' stroke-width='2'/%3E%3Crect x='17' y='17' width='9' height='8' rx='2' fill='none' stroke='white' stroke-width='2'/%3E%3Cpath d='M15 11h4v6' fill='none' stroke='white' stroke-width='2'/%3E%3C/svg%3E">
   <link rel="stylesheet" href="/styles.css">
+  <link rel="stylesheet" href="/home.css">
 </head>
-<body>
-<div id="app" class="app">
-  <header class="topbar">
-    <div class="brand">
-      <span class="logo" aria-hidden="true">
-        <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="8" height="7" rx="2"/><rect x="13" y="13" width="8" height="7" rx="2"/><path d="M11 7.5h3a2 2 0 0 1 2 2V13"/></svg>
-      </span>
-      <span class="brand-name">HLD Room</span>
-    </div>
-    <div class="title">
-      <h1 id="q-title">Loading…</h1>
-      <p id="q-sub"></p>
-    </div>
-    <div class="timer-wrap">
-      <span class="timer-label">TIME LEFT</span>
-      <span id="timer" class="timer" role="timer" aria-live="off">--:--</span>
-    </div>
-    <div class="actions">
-      <button id="btn-start" class="btn primary" type="button">Start</button>
-      <button id="btn-pause" class="btn" type="button" hidden>
-        <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor" aria-hidden="true"><rect x="6" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/></svg>
-        <span id="btn-pause-label">Pause</span>
-      </button>
-      <button id="btn-end" class="btn danger" type="button" hidden>
-        <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor" aria-hidden="true"><rect x="5" y="5" width="14" height="14" rx="2"/></svg>
-        End
-      </button>
-      <button id="btn-feedback" class="btn" type="button" hidden>View feedback</button>
-    </div>
-  </header>
+<body class="home-page">
+<header class="topbar">
+  <a class="brand" href="/" aria-label="HLD Room home">
+    <span class="logo" aria-hidden="true">
+      <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="8" height="7" rx="2"/><rect x="13" y="13" width="8" height="7" rx="2"/><path d="M11 7.5h3a2 2 0 0 1 2 2V13"/></svg>
+    </span>
+    <span class="brand-name">HLD Room</span>
+  </a>
+  <nav class="nav" aria-label="Sections">
+    <a href="/" class="on" aria-current="page">Home</a>
+    <a href="/board.html">Whiteboard</a>
+    <a href="/quiz.html">Quizzes</a>
+  </nav>
+  <div class="title"></div>
+</header>
+<div id="banner" class="banner" role="status" hidden></div>
+<div id="notice" class="banner info" role="status" hidden></div>
 
-  <div id="banner" class="banner" role="status" hidden></div>
+<main class="hm-main" id="main">
+  <section class="hm-hero" aria-labelledby="hero-title">
+    <h1 id="hero-title">Practise system design, your way</h1>
+    <p>Pick a question, write your own, or just open a whiteboard. The interviewer, Aria, only ever sees the question you choose.</p>
+  </section>
 
-  <aside class="left" aria-label="Questions and prompt">
-    <h2 class="eyebrow">CHOOSE A QUESTION</h2>
-    <div class="q-filters">
+  <section class="hm-entries" aria-label="Ways to start">
+    <a class="hm-entry" href="#browse" id="entry-pick">
+      <span class="hm-entry-icon" aria-hidden="true"><svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="16" rx="3"/><path d="M8 9h8M8 13h8M8 17h5"/></svg></span>
+      <b>Pick a question</b>
+      <span>26 classic designs, from a URL shortener to a payments ledger.</span>
+    </a>
+    <a class="hm-entry" href="#write" id="entry-write">
+      <span class="hm-entry-icon" aria-hidden="true"><svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg></span>
+      <b>Write your own</b>
+      <span>Bring a problem from work or an interview and set the level and style.</span>
+    </a>
+    <a class="hm-entry" href="/board.html" id="entry-board">
+      <span class="hm-entry-icon" aria-hidden="true"><svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="13" rx="2"/><path d="M8 21h8M12 17v4"/></svg></span>
+      <b>Open a blank whiteboard</b>
+      <span>No question, no timer, no bot. Just a canvas that saves in your browser.</span>
+    </a>
+  </section>
+
+  <section id="continue" class="hm-block" aria-labelledby="continue-title" hidden>
+    <h2 id="continue-title" class="eyebrow">CONTINUE</h2>
+    <div id="continue-list" class="hm-continue"></div>
+  </section>
+
+  <section id="browse" class="hm-block" aria-labelledby="browse-title">
+    <h2 id="browse-title" class="eyebrow">QUESTION BANK</h2>
+    <div class="hm-filters">
       <input id="q-search" type="search" placeholder="Search questions" aria-label="Search questions" autocomplete="off">
-      <div id="q-diff" class="seg" role="group" aria-label="Difficulty">
-        <button type="button" data-diff="All" class="on">All</button>
-        <button type="button" data-diff="Easy">Easy</button>
-        <button type="button" data-diff="Medium">Medium</button>
-        <button type="button" data-diff="Hard">Hard</button>
+      <div id="q-diff" class="hm-seg" role="group" aria-label="Difficulty">
+        <button type="button" data-diff="All" class="on" aria-pressed="true">All</button>
+        <button type="button" data-diff="Easy" aria-pressed="false">Easy</button>
+        <button type="button" data-diff="Medium" aria-pressed="false">Medium</button>
+        <button type="button" data-diff="Hard" aria-pressed="false">Hard</button>
       </div>
+      <select id="q-category" aria-label="Category"><option value="All">All categories</option></select>
+      <span id="q-count" class="hm-count" aria-live="polite"></span>
     </div>
-    <div id="q-list" class="q-list" role="listbox" aria-label="Questions"></div>
+    <div id="q-grid" class="hm-grid"><p class="hm-empty">Loading questions...</p></div>
+  </section>
 
-    <div class="prompt">
-      <h2 class="eyebrow">THE PROMPT</h2>
-      <p id="q-prompt" class="prompt-text"></p>
+  <section id="write" class="hm-block hm-write" aria-labelledby="write-title">
+    <div class="hm-write-form">
+      <h2 id="write-title" class="eyebrow">WRITE YOUR OWN QUESTION</h2>
+      <form id="custom-form" novalidate autocomplete="off">
+        <input type="hidden" id="c-id">
+        <label class="field">Title
+          <input id="c-title" type="text" maxlength="120" placeholder="e.g. Design a ride-sharing dispatcher" aria-describedby="e-title">
+          <span class="err" id="e-title" role="alert"></span>
+        </label>
+        <label class="field">Description
+          <textarea id="c-prompt" rows="5" maxlength="2500" placeholder="What should the system do? Who uses it? What matters most?" aria-describedby="e-prompt"></textarea>
+          <span class="err" id="e-prompt" role="alert"></span>
+        </label>
+        <label class="field">Assumptions <small>(optional, one per line, up to 8)</small>
+          <textarea id="c-assumptions" rows="4" placeholder="50M daily active users&#10;Reads outnumber writes 20 to 1" aria-describedby="e-assumptions"></textarea>
+          <span class="err" id="e-assumptions" role="alert"></span>
+        </label>
+        <div class="hm-row">
+          <label class="field">Time limit
+            <select id="c-time">
+              <option value="15">15 minutes</option><option value="30">30 minutes</option><option value="45" selected>45 minutes</option>
+              <option value="60">60 minutes</option><option value="90">90 minutes</option><option value="custom">Custom...</option>
+            </select>
+          </label>
+          <label class="field" id="c-minutes-wrap" hidden>Minutes (10-120)
+            <input id="c-minutes" type="number" min="10" max="120" step="1" value="45" aria-describedby="e-minutes">
+          </label>
+          <label class="field">Candidate level
+            <select id="c-level"></select>
+          </label>
+          <label class="field">Interviewer style
+            <select id="c-style"></select>
+          </label>
+        </div>
+        <span class="err" id="e-minutes" role="alert"></span>
+        <label class="field">Focus areas <small>(optional)</small>
+          <input id="c-focus" type="text" maxlength="300" placeholder="e.g. consistency, caching, failure handling" aria-describedby="e-focus">
+          <span class="err" id="e-focus" role="alert"></span>
+        </label>
+        <div class="hm-form-actions">
+          <button id="c-start" class="btn primary" type="submit">Start interview</button>
+          <button id="c-save" class="btn" type="button">Save for later</button>
+          <button id="c-reset" class="btn ghost" type="button" hidden>Cancel edit</button>
+        </div>
+      </form>
+    </div>
+    <aside class="hm-customs" aria-labelledby="customs-title">
+      <h2 id="customs-title" class="eyebrow">YOUR QUESTIONS</h2>
+      <div id="customs-list"><p class="hm-empty">Questions you write are saved here, in this browser.</p></div>
+    </aside>
+  </section>
+</main>
+
+<dialog id="start-dialog" class="hm-dialog" aria-labelledby="sd-title">
+  <form method="dialog" id="sd-form">
+    <div class="hm-dialog-head">
+      <div>
+        <h2 id="sd-title"></h2>
+        <div id="sd-chips" class="hm-chips"></div>
+      </div>
+      <button type="button" id="sd-close" class="btn ghost" aria-label="Close">Close</button>
+    </div>
+    <div class="hm-dialog-body">
+      <p id="sd-prompt" class="hm-prompt"></p>
       <h3>You can assume</h3>
-      <ul id="q-assume" class="assume"></ul>
-    </div>
-
-    <p class="watch-note">
-      <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>
-      <span>Aria can see this whiteboard and this chat while the timer runs. Nothing else on your screen.</span>
-    </p>
-  </aside>
-
-  <main class="stage" aria-label="Whiteboard">
-    <div class="toolbar" role="toolbar" aria-label="Drawing tools">
-      <button class="tool on" data-tool="select" title="Select and move (V)" aria-label="Select">
-        <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M5 3l14 8-6 2-2 6z"/></svg>
-      </button>
-      <button class="tool" data-tool="rect" title="Component box (R)" aria-label="Rectangle">
-        <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4" y="6" width="16" height="12" rx="3"/></svg>
-      </button>
-      <button class="tool" data-tool="ellipse" title="Client or actor (O)" aria-label="Ellipse">
-        <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8"><ellipse cx="12" cy="12" rx="8" ry="6"/></svg>
-      </button>
-      <button class="tool" data-tool="database" title="Database (D)" aria-label="Database">
-        <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8"><ellipse cx="12" cy="6" rx="7" ry="3"/><path d="M5 6v12c0 1.7 3.1 3 7 3s7-1.3 7-3V6"/></svg>
-      </button>
-      <button class="tool" data-tool="arrow" title="Arrow (A)" aria-label="Arrow">
-        <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 19L19 5M10 5h9v9"/></svg>
-      </button>
-      <button class="tool" data-tool="text" title="Text (T)" aria-label="Text">
-        <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M5 6h14M12 6v13"/></svg>
-      </button>
-      <button class="tool" data-tool="eraser" title="Eraser (E)" aria-label="Eraser">
-        <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M4 16l9-10 7 6-6 8H8z"/><path d="M8 20h12"/></svg>
-      </button>
-      <span class="sep" aria-hidden="true"></span>
-      <button class="tool" id="btn-undo" title="Undo (Ctrl/Cmd+Z)" aria-label="Undo">
-        <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 14L4 9l5-5"/><path d="M4 9h10a6 6 0 0 1 0 12h-3"/></svg>
-      </button>
-      <button class="tool" id="btn-trash" title="Delete selected (Del); clear board when nothing is selected" aria-label="Delete">
-        <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/></svg>
-      </button>
-    </div>
-    <div id="board" class="board"></div>
-    <div id="pill" class="pill">
-      <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>
-      <span id="pill-text">Aria is watching this board</span>
-    </div>
-  </main>
-
-  <aside class="right" aria-label="Interviewer">
-    <div class="aria-head">
-      <div class="avatar" aria-hidden="true">
-        <svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>
-      </div>
-      <div class="aria-meta">
-        <h2>Aria</h2>
-        <p id="aria-status" class="status"><span class="dot"></span><span id="aria-status-text">Waiting</span></p>
-        <p id="aria-board" class="board-line"></p>
+      <ul id="sd-assume" class="hm-assume"></ul>
+      <div class="hm-row">
+        <label class="field">Candidate level <select id="sd-level"></select><small id="sd-level-hint"></small></label>
+        <label class="field">Interviewer style <select id="sd-style"></select><small id="sd-style-hint"></small></label>
+        <label class="field">Time limit (minutes) <input id="sd-minutes" type="number" min="10" max="120" step="1"></label>
       </div>
     </div>
-    <div class="chips">
-      <button type="button" class="chip" data-quick="clarify">Clarify requirements</button>
-      <button type="button" class="chip" data-quick="hint">Give me a hint</button>
-      <button type="button" class="chip" data-quick="review">Review my board</button>
+    <div class="hm-dialog-foot">
+      <button type="button" id="sd-cancel" class="btn">Cancel</button>
+      <button type="submit" id="sd-start" class="btn primary">Start interview</button>
     </div>
-    <div id="chat" class="chat" aria-live="polite"></div>
-    <form id="chat-form" class="composer" autocomplete="off">
-      <input id="chat-input" type="text" placeholder="Ask Aria a question" aria-label="Message to Aria" maxlength="2000">
-      <button id="chat-send" class="send" type="submit" aria-label="Send">
-        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2L11 13"/><path d="M22 2l-7 20-4-9-9-4z"/></svg>
-      </button>
-    </form>
-  </aside>
-</div>
-
-<dialog id="report" class="report" aria-labelledby="report-title">
-  <div class="report-head">
-    <h2 id="report-title">Interview feedback</h2>
-    <button id="report-close" class="btn" type="button">Close</button>
-  </div>
-  <div id="report-body" class="report-body"></div>
+  </form>
 </dialog>
 
 <dialog id="confirm" class="confirm">
@@ -146,6 +158,6 @@
   </div>
 </dialog>
 
-<script type="module" src="/app.js"></script>
+<script type="module" src="/home.js"></script>
 </body>
 </html>

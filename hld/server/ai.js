@@ -3,6 +3,9 @@ import Anthropic from '@anthropic-ai/sdk';
 import {
   buildContext, chatSystem, evalSystem, normaliseMessages, transcriptText, watchSystem, withContext, formatClock,
 } from './prompts.js';
+import {
+  explainContext, explainSystem, generateSystem, generateUser, GENERATE_SCHEMA, normaliseGenerated,
+} from './quiz.js';
 
 export const DEFAULT_MODEL = 'claude-opus-5-5';
 
@@ -64,7 +67,9 @@ export function friendlyError(err) {
 function effortFor(kind, setting) {
   if (setting === 'none') return undefined;
   if (setting && setting !== 'default') return setting;
-  return kind === 'evaluate' ? 'high' : 'low';
+  if (kind === 'evaluate') return 'high';
+  if (kind === 'generate') return 'medium';
+  return 'low';
 }
 
 function cachedSystem(text) {
@@ -142,7 +147,46 @@ export function createAi({ client, model = DEFAULT_MODEL, effort = 'default' }) 
     return cleanEvaluation(parsed);
   }
 
-  return { chat, watch, evaluate, model };
+  // Streams a tutor-style explanation of a quiz question; `history` carries earlier follow-up turns (assistant first).
+  async function* explain({ question, selected, history, signal }) {
+    const messages = [{ role: 'user', content: `${explainContext(question, selected)}\n\nExplain this to me.` }];
+    for (const m of Array.isArray(history) ? history.slice(-12) : []) {
+      if (!m || (m.role !== 'user' && m.role !== 'assistant') || typeof m.content !== 'string' || !m.content.trim()) continue;
+      const content = m.content.trim().slice(0, 4000);
+      const last = messages[messages.length - 1];
+      if (last.role === m.role) last.content += `\n\n${content}`;
+      else messages.push({ role: m.role, content });
+    }
+    if (messages[messages.length - 1].role !== 'user') throw new AriaError('Ask a question first.', 400);
+    const params = request('explain', explainSystem(), messages, 3000);
+    const stream = client.messages.stream(params, signal ? { signal } : undefined);
+    if (signal) signal.addEventListener('abort', () => stream.abort?.(), { once: true });
+    for await (const event of stream) {
+      if (event.type === 'content_block_delta' && event.delta.type === 'text_delta') yield event.delta.text;
+    }
+    checkStop(await stream.finalMessage());
+  }
+
+  async function generateQuiz({ topic, notes, count, level }) {
+    const params = request('generate', generateSystem(), [{ role: 'user', content: generateUser({ topic, notes, count, level }) }], 16000, {
+      output_config: { format: { type: 'json_schema', schema: GENERATE_SCHEMA } },
+    });
+    const response = await client.messages.create(params);
+    checkStop(response);
+    let parsed;
+    try {
+      parsed = JSON.parse(textOf(response));
+    } catch {
+      throw new AriaError('The quiz came back in an unexpected format. Please try again.', 502);
+    }
+    try {
+      return normaliseGenerated(parsed, { topic, requested: count });
+    } catch (err) {
+      throw new AriaError(`${err.message} Please try again.`, 502);
+    }
+  }
+
+  return { chat, watch, evaluate, explain, generateQuiz, model };
 }
 
 const list = (v, n) => (Array.isArray(v) ? v.filter((s) => typeof s === 'string' && s.trim()).map((s) => s.trim().slice(0, 400)).slice(0, n) : []);

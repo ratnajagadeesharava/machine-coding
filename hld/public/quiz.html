@@ -1,0 +1,129 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Quizzes - HLD Room</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%230f6b63'/%3E%3Crect x='6' y='7' width='9' height='8' rx='2' fill='none' stroke='white' stroke-width='2'/%3E%3Crect x='17' y='17' width='9' height='8' rx='2' fill='none' stroke='white' stroke-width='2'/%3E%3Cpath d='M15 11h4v6' fill='none' stroke='white' stroke-width='2'/%3E%3C/svg%3E">
+  <link rel="stylesheet" href="/styles.css">
+  <link rel="stylesheet" href="/quiz.css">
+</head>
+<body class="quiz-page">
+<header class="topbar">
+  <a class="brand" href="/" aria-label="HLD Room home">
+    <span class="logo" aria-hidden="true">
+      <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="8" height="7" rx="2"/><rect x="13" y="13" width="8" height="7" rx="2"/><path d="M11 7.5h3a2 2 0 0 1 2 2V13"/></svg>
+    </span>
+    <span class="brand-name">HLD Room</span>
+  </a>
+  <nav class="nav" aria-label="Sections">
+    <a href="/">Home</a>
+    <a href="/board.html">Whiteboard</a>
+    <a href="/quiz.html" class="on" aria-current="page">Quizzes</a>
+  </nav>
+  <div class="title"><h1 id="page-title">Quizzes</h1><p id="page-sub">Check what you know, then see why.</p></div>
+  <div class="actions"><button id="btn-quit" class="btn" type="button" hidden>Quit quiz</button></div>
+</header>
+<div id="banner" class="banner" role="status" hidden></div>
+
+<main id="main" class="qmain" tabindex="-1">
+  <!-- home -->
+  <section id="view-home" class="view">
+    <div class="home-grid">
+      <div>
+        <h2 class="eyebrow">AVAILABLE QUIZZES</h2>
+        <div id="cards" class="cards"></div>
+      </div>
+      <aside class="gen" aria-labelledby="gen-title">
+        <h2 id="gen-title" class="eyebrow">CREATE A QUIZ WITH AI</h2>
+        <p class="muted">Pick a topic, or paste your own study notes and Claude will write questions from them, each with an explanation for every option.</p>
+        <form id="gen-form" autocomplete="off">
+          <label for="gen-topic">Topic</label>
+          <input id="gen-topic" type="text" maxlength="200" placeholder="e.g. Database sharding and consistent hashing" required>
+          <label for="gen-notes">Study notes <span class="muted">(optional)</span></label>
+          <textarea id="gen-notes" rows="6" maxlength="12000" placeholder="Paste an article or your notes. Questions will be based on them."></textarea>
+          <div class="gen-row">
+            <div><label for="gen-count">Questions</label>
+              <select id="gen-count"><option>5</option><option selected>10</option><option>15</option><option>20</option><option>25</option></select></div>
+            <div><label for="gen-level">Level</label>
+              <select id="gen-level"><option value="beginner">Beginner</option><option value="intermediate" selected>Intermediate</option><option value="advanced">Advanced</option></select></div>
+          </div>
+          <button id="gen-btn" class="btn primary" type="submit">Generate quiz</button>
+          <p id="gen-status" class="gen-status" role="status"></p>
+        </form>
+      </aside>
+    </div>
+  </section>
+
+  <!-- running -->
+  <section id="view-run" class="view" hidden>
+    <div class="run-top">
+      <div class="progress" role="progressbar" aria-label="Quiz progress" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><i id="progress-fill"></i></div>
+      <div class="run-meta">
+        <span id="run-count">Question 1 of 10</span>
+        <label class="toggle"><input id="instant" type="checkbox" checked> Show answer after each question</label>
+      </div>
+    </div>
+    <article class="qcard" id="qcard" aria-live="polite">
+      <div class="qtags"><span id="q-concept" class="chip-tag"></span><span id="q-diff" class="dots" aria-label="difficulty"></span></div>
+      <h2 id="q-prompt" class="q-prompt"></h2>
+      <p id="q-hint" class="muted"></p>
+      <div id="q-options" class="options" role="group" aria-labelledby="q-prompt"></div>
+      <div id="q-feedback" class="feedback" hidden>
+        <p id="q-verdict" class="verdict-line"></p>
+        <p id="q-explain" class="explain-text"></p>
+        <button id="btn-tutor" class="btn" type="button">Explain more with Claude</button>
+        <div id="tutor" class="tutor" hidden>
+          <div id="tutor-text" class="tutor-text" aria-live="polite"></div>
+          <form id="tutor-form" class="tutor-form" autocomplete="off">
+            <input id="tutor-input" type="text" maxlength="500" placeholder="Ask a follow-up question" aria-label="Follow-up question">
+            <button class="btn" type="submit">Ask</button>
+          </form>
+        </div>
+      </div>
+      <div class="run-actions">
+        <span class="muted kb">Keys: A-F select · Enter check / next</span>
+        <button id="btn-check" class="btn primary" type="button" disabled>Check answer</button>
+        <button id="btn-next" class="btn primary" type="button" hidden>Next</button>
+      </div>
+    </article>
+  </section>
+
+  <!-- results -->
+  <section id="view-result" class="view" hidden>
+    <div class="result-top">
+      <div id="ring" class="ring" role="img" aria-label="Score"><span id="ring-pct">0%</span></div>
+      <div>
+        <h2 id="result-title">Quiz complete</h2>
+        <p id="result-sub" class="muted"></p>
+        <div class="result-actions">
+          <button id="btn-retry-missed" class="btn primary" type="button">Retry missed</button>
+          <button id="btn-retake" class="btn" type="button">Retake</button>
+          <button id="btn-home" class="btn" type="button">All quizzes</button>
+        </div>
+      </div>
+    </div>
+    <div class="result-cols">
+      <section>
+        <h3>By concept <span class="muted">(weakest first)</span></h3>
+        <div id="by-concept" class="by-concept"></div>
+      </section>
+      <section>
+        <div class="review-head"><h3>Review</h3>
+          <label class="toggle"><input id="only-wrong" type="checkbox"> Wrong answers only</label></div>
+        <div id="review" class="review"></div>
+      </section>
+    </div>
+  </section>
+</main>
+
+<dialog id="confirm" class="confirm">
+  <p id="confirm-text"></p>
+  <div class="confirm-actions">
+    <button id="confirm-no" class="btn" type="button">Cancel</button>
+    <button id="confirm-yes" class="btn primary" type="button">Confirm</button>
+  </div>
+</dialog>
+<script type="module" src="/quiz.js"></script>
+</body>
+</html>

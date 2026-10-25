@@ -5,6 +5,7 @@ import Anthropic from '@anthropic-ai/sdk';
 import { createAi, DEFAULT_MODEL, friendlyError } from './ai.js';
 import { loadEnvFile } from './env.js';
 import { loadQuestions } from './index.js';
+import { loadQuizzes } from './quiz.js';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 loadEnvFile(path.join(root, '.env'));
@@ -28,6 +29,16 @@ try {
   console.log('Chat (streaming) OK:', reply.trim().slice(0, 200));
   const w = await ai.watch({ question, board, elapsedMs: 60_000, status: 'running', messages: [], sinceAriaMs: null });
   console.log('Watch (structured output) OK:', JSON.stringify(w));
+  const quiz = loadQuizzes(path.join(root, 'quizzes'))[0];
+  let tutor = '';
+  for await (const t of ai.explain({ question: quiz.questions[0], selected: [quiz.questions[0].options[1].id], history: [] })) tutor += t;
+  console.log('Quiz tutor (streaming) OK:', tutor.trim().slice(0, 160));
+  if (process.argv.includes('--quiz')) {
+    const { quiz: made } = await ai.generateQuiz({ topic: 'HTTP caching headers', notes: '', count: 5, level: 'intermediate' });
+    console.log(`Quiz generation (structured output) OK: "${made.title}" with ${made.questions.length} questions`);
+  } else {
+    console.log('Skipped quiz generation (it costs more). Run "npm run check -- --quiz" to test it too.');
+  }
   console.log('All good - run "npm start" and open the URL it prints.');
 } catch (err) {
   console.error('Check failed:', friendlyError(err).message);

@@ -8,13 +8,15 @@ import { sanitizeBoard } from '../shared/board.js';
 import { AriaError, createAi, DEFAULT_MODEL, friendlyError } from './ai.js';
 import { loadEnvFile } from './env.js';
 import { createMockClient } from './mock.js';
+import { cleanInterviewQuestion } from './question.js';
+import { cleanQuestion, GEN_LIMITS, loadQuizzes, quizSummary } from './quiz.js';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(here, '..');
 const PUBLIC_DIR = path.join(ROOT, 'public');
 const SHARED_DIR = path.join(ROOT, 'shared');
 
-const MAX_BODY = 256 * 1024;
+const MAX_BODY = 768 * 1024;
 const TYPES = {
   '.html': 'text/html; charset=utf-8',
   '.js': 'text/javascript; charset=utf-8',
@@ -25,7 +27,7 @@ const TYPES = {
   '.ico': 'image/x-icon',
 };
 const SECURITY_HEADERS = {
-  'content-security-policy': "default-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self'; frame-ancestors 'none'",
+  'content-security-policy': "default-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; connect-src 'self'; frame-ancestors 'none'",
   'x-content-type-options': 'nosniff',
   'referrer-policy': 'no-referrer',
 };
@@ -110,8 +112,8 @@ function makeRateLimiter(limit, windowMs, now = () => Date.now()) {
 }
 
 // config: { ai | null, questions, mode: 'live' | 'mock' | 'off', model, rateLimit }
-export function createServer({ ai, questions, mode = 'off', model = DEFAULT_MODEL, rateLimit = 60 }) {
-  const byId = new Map(questions.map((q) => [q.id, q]));
+export function createServer({ ai, questions, quizzes = [], mode = 'off', model = DEFAULT_MODEL, rateLimit = 60 }) {
+  const quizById = new Map(quizzes.map((q) => [q.id, q]));
   const allow = makeRateLimiter(rateLimit, 60_000);
 
   function requireAi(req) {
@@ -119,9 +121,11 @@ export function createServer({ ai, questions, mode = 'off', model = DEFAULT_MODE
     if (!allow(req.socket.remoteAddress || 'local')) throw new HttpError(429, 'Slow down a little - too many requests.');
   }
 
+  // The AI endpoints take the whole question from the client ({ question: {...} }); the server never looks one up.
   function common(body) {
-    const question = byId.get(body.questionId);
-    if (!question) throw new HttpError(404, 'Unknown question.');
+    const cleaned = cleanInterviewQuestion(body.question);
+    if (cleaned.error) throw new HttpError(400, `Invalid question: ${cleaned.error}`);
+    const { question } = cleaned;
     const totalMs = question.minutes * 60000;
     const elapsedMs = Number.isFinite(body.elapsedMs) ? Math.max(0, Math.min(totalMs * 3, body.elapsedMs)) : 0;
     const status = ['idle', 'running', 'paused', 'ended'].includes(body.status) ? body.status : 'running';
@@ -175,6 +179,49 @@ export function createServer({ ai, questions, mode = 'off', model = DEFAULT_MODE
     }
   }
 
+  async function quizExplain(req, res) {
+    requireAi(req);
+    const body = await readJson(req);
+    const cleaned = cleanQuestion(body.question);
+    if (cleaned.error) throw new HttpError(400, `Invalid question: ${cleaned.error}`);
+    const ids = new Set(cleaned.question.options.map((o) => o.id));
+    const selected = Array.isArray(body.selected) ? body.selected.filter((x) => typeof x === 'string' && ids.has(x)) : [];
+    const ctl = new AbortController();
+    res.on('close', () => { if (!res.writableEnded) ctl.abort(); });
+    res.writeHead(200, {
+      'content-type': 'text/event-stream; charset=utf-8',
+      'cache-control': 'no-cache, no-transform',
+      connection: 'keep-alive',
+      'x-accel-buffering': 'no',
+      ...SECURITY_HEADERS,
+    });
+    const send = (event, data) => res.write(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`);
+    try {
+      for await (const text of ai.explain({ question: cleaned.question, selected, history: body.history, signal: ctl.signal })) send('delta', { text });
+      send('done', {});
+    } catch (err) {
+      if (!ctl.signal.aborted) send('error', { message: friendlyError(err).message });
+    }
+    res.end();
+  }
+
+  async function quizGenerate(req, res) {
+    requireAi(req);
+    const body = await readJson(req);
+    const topic = typeof body.topic === 'string' ? body.topic.trim() : '';
+    if (topic.length < 3 || topic.length > GEN_LIMITS.topic) throw new HttpError(400, `Give a topic of 3-${GEN_LIMITS.topic} characters.`);
+    const notes = typeof body.notes === 'string' ? body.notes.trim().slice(0, GEN_LIMITS.notes) : '';
+    const count = Math.max(GEN_LIMITS.minCount, Math.min(GEN_LIMITS.maxCount, Number.isInteger(body.count) ? body.count : 10));
+    const level = ['beginner', 'intermediate', 'advanced'].includes(body.level) ? body.level : 'intermediate';
+    try {
+      const { quiz, dropped } = await ai.generateQuiz({ topic, notes, count, level });
+      json(res, 200, { quiz, dropped });
+    } catch (err) {
+      const fe = friendlyError(err);
+      json(res, fe.status, { error: fe.message });
+    }
+  }
+
   return http.createServer(async (req, res) => {
     try {
       const url = new URL(req.url, 'http://localhost');
@@ -182,7 +229,16 @@ export function createServer({ ai, questions, mode = 'off', model = DEFAULT_MODE
       if (p.startsWith('/api/')) {
         if (p === '/api/health' && req.method === 'GET') return json(res, 200, { ok: true, ai: ai ? mode : 'off', model: ai ? model : null });
         if (p === '/api/questions' && req.method === 'GET') return json(res, 200, questions.map(publicQuestion));
+        if (p === '/api/quizzes' && req.method === 'GET') return json(res, 200, quizzes.map(quizSummary));
+        const m = /^\/api\/quizzes\/([^/]+)$/.exec(p);
+        if (m && req.method === 'GET') {
+          const quiz = quizById.get(m[1]);
+          if (!quiz) throw new HttpError(404, 'Unknown quiz.');
+          return json(res, 200, quiz);
+        }
         if (req.method !== 'POST') throw new HttpError(405, 'Method not allowed.');
+        if (p === '/api/quiz/explain') return await quizExplain(req, res);
+        if (p === '/api/quiz/generate') return await quizGenerate(req, res);
         if (p === '/api/chat') return await chat(req, res);
         if (p === '/api/watch') return await watch(req, res);
         if (p === '/api/evaluate') return await evaluate(req, res);
@@ -203,7 +259,7 @@ export function createServer({ ai, questions, mode = 'off', model = DEFAULT_MODE
 export function loadQuestions(file = path.join(ROOT, 'questions', 'questions.json')) {
   const list = JSON.parse(fs.readFileSync(file, 'utf8'));
   if (!Array.isArray(list) || !list.length) throw new Error('questions.json must be a non-empty array');
-  return list;
+  return list.map(publicQuestion);
 }
 
 function main() {
@@ -213,6 +269,7 @@ function main() {
   const host = env.HLD_HOST || '127.0.0.1';
   const model = env.HLD_MODEL || DEFAULT_MODEL;
   const questions = loadQuestions();
+  const quizzes = loadQuizzes(path.join(ROOT, 'quizzes'));
 
   let ai = null;
   let mode = 'off';
@@ -223,7 +280,7 @@ function main() {
     ai = createAi({ client: new Anthropic({ apiKey: env.ANTHROPIC_API_KEY }), model, effort: env.HLD_EFFORT || 'default' });
     mode = 'live';
   }
-  const server = createServer({ ai, questions, mode, model: mode === 'mock' ? 'mock' : model });
+  const server = createServer({ ai, questions, quizzes, mode, model: mode === 'mock' ? 'mock' : model });
   server.listen(port, host, () => {
     console.log(`HLD Room: http://${host === '0.0.0.0' ? 'localhost' : host}:${port}`);
     if (mode === 'live') console.log(`Aria is live (model ${model}).`);
