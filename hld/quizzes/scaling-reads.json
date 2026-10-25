@@ -1,0 +1,940 @@
+{
+  "id": "scaling-reads",
+  "title": "Scaling Reads",
+  "topic": "System design pattern",
+  "description": "Indexing, denormalisation, read replicas, sharding, caching, CDNs and the classic hot-key and stampede problems: how to keep a read-heavy system fast.",
+  "source": "Study notes on the Scaling Reads pattern",
+  "estimatedMinutes": 20,
+  "questions": [
+    {
+      "id": "why-reads",
+      "concept": "Why reads dominate",
+      "type": "single",
+      "difficulty": 1,
+      "prompt": "An Instagram-style app needs 100+ read operations to render one feed screen, yet a typical user posts one photo a day. What makes read scaling the first scaling problem in most content-heavy products?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Reads outnumber writes 10:1 and often 100:1 or more, so read volume reaches hardware limits first.",
+          "why": "Correct: the imbalance in volume is what overloads CPU, memory and disk first."
+        },
+        {
+          "id": "b",
+          "text": "Each individual read is far costlier than a write because it must touch more storage pages, while a write only appends to a log.",
+          "why": "Not the cause. The point is how many reads there are, not that one read costs more than one write."
+        },
+        {
+          "id": "c",
+          "text": "Relational databases serialise all SELECT statements, so only one read can run at a time.",
+          "why": "False: databases serve many concurrent reads. The limit is total capacity, not a lack of parallelism."
+        },
+        {
+          "id": "d",
+          "text": "Read queries must always be strongly consistent, and that guarantee makes every read slow.",
+          "why": "Many reads tolerate staleness, and that tolerance is exactly what caches and replicas exploit."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Read-to-write ratios start around 10:1 and often reach 100:1 or beyond. When read volume grows, you run into physical limits (CPU, memory, disk I/O) that more application code cannot fix, so you need architecture changes."
+    },
+    {
+      "id": "order-of-attack",
+      "concept": "The scaling progression",
+      "type": "single",
+      "difficulty": 1,
+      "prompt": "Read traffic is climbing and the database is struggling. Which sequence is the sensible order of attack?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Tune inside the database first (indexes, schema), then scale it out (replicas, sharding), then add caching layers.",
+          "why": "Correct: cheapest and simplest options first, each step only when the previous one is exhausted."
+        },
+        {
+          "id": "b",
+          "text": "Add a distributed cache first, and only revisit database tuning after the cache itself is saturated.",
+          "why": "A cache in front of an untuned database hides the problem and adds invalidation complexity you may not need."
+        },
+        {
+          "id": "c",
+          "text": "Shard the database by user ID first, then add indexes to the individual shards once the data is spread across machines.",
+          "why": "Sharding is the most complex option and mostly a write-scaling tool; indexing is far cheaper and should come first."
+        },
+        {
+          "id": "d",
+          "text": "Move to a much bigger machine first, and avoid every other change until the hardware is maxed out.",
+          "why": "Hardware helps but is a blunt, expensive tool and not what interviewers are looking for as the main answer."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Read scaling follows a natural progression: optimise within the database, scale it horizontally, then add external caches. Skipping straight to complex distributed caching is a common mistake."
+    },
+    {
+      "id": "index-complexity",
+      "concept": "Indexing",
+      "type": "single",
+      "difficulty": 1,
+      "prompt": "A query filters 1 million rows. What does adding a B-tree index on the filtered column change?",
+      "options": [
+        {
+          "id": "a",
+          "text": "A full table scan, O(n), becomes an index lookup, roughly O(log n): about 20 entries instead of a million rows.",
+          "why": "Correct: the sorted structure lets the database jump straight to the matching rows."
+        },
+        {
+          "id": "b",
+          "text": "An O(n log n) sort of the whole table becomes a plain O(n) pass, a modest improvement for large tables.",
+          "why": "That is not what an index does for a point lookup; it removes the scan."
+        },
+        {
+          "id": "c",
+          "text": "The same number of rows are examined, but each row is fetched from faster storage than before.",
+          "why": "An index reduces how many rows are examined, not how fast each row is read."
+        },
+        {
+          "id": "d",
+          "text": "Lookups improve only when the entire table already fits in memory; otherwise the index adds nothing.",
+          "why": "Indexes help whether or not the table is in memory; fewer pages are touched either way."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "An index is a sorted lookup structure pointing to rows. Instead of reading every row (a full table scan), the database navigates the index and fetches only the relevant pages."
+    },
+    {
+      "id": "slow-email-login",
+      "concept": "Indexing",
+      "type": "single",
+      "difficulty": 2,
+      "prompt": "Your user table grew from 10,000 to 10 million rows. Logins by email now take 30 seconds and database CPU sits at 100%, even though the queries are trivial. What is the first thing to try?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Add an index on the email column.",
+          "why": "Correct: the lookup is currently scanning all 10 million rows for each login."
+        },
+        {
+          "id": "b",
+          "text": "Add three read replicas.",
+          "why": "Replicas spread the same slow scans across more machines; they do not make each query cheaper."
+        },
+        {
+          "id": "c",
+          "text": "Shard the table by the first letter of the email.",
+          "why": "Heavy operational complexity for a problem a single index solves."
+        },
+        {
+          "id": "d",
+          "text": "Cache every login result for an hour.",
+          "why": "Logins are mostly unique, so hit rates would be poor, and caching credentials is risky."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Without an index each lookup scans about 2 GB of rows. A single index on the queried column turns that into a handful of index reads. Always reach for the indexes before bigger infrastructure."
+    },
+    {
+      "id": "compound-index",
+      "concept": "Indexing",
+      "type": "single",
+      "difficulty": 3,
+      "prompt": "You create a compound index on (status, created_at). Which query gets NO help from it?",
+      "options": [
+        {
+          "id": "a",
+          "text": "WHERE created_at > '2025-01-01' (no filter on status)",
+          "why": "Correct: the index is ordered by status first, so a filter on created_at alone cannot use it efficiently."
+        },
+        {
+          "id": "b",
+          "text": "WHERE status = 'shipped'",
+          "why": "This uses the leading column of the index."
+        },
+        {
+          "id": "c",
+          "text": "WHERE status = 'shipped' AND created_at > '2025-01-01'",
+          "why": "This uses both columns, the ideal case."
+        },
+        {
+          "id": "d",
+          "text": "WHERE status = 'shipped' ORDER BY created_at",
+          "why": "The index already provides rows for one status in created_at order."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Column order matters in compound indexes: they help queries that filter on a leading prefix of the columns. A query filtering only on the second column cannot use the index efficiently."
+    },
+    {
+      "id": "too-many-indexes",
+      "concept": "Indexing",
+      "type": "truefalse",
+      "difficulty": 2,
+      "prompt": "In a system design interview you should avoid adding indexes for your query patterns, because too many indexes make writes unacceptably slow.",
+      "options": [
+        {
+          "id": "a",
+          "text": "True",
+          "why": "This is an outdated fear. Index overhead is real but usually small compared with the cost of a missing index."
+        },
+        {
+          "id": "b",
+          "text": "False",
+          "why": "Correct: modern databases handle well-chosen indexes efficiently, and under-indexing hurts applications far more than over-indexing."
+        }
+      ],
+      "correct": [
+        "b"
+      ],
+      "explanation": "Confidently add indexes for your known query patterns. Write overhead exists, but under-indexing kills more applications than over-indexing ever will."
+    },
+    {
+      "id": "denormalize",
+      "concept": "Denormalisation",
+      "type": "single",
+      "difficulty": 2,
+      "prompt": "An order summary page joins users, orders, order items and products, and it is served thousands of times per second while orders change rarely. Which technique trades extra storage and more complex writes for faster reads?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Denormalisation: copy the user and product fields into one order_summary table so a single read replaces the join.",
+          "why": "Correct: one single-table read replaces a four-way join."
+        },
+        {
+          "id": "b",
+          "text": "Normalising the schema further into smaller, more focused tables so each fact is stored exactly once and joins stay simple.",
+          "why": "That makes reads need even more joins."
+        },
+        {
+          "id": "c",
+          "text": "Adding foreign-key constraints to every table so the database can verify each relationship on read.",
+          "why": "Constraints protect integrity but do not make reads cheaper."
+        },
+        {
+          "id": "d",
+          "text": "Partitioning the orders table by month so each monthly partition stays small and quick to scan.",
+          "why": "Partitioning may help scans on old data but does not remove the join cost."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Denormalisation duplicates data so reads avoid joins. It fits systems that read far more often than they write."
+    },
+    {
+      "id": "denormalize-cost",
+      "concept": "Denormalisation",
+      "type": "single",
+      "difficulty": 2,
+      "prompt": "What is the main cost of denormalising?",
+      "options": [
+        {
+          "id": "a",
+          "text": "The same data is stored in several places, so every update has to change all the copies.",
+          "why": "Correct: reads get simpler, writes get more complex and risk drift."
+        },
+        {
+          "id": "b",
+          "text": "Reads become slower because each table is wider and the database has to scan extra columns.",
+          "why": "Reads generally get faster, which is the whole point."
+        },
+        {
+          "id": "c",
+          "text": "The table can no longer be indexed, because duplicated values make index entries ambiguous.",
+          "why": "Denormalised tables can be indexed like any other."
+        },
+        {
+          "id": "d",
+          "text": "The database refuses to run joins on the table afterwards, so reporting queries stop working.",
+          "why": "Joins remain available; you simply avoid needing them for the hot path."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Check the read/write ratio first. If writes are frequent, keeping duplicate copies in sync may cost more than the faster reads are worth."
+    },
+    {
+      "id": "materialized-view",
+      "concept": "Denormalisation",
+      "type": "single",
+      "difficulty": 2,
+      "prompt": "A product page computes the average rating with an expensive aggregate over millions of reviews on every load. What fits best?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Precompute the averages in a materialised view refreshed by a background job, and read the stored result.",
+          "why": "Correct: pay the aggregation cost once, serve cheap lookups many times."
+        },
+        {
+          "id": "b",
+          "text": "Add an index on reviews.rating so the average can be computed from already-sorted data on every single page load.",
+          "why": "The database still has to aggregate every matching review per product."
+        },
+        {
+          "id": "c",
+          "text": "Run the aggregate query on a faster CPU with more cores so each page load finishes sooner.",
+          "why": "That only buys headroom; the work is still repeated for each page load."
+        },
+        {
+          "id": "d",
+          "text": "Drop the average rating from the page and show only the most recent review for each product.",
+          "why": "That changes the product instead of solving the performance problem."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Materialised views precompute expensive aggregations. They are especially powerful for analytics-style queries over large datasets."
+    },
+    {
+      "id": "replica-basics",
+      "concept": "Read replicas",
+      "type": "single",
+      "difficulty": 1,
+      "prompt": "Which statement about leader-follower read replicas is correct?",
+      "options": [
+        {
+          "id": "a",
+          "text": "All writes go to the leader; followers copy the data and serve reads, and one can be promoted if the leader fails.",
+          "why": "Correct: spreads read load and adds redundancy."
+        },
+        {
+          "id": "b",
+          "text": "Writes can be sent to any follower, and the followers merge their changes with each other later.",
+          "why": "That describes multi-leader setups, not the standard leader-follower pattern."
+        },
+        {
+          "id": "c",
+          "text": "Followers always hold exactly the same data as the leader at every instant, whatever the replication mode.",
+          "why": "Only with synchronous replication; asynchronous followers may lag."
+        },
+        {
+          "id": "d",
+          "text": "Each follower stores only a slice of the dataset, which shrinks the data any single server must hold.",
+          "why": "Every follower stores a full copy; shrinking data per server is what sharding does."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Read replicas distribute read load and give redundancy, but every replica holds the full dataset."
+    },
+    {
+      "id": "replication-lag",
+      "concept": "Read replicas",
+      "type": "single",
+      "difficulty": 2,
+      "prompt": "A user posts a comment, the page reloads, and the comment is missing. A moment later it appears. What is the most likely cause?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Replication lag: the read was served by a replica that had not yet received the new write.",
+          "why": "Correct: with asynchronous replication a replica trails the primary."
+        },
+        {
+          "id": "b",
+          "text": "The primary database silently dropped the write and a later retry happened to restore it.",
+          "why": "The write later appears without a retry, so it was not lost."
+        },
+        {
+          "id": "c",
+          "text": "The comment was stored under the wrong shard key and had to be moved to the right shard first.",
+          "why": "Shard misrouting would not make the comment appear on its own a moment later."
+        },
+        {
+          "id": "d",
+          "text": "A missing index on the comments table made the first query time out before returning results.",
+          "why": "A missing index would make the read slow, not stale."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Replication lag is the key challenge of read replicas. Expect interview questions about synchronous versus asynchronous replication."
+    },
+    {
+      "id": "read-your-writes",
+      "concept": "Read replicas",
+      "type": "multi",
+      "difficulty": 3,
+      "prompt": "Users sometimes cannot see their own just-saved changes because they read from a lagging replica. Select ALL approaches that reduce this problem.",
+      "options": [
+        {
+          "id": "a",
+          "text": "Route a user's reads to the primary for a short window right after they write.",
+          "why": "Correct: their own recent writes are always visible."
+        },
+        {
+          "id": "b",
+          "text": "Use synchronous replication to the replicas that serve reads, accepting higher write latency.",
+          "why": "Correct: replicas are up to date before the write is acknowledged."
+        },
+        {
+          "id": "c",
+          "text": "Increase the cache TTL on the replicas.",
+          "why": "Longer TTLs make stale reads more likely, not less."
+        },
+        {
+          "id": "d",
+          "text": "Add more read replicas.",
+          "why": "More replicas spread load but each one can still lag."
+        }
+      ],
+      "correct": [
+        "a",
+        "b"
+      ],
+      "explanation": "Synchronous replication trades write latency for consistency, while routing recent writers to the primary gives read-your-writes cheaply for the users who need it. (The second technique extends the basic synchronous versus asynchronous trade-off.)"
+    },
+    {
+      "id": "async-lag-true",
+      "concept": "Read replicas",
+      "type": "truefalse",
+      "difficulty": 1,
+      "prompt": "With asynchronous replication, a user can briefly fail to see data they just wrote if their next read is served by a follower.",
+      "options": [
+        {
+          "id": "a",
+          "text": "True",
+          "why": "Correct: followers apply changes after the primary acknowledges the write, so a quick follow-up read can miss it."
+        },
+        {
+          "id": "b",
+          "text": "False",
+          "why": "Asynchronous replication is exactly what makes this possible; only synchronous replication closes the gap."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Synchronous replication avoids this at the cost of write latency; asynchronous replication is faster but allows stale reads."
+    },
+    {
+      "id": "sharding-reads",
+      "concept": "Sharding",
+      "type": "single",
+      "difficulty": 2,
+      "prompt": "For a read-heavy system, how does sharding help, and why is it usually NOT the first tool to reach for?",
+      "options": [
+        {
+          "id": "a",
+          "text": "It shrinks each database and spreads read load, but adds heavy operational complexity and is mainly a write-scaling tool, so caching usually comes first.",
+          "why": "Correct: it helps, but the cost-benefit rarely beats caching for reads."
+        },
+        {
+          "id": "b",
+          "text": "It copies the full dataset onto every shard so any shard can answer any read; it is rarely first because of storage costs.",
+          "why": "That describes replication, not sharding."
+        },
+        {
+          "id": "c",
+          "text": "It removes replication lag by keeping a single copy of each row; it is rarely first because it needs a larger cache.",
+          "why": "Sharding does not remove lag, and it does not depend on cache size."
+        },
+        {
+          "id": "d",
+          "text": "It sends every query to all shards at once and merges the answers, which is why it is almost never used.",
+          "why": "Well-designed shard keys route most queries to a single shard."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Sharding splits data across databases, so each holds less and handles part of the load. It brings real complexity, so for most read-scaling problems add caching first."
+    },
+    {
+      "id": "geo-shard",
+      "concept": "Sharding",
+      "type": "single",
+      "difficulty": 1,
+      "prompt": "A global app stores European users' data in European databases and US users' data in US databases so reads come from nearby. What is this called?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Geographic sharding",
+          "why": "Correct: data is split by region to cut latency and spread load."
+        },
+        {
+          "id": "b",
+          "text": "Functional sharding",
+          "why": "Functional sharding splits by feature or domain, such as users in one database and posts in another."
+        },
+        {
+          "id": "c",
+          "text": "Vertical scaling",
+          "why": "That means a bigger machine, not splitting data."
+        },
+        {
+          "id": "d",
+          "text": "Write-behind caching",
+          "why": "That is a cache invalidation approach, unrelated to splitting databases."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Functional sharding splits by business domain (users, posts, likes). Geographic sharding splits by location, which is particularly effective for global read latency."
+    },
+    {
+      "id": "skewed-access",
+      "concept": "Caching",
+      "type": "single",
+      "difficulty": 1,
+      "prompt": "Which property of real traffic makes in-memory caching so effective?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Skewed access: a small set of popular items, such as viral tweets or bestsellers, is requested over and over.",
+          "why": "Correct: the same hot data is fetched repeatedly and rarely changes between requests."
+        },
+        {
+          "id": "b",
+          "text": "Uniform access: requests are spread evenly across every item, so each one is equally likely to be asked for.",
+          "why": "Uniform access would give low hit rates because nothing repeats."
+        },
+        {
+          "id": "c",
+          "text": "Unique access: almost every request asks for data that nobody has requested before.",
+          "why": "Unique requests are exactly what caches cannot help with."
+        },
+        {
+          "id": "d",
+          "text": "Immutable data: users never modify anything, so cached copies can never become stale.",
+          "why": "Data does change; caches cope through TTLs and invalidation."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Caches store hot data in RAM: sub-millisecond responses versus tens of milliseconds for even a well-optimised database query."
+    },
+    {
+      "id": "invalidation-strategies",
+      "concept": "Cache invalidation",
+      "type": "multi",
+      "difficulty": 2,
+      "prompt": "Select ALL of these that are recognised cache invalidation strategies.",
+      "options": [
+        {
+          "id": "a",
+          "text": "Time-based expiration (TTL)",
+          "why": "Correct: simple, bounded staleness."
+        },
+        {
+          "id": "b",
+          "text": "Write-through invalidation (update or delete the cache entry when writing to the database)",
+          "why": "Correct: consistent, but adds write latency and needs error handling."
+        },
+        {
+          "id": "c",
+          "text": "Versioned keys (embed a version in the cache key and bump it on update)",
+          "why": "Correct: old entries simply become unreachable."
+        },
+        {
+          "id": "d",
+          "text": "Re-reading the database on every request to verify freshness",
+          "why": "That bypasses the cache entirely, so it is not an invalidation strategy."
+        }
+      ],
+      "correct": [
+        "a",
+        "b",
+        "c"
+      ],
+      "explanation": "Other strategies include write-behind invalidation and tagged invalidation. Most production systems combine approaches: a short TTL as a safety net plus active invalidation for critical data."
+    },
+    {
+      "id": "ttl-from-nfr",
+      "concept": "Cache invalidation",
+      "type": "single",
+      "difficulty": 2,
+      "prompt": "A non-functional requirement says search results must be no more than 30 seconds stale. How should this shape your caching?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Use a TTL of about 30 seconds.",
+          "why": "Correct: the staleness requirement directly gives you the TTL."
+        },
+        {
+          "id": "b",
+          "text": "Use a 1-hour TTL and hope it is rarely noticed.",
+          "why": "That violates the stated requirement."
+        },
+        {
+          "id": "c",
+          "text": "Never expire entries and rely on users refreshing.",
+          "why": "Unbounded staleness contradicts the requirement."
+        },
+        {
+          "id": "d",
+          "text": "Disable caching for search entirely.",
+          "why": "Unnecessary; a short TTL still absorbs repeated queries."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Let the staleness requirement drive TTLs. A 5-minute-tolerant profile gets a 5-minute TTL. This bounds consistency and makes the decision easy to justify."
+    },
+    {
+      "id": "cdn-worst",
+      "concept": "CDN and edge caching",
+      "type": "single",
+      "difficulty": 2,
+      "prompt": "Which item is the WORST candidate for CDN edge caching?",
+      "options": [
+        {
+          "id": "a",
+          "text": "A signed-in user's private message inbox",
+          "why": "Correct: only one user ever requests it, so there is no shared hit rate and it risks leaking data."
+        },
+        {
+          "id": "b",
+          "text": "A product catalogue page viewed by thousands of shoppers",
+          "why": "Many users request it: a good candidate."
+        },
+        {
+          "id": "c",
+          "text": "Thumbnail images of popular videos",
+          "why": "Widely shared, rarely changing: ideal."
+        },
+        {
+          "id": "d",
+          "text": "A public post that is trending",
+          "why": "Shared by many readers: a good candidate."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "CDNs only pay off for content that multiple users request. Do not cache personal preferences, private messages, or account settings at the edge."
+    },
+    {
+      "id": "cdn-static-only",
+      "concept": "CDN and edge caching",
+      "type": "truefalse",
+      "difficulty": 1,
+      "prompt": "CDNs are only useful for static assets such as images, CSS and JavaScript.",
+      "options": [
+        {
+          "id": "a",
+          "text": "True",
+          "why": "Outdated. CDNs were designed for static assets, but modern ones can also cache dynamic content."
+        },
+        {
+          "id": "b",
+          "text": "False",
+          "why": "Correct: modern CDNs cache API responses and database query results, which can cut origin load by 90% or more for shared content."
+        }
+      ],
+      "correct": [
+        "b"
+      ],
+      "explanation": "Edge caches serve users from nearby locations, which can drop latency from 200 ms to under 10 ms for cached content."
+    },
+    {
+      "id": "hot-key-fanout",
+      "concept": "Hot keys and stampedes",
+      "type": "single",
+      "difficulty": 3,
+      "prompt": "A celebrity's post becomes the single hottest cache key and one cache node is overwhelmed by 500,000 requests per second for it. Which technique spreads that load?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Cache key fanout: store identical copies under several keys (feed:star:1 to feed:star:10) and have clients pick one at random.",
+          "why": "Correct: the same traffic is divided across ten entries, ideally on different nodes."
+        },
+        {
+          "id": "b",
+          "text": "Extend the TTL of the hot key from minutes to hours so the entry is re-fetched far less often.",
+          "why": "Load per request does not change; the node still serves every request."
+        },
+        {
+          "id": "c",
+          "text": "Add a covering index to the posts table so a cache miss on this key is answered more quickly.",
+          "why": "The database is not the bottleneck here; the cache node is."
+        },
+        {
+          "id": "d",
+          "text": "Evict the hot key from the cache entirely so the database, which has far more total capacity, serves every one of the requests.",
+          "why": "That makes the load far worse."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Fanout costs memory and makes invalidation harder because every copy must be cleared, but it keeps the hot key from taking a node down."
+    },
+    {
+      "id": "coalescing",
+      "concept": "Hot keys and stampedes",
+      "type": "single",
+      "difficulty": 3,
+      "prompt": "One million users request the same uncached item at once through 20 application servers, each using request coalescing. At most how many requests reach the backend?",
+      "options": [
+        {
+          "id": "a",
+          "text": "20 - one per application server",
+          "why": "Correct: each server collapses its duplicate in-flight requests into one."
+        },
+        {
+          "id": "b",
+          "text": "1,000,000 - one per requesting user",
+          "why": "That is what happens without coalescing."
+        },
+        {
+          "id": "c",
+          "text": "1 - a single shared request overall",
+          "why": "Coalescing happens inside each server, so every server still makes one request."
+        },
+        {
+          "id": "d",
+          "text": "2,000,000 - two per requesting user",
+          "why": "Coalescing never increases the number of backend requests."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Request coalescing bounds backend load to the number of servers, no matter how many users ask for the same thing simultaneously."
+    },
+    {
+      "id": "stampede",
+      "concept": "Hot keys and stampedes",
+      "type": "single",
+      "difficulty": 3,
+      "prompt": "A hot homepage entry with a 1-hour TTL expires and 100,000 requests per second suddenly all go to the database to rebuild it. What is this called, and what is a good lightweight mitigation?",
+      "options": [
+        {
+          "id": "a",
+          "text": "A cache stampede; refresh the entry probabilistically before it expires, or refresh it in a background job.",
+          "why": "Correct: refreshes are spread out instead of landing at the same instant."
+        },
+        {
+          "id": "b",
+          "text": "A cache penetration; cache negative results so requests for keys that do not exist stop reaching the database.",
+          "why": "Penetration is about requests for keys that do not exist."
+        },
+        {
+          "id": "c",
+          "text": "A replication storm; add more read replicas so the rebuild queries are shared between them.",
+          "why": "Replicas cannot absorb 100,000 identical expensive rebuilds."
+        },
+        {
+          "id": "d",
+          "text": "A cold start; lower the TTL to one minute so the entry is always fresh when requested.",
+          "why": "A shorter TTL just causes stampedes more often."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Probabilistic early refresh gives each request a small and growing chance to refresh as expiry nears. For critical data, a background job can refresh it before it ever expires."
+    },
+    {
+      "id": "versioned-keys",
+      "concept": "Cache invalidation",
+      "type": "single",
+      "difficulty": 3,
+      "prompt": "How does cache key versioning avoid the race conditions of delete-on-write invalidation?",
+      "options": [
+        {
+          "id": "a",
+          "text": "The version is bumped in the database transaction and readers build keys from it, so old entries become unreachable instead of being deleted.",
+          "why": "Correct: a late writer cannot resurrect stale data under the new version."
+        },
+        {
+          "id": "b",
+          "text": "It deletes every cached copy atomically, including the CDN and browser caches, before the database write returns to the caller.",
+          "why": "Versioning does not delete anything; it routes around old entries."
+        },
+        {
+          "id": "c",
+          "text": "It replaces the cache with direct database reads for hot keys so there is nothing left to invalidate.",
+          "why": "The cache stays in use; only the keys change."
+        },
+        {
+          "id": "d",
+          "text": "It stores the version number only in each user's browser, which then tells the server what to serve.",
+          "why": "The version lives in the database (and a small cached key), not the client."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Trade-offs: two cache lookups per read, old versions linger until their TTL expires, and it suits single-entity data (profiles, event pages) better than computed data like feeds or search results."
+    },
+    {
+      "id": "deleted-items-cache",
+      "concept": "Cache invalidation",
+      "type": "single",
+      "difficulty": 3,
+      "prompt": "A moderator removes a post that appears in thousands of cached feeds. What lets you hide it quickly without rebuilding every feed immediately?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Keep a small cache of recently deleted post IDs and filter feeds against it when serving, while invalidating the big feeds in the background.",
+          "why": "Correct: fast, cheap, mostly correct immediately."
+        },
+        {
+          "id": "b",
+          "text": "Wait for each cached feed's TTL to expire naturally and accept that the post stays visible until then.",
+          "why": "The deleted post stays visible until then."
+        },
+        {
+          "id": "c",
+          "text": "Delete every cached feed and rebuild all of them synchronously before replying to the moderator's removal request.",
+          "why": "Slow and spikes load on your database."
+        },
+        {
+          "id": "d",
+          "text": "Turn off caching for feeds permanently so the deletion takes effect on the very next request.",
+          "why": "Heavy-handed; it throws away the read performance you built."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "A deleted-items cache is a small working set, so checking it is cheap. It is especially useful for content moderation and privacy changes."
+    },
+    {
+      "id": "ticketmaster",
+      "concept": "Interview judgement",
+      "type": "single",
+      "difficulty": 2,
+      "prompt": "On a ticket-sale page, which data must NOT be served from an aggressive cache?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Live seat availability",
+          "why": "Correct: stale availability can lead to overselling."
+        },
+        {
+          "id": "b",
+          "text": "Venue name and address",
+          "why": "Rarely changes, safe to cache."
+        },
+        {
+          "id": "c",
+          "text": "The seating chart layout",
+          "why": "Static between events, safe to cache."
+        },
+        {
+          "id": "d",
+          "text": "The event description",
+          "why": "Rarely changes, safe to cache."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Cache browsing data aggressively and keep purchasing and availability strongly consistent, for example by reading from the primary."
+    },
+    {
+      "id": "not-read-heavy",
+      "concept": "Interview judgement",
+      "type": "single",
+      "difficulty": 2,
+      "prompt": "Which system is a poor fit for leading with read-scaling techniques?",
+      "options": [
+        {
+          "id": "a",
+          "text": "A ride-hailing service ingesting driver GPS updates every few seconds, with a read/write ratio around 2:1 or lower",
+          "why": "Correct: it is write-heavy, so write scaling comes first."
+        },
+        {
+          "id": "b",
+          "text": "A URL shortener where each link is created once and then visited millions of times by different people",
+          "why": "Extremely read-heavy: a perfect fit."
+        },
+        {
+          "id": "c",
+          "text": "A news feed where millions of users scroll the same latest posts from the accounts they follow",
+          "why": "Read-intensive: a perfect fit."
+        },
+        {
+          "id": "d",
+          "text": "A video platform serving titles, descriptions and thumbnails on every homepage visit worldwide",
+          "why": "Read-heavy: a perfect fit."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Check the read/write ratio first. Write-heavy systems, small-scale apps, strongly consistent systems, and real-time collaboration tools need different tools."
+    },
+    {
+      "id": "small-scale",
+      "concept": "Interview judgement",
+      "type": "single",
+      "difficulty": 2,
+      "prompt": "The interviewer says the system only needs to support 1,000 users. What is the strongest response on read scaling?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Use a well-indexed single database, and say you would revisit caching only if the numbers grow.",
+          "why": "Correct: it solves the actual problem without over-engineering."
+        },
+        {
+          "id": "b",
+          "text": "Propose a sharded database fronted by a global CDN and a Redis cluster, to be safe for future growth.",
+          "why": "Over-engineering for a tiny scale signals poor judgement."
+        },
+        {
+          "id": "c",
+          "text": "Decline to continue until the interviewer supplies exact QPS figures for every endpoint in the system.",
+          "why": "Make reasonable assumptions instead and keep moving."
+        },
+        {
+          "id": "d",
+          "text": "Add geographic sharding across three continents so every user is always close to their data.",
+          "why": "There is no latency or scale requirement that justifies it."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Show judgement by solving the real problem, not an imagined one. A well-indexed single database handles thousands of queries per second."
+    },
+    {
+      "id": "qps-threshold",
+      "concept": "Interview judgement",
+      "type": "single",
+      "difficulty": 2,
+      "prompt": "As a rough rule of thumb (with proper indexing), at about how many read requests per second should you start considering horizontal scaling or a cache?",
+      "options": [
+        {
+          "id": "a",
+          "text": "50,000-100,000",
+          "why": "Correct: a rough guide you can quote in an interview."
+        },
+        {
+          "id": "b",
+          "text": "100-500",
+          "why": "Far too low: a single indexed database handles this easily."
+        },
+        {
+          "id": "c",
+          "text": "1,000-5,000",
+          "why": "Still comfortably handled by one well-tuned database."
+        },
+        {
+          "id": "d",
+          "text": "10 million or more",
+          "why": "You would have needed to scale long before this."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "This is a very rough estimate; actual numbers depend on the data model, hardware and access pattern. In interviews, rough numbers are enough to justify a decision."
+    }
+  ]
+}
