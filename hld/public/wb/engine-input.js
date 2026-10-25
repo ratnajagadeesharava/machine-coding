@@ -838,7 +838,9 @@ export function installInput(P) {
     if (t && t.closest && t.closest(IGNORE_KEY_TARGETS)) return;
     const onButton = !!(t && t.closest && t.closest('button,a,[role="button"],[role="tab"],[role="menuitem"]'));
     const mod = e.ctrlKey || e.metaKey;
-    const { shiftKey: shift, altKey: alt, code, key } = e;
+    const { shiftKey: shift, altKey: alt, key } = e;
+    // Letters follow the typed character, so shortcuts work on AZERTY / Dvorak / Colemak; other keys (and Alt on Mac) use the physical key.
+    const code = /^[a-z]$/i.test(key) ? `Key${key.toUpperCase()}` : e.code;
     const editable = this._canEdit();
     const prevent = () => e.preventDefault();
 
