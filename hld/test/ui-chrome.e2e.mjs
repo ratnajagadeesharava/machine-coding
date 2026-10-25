@@ -287,11 +287,23 @@ await test('properties: arrowheads, arrow type, arrow label rows', async (page) 
   await page.click('.wbui-headgrid [data-value="crowfoot_many"]');
   assert.equal((await el(page)).endArrowhead, 'crowfoot_many');
   assert.equal(await page.locator('.wbui-popover').count(), 0, 'picker closes on pick');
-  await page.click('[data-prop-picker="startArrowhead"]');
-  assert.equal(await pressed(page, '.wbui-headgrid [data-value="null"]'), true, 'no head = "null" pressed');
+  // single-pointed: the start picker is hidden; ticking Double-pointed copies the end head to both ends
+  assert.equal(await page.locator('[data-prop-picker="startArrowhead"]').isVisible(), false, 'single: no start picker');
+  assert.equal(await page.locator('[data-dual]').isChecked(), false);
+  await page.check('[data-dual]');
+  let a = await el(page);
+  assert.equal(a.startArrowhead, 'crowfoot_many'); assert.equal(a.endArrowhead, 'crowfoot_many');
+  // while double-pointed, picking a head sets both ends
+  await page.click('[data-prop-picker="endArrowhead"]');
   await page.click('.wbui-headgrid [data-value="diamond_outline"]');
-  assert.equal((await el(page)).startArrowhead, 'diamond_outline');
-  await page.click('[data-prop-picker="startArrowhead"]');
+  a = await el(page);
+  assert.equal(a.startArrowhead, 'diamond_outline'); assert.equal(a.endArrowhead, 'diamond_outline');
+  assert.equal(await page.locator('[data-prop-picker="startArrowhead"]').isVisible(), true);
+  // back to single: start head removed, end kept
+  await page.uncheck('[data-dual]');
+  a = await el(page);
+  assert.equal(a.startArrowhead, null); assert.equal(a.endArrowhead, 'diamond_outline');
+  await page.click('[data-prop-picker="endArrowhead"]');
   await page.keyboard.press('Escape');
   assert.equal(await page.locator('.wbui-popover').count(), 0);
   await page.click('.wbui-props [data-prop="arrowType"][data-value="elbow"]');

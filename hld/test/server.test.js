@@ -244,3 +244,27 @@ test('a board bigger than the old limit is accepted', async () => {
     assert.equal((await readSse(res)).at(-1).event, 'done');
   } finally { await s.close(); }
 });
+
+test('a key sent from the browser enables the AI when the server has none', async () => {
+  const { createServer } = await import('../server/index.js');
+  const { createAi } = await import('../server/ai.js');
+  const { createMockClient } = await import('../server/mock.js');
+  const made = [];
+  const srv = createServer({ ai: null, questions: [], quizzes: [], mode: 'off', makeAi: (k) => { made.push(k); return createAi({ client: createMockClient(), model: 'mock', effort: 'none' }); } });
+  await new Promise((r) => srv.listen(0, '127.0.0.1', r));
+  const base = `http://127.0.0.1:${srv.address().port}`;
+  try {
+    let h = await (await fetch(`${base}/api/health`)).json();
+    assert.equal(h.ai, 'off'); assert.equal(h.canUseBrowserKey, true);
+    const key = 'sk-ant-test-1234567890abcdef';
+    h = await (await fetch(`${base}/api/health`, { headers: { 'x-anthropic-key': key } })).json();
+    assert.equal(h.ai, 'live'); assert.equal(h.browserKey, true);
+    const bad = await fetch(`${base}/api/health`, { headers: { 'x-anthropic-key': 'nope' } });
+    assert.equal((await bad.json()).ai, 'off');
+    const res = await fetch(`${base}/api/quiz/generate`, { method: 'POST', headers: { 'content-type': 'application/json', 'x-anthropic-key': 'bad key' }, body: '{}' });
+    assert.equal(res.status, 400);
+    const none = await fetch(`${base}/api/quiz/generate`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: '{}' });
+    assert.equal(none.status, 503);
+    assert.ok(made.length <= 1);
+  } finally { srv.close(); }
+});

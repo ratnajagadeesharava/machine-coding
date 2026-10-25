@@ -227,8 +227,15 @@ export function mountProperties(wb, host) {
       b.addEventListener('click', () => (pop && pop.owner === b ? closePop(true) : openHeads(prop, label, flip, b)));
       return b;
     };
+    const dual = h('input', { type: 'checkbox', class: 'wbui-dual', 'aria-label': 'Double-pointed arrow', dataset: { dual: '' } });
+    dual.addEventListener('change', () => {
+      const end = wb.styleSummary().values.endArrowhead;
+      const head = end && end !== MIXED ? end : 'arrow';
+      wb.setStyle(dual.checked ? { startArrowhead: head, endArrowhead: head } : { startArrowhead: null, endArrowhead: head });
+    });
     const wrap = h('div', { class: 'wbui-heads' },
-      h('div', { class: 'wbui-headcol' }, h('span', { class: 'wbui-sublabel', text: 'Start' }), mk('startArrowhead', 'Start arrowhead', true)),
+      h('label', { class: 'wbui-dual-row' }, dual, h('span', { text: 'Double-pointed' })),
+      h('div', { class: 'wbui-headcol', dataset: { headcol: 'start' } }, h('span', { class: 'wbui-sublabel', text: 'Start' }), mk('startArrowhead', 'Start arrowhead', true)),
       h('div', { class: 'wbui-headcol' }, h('span', { class: 'wbui-sublabel', text: 'End' }), mk('endArrowhead', 'End arrowhead', false)),
     );
     sectionRow('arrowheads', 'Arrowheads', wrap);
@@ -241,7 +248,12 @@ export function mountProperties(wb, host) {
       const b = h('button', {
         type: 'button', class: 'wbui-btn wbui-opt wbui-headopt' + (flip ? ' is-flip' : ''), dataset: { prop, value: String(a.id), pal: '' }, title: a.label, 'aria-label': a.label, 'aria-pressed': 'false',
       }, icon(headIconName(a.id), 26));
-      b.addEventListener('click', () => { wb.setStyle({ [prop]: a.id }); closePop(true); });
+      b.addEventListener('click', () => {
+        const v = wb.styleSummary().values;
+        const isDual = v.startArrowhead && v.startArrowhead !== MIXED; // both ends move together while double-pointed
+        wb.setStyle(isDual && a.id ? { startArrowhead: a.id, endArrowhead: a.id } : { [prop]: a.id });
+        closePop(true);
+      });
       grid.append(b);
     }
     const sync = () => {
@@ -426,6 +438,18 @@ export function mountProperties(wb, host) {
       chip.classList.toggle('is-custom', !mixed && !quickMatch);
       fill.style.setProperty('--wbui-sw', mixed || v === 'transparent' ? 'transparent' : String(v));
       chip.dataset.value = mixed ? '' : String(v);
+    }
+    // single / double-pointed toggle
+    {
+      const dual = panel.querySelector('[data-dual]');
+      const startCol = panel.querySelector('[data-headcol="start"]');
+      if (dual) {
+        const sv = values.startArrowhead;
+        dual.indeterminate = sv === MIXED;
+        dual.checked = sv !== MIXED && !!sv;
+        dual.disabled = !applies.startArrowhead;
+        if (startCol) startCol.hidden = !dual.checked && sv !== MIXED;
+      }
     }
     // arrowhead picker previews
     for (const prop of ['startArrowhead', 'endArrowhead']) {

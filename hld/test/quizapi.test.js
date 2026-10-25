@@ -57,7 +57,7 @@ test('explain streams a tutor reply that knows what the learner chose', async ()
     const events = await readSse(res);
     assert.equal(events.at(-1).event, 'done');
     const text = events.filter((e) => e.event === 'delta').map((e) => e.data.text).join('');
-    assert.match(text, /Mock tutor: let us look at Caching\. You chose B\./);
+    assert.match(text, /Mock tutor: let us look at Caching\. You chose 2\./);
     const follow = await readSse(await post(s.base, '/api/quiz/explain', {
       question: sampleQuestion(), selected: ['a'],
       history: [{ role: 'assistant', content: 'First explanation.' }, { role: 'user', content: 'But what about CDNs?' }],
@@ -134,11 +134,11 @@ test('cleanQuestion accepts a good question, rejects bad ones, and strips unknow
   assert.ok(cleanQuestion({ ...sampleQuestion(), prompt: 'short' }).error);
 });
 
-test('explainContext lists lettered options, the right letters and the learner choice', () => {
+test('explainContext lists numbered options, the right letters and the learner choice', () => {
   const text = explainContext(sampleQuestion(), ['b']);
-  assert.match(text, /A\. Hot data repeats/);
-  assert.match(text, /Correct answer: A/);
-  assert.match(text, /Learner chose: B/);
+  assert.match(text, /1\. Hot data repeats/);
+  assert.match(text, /Correct answer: 1/);
+  assert.match(text, /Learner chose: 2/);
   assert.match(explainContext(sampleQuestion(), []), /Learner chose: \(nothing\)/);
 });
 

@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import {
-  isCorrect, letterFor, mulberry32, pickQuestions, presentQuestion, scoreAttempt, shuffle, validateQuestion, validateQuiz,
+  isCorrect, numberFor, mulberry32, pickQuestions, presentQuestion, scoreAttempt, shuffle, validateQuestion, validateQuiz,
 } from '../shared/quiz.js';
 
 const opt = (id, text) => ({ id, text, why: `why ${id}` });
@@ -114,7 +114,7 @@ test('pickQuestions returns n unique questions in original order, or everything 
   assert.equal(pickQuestions(quiz(qs), 50, mulberry32(7)).length, 12);
 });
 
-test('letterFor maps positions to letters', () => {
-  assert.equal(letterFor(0), 'A');
-  assert.equal(letterFor(3), 'D');
+test('numberFor labels positions with numbers', () => {
+  assert.equal(numberFor(0), '1');
+  assert.equal(numberFor(3), '4');
 });

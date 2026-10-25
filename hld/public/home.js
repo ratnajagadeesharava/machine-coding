@@ -1,4 +1,5 @@
 // Home: choose a question from the bank, write your own, or open a blank whiteboard. Nothing here talks to the AI.
+import './apikey.js';
 import {
   LEVELS, LIMITS, STYLES, deleteCustom, getCustoms, getLaunch, listSessions, saveCustom, setLaunch, validateCustom,
 } from '/store.js';
@@ -44,7 +45,7 @@ async function showHealth() {
     const health = await (await fetch('/api/health')).json();
     if (health.ai === 'off') {
       banner.hidden = false;
-      banner.textContent = 'Aria (the AI interviewer) is not connected, so chat and feedback are unavailable. The whiteboard and timer still work. Add ANTHROPIC_API_KEY to hld/.env and restart, or run "npm run demo".';
+      banner.textContent = 'Aria (the AI interviewer) is not connected, so chat and feedback are unavailable. The whiteboard and timer still work. Click "Add key" (top right) to paste your Claude key, or run "npm run demo".';
     } else if (health.ai === 'mock' && notice.hidden) {
       notice.hidden = false;
       notice.textContent = 'Demo mode: Aria gives canned replies and no API calls are made.';

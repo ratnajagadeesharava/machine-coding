@@ -221,6 +221,17 @@ export function mountWhiteboard(container, options = {}) {
 
   // The library button and the `library` request (from the palette or the menu) toggle the right-hand panel.
   cleanups.push(wb.on('request', (e) => { if (e && e.name === 'library') toggleLibrary(); }));
+
+  // The image tool (toolbar button, key 9, palette) asks for a picture: open the file picker and drop it in the centre of the view.
+  cleanups.push(wb.on('request', async (e) => {
+    if (!e || e.name !== 'image') return;
+    try {
+      const { pickFile } = await import('./interop.js');
+      const file = await pickFile('image/*');
+      if (file) await wb.addImageFile(file);
+      else if (wb.setTool) wb.setTool('select');
+    } catch (err) { console.warn('[whiteboard] image insert failed:', err); }
+  }));
   const onUiRequest = (e) => { if (e.detail && e.detail.wb === wb && e.detail.name === 'library') toggleLibrary(); };
   window.addEventListener('wbm:request', onUiRequest);
   cleanups.push(() => window.removeEventListener('wbm:request', onUiRequest));

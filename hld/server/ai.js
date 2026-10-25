@@ -54,7 +54,7 @@ export const EVAL_SCHEMA = {
 // Map any SDK / network failure to something safe to show the user.
 export function friendlyError(err) {
   if (err instanceof AriaError) return { status: err.status, message: err.message };
-  if (err instanceof Anthropic.AuthenticationError) return { status: 401, message: 'The Anthropic API key was rejected. Check ANTHROPIC_API_KEY in hld/.env.' };
+  if (err instanceof Anthropic.AuthenticationError) return { status: 401, message: 'The Anthropic API key was rejected. Check the key in Settings (or ANTHROPIC_API_KEY in hld/.env).' };
   if (err instanceof Anthropic.PermissionDeniedError) return { status: 403, message: 'This API key is not allowed to use the configured model.' };
   if (err instanceof Anthropic.NotFoundError) return { status: 502, message: 'The configured model was not found. Check HLD_MODEL.' };
   if (err instanceof Anthropic.RateLimitError) return { status: 429, message: 'Anthropic rate limit reached. Wait a few seconds and try again.' };
