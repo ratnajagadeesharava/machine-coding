@@ -497,7 +497,7 @@ function renderBanner() {
   } else if (ai === 'mock') {
     els.banner.hidden = false;
     els.banner.classList.add('info');
-    els.banner.textContent = 'Demo mode: AI explanations and generated quizzes are canned. Set ANTHROPIC_API_KEY for the real thing.';
+    els.banner.textContent = 'Demo mode: AI explanations and generated quizzes are canned. Add your Claude key (top right) for the real thing.';
   } else els.banner.hidden = true;
 }
 

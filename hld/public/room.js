@@ -572,7 +572,7 @@ function renderBanner() {
   } else if (ai === 'mock') {
     b.hidden = false;
     b.classList.add('info');
-    b.textContent = 'Demo mode: Aria gives canned replies and no API calls are made. Set ANTHROPIC_API_KEY for real interviews.';
+    b.textContent = 'Demo mode: Aria gives canned replies and no API calls are made. Add your Claude key (top right) for real interviews.';
   } else b.hidden = true;
 }
 
