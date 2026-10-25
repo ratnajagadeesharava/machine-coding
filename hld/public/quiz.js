@@ -30,7 +30,7 @@ const els = {
   feedback: $('#q-feedback'), verdict: $('#q-verdict'), explain: $('#q-explain'), tutorBtn: $('#btn-tutor'), tutor: $('#tutor'),
   tutorText: $('#tutor-text'), tutorForm: $('#tutor-form'), tutorInput: $('#tutor-input'),
   check: $('#btn-check'), next: $('#btn-next'),
-  ring: $('#ring'), ringPct: $('#ring-pct'), resultTitle: $('#result-title'), resultSub: $('#result-sub'),
+  ring: $('#ring'), ringPct: $('#ring-pct'), resultTitle: $('#result-title'), resultSub: $('#result-sub'), clock: $('#run-clock'), timer: $('#run-timer'), limit: $('#limit'), limitLabel: $('#limit-label'),
   retryMissed: $('#btn-retry-missed'), retake: $('#btn-retake'), home: $('#btn-home'),
   byConcept: $('#by-concept'), review: $('#review'), onlyWrong: $('#only-wrong'),
   confirm: $('#confirm'), confirmText: $('#confirm-text'), confirmYes: $('#confirm-yes'), confirmNo: $('#confirm-no'),
@@ -96,6 +96,37 @@ function show(view) {
   if (view === 'home') { els.title.textContent = 'Quizzes'; els.sub.textContent = 'Check what you know, then see why.'; document.title = 'Quizzes - HLD Room'; }
   window.scrollTo({ top: 0 });
 }
+
+// ---------- timer ----------
+// Counts up from the first question; with "Time limit" on it counts down from the quiz's estimated time and the quiz
+// ends by itself at zero (unanswered questions score as wrong). Ticks are capped so a hidden tab does not rack up time.
+const fmtClock = (sec) => { const s = Math.max(0, Math.round(sec)); return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`; };
+const limitSec = (run) => Math.max(60, run.questions.length * 45); // 45 seconds per question
+let tickId = null;
+function renderClock() {
+  const run = S.run;
+  if (!run) return;
+  const limited = els.limit.checked;
+  const left = limitSec(run) - run.elapsed;
+  els.clock.textContent = limited ? fmtClock(left) : fmtClock(run.elapsed);
+  els.timer.classList.toggle('low', limited && left <= 60);
+  els.limitLabel.textContent = `Time limit (${fmtClock(limitSec(run))})`;
+}
+function startTimer() {
+  stopTimer();
+  let last = Date.now();
+  tickId = setInterval(() => {
+    const run = S.run;
+    if (!run || S.view !== 'run') return stopTimer();
+    const now = Date.now();
+    run.elapsed += Math.min(2, (now - last) / 1000);
+    last = now;
+    renderClock();
+    if (els.limit.checked && run.elapsed >= limitSec(run)) { stopTimer(); flash('Time is up - here are your results.'); finish(); }
+  }, 250);
+  renderClock();
+}
+function stopTimer() { if (tickId) clearInterval(tickId); tickId = null; }
 
 const modeLabel = (m) => (m === 'quick' ? `Quick ${QUICK_COUNT}` : m === 'missed' ? 'Retry missed' : 'Full quiz');
 const fmtMinutes = (n) => `~${n} min`;
@@ -171,12 +202,13 @@ async function startQuiz(id, mode) {
     questions = quiz.questions.filter((q) => ids.has(q.id));
     if (!questions.length) { flash('Nothing missed to retry.'); return; }
   }
-  S.run = { quiz, mode, questions: questions.map((q) => presentQuestion(q, rand)), i: 0, answers: {}, checked: {}, tutor: {} };
+  S.run = { quiz, mode, questions: questions.map((q) => presentQuestion(q, rand)), i: 0, answers: {}, checked: {}, tutor: {}, elapsed: 0 };
   els.title.textContent = quiz.title;
   els.sub.textContent = `${modeLabel(mode)} · ${S.run.questions.length} questions`;
   document.title = `${quiz.title} - Quizzes - HLD Room`;
   show('run');
   renderQuestion();
+  startTimer();
 }
 
 function flash(message) {
@@ -262,9 +294,10 @@ function next() {
 
 els.check.addEventListener('click', check);
 els.next.addEventListener('click', next);
+els.limit.addEventListener('change', () => { store.set('limit', els.limit.checked); renderClock(); });
 els.instant.addEventListener('change', () => { store.set('instant', els.instant.checked); if (S.run) renderQuestion(); });
 els.quit.addEventListener('click', async () => {
-  if (await askConfirm('Quit this quiz? Your answers so far will not be saved.', 'Quit quiz')) { S.run = null; show('home'); renderCards(); }
+  if (await askConfirm('Quit this quiz? Your answers so far will not be saved.', 'Quit quiz')) { stopTimer(); S.run = null; show('home'); renderCards(); }
 });
 
 document.addEventListener('keydown', (e) => {
@@ -273,11 +306,10 @@ document.addEventListener('keydown', (e) => {
   const t = e.target;
   if (t && (t.tagName === 'INPUT' && t.type !== 'checkbox' || t.tagName === 'TEXTAREA')) return;
   const q = cur();
-  const idx = 'abcdef'.indexOf(e.key.toLowerCase());
-  const num = /^[1-6]$/.test(e.key) ? Number(e.key) - 1 : -1;
-  const pick = idx >= 0 ? idx : num;
+  const pick = /^[1-6]$/.test(e.key) ? Number(e.key) - 1 : -1;
   if (pick >= 0 && pick < q.options.length) { e.preventDefault(); choose(q.options[pick].id); return; }
-  if (e.key === 'Enter' && t?.tagName !== 'BUTTON') {
+  // Enter on an answer option (focus stays there after choosing) still checks / moves on; on the other buttons it presses them.
+  if (e.key === 'Enter' && (t?.tagName !== 'BUTTON' || t.classList.contains('opt'))) {
     e.preventDefault();
     if (!S.run.checked[q.id] && els.instant.checked) check(); else if (!els.next.hidden) next();
   }
@@ -346,11 +378,11 @@ function recordAttempt(result) {
   S.attempts[run.quiz.id] = {
     best: run.mode === 'full' ? Math.max(prev.best ?? 0, result.percent) : prev.best,
     count: prev.count + 1,
-    last: { percent: result.percent, score: result.score, total: result.total, mode: run.mode, at: Date.now(), missed },
+    last: { seconds: result.seconds, percent: result.percent, score: result.score, total: result.total, mode: run.mode, at: Date.now(), missed },
   };
   store.set('attempts', S.attempts);
   // Every finished attempt is kept (newest first, last 100) so results survive reloads and can be reviewed later.
-  S.history = [{ quizId: run.quiz.id, title: run.quiz.title, at: Date.now(), mode: run.mode, percent: result.percent, score: result.score, total: result.total,
+  S.history = [{ quizId: run.quiz.id, title: run.quiz.title, at: Date.now(), seconds: result.seconds, mode: run.mode, percent: result.percent, score: result.score, total: result.total,
     weak: result.byConcept.filter((c) => c.correct < c.total).map((c) => c.concept || c.name || c.label).filter(Boolean).slice(0, 5) }, ...S.history].slice(0, 100);
   store.set('history', S.history);
   renderHistory();
@@ -362,7 +394,7 @@ function renderHistory() {
   box.hidden = S.history.length === 0;
   const rows = S.history.slice(0, 8).map((r) => h('li', { class: 'hist-row' },
     h('span', { class: 'hist-score' + (r.percent >= 70 ? ' good' : r.percent < 50 ? ' low' : ''), text: `${r.percent}%` }),
-    h('span', { class: 'hist-main' }, h('b', { text: r.title }), h('span', { class: 'muted', text: `${r.score}/${r.total} · ${modeLabel(r.mode)} · ${new Date(r.at).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' })}` }))));
+    h('span', { class: 'hist-main' }, h('b', { text: r.title }), h('span', { class: 'muted', text: `${r.score}/${r.total} · ${modeLabel(r.mode)}${r.seconds != null ? ` · ${fmtClock(r.seconds)}` : ''} · ${new Date(r.at).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' })}` }))));
   box.replaceChildren(
     h('div', { class: 'hist-head' }, h('h2', { class: 'eyebrow', text: 'RECENT RESULTS' }),
       h('button', { class: 'btn ghost small', type: 'button', text: 'Clear', onclick: () => { S.history = []; store.set('history', []); renderHistory(); } })),
@@ -371,8 +403,10 @@ function renderHistory() {
 
 function finish() {
   const run = S.run;
+  stopTimer();
   const result = scoreAttempt({ questions: run.questions }, run.answers);
   run.result = result;
+  result.seconds = Math.round(run.elapsed);
   recordAttempt(result);
   els.fill.style.width = '100%';
   els.title.textContent = run.quiz.title;
@@ -382,7 +416,7 @@ function finish() {
   els.ring.setAttribute('aria-label', `Score ${p} percent`);
   els.ringPct.textContent = `${p}%`;
   els.resultTitle.textContent = p >= 90 ? 'Excellent' : p >= 70 ? 'Solid' : p >= 50 ? 'Getting there' : 'Keep practising';
-  els.resultSub.textContent = `${result.score} of ${result.total} correct · ${modeLabel(run.mode)}`;
+  els.resultSub.textContent = `${result.score} of ${result.total} correct · ${modeLabel(run.mode)} · ${fmtClock(result.seconds)}`;
   const missedAll = S.attempts[run.quiz.id].last.missed;
   els.retryMissed.hidden = missedAll.length === 0;
   els.retryMissed.textContent = `Retry missed (${missedAll.length})`;
@@ -471,6 +505,7 @@ async function init() {
   S.attempts = store.get('attempts', {});
   S.history = (store.get('history', []) || []).filter((r) => r && typeof r.title === 'string' && Number.isFinite(r.percent));
   els.instant.checked = store.get('instant', true);
+  els.limit.checked = store.get('limit', false) === true;
   S.custom = (store.get('custom', []) || []).filter((q) => validateQuiz(q).length === 0);
   try {
     const [list, health] = await Promise.all([fetch('/api/quizzes').then((r) => r.json()), fetch('/api/health').then((r) => r.json())]);

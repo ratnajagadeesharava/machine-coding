@@ -62,6 +62,8 @@
       <div class="progress" role="progressbar" aria-label="Quiz progress" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><i id="progress-fill"></i></div>
       <div class="run-meta">
         <span id="run-count">Question 1 of 10</span>
+        <span class="run-timer" id="run-timer" role="timer" aria-label="Quiz timer"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2.5 2M9 2h6"/></svg><b id="run-clock">0:00</b></span>
+        <label class="toggle"><input id="limit" type="checkbox"> <span id="limit-label">Time limit</span></label>
         <label class="toggle"><input id="instant" type="checkbox" checked> Show answer after each question</label>
       </div>
     </div>

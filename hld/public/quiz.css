@@ -173,3 +173,8 @@ h3 { font-size: 16px; margin: 0 0 10px; }
 .hist-main b { font-weight: 650; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .hist-score { min-width: 58px; text-align: center; font-weight: 800; font-variant-numeric: tabular-nums; padding: 5px 0; border-radius: 10px; background: var(--accent-soft); color: var(--accent); }
 .hist-score.low { background: var(--danger-soft); color: var(--danger); }
+
+.run-timer { display: inline-flex; align-items: center; gap: 6px; font-variant-numeric: tabular-nums; font-size: 15px; padding: 3px 12px; border-radius: 99px; background: var(--accent-soft); color: var(--accent); }
+.run-timer.low { background: var(--danger-soft); color: var(--danger); animation: pulse 1s ease-in-out infinite; }
+@keyframes pulse { 50% { opacity: .55; } }
+@media (prefers-reduced-motion: reduce) { .run-timer.low { animation: none; } }
