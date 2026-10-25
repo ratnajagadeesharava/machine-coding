@@ -1,0 +1,129 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Interview - HLD Room</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%230f6b63'/%3E%3Crect x='6' y='7' width='9' height='8' rx='2' fill='none' stroke='white' stroke-width='2'/%3E%3Crect x='17' y='17' width='9' height='8' rx='2' fill='none' stroke='white' stroke-width='2'/%3E%3Cpath d='M15 11h4v6' fill='none' stroke='white' stroke-width='2'/%3E%3C/svg%3E">
+  <link rel="stylesheet" href="/styles.css">
+  <link rel="stylesheet" href="/room.css">
+</head>
+<body class="room-page">
+<div id="room" class="room">
+  <header class="topbar">
+    <a class="brand" href="/" aria-label="HLD Room home">
+      <span class="logo" aria-hidden="true">
+        <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="8" height="7" rx="2"/><rect x="13" y="13" width="8" height="7" rx="2"/><path d="M11 7.5h3a2 2 0 0 1 2 2V13"/></svg>
+      </span>
+      <span class="brand-name">HLD Room</span>
+    </a>
+    <nav class="nav" aria-label="Sections">
+      <a href="/">Home</a>
+      <a href="/board.html">Whiteboard</a>
+      <a href="/quiz.html">Quizzes</a>
+    </nav>
+    <div class="title">
+      <h1 id="q-title">Loading...</h1>
+      <div id="q-chips" class="room-chips"></div>
+    </div>
+    <div class="timer-wrap">
+      <span class="timer-label">TIME LEFT</span>
+      <span id="timer" class="timer" role="timer" aria-live="off">--:--</span>
+    </div>
+    <div class="actions">
+      <button id="btn-start" class="btn primary" type="button">Start</button>
+      <button id="btn-pause" class="btn" type="button" hidden>
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor" aria-hidden="true"><rect x="6" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/></svg>
+        <span id="btn-pause-label">Pause</span>
+      </button>
+      <button id="btn-end" class="btn danger" type="button" hidden>
+        <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor" aria-hidden="true"><rect x="5" y="5" width="14" height="14" rx="2"/></svg>
+        End
+      </button>
+      <button id="btn-feedback" class="btn" type="button" hidden>View feedback</button>
+      <a id="btn-home" class="btn" href="/">Home</a>
+    </div>
+  </header>
+
+  <div id="banner" class="banner" role="status" hidden></div>
+
+  <div class="room-body">
+    <div class="side side-left">
+      <aside id="q-panel" class="panel qpanel" aria-label="Question">
+        <div class="panel-head">
+          <h2 class="eyebrow">THE QUESTION</h2>
+          <button id="q-close" class="icon-btn" type="button" aria-label="Close question panel" title="Close question panel">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>
+          </button>
+        </div>
+        <div class="panel-scroll">
+          <h2 id="qp-title" class="qp-title"></h2>
+          <div id="qp-chips" class="room-chips"></div>
+          <p id="q-prompt" class="prompt-text"></p>
+          <div id="qp-assume-wrap">
+            <h3>You can assume</h3>
+            <ul id="q-assume" class="assume"></ul>
+          </div>
+          <div id="qp-focus-wrap" hidden>
+            <h3>Focus areas</h3>
+            <p id="qp-focus" class="focus-text"></p>
+          </div>
+        </div>
+      </aside>
+      <button id="q-tab" class="side-tab" type="button" hidden aria-label="Open question panel" title="Open question panel">Question</button>
+    </div>
+
+    <main class="stage" aria-label="Whiteboard"><div id="board" class="board"></div></main>
+
+    <div class="side side-right">
+      <button id="bot-tab" class="side-tab" type="button" hidden aria-label="Open Aria, the interviewer" title="Open Aria">Aria</button>
+      <aside id="bot-panel" class="panel botpanel" aria-label="Interviewer">
+        <div class="aria-head">
+          <div class="avatar" aria-hidden="true">
+            <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>
+          </div>
+          <div class="aria-meta">
+            <h2>Aria</h2>
+            <p id="aria-status" class="status"><span class="dot"></span><span id="aria-status-text">Waiting</span></p>
+            <p id="aria-board" class="board-line"></p>
+          </div>
+          <button id="bot-close" class="icon-btn" type="button" aria-label="Close Aria panel (switches Aria off)" title="Close Aria (switches her off)">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>
+          </button>
+        </div>
+        <div class="chips">
+          <button type="button" class="chip" data-quick="clarify">Clarify requirements</button>
+          <button type="button" class="chip" data-quick="hint">Give me a hint</button>
+          <button type="button" class="chip" data-quick="review">Review my board</button>
+        </div>
+        <div id="chat" class="chat" aria-live="polite"></div>
+        <form id="chat-form" class="composer" autocomplete="off">
+          <input id="chat-input" type="text" placeholder="Ask Aria a question" aria-label="Message to Aria" maxlength="2000">
+          <button id="chat-send" class="send" type="submit" aria-label="Send">
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2L11 13"/><path d="M22 2l-7 20-4-9-9-4z"/></svg>
+          </button>
+        </form>
+      </aside>
+    </div>
+  </div>
+</div>
+
+<dialog id="report" class="report" aria-labelledby="report-title">
+  <div class="report-head">
+    <h2 id="report-title">Interview feedback</h2>
+    <button id="report-close" class="btn" type="button">Close</button>
+  </div>
+  <div id="report-body" class="report-body"></div>
+</dialog>
+
+<dialog id="confirm" class="confirm">
+  <p id="confirm-text"></p>
+  <div class="confirm-actions">
+    <button id="confirm-no" class="btn" type="button">Cancel</button>
+    <button id="confirm-yes" class="btn primary" type="button">Confirm</button>
+  </div>
+</dialog>
+
+<script type="module" src="/room.js"></script>
+</body>
+</html>

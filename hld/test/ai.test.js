@@ -5,8 +5,7 @@ import { AriaError, cleanEvaluation, createAi, friendlyError } from '../server/a
 import { emptyBoard } from '../shared/board.js';
 
 const question = {
-  id: 'x', title: 'Design X', difficulty: 'Medium', minutes: 45, prompt: 'Build X.', assumptions: ['a'], followups: ['f'],
-  clarifications: [{ topic: 't', question: 'q', answer: 'a' }], rubric: { requirements: ['r'] },
+  title: 'Design X', difficulty: 'Medium', minutes: 45, prompt: 'Build X.', assumptions: ['a'], level: 'senior', style: 'balanced',
 };
 const board = { nextId: 3, items: [{ id: 1, type: 'rect', x: 0, y: 0, w: 100, h: 60, text: 'API' }, { id: 2, type: 'database', x: 200, y: 0, w: 100, h: 80, text: 'DB' }] };
 
@@ -48,7 +47,8 @@ test('chat streams text deltas and sends a well-formed request', async () => {
   assert.ok(params.max_tokens >= 1000);
   assert.equal(params.system[0].type, 'text');
   assert.deepEqual(params.system[0].cache_control, { type: 'ephemeral' });
-  assert.match(params.system[0].text, /HIDDEN RUBRIC/);
+  assert.match(params.system[0].text, /QUESTION: Design X/);
+  assert.doesNotMatch(params.system[0].text, /HIDDEN RUBRIC/);
   assert.equal(params.messages[0].role, 'user', 'leading assistant greeting is dropped');
   const last = params.messages[params.messages.length - 1];
   assert.equal(last.role, 'user');

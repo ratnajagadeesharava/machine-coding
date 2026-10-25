@@ -29,7 +29,7 @@ async function readSse(res) {
 }
 
 const chatBody = (extra = {}) => ({
-  questionId: questions[0].id, board, elapsedMs: 5000, status: 'running', mode: 'chat',
+  question: questions[0], board, elapsedMs: 5000, status: 'running', mode: 'chat',
   messages: [{ role: 'assistant', content: 'hi' }, { role: 'user', content: 'Can I ask about scale?' }], ...extra,
 });
 
@@ -40,7 +40,7 @@ test('health, question list and static files', async () => {
     assert.deepEqual(health, { ok: true, ai: 'mock', model: 'mock' });
     const list = await (await fetch(s.base + '/api/questions')).json();
     assert.equal(list.length, 26);
-    assert.ok(list.every((q) => !('rubric' in q) && !('clarifications' in q) && !('followups' in q)), 'hidden interviewer data stays on the server');
+    assert.ok(list.every((q) => !('rubric' in q) && !('clarifications' in q) && !('followups' in q)), 'the bank carries no interviewer data');
     const index = await fetch(s.base + '/');
     assert.equal(index.status, 200);
     assert.match(index.headers.get('content-type'), /text\/html/);
@@ -146,10 +146,17 @@ test('without an AI configured the API explains how to fix it', async () => {
 test('input validation', async () => {
   const s = await start();
   try {
-    assert.equal((await post(s.base, '/api/chat', chatBody({ questionId: 'nope' }))).status, 404);
+    for (const bad of [undefined, null, 'x', { title: 'ab', prompt: 'long enough prompt' }, { title: 'Fine', prompt: 'short' }, { ...questions[0], level: 'god' }]) {
+      const r = await post(s.base, '/api/chat', chatBody({ question: bad }));
+      assert.equal(r.status, 400, JSON.stringify(bad));
+      assert.match((await r.json()).error, /question/i);
+    }
+    assert.equal((await post(s.base, '/api/watch', chatBody({ question: undefined }))).status, 400);
+    assert.equal((await post(s.base, '/api/evaluate', chatBody({ question: undefined }))).status, 400);
+    assert.equal((await post(s.base, '/api/chat', { questionId: questions[0].id, board })).status, 400, 'questionId is no longer accepted');
     assert.equal((await post(s.base, '/api/chat', null, '{not json')).status, 400);
     assert.equal((await post(s.base, '/api/chat', null, '[1,2]')).status, 400);
-    const big = await post(s.base, '/api/chat', null, JSON.stringify({ pad: 'x'.repeat(300_000) }));
+    const big = await post(s.base, '/api/chat', null, JSON.stringify({ pad: 'x'.repeat(800_000) }));
     assert.equal(big.status, 413);
     assert.equal((await fetch(s.base + '/api/chat')).status, 405);
     assert.equal((await post(s.base, '/api/unknown', {})).status, 404);
@@ -168,5 +175,72 @@ test('the AI endpoints are rate limited', async () => {
     const res = await post(s.base, '/api/watch', chatBody({ messages: [] }));
     assert.equal(res.status, 429);
     assert.equal((await fetch(s.base + '/api/questions')).status, 200, 'non-AI routes are not limited');
+  } finally { await s.close(); }
+});
+
+// A fake Anthropic client that records every request, to prove exactly what reaches the model.
+function recordingClient() {
+  const requests = [];
+  const mock = createMockClient({ delayMs: 0 });
+  return {
+    requests,
+    messages: {
+      stream(params, opts) { requests.push(params); return mock.messages.stream(params, opts); },
+      async create(params) { requests.push(params); return mock.messages.create(params); },
+    },
+  };
+}
+const wire = (params) => JSON.stringify({ system: params.system, messages: params.messages });
+
+test('the model receives the question that was sent, and nothing else from the bank', async () => {
+  const client = recordingClient();
+  const s = await start({ ai: createAi({ client, model: 'mock', effort: 'none' }) });
+  try {
+    // 1. a question that is not in the bank reaches the model, and the mock reply proves the server used it
+    const custom = {
+      title: 'Design a zebra crossing scheduler', prompt: 'Schedule pedestrian crossings for a city of 5 million people.',
+      assumptions: ['2,000 junctions'], minutes: 33, level: 'staff', style: 'tough', focus: 'sensor failure',
+    };
+    for (const path of ['/api/chat', '/api/watch', '/api/evaluate']) {
+      const res = await post(s.base, path, chatBody({ question: custom, status: 'running' }));
+      assert.equal(res.status, 200, path);
+      if (path === '/api/chat') {
+        const text = (await readSse(res)).filter((e) => e.event === 'delta').map((e) => e.data.text).join('');
+        assert.match(text, /\[Q: Design a zebra crossing scheduler\] \[staff\/tough\]/);
+      } else await res.json();
+    }
+    assert.equal(client.requests.length, 3);
+    for (const p of client.requests) {
+      const w = wire(p);
+      for (const needle of ['zebra crossing scheduler', 'city of 5 million', '2,000 junctions', 'Time budget: 33 minutes', 'Candidate level: staff', 'Interviewer style: tough', 'sensor failure']) {
+        assert.ok(w.includes(needle), `${needle} reaches the model`);
+      }
+    }
+
+    // 2. a bank question: only title / prompt / assumptions / minutes (plus level, style) appear; all bank extras are absent
+    client.requests.length = 0;
+    const bank = questions.find((q) => q.id === 'url-shortener');
+    const extras = { id: bank.id, category: bank.category, clarifications: [{ answer: 'SECRET-CLARIFICATION' }], rubric: { api: ['SECRET-RUBRIC'] }, followups: ['SECRET-FOLLOWUP'] };
+    await readSse(await post(s.base, '/api/chat', chatBody({ question: { ...bank, ...extras } })));
+    const sys = client.requests[0].system[0].text;
+    for (const needle of [bank.title, bank.prompt, ...bank.assumptions, `Time budget: ${bank.minutes} minutes`]) assert.ok(sys.includes(needle), needle);
+    assert.ok(!sys.includes(bank.id), 'the bank id is not sent');
+    assert.ok(!/category/i.test(sys), 'the category is not sent');
+    assert.doesNotMatch(wire(client.requests[0]), /SECRET-|HIDDEN RUBRIC|INTERVIEWER FACTS/);
+    const block = sys.slice(sys.indexOf('QUESTION:'));
+    assert.deepEqual(block.split('\n').filter((l) => /^[A-Z][A-Za-z ]+:/.test(l)).map((l) => l.split(':')[0]),
+      ['QUESTION', 'Prompt given to the candidate', 'Assumptions the candidate was given', 'Time budget', 'Candidate level', 'Interviewer style', 'Focus areas']);
+  } finally { await s.close(); }
+});
+
+test('a board bigger than the old limit is accepted', async () => {
+  const s = await start();
+  try {
+    const items = Array.from({ length: 1500 }, (_, i) => ({ id: i + 1, type: 'rect', x: i * 10, y: 0, w: 100, h: 60, text: `Service ${i}` }));
+    const body = JSON.stringify(chatBody({ board: { nextId: 1501, items }, messages: [{ role: 'user', content: 'hi' }] }));
+    assert.ok(body.length > 100_000);
+    const res = await post(s.base, '/api/chat', null, body);
+    assert.equal(res.status, 200);
+    assert.equal((await readSse(res)).at(-1).event, 'done');
   } finally { await s.close(); }
 });

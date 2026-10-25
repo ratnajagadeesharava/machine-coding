@@ -6,25 +6,44 @@ import {
 import { emptyBoard } from '../shared/board.js';
 
 const q = {
-  id: 'x', title: 'Design X', difficulty: 'Medium', minutes: 45, prompt: 'Build X.',
-  assumptions: ['10 users'], followups: ['What if 10x?'],
-  clarifications: [{ topic: 'scale', question: 'How many users?', answer: 'Ten million daily users.' }],
-  rubric: { requirements: ['Asks about scale'], pitfalls: ['Ignores caching'] },
+  title: 'Design X', difficulty: 'Medium', minutes: 45, prompt: 'Build X.', assumptions: ['10 users'],
+  level: 'senior', style: 'tough', focus: 'caching and consistency',
 };
 
-test('the system prompt carries the question, the facts and the hidden rubric, with the secrecy rule', () => {
+test('the system prompt carries only the question and the session settings', () => {
   const s = chatSystem(q);
   assert.match(s, /You are Aria/);
-  assert.match(s, /Ten million daily users/);
-  assert.match(s, /HIDDEN RUBRIC/);
-  assert.match(s, /Ignores caching/);
-  assert.match(s, /never read it out/);
+  assert.match(s, /QUESTION: Design X \(Medium\)/);
+  assert.match(s, /Prompt given to the candidate: Build X\./);
+  assert.match(s, /- 10 users/);
+  assert.match(s, /Time budget: 45 minutes/);
+  assert.match(s, /Candidate level: senior/);
+  assert.match(s, /Interviewer style: tough/);
+  assert.match(s, /Focus areas: caching and consistency/);
+  assert.doesNotMatch(s, /HIDDEN RUBRIC|INTERVIEWER FACTS|FOLLOW-UP QUESTIONS/, 'there is no hidden answer key');
   assert.match(s, /untrusted data/);
+});
+
+test('the persona keeps answers consistent and calibrates to level, style and focus', () => {
+  const s = chatSystem(q);
+  assert.match(s, /FACT you must keep consistent/);
+  assert.match(s, /look back through the conversation/);
+  for (const level of ['Junior', 'Mid', 'Senior', 'Staff']) assert.match(s, new RegExp(`${level}:`));
+  for (const style of ['supportive', 'balanced', 'tough']) assert.match(s, new RegExp(style));
+  assert.match(s, /steer the conversation toward it/);
+});
+
+test('optional parts are printed sensibly when absent', () => {
+  const s = chatSystem({ title: 'T', prompt: 'P', assumptions: [], minutes: 30, level: 'junior', style: 'supportive' });
+  assert.match(s, /QUESTION: T\n/);
+  assert.match(s, /- \(none\)/);
+  assert.match(s, /Focus areas: \(none\)/);
 });
 
 test('watch and evaluation prompts add their own rules on top of the same base', () => {
   assert.match(watchSystem(q), /Stay quiet by default/);
   assert.match(evalSystem(q), /Requirements, Estimation, API design, Data model, Architecture, Scaling, Trade-offs/);
+  assert.match(evalSystem(q), /scaled to the candidate level/);
   assert.ok(watchSystem(q).startsWith(chatSystem(q)));
 });
 

@@ -8,6 +8,7 @@ import { sanitizeBoard } from '../shared/board.js';
 import { AriaError, createAi, DEFAULT_MODEL, friendlyError } from './ai.js';
 import { loadEnvFile } from './env.js';
 import { createMockClient } from './mock.js';
+import { cleanInterviewQuestion } from './question.js';
 import { cleanQuestion, GEN_LIMITS, loadQuizzes, quizSummary } from './quiz.js';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
@@ -15,7 +16,7 @@ const ROOT = path.resolve(here, '..');
 const PUBLIC_DIR = path.join(ROOT, 'public');
 const SHARED_DIR = path.join(ROOT, 'shared');
 
-const MAX_BODY = 256 * 1024;
+const MAX_BODY = 768 * 1024;
 const TYPES = {
   '.html': 'text/html; charset=utf-8',
   '.js': 'text/javascript; charset=utf-8',
@@ -112,7 +113,6 @@ function makeRateLimiter(limit, windowMs, now = () => Date.now()) {
 
 // config: { ai | null, questions, mode: 'live' | 'mock' | 'off', model, rateLimit }
 export function createServer({ ai, questions, quizzes = [], mode = 'off', model = DEFAULT_MODEL, rateLimit = 60 }) {
-  const byId = new Map(questions.map((q) => [q.id, q]));
   const quizById = new Map(quizzes.map((q) => [q.id, q]));
   const allow = makeRateLimiter(rateLimit, 60_000);
 
@@ -121,9 +121,11 @@ export function createServer({ ai, questions, quizzes = [], mode = 'off', model 
     if (!allow(req.socket.remoteAddress || 'local')) throw new HttpError(429, 'Slow down a little - too many requests.');
   }
 
+  // The AI endpoints take the whole question from the client ({ question: {...} }); the server never looks one up.
   function common(body) {
-    const question = byId.get(body.questionId);
-    if (!question) throw new HttpError(404, 'Unknown question.');
+    const cleaned = cleanInterviewQuestion(body.question);
+    if (cleaned.error) throw new HttpError(400, `Invalid question: ${cleaned.error}`);
+    const { question } = cleaned;
     const totalMs = question.minutes * 60000;
     const elapsedMs = Number.isFinite(body.elapsedMs) ? Math.max(0, Math.min(totalMs * 3, body.elapsedMs)) : 0;
     const status = ['idle', 'running', 'paused', 'ended'].includes(body.status) ? body.status : 'running';
@@ -257,7 +259,7 @@ export function createServer({ ai, questions, quizzes = [], mode = 'off', model 
 export function loadQuestions(file = path.join(ROOT, 'questions', 'questions.json')) {
   const list = JSON.parse(fs.readFileSync(file, 'utf8'));
   if (!Array.isArray(list) || !list.length) throw new Error('questions.json must be a non-empty array');
-  return list;
+  return list.map(publicQuestion);
 }
 
 function main() {

@@ -24,7 +24,23 @@ function parseContext(text) {
   };
 }
 
+function systemText(params) {
+  const sys = params.system;
+  return Array.isArray(sys) ? sys.map((b) => b.text || '').join('') : String(sys || '');
+}
+
+// Every mock chat reply ends with " [Q: <question title>]", read from the system prompt, so tests can prove which
+// question and settings (" [level/style]" follows) actually reached the model.
 export function mockReply(params) {
+  const sys = systemText(params);
+  const title = /^QUESTION: (.+?)(?: \((?:Easy|Medium|Hard)\))?$/m.exec(sys)?.[1];
+  const level = /^Candidate level: (\w+)/m.exec(sys)?.[1];
+  const style = /^Interviewer style: (\w+)/m.exec(sys)?.[1];
+  const tag = title ? ` [Q: ${title}]${level ? ` [${level}/${style}]` : ''}` : '';
+  return mockReplyBody(params) + tag;
+}
+
+function mockReplyBody(params) {
   const c = parseContext(lastUserText(params));
   const board = c.empty ? 'I can see an empty whiteboard.' : `I can see ${c.components} component(s) and ${c.connections} connection(s) on your board.`;
   if (c.mode === 'Give me a hint') return `Mock hint: think about what happens to your design when traffic grows ten times. ${board}`;
@@ -54,9 +70,7 @@ function mockEvaluation(params) {
 }
 
 function isTutor(params) {
-  const sys = params.system;
-  const text = Array.isArray(sys) ? sys.map((b) => b.text || '').join('') : String(sys || '');
-  return text.includes('quiz tutor');
+  return systemText(params).includes('quiz tutor');
 }
 
 function mockExplain(params) {
