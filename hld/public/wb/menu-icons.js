@@ -93,8 +93,11 @@ export function fmtShortcut(s, mac = isMac) {
   if (!s) return '';
   const parts = String(s).split('+');
   if (mac) {
-    const m = { Mod: '⌘', Ctrl: '⌃', Shift: '⇧', Alt: '⌥', Backspace: '⌫', Delete: '⌦' };
-    return parts.map((p) => m[p] || p).join('');
+    const glyph = { Ctrl: '\u2303', Alt: '\u2325', Shift: '\u21E7', Mod: '\u2318' };
+    const keys = { Backspace: '\u232B', Delete: '\u2326' };
+    const mods = ['Ctrl', 'Alt', 'Shift', 'Mod'].filter((m) => parts.includes(m)).map((m) => glyph[m]).join('');
+    const rest = parts.filter((p) => !glyph[p]).map((p) => keys[p] || p).join('+');
+    return mods + rest;
   }
   return parts.map((p) => (p === 'Mod' ? 'Ctrl' : p)).join('+');
 }
@@ -111,6 +114,17 @@ export function onRequest(wb, fn) {
   return () => { offEngine && offEngine(); window.removeEventListener('wbm:request', h); };
 }
 
+// ---- theme: explicit data-wbm-theme (mirrors the whiteboard theme) wins over the OS preference ----
+let uiTheme = null;
+export const themeOf = (wb) => (wb && wb.mode && wb.mode.theme === 'dark' ? 'dark' : 'light');
+export const currentTheme = () => uiTheme;
+/** Keep `node`'s data-wbm-theme in sync with the whiteboard theme. Returns an unsubscribe function. */
+export function trackTheme(wb, node) {
+  const apply = () => { uiTheme = themeOf(wb); node.setAttribute('data-wbm-theme', uiTheme); };
+  apply();
+  return wb.on ? wb.on('mode', apply) : () => {};
+}
+
 // ---- toasts -------------------------------------------------------------------------------------------------------
 let toastBox = null;
 export function showToast(message, kind = 'info', action = null) {
@@ -119,6 +133,7 @@ export function showToast(message, kind = 'info', action = null) {
     toastBox = el('div', { class: 'wbm-toasts', role: 'status', 'aria-live': 'polite', popover: 'manual' });
     document.body.append(toastBox);
   }
+  if (uiTheme) toastBox.setAttribute('data-wbm-theme', uiTheme);
   const t = el('div', { class: `wbm-toast wbm-toast-${kind}`, 'data-kind': kind }, [el('span', { text: message })]);
   let timer = null;
   const dismiss = () => { clearTimeout(timer); t.remove(); if (!toastBox.children.length) try { toastBox.hidePopover(); } catch { /* ignore */ } };
@@ -136,6 +151,8 @@ const toastWired = new WeakSet();
 export function ensureToasts(wb) {
   if (toastWired.has(wb) || !wb.on) return;
   toastWired.add(wb);
+  uiTheme = themeOf(wb);
+  if (wb.on) wb.on('mode', () => { uiTheme = themeOf(wb); });
   wb.on('toast', (e) => e && e.message && showToast(e.message, e.kind === 'error' ? 'error' : 'info'));
 }
 
@@ -144,6 +161,7 @@ export function ensureToasts(wb) {
 export function makeDialog({ title, className = '', width } = {}) {
   const dialog = el('dialog', { class: `wbm-dialog ${className}`.trim(), 'aria-label': title || 'Dialog' });
   if (width) dialog.style.setProperty('--wbm-dialog-w', width);
+  if (uiTheme) dialog.setAttribute('data-wbm-theme', uiTheme);
   const closeBtn = el('button', { type: 'button', class: 'wbm-icon-btn', 'aria-label': 'Close', title: 'Close', 'data-action': 'dialog-close' }, [mi('close', 16)]);
   const header = el('div', { class: 'wbm-dialog-head' }, [el('h2', { class: 'wbm-dialog-title', text: title || '' }), closeBtn]);
   const body = el('div', { class: 'wbm-dialog-body' });

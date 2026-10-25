@@ -1,6 +1,6 @@
 // Command palette and find-on-canvas bar (agent D).
 import { TOOLS } from '../../shared/wbconst.js';
-import { el, mi, fmtShortcut, makeDialog, confirmDialog, promptDialog, showToast, ensureToasts, onRequest, requestUi, debounce, openHelpDialog, toggleStats } from './menu-icons.js';
+import { el, mi, fmtShortcut, makeDialog, confirmDialog, promptDialog, showToast, ensureToasts, onRequest, requestUi, trackTheme, debounce, openHelpDialog, toggleStats } from './menu-icons.js';
 
 export const CATEGORIES = ['Tools', 'Edit', 'View', 'Export', 'Library'];
 const RECENT_KEY = 'hld.wb.palette.recent';
@@ -237,6 +237,7 @@ export function mountSearch(wb, host) {
   const closeBtn = el('button', { type: 'button', class: 'wbm-icon-btn', 'data-action': 'search-close', 'aria-label': 'Close find', title: 'Close (Esc)' }, [mi('close', 15)]);
   const bar = el('div', { class: 'wbm-search', role: 'search', hidden: true }, [mi('search', 15), input, count, prev, next, closeBtn]);
   host.append(bar);
+  const offTheme = trackTheme(wb, bar);
 
   let ids = []; let idx = 0; let savedView = null; let wasSelection = null;
 
@@ -288,5 +289,5 @@ export function mountSearch(wb, host) {
   };
   const offChange = wb.on('change', () => { if (!bar.hidden && input.value) { const keep = ids[idx]; const q = input.value.trim(); const nids = wb.find(q); if (nids.join() !== ids.join()) { ids = nids; idx = Math.max(0, ids.indexOf(keep)); label(); } } });
   const offReq = onRequest(wb, (name) => { if (name === 'search') show(); });
-  return { destroy() { offChange && offChange(); offReq(); bar.remove(); }, open: show, close: () => hide(false) };
+  return { destroy() { offChange && offChange(); offTheme && offTheme(); offReq(); bar.remove(); }, open: show, close: () => hide(false) };
 }

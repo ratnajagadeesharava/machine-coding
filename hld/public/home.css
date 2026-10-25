@@ -38,7 +38,7 @@
 .hm-write { grid-template-columns: minmax(0, 1.6fr) minmax(260px, 1fr); gap: 28px; align-items: start; }
 .hm-write-form, .hm-customs { background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 20px; display: grid; gap: 14px; align-content: start; }
 #custom-form { display: grid; gap: 14px; }
-.hm-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; }
+.hm-row { align-items: start; display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; }
 .hm-form-actions { display: flex; flex-wrap: wrap; gap: 10px; }
 .btn.ghost { border-color: transparent; background: transparent; color: var(--muted); }
 .btn.ghost:hover { color: var(--ink); border-color: var(--line); }

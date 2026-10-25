@@ -45,7 +45,7 @@ async function showHealth() {
     if (health.ai === 'off') {
       banner.hidden = false;
       banner.textContent = 'Aria (the AI interviewer) is not connected, so chat and feedback are unavailable. The whiteboard and timer still work. Add ANTHROPIC_API_KEY to hld/.env and restart, or run "npm run demo".';
-    } else if (health.ai === 'mock') {
+    } else if (health.ai === 'mock' && notice.hidden) {
       notice.hidden = false;
       notice.textContent = 'Demo mode: Aria gives canned replies and no API calls are made.';
     }
@@ -256,7 +256,10 @@ $('#q-diff').addEventListener('click', (e) => {
 $('#entry-write').addEventListener('click', () => setTimeout(() => F.title.focus({ preventScroll: true }), 300));
 $('#entry-pick').addEventListener('click', () => setTimeout(() => $('#q-search').focus({ preventScroll: true }), 300));
 
+const NOTICES = { 'question-not-found': 'That question could not be found, so you are back at the question list. Pick another or write your own.' };
 async function init() {
+  const note = NOTICES[new URLSearchParams(location.search).get('notice')];
+  if (note) { $('#notice').hidden = false; $('#notice').textContent = note; history.replaceState(null, '', '/'); }
   syncTime();
   renderContinue();
   renderCustoms();

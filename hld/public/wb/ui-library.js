@@ -4,7 +4,7 @@ import { boardToSvgString } from './render.js';
 import {
   serializeLibrary, parseLibrary, libraryItemFromElements, instantiateLibraryItem, downloadText, pickFile, readFileText,
 } from './interop.js';
-import { el, mi, promptDialog, confirmDialog, showToast, ensureToasts, onRequest, requestUi } from './menu-icons.js';
+import { el, mi, promptDialog, confirmDialog, showToast, ensureToasts, onRequest, requestUi, trackTheme } from './menu-icons.js';
 
 export const DRAG_TYPE = 'application/x-hld-library-item';
 const DEFAULT_KEY = 'hld-wb:library';
@@ -78,6 +78,7 @@ export function mountLibrary(wb, host, { storageKey = DEFAULT_KEY } = {}) {
   foot.append(addBtn, el('div', { class: 'wbm-lib-foot-row' }, [impBtn, expBtn]));
   root.append(head, tabs, search, bodyEl, foot);
   host.append(root);
+  const offTheme = trackTheme(wb, root);
 
   const dark = () => (wb.mode && wb.mode.theme) === 'dark';
   const thumbCache = new Map();
@@ -98,7 +99,7 @@ export function mountLibrary(wb, host, { storageKey = DEFAULT_KEY } = {}) {
   };
 
   const tile = (item, src) => {
-    const img = el('img', { class: 'wbm-lib-thumb', alt: '', draggable: 'false', src: thumb(item), loading: 'lazy' });
+    const img = el('img', { class: 'wbm-lib-thumb', alt: '', draggable: 'false', src: thumb(item) });
     const btn = el('button', {
       type: 'button', class: 'wbm-lib-tile', draggable: 'true', title: `${item.name} - click or drag onto the canvas`, 'aria-label': `Insert ${item.name}`,
       'data-action': 'library-item', 'data-id': item.id, 'data-source': src,
@@ -266,7 +267,7 @@ export function mountLibrary(wb, host, { storageKey = DEFAULT_KEY } = {}) {
   return {
     destroy() {
       if (destroyed) return; destroyed = true;
-      offReq(); offMode && offMode();
+      offReq(); offMode && offMode(); offTheme && offTheme();
       document.removeEventListener('dragover', onDragOver, true); document.removeEventListener('drop', onDrop, true);
       window.removeEventListener('storage', onStorage);
       root.remove();

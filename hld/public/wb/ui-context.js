@@ -1,5 +1,5 @@
 // Right-click context menus (agent D): canvas menu and element menu, with Layers/Align submenus.
-import { el, mi, fmtShortcut, placeInViewport, promptDialog, showToast, ensureToasts } from './menu-icons.js';
+import { el, mi, fmtShortcut, placeInViewport, promptDialog, showToast, ensureToasts, currentTheme } from './menu-icons.js';
 
 /** Entries for the menu shown on empty canvas. */
 export function canvasEntries(wb) {
@@ -91,7 +91,7 @@ export function mountContextMenu(wb, host) {
   const itemsOf = (menu) => [...menu.querySelectorAll(':scope > [data-wbm-item]:not([aria-disabled="true"])')];
 
   function build(entries, depth, kind) {
-    const menu = el('div', { class: `wbm-popover wbm-ctx ${depth ? 'wbm-ctx-sub' : ''}`, role: 'menu', 'data-menu': depth ? 'submenu' : kind, 'aria-label': depth ? 'Submenu' : 'Context menu' });
+    const menu = el('div', { class: `wbm-popover wbm-ctx ${depth ? 'wbm-ctx-sub' : ''}`, role: 'menu', 'data-menu': depth ? 'submenu' : kind, 'aria-label': depth ? 'Submenu' : 'Context menu', 'data-wbm-theme': currentTheme() });
     menu.style.position = 'fixed';
     for (const e of entries) {
       if (e.sep) { menu.append(el('div', { class: 'wbm-sep', role: 'separator' })); continue; }

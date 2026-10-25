@@ -1,6 +1,6 @@
 // Bottom-left cluster: zoom out / % / zoom in / fit | undo redo | stats. mountZoomBar(wb, host) -> { destroy }
 import { selectionBounds } from '/shared/board.js';
-import { h, icon, ensureChromeCss, followTheme, guardKeys, rovingKeys } from './icons.js';
+import { h, icon, ensureChromeCss, followTheme, guardKeys, rovingKeys, watchWidth } from './icons.js';
 
 const isMac = typeof navigator !== 'undefined' && /Mac|iPhone|iPad/i.test(navigator.platform || '');
 const M = isMac ? 'Cmd' : 'Ctrl';
@@ -30,7 +30,8 @@ export function mountZoomBar(wb, host) {
 
   const panel = h('div', { class: 'wbui-panel wbui-stats', role: 'region', 'aria-label': 'Statistics', hidden: true });
   const dl = (rows) => rows.map(([k, v]) => h('div', { class: 'wbui-stat', dataset: { stat: k.toLowerCase() } }, h('span', { class: 'wbui-stat-k', text: k }), h('span', { class: 'wbui-stat-v', text: v })));
-  root.append(panel, bar);
+  bar.append(panel);
+  root.append(bar);
   host.append(root);
   guardKeys(root);
 
@@ -69,7 +70,8 @@ export function mountZoomBar(wb, host) {
   let scheduled = false;
   const schedule = () => { if (scheduled) return; scheduled = true; queueMicrotask(() => { scheduled = false; update(); }); };
   const offs = ['view', 'history', 'selection', 'change', 'mode'].map((t) => wb.on(t, schedule));
-  offs.push(followTheme(wb, root));
+  offs.push(followTheme(wb, root), watchWidth(host, root, 640));
+  offs.push(wb.on('request', (e) => { if (e && e.name === 'stats') toggleStats(); }));
   update();
 
   return { update, toggleStats, destroy() { offs.forEach((o) => o && o()); root.remove(); } };

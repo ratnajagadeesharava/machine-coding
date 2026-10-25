@@ -62,7 +62,7 @@ let current = null;
 export function openHelp(wb) {
   ensureChromeCss();
   if (current && current.open) { current.querySelector('input')?.focus(); return current; }
-  const search = h('input', { type: 'search', class: 'wbui-input wbui-help-search', placeholder: 'Search shortcuts', 'aria-label': 'Search shortcuts', dataset: { helpSearch: '' }, autocomplete: 'off', spellcheck: 'false' });
+  const search = h('input', { type: 'text', role: 'searchbox', class: 'wbui-input wbui-help-search', placeholder: 'Search shortcuts', 'aria-label': 'Search shortcuts', dataset: { helpSearch: '' }, autocomplete: 'off', spellcheck: 'false' });
   const closeBtn = h('button', { type: 'button', class: 'wbui-btn', title: 'Close (Esc)', 'aria-label': 'Close', dataset: { action: 'help-close' } }, icon('close', 18));
   const cols = h('div', { class: 'wbui-help-cols' });
   const sections = [];
@@ -93,6 +93,9 @@ export function openHelp(wb) {
   const dlg = h('dialog', { class: 'wbui-dialog wbui-help', 'aria-labelledby': 'wbui-help-title', dataset: { dialog: 'help' } },
     h('header', { class: 'wbui-dlg-head' }, h('h2', { id: 'wbui-help-title', class: 'wbui-dlg-title', text: 'Keyboard shortcuts' }), search, closeBtn),
     h('div', { class: 'wbui-help-body' }, cols, empty));
+  // the "?" keystroke that opened the dialog must not land in the search box
+  const openedAt = performance.now();
+  search.addEventListener('beforeinput', (e) => { if (e.data === '?' && !search.value && performance.now() - openedAt < 300) e.preventDefault(); });
   closeBtn.addEventListener('click', () => dlg.close());
   dlg.addEventListener('click', (e) => { if (e.target === dlg) dlg.close(); });
   dlg.addEventListener('keydown', (e) => e.stopPropagation());

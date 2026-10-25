@@ -1,6 +1,6 @@
 // Main (hamburger) menu (agent D): files, export, find, palette, clear, theme, canvas background, view toggles, help.
 import { CANVAS_BACKGROUNDS } from '../../shared/wbconst.js';
-import { el, mi, fmtShortcut, confirmDialog, showToast, ensureToasts, onRequest, requestUi, safeName, openHelpDialog, toggleStats, statsOn } from './menu-icons.js';
+import { el, mi, fmtShortcut, confirmDialog, showToast, ensureToasts, onRequest, requestUi, trackTheme, safeName, openHelpDialog, toggleStats, statsOn } from './menu-icons.js';
 import { openExportDialog, extractSceneFromSvg, sceneAppState } from './ui-export.js';
 import { serializeScene, parseScene, downloadText, pickFile, readFileText } from './interop.js';
 
@@ -50,6 +50,7 @@ export function mountMenu(wb, host, hooks = {}) {
   const pop = el('div', { class: 'wbm-popover wbm-main-menu', role: 'menu', 'aria-label': 'Main menu', hidden: true });
   root.append(button, pop);
   host.append(root);
+  const offTheme = trackTheme(wb, root);
 
   const mode = () => wb.mode || {};
   const close = (restore = true) => {
@@ -223,6 +224,7 @@ export function mountMenu(wb, host, hooks = {}) {
   // ---- drag and drop a scene file onto the board
   const hint = el('div', { class: 'wbm-drop-hint', 'aria-hidden': 'true' }, [el('div', { text: 'Drop a .hld.json or .excalidraw file to open it' })]);
   hint.hidden = true;
+  trackTheme(wb, hint);
   host.append(hint);
   let depth = 0;
   const hasFiles = (e) => e.dataTransfer && [...(e.dataTransfer.types || [])].includes('Files');
@@ -247,7 +249,7 @@ export function mountMenu(wb, host, hooks = {}) {
       document.removeEventListener('pointerdown', onDocDown, true);
       host.removeEventListener('dragenter', onEnter, true); host.removeEventListener('dragleave', onLeave, true);
       host.removeEventListener('dragover', onOver, true); host.removeEventListener('drop', onDrop, true);
-      offMode && offMode(); offReq(); root.remove(); hint.remove();
+      offMode && offMode(); offTheme && offTheme(); offReq(); root.remove(); hint.remove();
     },
     open, close, toggle, openFile: openFileFlow, save: saveFlow,
   };

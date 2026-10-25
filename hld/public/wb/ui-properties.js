@@ -84,8 +84,9 @@ export function mountProperties(wb, host) {
   let recent = loadRecent();
 
   const closePop = (restore = false) => { if (pop) { const p = pop; pop = null; p.close(restore); } };
+  const HALF = new Set(['strokeWidth', 'strokeStyle', 'roughness', 'roundness']);
   const sectionRow = (key, label, body, extra) => {
-    const el = h('section', { class: 'wbui-row', dataset: { row: key }, 'aria-label': label }, h('div', { class: 'wbui-label', text: label }), body);
+    const el = h('section', { class: 'wbui-row' + (HALF.has(key) ? ' is-half' : ''), dataset: { row: key }, 'aria-label': label }, h('div', { class: 'wbui-label', text: label }), body);
     if (extra) extra(el);
     rows.set(key, el);
     panel.append(el);
@@ -99,16 +100,19 @@ export function mountProperties(wb, host) {
   const set = (prop, value) => { wb.setStyle({ [prop]: value }); };
 
   // ---- option rows (segmented icon buttons)
-  const optionRow = (def) => {
-    const grp = h('div', { class: 'wbui-seg', role: 'group', 'aria-label': def.label });
+  const optionGroup = (def) => {
+    const grp = h('div', { class: 'wbui-seg', role: 'group', 'aria-label': def.label, dataset: { group: def.prop } });
     for (const [value, ic, label] of def.opts) {
       const b = iconBtn(ic, label, { 'aria-pressed': 'false', dataset: { prop: def.prop, value: String(value) } }, () => set(def.prop, value));
       toggles.push({ el: b, prop: def.prop, value, kind: 'opt' });
       grp.append(b);
     }
     rovingKeys(grp);
-    sectionRow(def.prop, def.label, grp);
+    return grp;
   };
+  const optionRow = (def) => sectionRow(def.prop, def.label, optionGroup(def));
+  // horizontal + vertical text alignment share one row (saves a lot of height)
+  const textAlignRow = () => sectionRow('textAlign', 'Text align', h('div', { class: 'wbui-seg wbui-seg-pair' }, optionGroup(TEXT_ROWS[0]), h('span', { class: 'wbui-vsep wbui-vsep-pair' }), optionGroup(TEXT_ROWS[1])));
 
   // ---- colour rows
   function colorRow(prop, label) {
@@ -344,7 +348,7 @@ export function mountProperties(wb, host) {
   headRow();
   optionRow(AFTER_HEADS[0]);
   fontSizeRow();
-  for (const def of TEXT_ROWS) optionRow(def);
+  textAlignRow();
   opacityRow();
   actionRow('layers', 'Layers', LAYERS.map(([a, ic, t, k, m]) => [a, ic, t, () => wb[m](), k]));
   actionRow('align', 'Align', ALIGNS.map(([a, ic, t, dir]) => [a, ic, t, () => wb.align(dir)]));
@@ -387,7 +391,11 @@ export function mountProperties(wb, host) {
     const show = (key, on) => { const r = rows.get(key); if (r) r.hidden = !on; return on; };
     let any = false;
     for (const prop of ['strokeColor', 'backgroundColor']) { if (show(prop, !!applies[prop])) { any = true; fillQuick(prop); } }
-    for (const def of [...OPTION_ROWS, ...AFTER_HEADS, ...TEXT_ROWS]) any = show(def.prop, !!applies[def.prop]) || any;
+    for (const def of [...OPTION_ROWS, ...AFTER_HEADS]) any = show(def.prop, !!applies[def.prop]) || any;
+    any = show('textAlign', !!(applies.textAlign || applies.verticalAlign)) || any;
+    for (const prop of ['textAlign', 'verticalAlign']) { const g = panel.querySelector(`[data-group="${prop}"]`); if (g) g.hidden = !applies[prop]; }
+    const pairSep = panel.querySelector('.wbui-vsep-pair');
+    if (pairSep) pairSep.hidden = !(applies.textAlign && applies.verticalAlign);
     any = show('arrowheads', !!(applies.startArrowhead || applies.endArrowhead)) || any;
     any = show('fontSize', !!applies.fontSize) || any;
     any = show('opacity', !!applies.opacity) || any;
@@ -440,7 +448,7 @@ export function mountProperties(wb, host) {
     if (opRange) {
       const v = values.opacity;
       const num = typeof v === 'number' ? v : (v === MIXED ? 100 : 100);
-      if (document.activeElement !== opRange) opRange.value = String(num);
+      opRange.value = String(num);
       opRange.style.setProperty('--wbui-fill', opRange.value + '%');
       opOut.textContent = v === MIXED ? '-' : String(Math.round(typeof v === 'number' ? v : 100));
       opRange.classList.toggle('is-mixed', v === MIXED);
@@ -492,6 +500,7 @@ export function mountProperties(wb, host) {
   narrow = host.clientWidth > 0 && host.clientWidth < NARROW;
 
   const offs = ['selection', 'style', 'tool', 'change', 'mode', 'history'].map((t) => wb.on(t, schedule));
+  offs.push(wb.on('request', (e) => { if (e && e.name === 'link' && wb.selection.size && !(wb.mode && wb.mode.view)) openLinkDialog(actionBtns.get('link')); }));
   offs.push(followTheme(wb, root));
   update();
 

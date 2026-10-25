@@ -1,6 +1,6 @@
 /* Whiteboard menus, dialogs, palette, find bar and library (agent D). Everything is namespaced .wbm-*.
    Colours come from the site variables (--card --ink --muted --line --accent --accent-soft --danger --shadow) with fallbacks. */
-.wbm-menu-root, .wbm-popover, .wbm-dialog, .wbm-search, .wbm-library, .wbm-toasts, .wbm-drop-hint {
+.wbm-menu-root, body > .wbm-popover, .wbm-dialog, .wbm-search, .wbm-library, .wbm-toasts, .wbm-drop-hint {
   --wbm-card: var(--card, #fffdf9); --wbm-ink: var(--ink, #1c2420); --wbm-muted: var(--muted, #6c746e); --wbm-line: var(--line, #ddd6ca);
   --wbm-accent: var(--accent, #0f6b63); --wbm-accent-soft: var(--accent-soft, #dcefec); --wbm-accent-ink: var(--accent-ink, #fff);
   --wbm-danger: var(--danger, #b3261e); --wbm-shadow: var(--shadow, 0 6px 24px rgba(40, 32, 20, .12));
@@ -9,6 +9,18 @@
 }
 .wbm-menu-root *, .wbm-popover *, .wbm-dialog *, .wbm-search *, .wbm-library *, .wbm-toasts * { box-sizing: border-box; }
 .wbm-menu-root [hidden], .wbm-popover[hidden], .wbm-dialog [hidden], .wbm-library [hidden], .wbm-search[hidden] { display: none !important; }
+
+/* Explicit whiteboard theme (set from JS) wins over the OS preference, like chrome.css does. */
+[data-wbm-theme="dark"].wbm-menu-root, [data-wbm-theme="dark"].wbm-popover, [data-wbm-theme="dark"].wbm-dialog, [data-wbm-theme="dark"].wbm-search,
+[data-wbm-theme="dark"].wbm-library, [data-wbm-theme="dark"].wbm-toasts, [data-wbm-theme="dark"].wbm-drop-hint {
+  --wbm-card: #1f2528; --wbm-ink: #e8ece9; --wbm-muted: #98a39d; --wbm-line: #2e3639; --wbm-accent: #3fb3a5; --wbm-accent-soft: #1b3a37; --wbm-accent-ink: #06201d;
+  --wbm-danger: #f2877f; --wbm-shadow: 0 6px 24px rgba(0, 0, 0, .4); color-scheme: dark;
+}
+[data-wbm-theme="light"].wbm-menu-root, [data-wbm-theme="light"].wbm-popover, [data-wbm-theme="light"].wbm-dialog, [data-wbm-theme="light"].wbm-search,
+[data-wbm-theme="light"].wbm-library, [data-wbm-theme="light"].wbm-toasts, [data-wbm-theme="light"].wbm-drop-hint {
+  --wbm-card: #fffdf9; --wbm-ink: #1c2420; --wbm-muted: #6c746e; --wbm-line: #ddd6ca; --wbm-accent: #0f6b63; --wbm-accent-soft: #dcefec; --wbm-accent-ink: #fff;
+  --wbm-danger: #b3261e; --wbm-shadow: 0 6px 24px rgba(40, 32, 20, .12); color-scheme: light;
+}
 
 /* ---- shared controls ---- */
 .wbm-icon { flex: none; display: block; }
@@ -161,3 +173,9 @@
   .wbm-popover, .wbm-toast { animation: none; }
   .wbm-lib-actions { transition: none; }
 }
+
+/* custom colour input styled as a swatch with a rainbow ring */
+.wbm-swatch-color { -webkit-appearance: none; appearance: none; padding: 3px; background: conic-gradient(#f66, #fc6, #6c6, #6cf, #96f, #f6c, #f66); }
+.wbm-swatch-color::-webkit-color-swatch-wrapper { padding: 0; }
+.wbm-swatch-color::-webkit-color-swatch { border: 2px solid var(--wbm-card); border-radius: 5px; }
+.wbm-swatch-color::-moz-color-swatch { border: 2px solid var(--wbm-card); border-radius: 5px; }

@@ -1,20 +1,16 @@
 /* Layout of the assembled whiteboard (mount.js). Colours come from the app's CSS variables. */
-.wbx-host { position: relative; overflow: hidden; min-height: 200px; background: var(--board, #fff); isolation: isolate; }
+.wbx-host { overflow: hidden; background: var(--board, #fff); isolation: isolate; }
 .wbx-stage { position: absolute; inset: 0; }
 .wbx-missing { position: absolute; inset: 0; display: grid; place-items: center; color: var(--muted); }
 
 /* Chrome sits above the canvas; the layer itself lets pointer events through to the canvas. */
 .wbx-chrome { position: absolute; inset: 0; z-index: 5; pointer-events: none; }
 .wbx-chrome > * { pointer-events: auto; position: absolute; }
-.wbx-top { top: 12px; left: 50%; transform: translateX(-50%); max-width: calc(100% - 140px); }
+.wbx-top, .wbx-left, .wbx-zoom, .wbx-help { inset: 0; pointer-events: none; } /* the chrome modules position themselves inside these full-size layers */
+.wbx-chrome > .wbx-top, .wbx-chrome > .wbx-left, .wbx-chrome > .wbx-zoom, .wbx-chrome > .wbx-help { pointer-events: none; }
 .wbx-menu { top: 12px; left: 12px; }
-.wbx-left { left: 12px; top: 64px; bottom: 64px; width: max-content; max-width: 240px; overflow-y: auto; pointer-events: none; }
-.wbx-left > * { pointer-events: auto; }
-.wbx-zoom { left: 12px; bottom: 12px; }
 .wbx-library { top: 12px; right: 12px; bottom: 56px; width: min(300px, calc(100% - 24px)); display: flex; flex-direction: column; overflow: hidden; background: var(--card); border: 1px solid var(--line); border-radius: 14px; box-shadow: var(--shadow); }
 .wbx-library[hidden] { display: none; }
-.wbx-help { right: 12px; bottom: 12px; width: 34px; height: 34px; border-radius: 50%; border: 1px solid var(--line); background: var(--card); color: var(--ink); font-weight: 700; box-shadow: var(--shadow); display: grid; place-items: center; padding: 0; }
-.wbx-help:hover { border-color: var(--accent); color: var(--accent); }
 
 /* Zen mode hides every piece of chrome; view mode keeps only what is needed to look around. */
 .wbx-zen .wbx-chrome { display: none; }
@@ -27,7 +23,3 @@
 .wbx-toast[hidden] { display: none; }
 
 /* Narrow containers: tuck the side panels away so the canvas keeps the room. */
-@media (max-width: 760px) {
-  .wbx-left { max-width: 180px; top: 112px; }
-  .wbx-top { max-width: calc(100% - 100px); overflow-x: auto; }
-}

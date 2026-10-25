@@ -233,3 +233,9 @@ Round-trip tests (`test/interop.test.js`) must show our board survives export ->
 - `shapePath(el)` also returns `silhouette` (clean closed outline; `fill` is that path or `null` when transparent). `arrowheadPath` also returns `inset` (how far the line body stops short of the tip for closed heads; render.js trims with it).
 - `elementToSvg` additionally accepts `background` (colour behind arrow-label halos, default white). Frame clip ids are `wb-fclip-<frameId>`, hatch clip ids `wb-clip-<id>`.
 - Extra exports: geometry `innerBox, labelLayout, linearLabelLayout, polylineMidpoint, frameNameBox`; rough `makeRng, curveSamples, cornerRadius`; render `esc`. `transformHandles(..., { linear: true })` returns only the four corner handles.
+
+## Deviations (mount.js, pages)
+- `public/wb/mount.js` uses top-level `await import()` for every module (each guarded; a missing one logs a warning and degrades), so `mountWhiteboard` itself stays synchronous and returns `{ wb, ready: true, destroy, setBoard, getBoard, setKeyboard, on, toggleLibrary }`.
+- Adds `public/wb/mount.css` (layout of the assembled chrome; injected with `engine.css`, `chrome.css`, `menus.css`). Chrome hosts are full-size layers positioned with inline styles (modules position themselves inside them); the library host has class `wbx-library` and mount.js shows/hides it (ui-library detects this).
+- Autosave format: the sanitized board JSON under `storageKey`; mode (theme, background, grid, snap) under `<storageKey>:mode`. The shape library is stored under the fixed key `hld-wb:library`. Autosave flushes on `pagehide`/destroy.
+- `app.setBoard(board, { fit = true })` sanitizes, loads and saves immediately.

@@ -7,19 +7,11 @@ import {
 import { boardToSvgString, elementToSvg, exportBounds, frameClipPath, themeColor } from './render.js';
 import { transformHandles } from './geometry.js';
 import * as ops from './ops.js';
-import { HISTORY_BYTES, HISTORY_LIMIT, STYLE_KEYS, clamp, cloneEl, fin } from './engine-util.js';
+import { HISTORY_BYTES, HISTORY_LIMIT, STYLE_KEYS, clamp, cloneEl, fin, svgEl } from './engine-util.js';
 import { svgToPngBlob } from './engine-image.js';
 import { installInput } from './engine-input.js';
 import { installText } from './engine-text.js';
 import { installClipboard } from './engine-clipboard.js';
-
-export const SVG_NS = 'http://www.w3.org/2000/svg';
-export const svgEl = (tag, attrs = {}, parent) => {
-  const n = document.createElementNS(SVG_NS, tag);
-  for (const k of Object.keys(attrs)) n.setAttribute(k, attrs[k]);
-  if (parent) parent.appendChild(n);
-  return n;
-};
 
 let uid = 0;
 const TOOL_IDS = TOOLS.map((t) => t.id);

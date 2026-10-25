@@ -151,7 +151,7 @@ function setQuestionOpen(open, persist = true) {
   els.qPanel.hidden = !open;
   els.qTab.hidden = open;
   if (persist) setUi({ questionOpen: open });
-  if (open) els.qClose.focus({ preventScroll: true }); else els.qTab.focus({ preventScroll: true });
+  if (persist) (open ? els.qClose : els.qTab).focus({ preventScroll: true });
 }
 
 function setBotOpen(open, persist = true) {
@@ -168,6 +168,7 @@ function setBotOpen(open, persist = true) {
     scheduleWatch();
   }
   state.app?.setKeyboard(true);
+  if (persist) (open ? els.botClose : els.botTab).focus({ preventScroll: true });
   if (state.s) { renderControls(); renderStatus(); }
 }
 
@@ -623,8 +624,6 @@ async function init() {
   renderBanner();
   setQuestionOpen(ui.questionOpen, false);
   setBotOpen(ui.botOpen, false);
-  els.qTab.blur();
-  els.botTab.blur();
   renderChat();
   renderAll();
 }

@@ -98,7 +98,10 @@ export function mountWhiteboard(container, options = {}) {
   const cleanups = [];
   let destroyed = false;
 
+  // Inline layout so the engine measures a real size even before the stylesheets finish loading.
+  if (getComputedStyle(container).position === 'static') container.style.position = 'relative';
   const stage = el('div', 'wbx-stage');
+  stage.style.cssText = 'position:absolute;inset:0';
   container.append(stage);
 
   // Engine missing: keep the page alive with a message and a minimal, storage-backed API.
@@ -158,19 +161,22 @@ export function mountWhiteboard(container, options = {}) {
 
   // ---- chrome layout ----
   const chrome = el('div', 'wbx-chrome');
+  chrome.style.cssText = 'position:absolute;inset:0;pointer-events:none;z-index:5';
   const topHost = el('div', 'wbx-top');
   const leftHost = el('div', 'wbx-left');
   const menuHost = el('div', 'wbx-menu');
   const zoomHost = el('div', 'wbx-zoom');
   const libHost = el('div', 'wbx-library', { hidden: true, 'aria-label': 'Shape library' });
-  const helpBtn = el('button', 'wbx-help', { type: 'button', 'aria-label': 'Keyboard shortcuts', title: 'Keyboard shortcuts (?)', 'data-action': 'help' });
-  helpBtn.textContent = '?';
+  const helpHost = el('div', 'wbx-help');
   const zenPill = el('button', 'wbx-zen-exit', { type: 'button', hidden: true, 'data-action': 'exit-zen' });
   zenPill.textContent = 'Exit zen mode';
-  chrome.append(topHost, leftHost, menuHost, zoomHost, libHost, helpBtn);
+  // The chrome modules position themselves inside full-size layers; set inline so it holds before mount.css arrives.
+  for (const layer of [topHost, leftHost, zoomHost, helpHost]) layer.style.cssText = 'position:absolute;inset:0;pointer-events:none';
+  menuHost.style.cssText = 'position:absolute;top:12px;left:12px;pointer-events:auto';
+  libHost.style.position = 'absolute';
+  chrome.append(topHost, leftHost, menuHost, zoomHost, libHost, helpHost);
   container.append(chrome, zenPill);
 
-  helpBtn.addEventListener('click', () => { if (M.help && M.help.openHelp) M.help.openHelp(wb); });
   zenPill.addEventListener('click', () => { wb.toggleZen(); });
 
   function syncChrome() {
@@ -202,7 +208,7 @@ export function mountWhiteboard(container, options = {}) {
   mountPart('toolbar', toolbar, T && T.mountToolbar && (() => T.mountToolbar(wb, topHost, { library: !!(library && M.library), onLibrary: toggleLibrary })));
   mountPart('properties panel', properties, M.properties && M.properties.mountProperties && (() => M.properties.mountProperties(wb, leftHost)));
   mountPart('zoom bar', zoom, M.zoom && M.zoom.mountZoomBar && (() => M.zoom.mountZoomBar(wb, zoomHost, { stats })));
-  mountPart('help', true, M.help && M.help.mountHelp && (() => M.help.mountHelp(wb, container)));
+  mountPart('help', true, M.help && M.help.mountHelp && (() => M.help.mountHelp(wb, helpHost)));
   mountPart('menu', menu, M.menu && M.menu.mountMenu && (() => M.menu.mountMenu(wb, menuHost, {
     extra: Array.isArray(menuExtra) ? menuExtra : [],
     onOpen: () => { saveDebounced(); },

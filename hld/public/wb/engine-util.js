@@ -6,6 +6,14 @@ export const CLIP_MARKER = 'hld-whiteboard:';
 export const HISTORY_LIMIT = 200;
 export const HISTORY_BYTES = 120 * 1024 * 1024;
 
+export const SVG_NS = 'http://www.w3.org/2000/svg';
+export const svgEl = (tag, attrs = {}, parent) => {
+  const n = document.createElementNS(SVG_NS, tag);
+  for (const k of Object.keys(attrs)) if (attrs[k] !== null && attrs[k] !== undefined) n.setAttribute(k, attrs[k]);
+  if (parent) parent.appendChild(n);
+  return n;
+};
+
 export const fin = (v, d = 0) => (Number.isFinite(v) ? v : d);
 export const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
 
@@ -106,9 +114,9 @@ export function creationProps(type, style, { textAlignSet = false } = {}) {
   const s = { ...DEFAULT_STYLE, ...style };
   switch (type) {
     case 'rect': case 'diamond': case 'ellipse': case 'database':
-      return { ...pick(s, COMMON), ...pick(s, FONT), roundness: s.roundness };
+      return { ...pick(s, COMMON), ...pick(s, FONT), roundness: s.roundness, text: '' };
     case 'sticky': {
-      const p = { ...pick(s, ['strokeColor', 'strokeWidth', 'strokeStyle', 'roughness', 'opacity']), ...pick(s, ['fontFamily', 'fontSize']) };
+      const p = { ...pick(s, ['strokeColor', 'strokeWidth', 'strokeStyle', 'roughness', 'opacity']), ...pick(s, ['fontFamily', 'fontSize']), text: '' };
       if (s.backgroundColor && s.backgroundColor !== 'transparent') p.backgroundColor = s.backgroundColor;
       return p;
     }
