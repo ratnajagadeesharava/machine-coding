@@ -1,5 +1,6 @@
 // Interview room: a question panel, the standalone whiteboard, and Aria. The room receives ONLY the question
 // (title, prompt, assumptions, time, level, style, focus) and passes exactly that to the AI.
+import './apikey.js';
 import { boardSignature, boardStats, emptyBoard, toAiBoard } from '/shared/board.js';
 import { mountWhiteboard } from '/wb/mount.js';
 import {
@@ -567,7 +568,7 @@ function renderBanner() {
   b.replaceChildren();
   if (ai === 'off') {
     b.hidden = false;
-    b.append('Aria is not connected, so chat and feedback are unavailable. Copy ', node('code', '', 'hld/.env.example'), ' to ', node('code', '', 'hld/.env'), ', set ', node('code', '', 'ANTHROPIC_API_KEY'), ', and restart the server. The whiteboard and timer work meanwhile.');
+    b.append('Aria is not connected, so chat and feedback are unavailable. Click "Add key" (top right) to paste your Claude key, or set ', node('code', '', 'ANTHROPIC_API_KEY'), ' in ', node('code', '', 'hld/.env'), '. The whiteboard and timer work meanwhile.');
   } else if (ai === 'mock') {
     b.hidden = false;
     b.classList.add('info');

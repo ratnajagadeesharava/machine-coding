@@ -112,13 +112,30 @@ function makeRateLimiter(limit, windowMs, now = () => Date.now()) {
 }
 
 // config: { ai | null, questions, mode: 'live' | 'mock' | 'off', model, rateLimit }
-export function createServer({ ai, questions, quizzes = [], mode = 'off', model = DEFAULT_MODEL, rateLimit = 60 }) {
+// `makeAi(key)` (optional) builds a client for a key the browser sends in the x-anthropic-key header.
+export function createServer({ ai, questions, quizzes = [], mode = 'off', model = DEFAULT_MODEL, rateLimit = 60, makeAi = null }) {
+  const KEY_RE = /^sk-ant-[A-Za-z0-9_-]{10,400}$/;
+  const keyed = new Map();
+  // The AI to use for this request: the server's own (env key / demo mode), else one built from the browser's key.
+  function aiFor(req) {
+    if (ai) return ai;
+    const key = req.headers['x-anthropic-key'];
+    if (!makeAi || typeof key !== 'string' || !key) return null;
+    if (!KEY_RE.test(key)) throw new HttpError(400, 'That does not look like an Anthropic API key (it should start with sk-ant-).');
+    if (!keyed.has(key)) {
+      if (keyed.size >= 5) keyed.delete(keyed.keys().next().value);
+      keyed.set(key, makeAi(key));
+    }
+    return keyed.get(key);
+  }
   const quizById = new Map(quizzes.map((q) => [q.id, q]));
   const allow = makeRateLimiter(rateLimit, 60_000);
 
   function requireAi(req) {
-    if (!ai) throw new HttpError(503, 'Aria is not connected. Add ANTHROPIC_API_KEY to hld/.env (see .env.example) and restart, or run "npm run demo" for offline demo mode.');
+    const found = aiFor(req);
+    if (!found) throw new HttpError(503, 'Aria is not connected. Add your Claude API key in Settings (key icon), or put ANTHROPIC_API_KEY in hld/.env and restart, or run "npm run demo" for offline demo mode.');
     if (!allow(req.socket.remoteAddress || 'local')) throw new HttpError(429, 'Slow down a little - too many requests.');
+    return found;
   }
 
   // The AI endpoints take the whole question from the client ({ question: {...} }); the server never looks one up.
@@ -134,7 +151,7 @@ export function createServer({ ai, questions, quizzes = [], mode = 'off', model 
   }
 
   async function chat(req, res) {
-    requireAi(req);
+    const ai = requireAi(req);
     const c = common(await readJson(req));
     const ctl = new AbortController();
     res.on('close', () => { if (!res.writableEnded) ctl.abort(); });
@@ -156,7 +173,7 @@ export function createServer({ ai, questions, quizzes = [], mode = 'off', model 
   }
 
   async function watch(req, res) {
-    requireAi(req);
+    const ai = requireAi(req);
     const body = await readJson(req);
     const c = common(body);
     const sinceAriaMs = Number.isFinite(body.sinceAriaMs) ? Math.max(0, body.sinceAriaMs) : null;
@@ -169,7 +186,7 @@ export function createServer({ ai, questions, quizzes = [], mode = 'off', model 
   }
 
   async function evaluate(req, res) {
-    requireAi(req);
+    const ai = requireAi(req);
     const c = common(await readJson(req));
     try {
       json(res, 200, await ai.evaluate(c));
@@ -180,7 +197,7 @@ export function createServer({ ai, questions, quizzes = [], mode = 'off', model 
   }
 
   async function quizExplain(req, res) {
-    requireAi(req);
+    const ai = requireAi(req);
     const body = await readJson(req);
     const cleaned = cleanQuestion(body.question);
     if (cleaned.error) throw new HttpError(400, `Invalid question: ${cleaned.error}`);
@@ -206,7 +223,7 @@ export function createServer({ ai, questions, quizzes = [], mode = 'off', model 
   }
 
   async function quizGenerate(req, res) {
-    requireAi(req);
+    const ai = requireAi(req);
     const body = await readJson(req);
     const topic = typeof body.topic === 'string' ? body.topic.trim() : '';
     if (topic.length < 3 || topic.length > GEN_LIMITS.topic) throw new HttpError(400, `Give a topic of 3-${GEN_LIMITS.topic} characters.`);
@@ -227,7 +244,10 @@ export function createServer({ ai, questions, quizzes = [], mode = 'off', model 
       const url = new URL(req.url, 'http://localhost');
       const p = url.pathname;
       if (p.startsWith('/api/')) {
-        if (p === '/api/health' && req.method === 'GET') return json(res, 200, { ok: true, ai: ai ? mode : 'off', model: ai ? model : null });
+        if (p === '/api/health' && req.method === 'GET') {
+          const a = ai || (() => { try { return aiFor(req); } catch { return null; } })();
+          return json(res, 200, { ok: true, ai: ai ? mode : a ? 'live' : 'off', model: a ? model : null, ...(!ai && makeAi ? { browserKey: !!a, canUseBrowserKey: true } : {}) });
+        }
         if (p === '/api/questions' && req.method === 'GET') return json(res, 200, questions.map(publicQuestion));
         if (p === '/api/quizzes' && req.method === 'GET') return json(res, 200, quizzes.map(quizSummary));
         const m = /^\/api\/quizzes\/([^/]+)$/.exec(p);
@@ -280,7 +300,8 @@ function main() {
     ai = createAi({ client: new Anthropic({ apiKey: env.ANTHROPIC_API_KEY }), model, effort: env.HLD_EFFORT || 'default' });
     mode = 'live';
   }
-  const server = createServer({ ai, questions, quizzes, mode, model: mode === 'mock' ? 'mock' : model });
+  const makeAi = (apiKey) => createAi({ client: new Anthropic({ apiKey }), model, effort: env.HLD_EFFORT || 'default' });
+  const server = createServer({ ai, questions, quizzes, mode, model: mode === 'mock' ? 'mock' : model, makeAi });
   server.listen(port, host, () => {
     console.log(`HLD Room: http://${host === '0.0.0.0' ? 'localhost' : host}:${port}`);
     if (mode === 'live') console.log(`Aria is live (model ${model}).`);

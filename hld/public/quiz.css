@@ -101,3 +101,75 @@ h3 { font-size: 16px; margin: 0 0 10px; }
   .quiz-page .title { flex-basis: 100%; order: 3; }
 }
 @media (max-width: 560px) { .qcard { padding: 18px 16px; } .q-prompt { font-size: 18px; } }
+
+/* ---- refined typography and layout ---- */
+.quiz-page {
+  --qfont: "Inter", "SF Pro Text", "Segoe UI Variable Text", "Segoe UI", system-ui, -apple-system, Roboto, "Helvetica Neue", Arial, sans-serif;
+  --qdisplay: "Inter Display", "SF Pro Display", "Segoe UI Variable Display", var(--qfont);
+  font-family: var(--qfont); font-size: 16px; line-height: 1.6; letter-spacing: -0.003em;
+  -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility;
+  background: radial-gradient(1100px 420px at 85% -120px, var(--accent-soft), transparent 70%), var(--bg);
+}
+.quiz-page h1, .quiz-page h2, .quiz-page h3, .quiz-page h4 { font-family: var(--qdisplay); letter-spacing: -0.015em; }
+.quiz-page .eyebrow { font-size: 12px; font-weight: 700; letter-spacing: .09em; color: var(--muted); margin-bottom: 4px; }
+.quiz-page .title h1 { font-size: 20px; }
+.quiz-page .title p { font-size: 14px; }
+.qmain { padding-top: 36px; }
+
+.cards { gap: 16px; }
+.card { padding: 22px 24px; gap: 10px; border-radius: 18px; transition: transform .15s, box-shadow .15s, border-color .15s; box-shadow: 0 1px 2px rgba(30, 24, 14, .04); }
+.card:hover { transform: translateY(-2px); box-shadow: var(--shadow); border-color: var(--accent); }
+.card h3 { font-size: 21px; line-height: 1.3; font-weight: 700; }
+.card p { color: var(--ink); opacity: .86; font-size: 15.5px; }
+.card .meta { font-size: 13.5px; }
+.badge { font-size: 12px; padding: 3px 11px; letter-spacing: .02em; }
+.card-actions { margin-top: 10px; }
+.btn.small { height: 38px; padding: 0 16px; font-size: 14.5px; }
+
+.gen { padding: 24px; border-radius: 18px; box-shadow: 0 1px 2px rgba(30, 24, 14, .04); }
+.gen .muted { font-size: 14.5px; line-height: 1.55; margin-bottom: 4px; }
+.gen label { font-size: 13.5px; margin-top: 16px; }
+.gen input[type="text"], .gen textarea, .gen select { padding: 11px 13px; font-size: 15px; border-radius: 12px; transition: border-color .15s, box-shadow .15s; }
+.gen input:focus, .gen textarea:focus, .gen select:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+.gen .btn { height: 46px; font-size: 15.5px; margin-top: 18px; }
+
+.run-top { margin-bottom: 22px; max-width: 860px; margin-inline: auto; }
+.progress { height: 10px; }
+.run-meta { font-size: 14.5px; font-variant-numeric: tabular-nums; }
+.qcard { padding: 32px 36px; gap: 20px; border-radius: 22px; box-shadow: var(--shadow); }
+.chip-tag { font-size: 12px; padding: 4px 12px; }
+.q-prompt { font-family: var(--qdisplay); font-size: 24px; line-height: 1.38; font-weight: 650; letter-spacing: -0.018em; text-wrap: balance; }
+.options { gap: 12px; }
+.opt { padding: 15px 18px; border-radius: 14px; font-size: 16.5px; line-height: 1.5; grid-template-columns: 36px 1fr; gap: 14px; transition: border-color .12s, background .12s, transform .12s; }
+.opt:hover:not([disabled]) { background: var(--accent-soft); transform: translateX(2px); }
+.opt .key { width: 32px; height: 32px; font-size: 14px; border-radius: 10px; }
+.opt .txt { padding-top: 4px; }
+.opt .why { font-size: 14.5px; line-height: 1.55; }
+.feedback { padding-top: 18px; gap: 12px; }
+.verdict-line { font-size: 19px; font-family: var(--qdisplay); }
+.explain-text { font-size: 16px; line-height: 1.65; }
+.tutor { padding: 16px 18px; border-radius: 14px; }
+.tutor-text { font-size: 15.5px; line-height: 1.65; }
+.tutor-form input { height: 44px; border-radius: 12px; font-size: 15px; }
+.run-actions { max-width: 860px; margin: 18px auto 0; }
+.run-actions .kb { font-size: 13px; }
+
+.result-top { padding: 30px 34px; border-radius: 22px; gap: 34px; box-shadow: var(--shadow); }
+.ring span { font-size: 32px; }
+.result-top h2 { font-size: 28px; }
+.bc-row { font-size: 14.5px; }
+.rv { padding: 18px 20px; border-radius: 14px; gap: 8px; }
+.rv h4 { font-size: 16.5px; line-height: 1.45; }
+.rv .ans, .rv .ex { font-size: 15px; line-height: 1.6; }
+
+@media (max-width: 560px) { .qcard { padding: 22px 18px; } .q-prompt { font-size: 20px; } .opt { font-size: 16px; padding: 13px 14px; } }
+@media (prefers-reduced-motion: reduce) { .card, .opt { transition: none; } .card:hover, .opt:hover:not([disabled]) { transform: none; } }
+
+.history { margin-top: 32px; }
+.hist-head { display: flex; justify-content: space-between; align-items: center; }
+.hist-list { list-style: none; margin: 8px 0 0; padding: 0; display: grid; gap: 8px; }
+.hist-row { display: flex; align-items: center; gap: 14px; background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 10px 16px; }
+.hist-main { display: grid; font-size: 14.5px; min-width: 0; }
+.hist-main b { font-weight: 650; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.hist-score { min-width: 58px; text-align: center; font-weight: 800; font-variant-numeric: tabular-nums; padding: 5px 0; border-radius: 10px; background: var(--accent-soft); color: var(--accent); }
+.hist-score.low { background: var(--danger-soft); color: var(--danger); }

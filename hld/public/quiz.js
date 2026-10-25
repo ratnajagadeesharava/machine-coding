@@ -1,7 +1,8 @@
 // HLD Room quiz page: pick a quiz, answer with instant (or end-of-quiz) feedback, ask Claude to explain, review results,
 // and generate new quizzes with Claude. Progress lives in this browser's localStorage.
+import './apikey.js';
 import {
-  isCorrect, letterFor, mulberry32, pickQuestions, presentQuestion, scoreAttempt, validateQuiz,
+  isCorrect, numberFor, mulberry32, pickQuestions, presentQuestion, scoreAttempt, validateQuiz,
 } from '/shared/quiz.js';
 
 const $ = (sel) => document.querySelector(sel);
@@ -17,7 +18,7 @@ const store = {
   },
 };
 
-const S = { summaries: [], custom: [], attempts: {}, health: { ai: 'off' }, full: new Map(), run: null, view: 'home' };
+const S = { history: [], summaries: [], custom: [], attempts: {}, health: { ai: 'off' }, full: new Map(), run: null, view: 'home' };
 
 const els = {
   title: $('#page-title'), sub: $('#page-sub'), quit: $('#btn-quit'), banner: $('#banner'),
@@ -210,7 +211,7 @@ function renderQuestion() {
     const picked = sel.has(o.id);
     let cls = 'opt' + (q.type === 'multi' ? ' multi' : '') + (picked && !checked ? ' on' : '');
     if (checked) cls += isRight && picked ? ' right' : isRight ? ' missed' : picked ? ' wrong' : '';
-    const label = checked ? (isRight ? '✓' : picked ? '✕' : letterFor(idx)) : letterFor(idx);
+    const label = checked ? (isRight ? '✓' : picked ? '✕' : numberFor(idx)) : numberFor(idx);
     return h('button', {
       class: cls, type: 'button', 'data-id': o.id, role: q.type === 'multi' ? 'checkbox' : 'radio', 'aria-checked': String(picked), disabled: checked,
       onclick: () => choose(o.id),
@@ -289,7 +290,7 @@ function renderTutor() {
   const aiOff = S.health.ai === 'off';
   els.tutorBtn.hidden = !!t;
   els.tutorBtn.disabled = aiOff;
-  els.tutorBtn.title = aiOff ? 'Needs the AI connection (set ANTHROPIC_API_KEY or run demo mode)' : '';
+  els.tutorBtn.title = aiOff ? 'Needs the AI connection (add your key with the key button, or run demo mode)' : '';
   els.tutor.hidden = !t;
   els.tutorText.replaceChildren();
   if (!t) return;
@@ -348,6 +349,24 @@ function recordAttempt(result) {
     last: { percent: result.percent, score: result.score, total: result.total, mode: run.mode, at: Date.now(), missed },
   };
   store.set('attempts', S.attempts);
+  // Every finished attempt is kept (newest first, last 100) so results survive reloads and can be reviewed later.
+  S.history = [{ quizId: run.quiz.id, title: run.quiz.title, at: Date.now(), mode: run.mode, percent: result.percent, score: result.score, total: result.total,
+    weak: result.byConcept.filter((c) => c.correct < c.total).map((c) => c.concept || c.name || c.label).filter(Boolean).slice(0, 5) }, ...S.history].slice(0, 100);
+  store.set('history', S.history);
+  renderHistory();
+}
+
+function renderHistory() {
+  const box = document.getElementById('history');
+  if (!box) return;
+  box.hidden = S.history.length === 0;
+  const rows = S.history.slice(0, 8).map((r) => h('li', { class: 'hist-row' },
+    h('span', { class: 'hist-score' + (r.percent >= 70 ? ' good' : r.percent < 50 ? ' low' : ''), text: `${r.percent}%` }),
+    h('span', { class: 'hist-main' }, h('b', { text: r.title }), h('span', { class: 'muted', text: `${r.score}/${r.total} · ${modeLabel(r.mode)} · ${new Date(r.at).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' })}` }))));
+  box.replaceChildren(
+    h('div', { class: 'hist-head' }, h('h2', { class: 'eyebrow', text: 'RECENT RESULTS' }),
+      h('button', { class: 'btn ghost small', type: 'button', text: 'Clear', onclick: () => { S.history = []; store.set('history', []); renderHistory(); } })),
+    h('ul', { class: 'hist-list' }, ...rows));
 }
 
 function finish() {
@@ -382,7 +401,7 @@ function finish() {
 
 function textFor(q, ids) {
   const picked = q.options.map((o, i) => ({ o, i })).filter(({ o }) => ids.includes(o.id));
-  return picked.length ? picked.map(({ o, i }) => `${letterFor(i)}. ${o.text}`).join('  |  ') : '(no answer)';
+  return picked.length ? picked.map(({ o, i }) => `${numberFor(i)}. ${o.text}`).join('  |  ') : '(no answer)';
 }
 
 function renderReview() {
@@ -410,7 +429,7 @@ els.genForm.addEventListener('submit', async (e) => {
   e.preventDefault();
   const status = els.genStatus;
   const setStatus = (text, cls = '') => { status.textContent = text; status.className = `gen-status ${cls}`; };
-  if (S.health.ai === 'off') { setStatus('Aria is not connected. Add ANTHROPIC_API_KEY to hld/.env, or run demo mode.', 'err'); return; }
+  if (S.health.ai === 'off') { setStatus('Aria is not connected. Add your Claude key with the key button (top right), or use demo mode.', 'err'); return; }
   els.genBtn.disabled = true;
   setStatus('Claude is writing your quiz… this can take up to a minute.');
   try {
@@ -450,6 +469,7 @@ function renderBanner() {
 
 async function init() {
   S.attempts = store.get('attempts', {});
+  S.history = (store.get('history', []) || []).filter((r) => r && typeof r.title === 'string' && Number.isFinite(r.percent));
   els.instant.checked = store.get('instant', true);
   S.custom = (store.get('custom', []) || []).filter((q) => validateQuiz(q).length === 0);
   try {
@@ -464,6 +484,7 @@ async function init() {
   els.genBtn.title = S.health.ai === 'off' ? 'Needs the AI connection' : '';
   show('home');
   renderCards();
+  renderHistory();
 }
 
 init();

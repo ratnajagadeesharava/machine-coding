@@ -6,7 +6,6 @@
 
 export const QUESTION_TYPES = ['single', 'multi', 'truefalse'];
 export const LIMITS = { questions: 40, options: 6, prompt: 600, option: 300, explanation: 900, concept: 60, title: 100 };
-const LETTERS = 'abcdef';
 
 const isText = (v, max, min = 1) => typeof v === 'string' && v.trim().length >= min && v.length <= max;
 const BANNED_OPTION = /^\s*(all|none|both|neither)\s+of\s+the\s+(above|these|following)\b/i;
@@ -124,8 +123,9 @@ export function presentQuestion(question, rand) {
   return { ...question, options: shuffle(question.options, rand) };
 }
 
-export function letterFor(index) {
-  return LETTERS[index].toUpperCase();
+// Options are labelled 1, 2, 3 ... (keys 1-6 select them; a-f still work as a fallback).
+export function numberFor(index) {
+  return String(index + 1);
 }
 
 // Pick n questions at random (stable order within the pick follows the original order).
