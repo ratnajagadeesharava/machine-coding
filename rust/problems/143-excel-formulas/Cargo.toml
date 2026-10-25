@@ -1,0 +1,18 @@
+[package]
+name = "p143_excel_formulas"
+version = "0.1.0"
+edition = "2021"
+publish = false
+description = "Excel Cell Values and Sum Formulas - machine coding practice"
+
+[features]
+# Interviewer-only scenarios: cargo test --features hidden
+hidden = []
+
+[dependencies]
+playground-support = { path = "../../support" }
+
+[[test]]
+name = "hidden"
+path = "interviewer/hidden.rs"
+required-features = ["hidden"]

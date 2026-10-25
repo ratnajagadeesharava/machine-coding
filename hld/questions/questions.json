@@ -1,0 +1,2949 @@
+[
+ {
+  "id": "url-shortener",
+  "title": "Design a URL shortener",
+  "category": "Storage",
+  "difficulty": "Medium",
+  "minutes": 45,
+  "prompt": "Design a service that turns long URLs into short links and redirects visitors to the original page. Users can optionally pick a custom alias and set an expiry.",
+  "assumptions": [
+   "100M new links per month",
+   "Reads outnumber writes 100 to 1",
+   "Redirects should feel instant (p99 under 100 ms)",
+   "Links are retained for 5 years"
+  ],
+  "clarifications": [
+   {
+    "topic": "Functional scope",
+    "question": "What features must the service support?",
+    "answer": "Create a short link from a long URL, redirect from the short link, optional custom alias, optional expiry date. Link deletion by the owner is included."
+   },
+   {
+    "topic": "Scale",
+    "question": "How many links and how much traffic?",
+    "answer": "100M new links per month, so about 6B links over 5 years. Redirect traffic is 100x writes, roughly 4k redirects/s on average and about 12k/s at peak."
+   },
+   {
+    "topic": "Latency",
+    "question": "What latency do redirects need?",
+    "answer": "p99 under 100 ms measured at the service, p50 under 20 ms. Creation can take up to 300 ms."
+   },
+   {
+    "topic": "Availability",
+    "question": "How available must it be?",
+    "answer": "Redirects target 99.99%. Creation can degrade briefly to 99.9%."
+   },
+   {
+    "topic": "Short code",
+    "question": "Any constraints on the short code?",
+    "answer": "Codes use [a-zA-Z0-9], 7 characters by default. Codes must not be guessable in sequence, and custom aliases are 4-20 characters."
+   },
+   {
+    "topic": "Duplicates",
+    "question": "If the same long URL is submitted twice, do we return the same code?",
+    "answer": "No. Each submission gets a new code, which keeps per-link analytics and expiry independent."
+   },
+   {
+    "topic": "Analytics",
+    "question": "Do we need click analytics?",
+    "answer": "Only basic click counts and referrer, computed asynchronously. Counts may lag by a few minutes. Detailed dashboards are out of scope."
+   },
+   {
+    "topic": "Redirect type",
+    "question": "Should redirects be 301 or 302?",
+    "answer": "Use 302 so every click reaches us for analytics and expiry checks. Mention the trade-off if you prefer 301."
+   },
+   {
+    "topic": "Out of scope",
+    "question": "What can we skip?",
+    "answer": "User accounts UI, billing, malware scanning, and multi-region active-active writes."
+   }
+  ],
+  "rubric": {
+   "requirements": [
+    "Core flows: create, redirect, custom alias, expiry, delete",
+    "Non-functional: redirect p99 under 100 ms, 99.99% availability, unguessable codes",
+    "Clarifies 301 vs 302 and the analytics requirement",
+    "Notes out-of-scope items explicitly"
+   ],
+   "estimation": [
+    "100M/month / 2.6M s ~ 40 writes/s; 100:1 reads ~ 4k reads/s avg, ~12k/s peak",
+    "6B links over 5 years; 500 bytes per record ~ 3 TB total",
+    "Code space: 62^7 ~ 3.5T, far larger than 6B so collisions stay rare",
+    "Cache hot set: 20% of daily links at 500 B is small enough for a few GB of RAM"
+   ],
+   "api": [
+    "POST /v1/links {longUrl, alias?, expiresAt?} returns {shortUrl}",
+    "GET /{code} returns 302 with Location header, 404 if missing, 410 if expired",
+    "DELETE /v1/links/{code} with auth",
+    "Idempotency or rate limits on creation"
+   ],
+   "dataModel": [
+    "links(code PK, long_url, owner_id, created_at, expires_at)",
+    "Key-value access pattern by code, so a NoSQL store or sharded SQL works",
+    "Separate click events stream and aggregated counts table",
+    "Unique constraint on code to detect alias collisions"
+   ],
+   "architecture": [
+    "Stateless API servers behind a load balancer",
+    "Code generation: pre-allocated ID ranges or a counter service encoded in base62, or random code with collision retry",
+    "Redirect path reads cache first (Redis/CDN), falls back to database",
+    "Click events published to a queue and aggregated asynchronously"
+   ],
+   "scaling": [
+    "Shard the links table by hash of code",
+    "Read replicas and an LRU cache give high hit rate because of skewed popularity",
+    "Pre-allocate counter ranges per app server to avoid a single hot counter",
+    "Optional CDN or edge cache for very popular codes"
+   ],
+   "tradeoffs": [
+    "Random codes avoid guessability but need collision handling; counters are collision free but sequential",
+    "301 gives caching and lower load but loses analytics; 302 is the reverse",
+    "Strong consistency on create vs eventual replication for reads",
+    "Hashing the URL gives dedup but collides and leaks equality"
+   ],
+   "pitfalls": [
+    "Ignoring the read-heavy ratio and not caching",
+    "Single auto-increment DB as the ID source and bottleneck",
+    "Not handling custom alias races or expiry cleanup",
+    "Using a hash prefix of the URL without a collision plan"
+   ]
+  },
+  "followups": [
+   "How do you prevent two servers from generating the same code?",
+   "How would you expire and delete 6B links efficiently?",
+   "How do you handle one viral link receiving 1M requests per second?",
+   "How would you add per-link analytics without slowing redirects?"
+  ]
+ },
+ {
+  "id": "whatsapp-chat",
+  "title": "Design a chat app like WhatsApp",
+  "category": "Messaging",
+  "difficulty": "Hard",
+  "minutes": 45,
+  "prompt": "Design a chat application that supports one-to-one and group messaging with delivery receipts, offline delivery and media sharing.",
+  "assumptions": [
+   "500M daily active users",
+   "Each user sends about 40 messages per day",
+   "Online messages are delivered within 500 ms",
+   "Groups hold up to 256 members"
+  ],
+  "clarifications": [
+   {
+    "topic": "Functional scope",
+    "question": "What must the app support?",
+    "answer": "1:1 chat, group chat up to 256 members, sent/delivered/read receipts, online presence, offline message delivery, and image/video sharing."
+   },
+   {
+    "topic": "Scale",
+    "question": "How large is the user base and traffic?",
+    "answer": "500M DAU at 40 messages each is 20B messages/day, about 230k messages/s on average and roughly 500k/s at peak. Assume about 200M concurrent connections."
+   },
+   {
+    "topic": "Latency",
+    "question": "What delivery latency do we target?",
+    "answer": "p99 under 500 ms for an online recipient in the same region, under 1 s cross-region."
+   },
+   {
+    "topic": "Ordering",
+    "question": "Do messages need ordering?",
+    "answer": "Yes, per conversation. Global ordering is not needed. Messages must never be lost once the sender gets the server ack."
+   },
+   {
+    "topic": "Offline",
+    "question": "How long do we keep undelivered messages?",
+    "answer": "30 days. Once delivered to all of a user's devices the server deletes its copy. Chat history lives on the device."
+   },
+   {
+    "topic": "Encryption",
+    "question": "Is the chat end-to-end encrypted?",
+    "answer": "Yes. The server stores and routes ciphertext only, so no server-side search. Key exchange details are out of scope."
+   },
+   {
+    "topic": "Media",
+    "question": "How are photos and videos handled?",
+    "answer": "Clients upload to object storage and send a message containing the media URL and key. Media up to 100 MB, kept 30 days if undelivered."
+   },
+   {
+    "topic": "Devices",
+    "question": "Multi-device support?",
+    "answer": "Out of scope for the first version. One active device per account."
+   },
+   {
+    "topic": "Presence",
+    "question": "How accurate is last-seen and online status?",
+    "answer": "Best effort. A few seconds of staleness is fine, and it must not generate a write per heartbeat."
+   }
+  ],
+  "rubric": {
+   "requirements": [
+    "Functional: 1:1, groups, receipts, offline delivery, media, presence",
+    "Non-functional: low latency, no message loss, per-chat ordering, high availability",
+    "Clarifies E2E encryption and multi-device scope",
+    "Defines delivery guarantee: at least once with client dedup"
+   ],
+   "estimation": [
+    "500M x 40 = 20B msgs/day ~ 230k/s avg, ~500k/s peak",
+    "200M concurrent connections / 100k per server ~ 2k chat servers (plus headroom)",
+    "Message ~100 B: 20B x 100 B = 2 TB/day ingress, but only undelivered messages persist",
+    "Group fan-out: average group message to ~20 members multiplies delivery traffic"
+   ],
+   "api": [
+    "Persistent WebSocket for send, receive, ack and receipts",
+    "send {conversationId, clientMsgId, body} -> ack {serverMsgId, ts}",
+    "REST for media upload URL, group create/modify and history sync",
+    "Client message id for idempotent retries"
+   ],
+   "dataModel": [
+    "Messages keyed by (conversationId, sequence) in a wide-column store",
+    "Per-user inbox of undelivered message ids",
+    "Conversation and membership tables",
+    "Connection registry mapping userId to chat server (Redis)"
+   ],
+   "architecture": [
+    "Gateway/chat servers hold WebSockets; a session service maps users to servers",
+    "Message service assigns a per-conversation sequence, persists, then routes to recipient server",
+    "If recipient offline, store in inbox and send push notification",
+    "Group fan-out through a queue to member inboxes",
+    "Media uploaded directly to object storage via presigned URL"
+   ],
+   "scaling": [
+    "Shard chat servers by user and scale connections horizontally",
+    "Partition message store by conversationId",
+    "Use a message queue between ingest and delivery to absorb bursts",
+    "Regional deployments with cross-region relay"
+   ],
+   "tradeoffs": [
+    "Store-and-forward server vs peer-to-peer",
+    "Fan-out on write per member vs read from a shared group log",
+    "Delivery receipts cost extra traffic; batch them",
+    "At-least-once with dedup vs exactly-once"
+   ],
+   "pitfalls": [
+    "Using HTTP polling instead of persistent connections",
+    "No client message id, causing duplicate messages on retry",
+    "Keeping the connection map on a single server",
+    "Forgetting offline delivery and push fallback"
+   ]
+  },
+  "followups": [
+   "How do you guarantee ordering in a group chat when two members send simultaneously?",
+   "What happens when a chat server holding 100k connections crashes?",
+   "How would you add multi-device support with E2E encryption?",
+   "How do you reduce heartbeat load for presence at 200M connections?"
+  ]
+ },
+ {
+  "id": "rate-limiter",
+  "title": "Design a rate limiter",
+  "category": "Infrastructure",
+  "difficulty": "Medium",
+  "minutes": 35,
+  "prompt": "Design a rate limiter that restricts how many requests a client can make to an API in a given time window across a fleet of servers.",
+  "assumptions": [
+   "1M requests per second across the fleet at peak",
+   "10M distinct clients (API keys or IPs)",
+   "Typical rule: 100 requests per minute per client",
+   "Limiter adds under 5 ms to a request"
+  ],
+  "clarifications": [
+   {
+    "topic": "Placement",
+    "question": "Where does the limiter run?",
+    "answer": "As middleware in the API gateway layer, in front of all backend services. A shared library for service-to-service calls is a stretch goal."
+   },
+   {
+    "topic": "Identity",
+    "question": "What do we limit by?",
+    "answer": "API key or user id when authenticated, otherwise IP address. Rules can also be per endpoint."
+   },
+   {
+    "topic": "Rules",
+    "question": "Are limits configurable?",
+    "answer": "Yes. Rules like 100/min per user and 10/s per endpoint live in a config store and reload within 30 seconds without a deploy."
+   },
+   {
+    "topic": "Accuracy",
+    "question": "How strict must counting be?",
+    "answer": "Approximate is fine: within 5-10% of the limit. Never allow wildly more than the limit, and do not block valid traffic."
+   },
+   {
+    "topic": "Rejection",
+    "question": "What does a limited client see?",
+    "answer": "HTTP 429 with Retry-After and X-RateLimit-Remaining headers."
+   },
+   {
+    "topic": "Failure mode",
+    "question": "If the limiter store is down, what happens?",
+    "answer": "Fail open for general APIs so we do not cause an outage. Sensitive endpoints such as login can fail closed."
+   },
+   {
+    "topic": "Distribution",
+    "question": "Is it multi-region?",
+    "answer": "Limits are enforced per region with an optional slow global sync. Exact global limits are out of scope."
+   },
+   {
+    "topic": "Burst",
+    "question": "Do we allow bursts?",
+    "answer": "Yes, short bursts up to 2x the per-second rate are acceptable, which suggests a token bucket."
+   }
+  ],
+  "rubric": {
+   "requirements": [
+    "Defines client identity and rule dimensions",
+    "Non-functional: tiny added latency, high throughput, fail-open policy",
+    "Clarifies accuracy and burst tolerance",
+    "Specifies the 429 response contract"
+   ],
+   "estimation": [
+    "1M req/s checks; each needs one atomic counter op",
+    "State per client ~50 B x 10M ~ 500 MB, fits in memory",
+    "A Redis node handles ~100k ops/s, so ~10 shards plus headroom (16)",
+    "Added network hop of ~1 ms to Redis fits the 5 ms budget"
+   ],
+   "api": [
+    "Internal check(clientId, ruleId) -> {allowed, remaining, retryAfter}",
+    "Rules admin API: PUT /rules/{id}",
+    "Response headers X-RateLimit-Limit, Remaining, Reset",
+    "Integrated as gateway middleware, not a public API"
+   ],
+   "dataModel": [
+    "Counter keyed by clientId:ruleId:window with TTL",
+    "Token bucket state: tokens and last_refill_ts",
+    "Rule definitions in config store with versioning",
+    "Optional local cache of rules in each gateway"
+   ],
+   "architecture": [
+    "Gateway middleware calls the limiter before routing",
+    "Redis cluster holds counters; Lua script makes check-and-decrement atomic",
+    "Choose an algorithm: token bucket, sliding window counter, fixed window",
+    "Rules service pushes config to gateways",
+    "Metrics and alerting on rejection rate"
+   ],
+   "scaling": [
+    "Shard Redis by client key with consistent hashing",
+    "Local in-memory pre-counting with periodic sync to cut Redis round trips",
+    "Replicas for availability; accept slight overcount on failover",
+    "Regional clusters to keep latency low"
+   ],
+   "tradeoffs": [
+    "Fixed window is cheap but allows 2x burst at boundaries; sliding log is exact but costly",
+    "Centralized counter is accurate but adds a hop; local counters are fast but approximate",
+    "Fail open vs fail closed",
+    "Strict global limit vs regional enforcement"
+   ],
+   "pitfalls": [
+    "Read-then-write counter race without atomicity",
+    "Ignoring boundary bursts of fixed windows",
+    "Making the limiter a single point of failure",
+    "Rate limiting by IP only, penalizing shared NATs"
+   ]
+  },
+  "followups": [
+   "How would you make the check atomic under concurrency?",
+   "How do you enforce a global limit across three regions?",
+   "How do you protect against a distributed attack from millions of IPs?",
+   "How would you support different limits per pricing tier with dynamic updates?"
+  ]
+ },
+ {
+  "id": "news-feed",
+  "title": "Design a news feed",
+  "category": "Social",
+  "difficulty": "Hard",
+  "minutes": 45,
+  "prompt": "Design a news feed where users see a ranked list of recent posts from people they follow.",
+  "assumptions": [
+   "300M daily active users",
+   "Each user opens the feed about 5 times a day",
+   "50M new posts per day",
+   "Average user follows 500 accounts, celebrities have up to 50M followers"
+  ],
+  "clarifications": [
+   {
+    "topic": "Functional scope",
+    "question": "What does the feed show?",
+    "answer": "Posts from followed accounts: text plus image or video links. Users can create posts, follow people, and scroll the feed with pagination. Likes and comments are out of scope."
+   },
+   {
+    "topic": "Scale",
+    "question": "What are the read and write rates?",
+    "answer": "1.5B feed reads/day is about 17k/s average and 50k/s peak. 50M posts/day is about 580 posts/s."
+   },
+   {
+    "topic": "Latency",
+    "question": "How fast should the feed load?",
+    "answer": "p99 under 500 ms for the first page of 20 posts."
+   },
+   {
+    "topic": "Freshness",
+    "question": "How fresh must the feed be?",
+    "answer": "A new post should appear in followers' feeds within 5 seconds for normal users and within about 30 seconds for celebrities."
+   },
+   {
+    "topic": "Ranking",
+    "question": "Is the feed chronological?",
+    "answer": "Start with reverse chronological, then discuss a ranking stage that scores candidates using recency, affinity and engagement."
+   },
+   {
+    "topic": "Followers",
+    "question": "What does the follower distribution look like?",
+    "answer": "Average 200 followers per author, but a long tail: roughly 0.1% of authors have over 1M followers and the top few have 50M."
+   },
+   {
+    "topic": "Consistency",
+    "question": "What consistency does a user expect?",
+    "answer": "A user must see their own post immediately. Other users can see eventually consistent feeds."
+   },
+   {
+    "topic": "Retention",
+    "question": "How much feed history do we keep?",
+    "answer": "Feeds precompute the latest 500 posts per user. Older items are fetched from the post store on demand."
+   }
+  ],
+  "rubric": {
+   "requirements": [
+    "Functional: post, follow, view paginated feed",
+    "Non-functional: low read latency, freshness targets, high availability",
+    "Identifies celebrity skew early",
+    "Clarifies ranking vs chronological"
+   ],
+   "estimation": [
+    "1.5B reads/day ~ 17k/s avg, ~50k/s peak",
+    "50M posts/day ~ 580/s; x 200 followers ~ 116k feed inserts/s",
+    "Feed cache: 500 post ids x 8 B = 4 KB per user; 300M users ~ 1.2 TB",
+    "Post store: 50M x 1 KB ~ 50 GB/day metadata (media in object storage)"
+   ],
+   "api": [
+    "POST /v1/posts {text, mediaIds}",
+    "GET /v1/feed?cursor=&limit=20 returns posts and next cursor",
+    "POST /v1/follow/{userId}",
+    "Cursor-based pagination, not offset"
+   ],
+   "dataModel": [
+    "posts(post_id, author_id, content, created_at)",
+    "follow edges (follower_id, followee_id) sharded in both directions",
+    "feed cache per user: sorted list of post ids in Redis",
+    "Time-sortable post ids"
+   ],
+   "architecture": [
+    "Post service writes to the post store and publishes an event",
+    "Fan-out service pushes post ids into follower feed caches (fan-out on write)",
+    "Celebrity posts are pulled at read time and merged (hybrid)",
+    "Feed service reads cache, merges celebrity posts, hydrates posts, applies ranking",
+    "Media on CDN"
+   ],
+   "scaling": [
+    "Shard feed cache by user id",
+    "Queue-based fan-out workers scale horizontally",
+    "Skip fan-out for inactive users",
+    "Cache hot posts and user profiles"
+   ],
+   "tradeoffs": [
+    "Fan-out on write: fast reads, expensive writes; fan-out on read: the opposite",
+    "Hybrid for celebrities adds read-time merge complexity",
+    "Ranking quality vs latency",
+    "Memory cost of precomputed feeds vs recompute"
+   ],
+   "pitfalls": [
+    "Fan-out on write for celebrities causing write storms",
+    "Offset pagination that shifts as new posts arrive",
+    "Ignoring inactive users and wasting storage",
+    "Hydrating posts with N+1 database calls"
+   ]
+  },
+  "followups": [
+   "How would you handle a celebrity with 50M followers posting?",
+   "How do you keep a user's feed correct after they unfollow someone?",
+   "Where would an ML ranking model fit without breaking the latency budget?",
+   "How do you rebuild a lost feed cache shard?"
+  ]
+ },
+ {
+  "id": "notification-service",
+  "title": "Design a notification service",
+  "category": "Messaging",
+  "difficulty": "Medium",
+  "minutes": 40,
+  "prompt": "Design a notification service that sends push, SMS and email messages to users on behalf of many internal product teams.",
+  "assumptions": [
+   "1B notifications per day across all channels",
+   "Peak traffic is about 5x average",
+   "Marketing blasts can target 50M users within 10 minutes",
+   "Time-critical messages such as OTP must arrive within 5 seconds"
+  ],
+  "clarifications": [
+   {
+    "topic": "Channels",
+    "question": "Which channels do we support?",
+    "answer": "Mobile push (APNs and FCM), SMS and email through third-party providers. In-app inbox is optional."
+   },
+   {
+    "topic": "Scale",
+    "question": "What volume do we expect?",
+    "answer": "1B/day is about 11.5k/s average and about 58k/s peak. A 50M blast in 10 minutes needs about 83k/s sustained."
+   },
+   {
+    "topic": "Priority",
+    "question": "Are all notifications equal?",
+    "answer": "No. OTP and security alerts are high priority with a 5 second target. Transactional messages target 30 seconds. Marketing is best effort over minutes."
+   },
+   {
+    "topic": "Preferences",
+    "question": "Do users control what they receive?",
+    "answer": "Yes. Per-channel and per-category opt-out, quiet hours, and a global unsubscribe that must always be honored."
+   },
+   {
+    "topic": "Delivery guarantee",
+    "question": "What delivery semantics do we promise?",
+    "answer": "At least once to the provider, with deduplication so users do not see duplicates. Final delivery depends on provider and device."
+   },
+   {
+    "topic": "Templates",
+    "question": "Do callers send raw text?",
+    "answer": "Callers send a template id plus parameters. The service renders by user locale."
+   },
+   {
+    "topic": "Rate limits",
+    "question": "Any limits per user?",
+    "answer": "Max 5 marketing notifications per user per day. Transactional is not limited."
+   },
+   {
+    "topic": "Tracking",
+    "question": "Do we track outcomes?",
+    "answer": "Yes: sent, delivered, opened, failed. Statuses are exposed through an API and events, with minutes of lag acceptable."
+   }
+  ],
+  "rubric": {
+   "requirements": [
+    "Channels, priorities and preferences clarified",
+    "Non-functional: throughput for blasts, OTP latency, reliability",
+    "Dedup and opt-out compliance",
+    "Tracking and observability needs"
+   ],
+   "estimation": [
+    "1B/day ~ 11.5k/s avg, ~58k/s peak",
+    "Blast: 50M / 600 s ~ 83k/s",
+    "Event size ~1 KB: 1 TB/day through queues",
+    "Provider throughput: if an SMS gateway does 1k/s per connection, hundreds of connections needed"
+   ],
+   "api": [
+    "POST /v1/notifications {userId or segment, templateId, params, priority, idempotencyKey}",
+    "GET /v1/notifications/{id} status",
+    "PUT /v1/users/{id}/preferences",
+    "Webhook receivers for provider delivery receipts"
+   ],
+   "dataModel": [
+    "notification(id, user, channel, status, created_at, idempotency_key)",
+    "user preferences and device tokens table",
+    "templates with versions and locales",
+    "Delivery log, append-only, for analytics"
+   ],
+   "architecture": [
+    "API validates, checks idempotency, enqueues by priority",
+    "Preference and rate-limit filter service",
+    "Separate queues and worker pools per channel and priority",
+    "Provider adapters with retry, backoff and fallback providers",
+    "Status tracker consumes provider callbacks"
+   ],
+   "scaling": [
+    "Partition queues by user id; scale workers per channel",
+    "Isolate high-priority queue so blasts never delay OTP",
+    "Batch segment expansion in chunks",
+    "Circuit breakers per provider"
+   ],
+   "tradeoffs": [
+    "At-least-once plus dedup vs exactly-once",
+    "Single shared queue is simple but allows head-of-line blocking",
+    "Provider failover increases cost",
+    "Pre-rendering templates vs rendering at send time"
+   ],
+   "pitfalls": [
+    "One queue for everything, so blasts delay OTP",
+    "No idempotency key, sending duplicates on retry",
+    "Ignoring opt-outs and quiet hours",
+    "Not handling invalid device tokens"
+   ]
+  },
+  "followups": [
+   "How do you stop a 50M marketing blast from delaying OTP messages?",
+   "How do you deduplicate when a retry happens after a provider timeout?",
+   "What happens when the SMS provider goes down mid-blast?",
+   "How would you schedule notifications for each user's local time zone?"
+  ]
+ },
+ {
+  "id": "video-streaming",
+  "title": "Design a video streaming platform",
+  "category": "Media",
+  "difficulty": "Hard",
+  "minutes": 45,
+  "prompt": "Design a video streaming platform where creators upload videos and viewers stream them on phones, browsers and TVs.",
+  "assumptions": [
+   "200M daily active viewers watching about 1 hour each",
+   "500k new videos uploaded per day, 10 minutes long on average",
+   "Playback should start within 2 seconds",
+   "Peak concurrency is about 10% of daily users"
+  ],
+  "clarifications": [
+   {
+    "topic": "Functional scope",
+    "question": "What features are in scope?",
+    "answer": "Upload, transcoding, adaptive-bitrate playback, search by title, and view counts. Live streaming, recommendations and comments are out of scope."
+   },
+   {
+    "topic": "Scale",
+    "question": "How many viewers stream at once?",
+    "answer": "200M DAU, about 20M concurrent at peak. At an average 3 Mbps that is about 60 Tbps of egress, which must come from CDNs."
+   },
+   {
+    "topic": "Upload",
+    "question": "How large are uploads and how fast must they be available?",
+    "answer": "Source files average 1.5 GB, up to 20 GB. Videos should be playable at lower quality within 5 minutes and fully transcoded within 30 minutes."
+   },
+   {
+    "topic": "Quality",
+    "question": "What formats and resolutions?",
+    "answer": "A ladder from 240p to 4K in H.264 and a subset in VP9/AV1, packaged as HLS and DASH with 4-6 second segments."
+   },
+   {
+    "topic": "Storage",
+    "question": "How much storage per video?",
+    "answer": "About 1 GB across all renditions per video, so about 500 TB/day of new storage. Cold videos move to cheaper tiers."
+   },
+   {
+    "topic": "Availability",
+    "question": "What are the availability expectations?",
+    "answer": "Playback 99.99%. Upload and processing can tolerate 99.9%."
+   },
+   {
+    "topic": "Consistency",
+    "question": "Can view counts be approximate?",
+    "answer": "Yes. Counts can lag by minutes and use approximate aggregation. Video metadata is eventually consistent but a creator sees their own change immediately."
+   },
+   {
+    "topic": "Content rules",
+    "question": "Do we handle copyright or moderation?",
+    "answer": "Mention a hook for it in the pipeline but do not design the classifier."
+   }
+  ],
+  "rubric": {
+   "requirements": [
+    "Scopes to upload, transcode, playback, search; excludes live",
+    "Non-functional: start-up time, smooth playback, availability",
+    "Clarifies device diversity driving ABR",
+    "Storage and cost awareness"
+   ],
+   "estimation": [
+    "20M concurrent x 3 Mbps ~ 60 Tbps egress",
+    "500k videos/day x 1 GB renditions ~ 500 TB/day, ~180 PB/year",
+    "Transcoding: 500k x 10 min of video per day needs a large elastic worker pool, segments processed in parallel",
+    "Metadata: small, 500k rows/day"
+   ],
+   "api": [
+    "POST /v1/videos/initiate-upload returns resumable multipart upload URLs",
+    "GET /v1/videos/{id} metadata and manifest URL",
+    "GET manifest.m3u8 and segment URLs served by CDN",
+    "GET /v1/search?q="
+   ],
+   "dataModel": [
+    "video(id, owner, title, status, duration, created_at)",
+    "rendition and segment manifest records",
+    "view counts in an aggregated store",
+    "Binary segments in object storage, not database"
+   ],
+   "architecture": [
+    "Upload to object storage using resumable chunks",
+    "Queue triggers a DAG: split into segments, transcode in parallel, package, thumbnails",
+    "Origin object store behind a multi-tier CDN",
+    "Player does adaptive bitrate selection from the manifest",
+    "Metadata DB and search index, view-count pipeline"
+   ],
+   "scaling": [
+    "Parallel segment transcoding on autoscaled workers",
+    "CDN with edge caches and origin shield; pre-warm popular titles",
+    "Tiered storage: hot, warm, cold",
+    "Shard metadata DB by video id"
+   ],
+   "tradeoffs": [
+    "More renditions improve quality but cost storage and compute",
+    "Pre-transcode all vs on-demand transcode for long-tail",
+    "Shorter segments reduce latency but increase requests",
+    "Own CDN vs third-party"
+   ],
+   "pitfalls": [
+    "Serving video from the app servers",
+    "Transcoding the whole file in one worker",
+    "Ignoring resumable upload for large files",
+    "Exact synchronous view counts causing hot rows"
+   ]
+  },
+  "followups": [
+   "How would you reduce start-up time below 1 second?",
+   "How do you handle a video that goes viral minutes after upload?",
+   "How would you cut storage cost for the long tail of rarely watched videos?",
+   "How would you extend the design to support live streaming?"
+  ]
+ },
+ {
+  "id": "ride-hailing",
+  "title": "Design a ride-hailing service",
+  "category": "Realtime",
+  "difficulty": "Hard",
+  "minutes": 45,
+  "prompt": "Design a ride-hailing service that matches riders with nearby drivers, tracks the trip and computes the fare.",
+  "assumptions": [
+   "10M rides per day",
+   "1M drivers online at peak, each sending location every 4 seconds",
+   "A rider should be matched within 5 seconds",
+   "Ride requests peak at about 5x the daily average"
+  ],
+  "clarifications": [
+   {
+    "topic": "Functional scope",
+    "question": "What flows must we support?",
+    "answer": "Rider requests a ride, system finds and offers it to nearby drivers, live tracking during the trip, ETA and fare estimate. Payments and ratings are out of scope."
+   },
+   {
+    "topic": "Scale",
+    "question": "What are the traffic numbers?",
+    "answer": "10M rides/day is about 115 requests/s average and 600/s at peak. 1M drivers x 1 update per 4 s is 250k location updates/s."
+   },
+   {
+    "topic": "Matching",
+    "question": "How is a driver chosen?",
+    "answer": "Nearest available drivers by ETA within a radius, offered to one driver at a time with a 10 second accept window, falling back to the next."
+   },
+   {
+    "topic": "Latency",
+    "question": "What latency targets apply?",
+    "answer": "Match within 5 seconds at p95. Rider sees driver location updates every 4 seconds with under 1 second delivery lag."
+   },
+   {
+    "topic": "Consistency",
+    "question": "Can a driver be matched to two riders?",
+    "answer": "No. Driver assignment must be strongly consistent for a single driver. Location data can be eventually consistent."
+   },
+   {
+    "topic": "Location data",
+    "question": "How long do we keep location history?",
+    "answer": "Live positions are kept in memory only. Trip routes are persisted for 90 days for disputes and fare checks."
+   },
+   {
+    "topic": "Geography",
+    "question": "How large is the service area?",
+    "answer": "Hundreds of cities worldwide, partitioned by region. Cross-city matching is not needed."
+   },
+   {
+    "topic": "Pricing",
+    "question": "Is surge pricing required?",
+    "answer": "Mention it as a per-area multiplier computed from the demand/supply ratio. Full pricing design is out of scope."
+   }
+  ],
+  "rubric": {
+   "requirements": [
+    "Core flows: request, match, track, fare",
+    "Non-functional: low-latency match, high-frequency location ingest",
+    "Strong consistency on driver assignment",
+    "Scope control: payments, ratings out"
+   ],
+   "estimation": [
+    "10M rides/day ~ 115/s avg, ~600/s peak",
+    "1M drivers / 4 s ~ 250k location writes/s",
+    "Location record ~ 100 B: 25 MB/s ingest, ~2 TB/day if persisted raw",
+    "Live driver index: 1M x ~100 B = 100 MB, trivial in memory"
+   ],
+   "api": [
+    "POST /v1/rides {pickup, dropoff} returns rideId",
+    "WebSocket or push for ride status and driver location",
+    "PUT /v1/drivers/location {lat, lng, ts}",
+    "POST /v1/rides/{id}/accept by driver"
+   ],
+   "dataModel": [
+    "Geo index: geohash or S2 cell -> set of available drivers",
+    "ride(id, rider, driver, status, pickup, dropoff, fare)",
+    "driver state (available, on_trip, offline)",
+    "trip route points in time-series storage"
+   ],
+   "architecture": [
+    "Location service ingests updates and updates the geo index in memory",
+    "Matching service queries nearby cells, ranks by ETA, offers sequentially",
+    "Ride service owns a state machine and persists with a lock on the driver",
+    "Real-time gateway pushes updates to rider and driver apps",
+    "ETA service uses road graph and live traffic"
+   ],
+   "scaling": [
+    "Shard geo index by city or cell range",
+    "Ingest through a queue; batch writes to history",
+    "Scale matching workers per region",
+    "Cache ETAs for cell pairs"
+   ],
+   "tradeoffs": [
+    "Geohash is simple but has boundary issues; S2 or quadtree adapts to density",
+    "Greedy nearest match vs batched global optimization",
+    "Update frequency vs battery and cost",
+    "Strong vs eventual consistency per data type"
+   ],
+   "pitfalls": [
+    "Querying a SQL table with distance math for every request",
+    "Writing every location ping to a relational DB",
+    "Not preventing double assignment of a driver",
+    "Ignoring cell boundaries when searching"
+   ]
+  },
+  "followups": [
+   "How do you prevent two riders from being matched to the same driver?",
+   "How would you handle a stadium event with 50k simultaneous requests?",
+   "How would you compute ETA accurately with live traffic?",
+   "What changes if you want batched matching to reduce total wait time?"
+  ]
+ },
+ {
+  "id": "file-storage",
+  "title": "Design a file storage and sync service",
+  "category": "Storage",
+  "difficulty": "Hard",
+  "minutes": 45,
+  "prompt": "Design a file storage and sync service where users keep files in the cloud and see changes synced across their devices.",
+  "assumptions": [
+   "50M users with about 2 GB stored on average",
+   "10M daily active users",
+   "Files up to 10 GB, split into 4 MB chunks",
+   "Changes should sync to other devices within 10 seconds"
+  ],
+  "clarifications": [
+   {
+    "topic": "Functional scope",
+    "question": "What does the service do?",
+    "answer": "Upload and download files, automatic sync across multiple devices, file and folder sharing, version history. Real-time collaborative editing is out of scope."
+   },
+   {
+    "topic": "Scale",
+    "question": "How much data and activity?",
+    "answer": "50M users x 2 GB is 100 PB. With 10M DAU doing about 20 sync operations each, metadata ops are about 200M/day or 2.3k/s average."
+   },
+   {
+    "topic": "Chunking",
+    "question": "How are large files handled?",
+    "answer": "Files are split into 4 MB chunks, each identified by a content hash. Only changed chunks are uploaded, and identical chunks are deduplicated."
+   },
+   {
+    "topic": "Sync latency",
+    "question": "How fast must changes propagate?",
+    "answer": "Other online devices learn of a change within 10 seconds via a notification, then pull the diff."
+   },
+   {
+    "topic": "Consistency",
+    "question": "What consistency do users need?",
+    "answer": "Metadata is strongly consistent per user. Concurrent edits to the same file create a conflicted copy rather than silently overwriting."
+   },
+   {
+    "topic": "Durability",
+    "question": "What durability is required?",
+    "answer": "Eleven nines for file data, achieved with replication or erasure coding across zones. Metadata is replicated synchronously."
+   },
+   {
+    "topic": "Versions",
+    "question": "How much history do we keep?",
+    "answer": "30 days of versions for free users and 1 year for paid. Deleted files stay in trash for 30 days."
+   },
+   {
+    "topic": "Security",
+    "question": "What about encryption?",
+    "answer": "Encrypt in transit and at rest. Client-side end-to-end encryption is out of scope."
+   }
+  ],
+  "rubric": {
+   "requirements": [
+    "Upload, download, sync, share, versions",
+    "Non-functional: durability, sync latency, bandwidth efficiency",
+    "Conflict handling requirement",
+    "Dedup and chunking intent"
+   ],
+   "estimation": [
+    "50M x 2 GB = 100 PB raw; 100 PB / 4 MB = 25B chunks",
+    "Metadata ops ~ 2.3k/s avg, ~10k/s peak",
+    "Chunk metadata ~ 100 B x 25B = 2.5 TB",
+    "Delta sync saves bandwidth: editing a 1 GB file may upload only a few 4 MB chunks"
+   ],
+   "api": [
+    "POST /v1/files/upload-session returns chunk upload targets for missing hashes",
+    "PUT chunk by hash directly to block storage",
+    "GET /v1/changes?cursor= for sync deltas",
+    "POST /v1/files/{id}/share"
+   ],
+   "dataModel": [
+    "file/folder tree metadata: id, parent, name, version, chunk hash list",
+    "chunk table: hash -> storage location, refcount",
+    "per-user change log with monotonically increasing cursor",
+    "sharing ACL table"
+   ],
+   "architecture": [
+    "Client watcher chunks files and hashes them",
+    "Block service stores chunks in object storage; dedup by hash",
+    "Metadata service stores file trees in a sharded SQL database",
+    "Notification service (long poll or WebSocket) tells devices of new cursor",
+    "Sync client pulls the change log and downloads missing chunks"
+   ],
+   "scaling": [
+    "Shard metadata by user id",
+    "Object storage scales horizontally; use erasure coding for cold data",
+    "Notification servers scale per connection",
+    "Garbage collect unreferenced chunks with refcounts"
+   ],
+   "tradeoffs": [
+    "Fixed vs content-defined chunking",
+    "Dedup across users saves space but leaks existence of files",
+    "Strong metadata consistency vs availability",
+    "Smaller chunks give better dedup but larger metadata"
+   ],
+   "pitfalls": [
+    "Re-uploading the whole file on each edit",
+    "Last-writer-wins that loses data",
+    "Polling aggressively instead of push notifications",
+    "Storing file bytes in the metadata database"
+   ]
+  },
+  "followups": [
+   "How do you resolve conflicting edits from two offline devices?",
+   "How does the client sync a 10 GB file after a network drop?",
+   "How do you safely delete chunks shared by many files?",
+   "How would you add a shared folder with 100k members?"
+  ]
+ },
+ {
+  "id": "search-typeahead",
+  "title": "Design search autocomplete",
+  "category": "Realtime",
+  "difficulty": "Medium",
+  "minutes": 40,
+  "prompt": "Design a search autocomplete system that suggests the top queries as a user types each character.",
+  "assumptions": [
+   "500M searches per day",
+   "Suggestions requested on about 5 keystrokes per search",
+   "Suggestions must appear within 100 ms",
+   "Top 10 suggestions per prefix"
+  ],
+  "clarifications": [
+   {
+    "topic": "Functional scope",
+    "question": "What exactly do we return?",
+    "answer": "Up to 10 completions for the typed prefix, ranked by popularity. Personalization and spell correction are stretch goals."
+   },
+   {
+    "topic": "Scale",
+    "question": "How many requests?",
+    "answer": "500M searches x 5 = 2.5B suggestion requests/day, about 29k/s average and 100k/s at peak."
+   },
+   {
+    "topic": "Latency",
+    "question": "What is the latency target?",
+    "answer": "p99 under 100 ms end to end, so the server work should be under 20 ms."
+   },
+   {
+    "topic": "Freshness",
+    "question": "How fresh must suggestions be?",
+    "answer": "Trending queries should appear within 15 to 30 minutes. A full rebuild runs daily."
+   },
+   {
+    "topic": "Data size",
+    "question": "How many distinct queries?",
+    "answer": "About 100M distinct queries of 25 characters average, roughly 2.5 GB raw text, fitting in memory when compressed."
+   },
+   {
+    "topic": "Ranking",
+    "question": "How do we rank?",
+    "answer": "By recent query frequency with time decay. Offensive or blocked terms are filtered."
+   },
+   {
+    "topic": "Languages",
+    "question": "Which languages?",
+    "answer": "Start with English only. Mention unicode and multi-language as a follow-up."
+   },
+   {
+    "topic": "Consistency",
+    "question": "Do all users need the same suggestions?",
+    "answer": "Eventual consistency across servers is fine."
+   }
+  ],
+  "rubric": {
+   "requirements": [
+    "Prefix match, top-K, ranking by popularity",
+    "Non-functional: very low latency, high QPS",
+    "Freshness vs offline rebuild",
+    "Filtering of blocked terms"
+   ],
+   "estimation": [
+    "2.5B requests/day ~ 29k/s avg, ~100k/s peak",
+    "100M queries x 25 B ~ 2.5 GB raw; trie with top-10 per node a few times larger",
+    "A single server can hold the structure; replicate for QPS (each does ~10k/s, so ~15 nodes plus headroom)",
+    "Query log: 500M x 100 B = 50 GB/day"
+   ],
+   "api": [
+    "GET /v1/suggest?q=prefix&limit=10",
+    "Response: ordered list of suggestions and optional scores",
+    "Client debounces and caches",
+    "Logging endpoint for completed searches"
+   ],
+   "dataModel": [
+    "Trie nodes holding the top-10 completions precomputed",
+    "Aggregated query counts table (query, count, window)",
+    "Blocklist",
+    "Raw search logs in a distributed file store"
+   ],
+   "architecture": [
+    "Suggestion service loads a trie snapshot in memory",
+    "Offline pipeline aggregates logs (MapReduce/stream), builds new trie, publishes snapshot",
+    "Streaming job adds trending updates between rebuilds",
+    "CDN/browser caching for short prefixes",
+    "Load balancer routes to replicas"
+   ],
+   "scaling": [
+    "Replicate trie across many servers",
+    "Shard by first characters if the structure grows",
+    "Cache hot prefixes at edge",
+    "Roll snapshots gradually with canary"
+   ],
+   "tradeoffs": [
+    "Precomputing top-K per node uses memory but makes reads O(prefix length)",
+    "Trie vs inverted index / search engine",
+    "Freshness vs rebuild cost",
+    "Personalization vs cacheability"
+   ],
+   "pitfalls": [
+    "Querying the database with LIKE on each keystroke",
+    "Traversing the entire subtree to find top-K at request time",
+    "No client-side debounce",
+    "Updating the live trie in place under read load"
+   ]
+  },
+  "followups": [
+   "How would you surface a trending breaking-news query within minutes?",
+   "How would you add personalization without losing cacheability?",
+   "How would you shard the trie if it no longer fits on one machine?",
+   "How do you keep abusive suggestions out of the results?"
+  ]
+ },
+ {
+  "id": "web-crawler",
+  "title": "Design a web crawler",
+  "category": "Infrastructure",
+  "difficulty": "Medium",
+  "minutes": 40,
+  "prompt": "Design a web crawler that discovers and downloads pages from the internet for a search engine to index.",
+  "assumptions": [
+   "1B pages crawled per month",
+   "Average page is 100 KB",
+   "Pages are recrawled based on how often they change",
+   "The crawler must be polite to every site"
+  ],
+  "clarifications": [
+   {
+    "topic": "Functional scope",
+    "question": "What is the crawler responsible for?",
+    "answer": "Fetch pages, extract links, store content for the indexer, and schedule recrawls. Indexing and ranking are out of scope."
+   },
+   {
+    "topic": "Scale",
+    "question": "What throughput is required?",
+    "answer": "1B pages/month is about 385 pages/s on average. Provision for 1,000 pages/s to catch up after outages."
+   },
+   {
+    "topic": "Storage",
+    "question": "How much do we store?",
+    "answer": "1B x 100 KB is 100 TB/month raw, about 30 TB compressed. We keep the latest copy per URL plus a short history."
+   },
+   {
+    "topic": "Freshness",
+    "question": "How often are pages recrawled?",
+    "answer": "Adaptive: news sites hourly, typical pages every 1-4 weeks, static pages monthly or less, estimated from observed change rates."
+   },
+   {
+    "topic": "Politeness",
+    "question": "What rules must we follow?",
+    "answer": "Obey robots.txt, limit to about 1 request per second per host, and honor crawl-delay and per-host back-off on errors."
+   },
+   {
+    "topic": "Content",
+    "question": "Which content types?",
+    "answer": "HTML only at first. Images, PDFs and JavaScript-rendered pages are extensions."
+   },
+   {
+    "topic": "Duplicates",
+    "question": "How do we handle duplicates?",
+    "answer": "Deduplicate URLs after normalization and detect near-duplicate content via hashing such as simhash."
+   },
+   {
+    "topic": "Traps",
+    "question": "Do we worry about crawler traps?",
+    "answer": "Yes. Limit URL depth, URL length, and pages per host, and detect infinite calendar-like URL patterns."
+   }
+  ],
+  "rubric": {
+   "requirements": [
+    "Fetch, parse, extract, schedule recrawl",
+    "Non-functional: throughput, politeness, robustness",
+    "Dedup requirements for URLs and content",
+    "Crawl traps and robots.txt awareness"
+   ],
+   "estimation": [
+    "1B / 2.6M s ~ 385 pages/s avg; design for ~1k/s",
+    "100 KB x 1B = 100 TB/month raw",
+    "With 1k pages/s and ~500 ms per fetch, need ~500 concurrent fetches; spread over machines with async IO",
+    "URL set: 10B URLs x ~100 B = 1 TB, requires a Bloom filter or sharded store"
+   ],
+   "api": [
+    "Internal: frontier.next(host batch) and frontier.add(urls)",
+    "Fetcher writes content to blob store and emits parse events",
+    "Admin API to add seeds and set crawl policies",
+    "Metrics endpoints"
+   ],
+   "dataModel": [
+    "URL table: url hash, host, last_crawl, next_crawl, status, change history",
+    "Content store keyed by content hash",
+    "robots.txt cache per host with TTL",
+    "Host table with politeness state"
+   ],
+   "architecture": [
+    "URL frontier with priority queues and per-host queues (politeness)",
+    "DNS resolver cache and fetcher workers",
+    "Parser extracts links and normalizes URLs",
+    "Dedup filter (Bloom filter + persistent set) before enqueue",
+    "Content stored in blob storage and sent to indexer via queue"
+   ],
+   "scaling": [
+    "Partition frontier by host hash so each host is owned by one worker",
+    "Distribute fetchers across regions near target sites",
+    "Add DNS caching and connection reuse",
+    "Scale parsers independently via queues"
+   ],
+   "tradeoffs": [
+    "BFS vs priority by page importance",
+    "Bloom filter saves memory but has false positives (some URLs skipped)",
+    "Crawl speed vs politeness",
+    "Central frontier vs distributed frontier"
+   ],
+   "pitfalls": [
+    "Single global queue that hammers one host",
+    "Ignoring robots.txt",
+    "No URL normalization, so duplicates explode",
+    "Falling into infinite URL traps"
+   ]
+  },
+  "followups": [
+   "How do you guarantee politeness while keeping 1,000 fetchers busy?",
+   "How would you decide the recrawl interval for each URL?",
+   "How do you detect near-duplicate pages at billions of pages?",
+   "How would you crawl JavaScript-heavy sites?"
+  ]
+ },
+ {
+  "id": "distributed-cache",
+  "title": "Design a distributed cache",
+  "category": "Infrastructure",
+  "difficulty": "Hard",
+  "minutes": 45,
+  "prompt": "Design a distributed in-memory cache that application services use to reduce load on their databases.",
+  "assumptions": [
+   "1M operations per second",
+   "5 TB of cached data, average value 1 KB",
+   "90% reads and 10% writes",
+   "p99 latency under 5 ms"
+  ],
+  "clarifications": [
+   {
+    "topic": "Functional scope",
+    "question": "What operations does the cache offer?",
+    "answer": "GET, SET with TTL, DELETE, and atomic increment. Rich data structures and pub/sub are out of scope."
+   },
+   {
+    "topic": "Scale",
+    "question": "How much traffic and data?",
+    "answer": "1M ops/s total (900k reads, 100k writes) over about 5 TB of data."
+   },
+   {
+    "topic": "Latency",
+    "question": "What latency is required?",
+    "answer": "p99 under 5 ms from clients in the same region, p50 under 1 ms."
+   },
+   {
+    "topic": "Consistency",
+    "question": "How consistent must the cache be?",
+    "answer": "Eventual. A single key has a single primary, so reads from the primary are consistent. Stale reads from replicas for a short period are acceptable."
+   },
+   {
+    "topic": "Availability",
+    "question": "What happens when a node fails?",
+    "answer": "The cache must remain available. Losing data is acceptable because the database is the source of truth, but we want to avoid a stampede on the database."
+   },
+   {
+    "topic": "Eviction",
+    "question": "How do we evict?",
+    "answer": "LRU-style eviction when memory is full, plus TTL expiration. The policy is configurable per cache namespace."
+   },
+   {
+    "topic": "Topology",
+    "question": "Who is the client?",
+    "answer": "Internal services through a smart client library that knows the cluster topology."
+   },
+   {
+    "topic": "Hot keys",
+    "question": "Do we expect skewed keys?",
+    "answer": "Yes. A handful of keys can receive 100k reads/s, and the design must handle them."
+   }
+  ],
+  "rubric": {
+   "requirements": [
+    "Define API, TTL, eviction",
+    "Non-functional: latency, throughput, availability, tolerance of data loss",
+    "Cache is not the source of truth",
+    "Hot key handling requirement"
+   ],
+   "estimation": [
+    "1M ops/s; with ~110 primaries each handles ~9k ops/s, far below a node's limit",
+    "5 TB / ~48 GB usable per node ~ 105 primaries; with 1 replica ~ 210 nodes",
+    "Memory overhead per key (~50-100 B) adds ~5-10%",
+    "Network: 1M x 1 KB = 1 GB/s aggregate, ~10 MB/s per node"
+   ],
+   "api": [
+    "GET key -> value or miss",
+    "SET key value ttl",
+    "DELETE key; INCR key",
+    "Admin API for cluster membership and namespace config"
+   ],
+   "dataModel": [
+    "Hash table with value, TTL and LRU metadata per key",
+    "Slot map: 16384 hash slots -> node",
+    "Replication log or async stream to replicas",
+    "Cluster membership state in a gossip protocol or coordinator"
+   ],
+   "architecture": [
+    "Client library hashes keys to slots and talks directly to the owner node",
+    "Consistent hashing or fixed slots with a slot map",
+    "Each primary has one or more async replicas for failover",
+    "Failure detector promotes a replica and updates the slot map",
+    "Cache-aside pattern for applications, with request coalescing"
+   ],
+   "scaling": [
+    "Add nodes and move slots gradually (rebalancing)",
+    "Replicate hot keys to multiple nodes or add a client-side local cache",
+    "Use connection pooling and pipelining",
+    "Separate namespaces for isolation"
+   ],
+   "tradeoffs": [
+    "Cache-aside vs write-through vs write-back",
+    "Consistent hashing with virtual nodes vs fixed slots",
+    "Async replication: lower latency but possible data loss on failover",
+    "LRU vs LFU eviction"
+   ],
+   "pitfalls": [
+    "Plain modulo hashing causes a full reshuffle when nodes change",
+    "Cache stampede when a hot key expires",
+    "No TTL jitter causing synchronized expirations",
+    "Treating the cache as durable storage"
+   ]
+  },
+  "followups": [
+   "How do you prevent a stampede when a popular key expires?",
+   "How do you add a node without invalidating most of the cache?",
+   "How would you serve a key that gets 100k reads/s?",
+   "How do you keep cache and database consistent on writes?"
+  ]
+ },
+ {
+  "id": "key-value-store",
+  "title": "Design a distributed key-value store",
+  "category": "Storage",
+  "difficulty": "Hard",
+  "minutes": 45,
+  "prompt": "Design a distributed key-value store that is highly available and scales horizontally to hundreds of terabytes.",
+  "assumptions": [
+   "100 TB of data, values of 1 KB on average (up to 10 KB)",
+   "500k operations per second",
+   "Replication factor 3",
+   "99.99% availability"
+  ],
+  "clarifications": [
+   {
+    "topic": "Functional scope",
+    "question": "What is the API?",
+    "answer": "put(key, value), get(key) and delete(key). Range scans and secondary indexes are out of scope."
+   },
+   {
+    "topic": "Scale",
+    "question": "How big is the system?",
+    "answer": "100 TB of logical data x 3 replicas is 300 TB physical. Traffic is 500k ops/s with a 70/30 read/write mix."
+   },
+   {
+    "topic": "Availability",
+    "question": "What is more important, availability or consistency?",
+    "answer": "Availability. Writes should succeed even if a node is down, within tunable consistency."
+   },
+   {
+    "topic": "Consistency",
+    "question": "What consistency model is expected?",
+    "answer": "Tunable per request: quorum for strong-ish behavior (R + W > N) or single replica for speed. Eventual consistency with conflict resolution is the default."
+   },
+   {
+    "topic": "Latency",
+    "question": "What are the latency targets?",
+    "answer": "p99 under 10 ms for reads and writes within a region."
+   },
+   {
+    "topic": "Durability",
+    "question": "How do we avoid losing writes?",
+    "answer": "A write is acknowledged after reaching W replicas and the commit log. Data survives loss of any two nodes."
+   },
+   {
+    "topic": "Multi-region",
+    "question": "Is it multi-region?",
+    "answer": "Single region first, with cross-region async replication as a stretch goal."
+   },
+   {
+    "topic": "Conflicts",
+    "question": "How are conflicting writes resolved?",
+    "answer": "Last-write-wins with timestamps is acceptable by default. Candidates can discuss vector clocks as an alternative."
+   }
+  ],
+  "rubric": {
+   "requirements": [
+    "API and tunable consistency",
+    "Non-functional: availability, scalability, durability",
+    "Choice between CP and AP stated and justified",
+    "Conflict resolution expectation"
+   ],
+   "estimation": [
+    "100 TB x 3 = 300 TB physical; at ~4 TB usable per node ~ 75 nodes (use ~100 with headroom)",
+    "500k ops/s / 100 nodes = 5k ops/s per node, comfortable",
+    "Writes 150k/s x 1 KB = 150 MB/s ingest before replication, ~450 MB/s with 3x",
+    "Memtable flushes and compaction increase write amplification roughly 10x"
+   ],
+   "api": [
+    "put(key, value, consistency, ttl?)",
+    "get(key, consistency) returns value and version",
+    "delete(key)",
+    "Admin: add/remove node, repair"
+   ],
+   "dataModel": [
+    "Partitioning by consistent hash ring with virtual nodes",
+    "On each node an LSM tree: commit log, memtable, SSTables",
+    "Version metadata per value (timestamp or vector clock)",
+    "Bloom filters per SSTable"
+   ],
+   "architecture": [
+    "Any node can act as coordinator for a request",
+    "Consistent hashing places each key on N=3 successive nodes",
+    "Quorum reads and writes with tunable R and W",
+    "Hinted handoff and read repair for temporary failures, anti-entropy with Merkle trees for repair",
+    "Gossip protocol for membership and failure detection"
+   ],
+   "scaling": [
+    "Add nodes; virtual nodes spread load evenly",
+    "Rack and zone aware replica placement",
+    "Compaction tuning and caching hot data",
+    "Throttle repair and rebalancing traffic"
+   ],
+   "tradeoffs": [
+    "CAP: availability with eventual consistency vs quorum CP",
+    "LSM tree favors writes, B-tree favors reads",
+    "LWW is simple but can lose updates; vector clocks add complexity",
+    "Replication factor vs cost"
+   ],
+   "pitfalls": [
+    "Single master as a bottleneck and point of failure",
+    "Ignoring failure handling and repair",
+    "Hash modulo placement that reshuffles on membership change",
+    "Claiming strong consistency with eventual-consistency tooling"
+   ]
+  },
+  "followups": [
+   "What happens if two clients write the same key concurrently to different replicas?",
+   "How does a new node join without downtime?",
+   "How do you detect and repair permanently diverged replicas?",
+   "How would you add range queries?"
+  ]
+ },
+ {
+  "id": "ticket-booking",
+  "title": "Design a ticket booking system",
+  "category": "Commerce",
+  "difficulty": "Hard",
+  "minutes": 45,
+  "prompt": "Design a ticket booking system for events where thousands of users compete for a limited number of seats and no seat may be sold twice.",
+  "assumptions": [
+   "Venue with 50k seats; a hot event draws 500k users",
+   "Peak 100k requests per second on the seat map",
+   "Seats are held for 10 minutes during checkout",
+   "Normal days: 100 events and low traffic"
+  ],
+  "clarifications": [
+   {
+    "topic": "Functional scope",
+    "question": "What flows are included?",
+    "answer": "Browse events, view the seat map, select seats, hold them while paying, and confirm the booking. Resale and refunds are out of scope."
+   },
+   {
+    "topic": "Scale",
+    "question": "What is the peak load?",
+    "answer": "500k users arrive within minutes of sale start. Seat map reads reach 100k/s. If the event sells out in 5 minutes, that is about 170 bookings/s with maybe 10x as many hold attempts."
+   },
+   {
+    "topic": "Correctness",
+    "question": "Can we ever double-sell a seat?",
+    "answer": "Never. Seat state transitions must be atomic. Overselling is worse than turning users away."
+   },
+   {
+    "topic": "Holds",
+    "question": "How do holds work?",
+    "answer": "Selecting a seat creates a hold for 10 minutes. If payment is not completed, the hold expires and the seat returns to the pool automatically."
+   },
+   {
+    "topic": "Fairness",
+    "question": "How do we handle the stampede?",
+    "answer": "A virtual waiting room admits users in batches (e.g. 5k at a time) so downstream services stay within capacity."
+   },
+   {
+    "topic": "Payments",
+    "question": "How is payment handled?",
+    "answer": "Via an external payment provider. Our flow must be idempotent and handle payment success after a hold has expired."
+   },
+   {
+    "topic": "Consistency",
+    "question": "What can be eventually consistent?",
+    "answer": "The seat map shown to browsers can lag a couple of seconds. The booking decision itself is strongly consistent."
+   },
+   {
+    "topic": "Availability",
+    "question": "What if the system is overloaded?",
+    "answer": "Degrade gracefully by queueing and shedding load at the edge rather than failing checkout."
+   }
+  ],
+  "rubric": {
+   "requirements": [
+    "Browse, hold, pay, confirm flows",
+    "Non-functional: no double booking, handle traffic spikes",
+    "Hold expiry and payment edge cases",
+    "Fairness and waiting room"
+   ],
+   "estimation": [
+    "100k reads/s on seat map: serve from cache, 50k seats x 16 B = 800 KB per snapshot",
+    "Peak booking ~170/s, holds ~1.7k/s: trivial for one sharded DB if requests are admitted gradually",
+    "500k users in queue / 5k per batch = 100 batches",
+    "Orders: 50k bookings x 2 KB = 100 MB, negligible storage"
+   ],
+   "api": [
+    "GET /v1/events/{id}/seats (cached snapshot)",
+    "POST /v1/holds {eventId, seatIds} returns holdId and expiry",
+    "POST /v1/bookings {holdId, paymentToken, idempotencyKey}",
+    "GET /v1/queue/position"
+   ],
+   "dataModel": [
+    "seat(event_id, seat_id, status, hold_id, hold_expires_at)",
+    "hold and booking tables",
+    "Payment attempts with idempotency key",
+    "Queue tickets in Redis"
+   ],
+   "architecture": [
+    "Edge waiting room admits limited concurrency",
+    "Seat map served from cache/CDN with short TTL",
+    "Hold service uses atomic conditional update (compare-and-set) or a row lock per seat",
+    "Expiry via TTL key or scheduled sweeper",
+    "Booking service confirms hold, charges payment, then marks sold; a saga handles failures"
+   ],
+   "scaling": [
+    "Shard seat inventory by event id",
+    "Cache seat maps; pub/sub or polling for updates",
+    "Hot event gets dedicated capacity",
+    "Async confirmation emails and tickets"
+   ],
+   "tradeoffs": [
+    "Pessimistic locking vs optimistic CAS vs Redis atomic ops",
+    "Hold duration vs conversion and fairness",
+    "Showing exact vs approximate availability",
+    "Strict queue order vs randomized admission"
+   ],
+   "pitfalls": [
+    "Checking availability then updating without atomicity",
+    "Holds that never expire",
+    "Letting all 500k users hit the booking path directly",
+    "Charging the user after the hold has expired"
+   ]
+  },
+  "followups": [
+   "How do you prevent double booking when two users select the same seat in the same millisecond?",
+   "What happens if payment succeeds after the hold expired?",
+   "How would you make the waiting room fair and resistant to bots?",
+   "How do you let a user pick best available seats for a group of four?"
+  ]
+ },
+ {
+  "id": "payment-system",
+  "title": "Design a payment system",
+  "category": "Commerce",
+  "difficulty": "Hard",
+  "minutes": 45,
+  "prompt": "Design a payment system that lets merchants accept card payments through external payment service providers and keeps accurate financial records.",
+  "assumptions": [
+   "10M payments per day",
+   "Peak around 1,000 payments per second",
+   "Money must never be lost or double charged",
+   "Financial records retained for 7 years"
+  ],
+  "clarifications": [
+   {
+    "topic": "Functional scope",
+    "question": "What does the system do?",
+    "answer": "Create a payment for an order, authorize and capture via a PSP, handle refunds, and expose payment status. We do not store raw card numbers; the PSP tokenizes."
+   },
+   {
+    "topic": "Scale",
+    "question": "What volume?",
+    "answer": "10M/day is about 115/s average and about 1,000/s at peak (sales events)."
+   },
+   {
+    "topic": "Correctness",
+    "question": "What is the key correctness requirement?",
+    "answer": "Exactly-once effect: a retry or timeout must never charge a customer twice. Every payment ends in a known final state."
+   },
+   {
+    "topic": "Latency",
+    "question": "How long can a payment take?",
+    "answer": "Authorization within 2-3 seconds at p95, dominated by the PSP. Our overhead should be under 200 ms."
+   },
+   {
+    "topic": "Ledger",
+    "question": "How is money tracked internally?",
+    "answer": "A double-entry ledger where each payment creates balanced debit and credit entries. The ledger is append-only."
+   },
+   {
+    "topic": "Reconciliation",
+    "question": "Do we reconcile with PSPs?",
+    "answer": "Yes, daily. PSP settlement files are compared against our ledger, and mismatches create alerts and manual review tasks."
+   },
+   {
+    "topic": "Failures",
+    "question": "What if a PSP times out?",
+    "answer": "The payment is marked pending. We query status or wait for a webhook. We never assume failure and retry the charge blindly."
+   },
+   {
+    "topic": "Compliance",
+    "question": "Any compliance needs?",
+    "answer": "PCI DSS: do not store card data, encrypt sensitive fields, audit access. Detailed fraud detection is out of scope."
+   }
+  ],
+  "rubric": {
+   "requirements": [
+    "Pay, capture, refund, status",
+    "Correctness: idempotency, exactly-once effect, audit trail",
+    "Reconciliation and PSP failure handling",
+    "Compliance boundaries"
+   ],
+   "estimation": [
+    "10M/day ~ 115/s avg, ~1k/s peak",
+    "Payment record + ledger entries ~ 2 KB: 20 GB/day, ~7 TB/year, ~50 TB over 7 years",
+    "Each payment involves ~4 PSP/webhook events: ~4k events/s peak",
+    "Single relational primary handles 1k writes/s, shard for growth and HA"
+   ],
+   "api": [
+    "POST /v1/payments {orderId, amount, currency, token} with Idempotency-Key header",
+    "GET /v1/payments/{id}",
+    "POST /v1/payments/{id}/refunds",
+    "POST /webhooks/psp (inbound, signature verified)"
+   ],
+   "dataModel": [
+    "payment(id, order, amount, state, idempotency_key, psp_ref)",
+    "ledger_entry(id, account, debit/credit, amount, payment_id, ts)",
+    "state transition log",
+    "Idempotency key table with request hash and stored response"
+   ],
+   "architecture": [
+    "Payment API checks idempotency key and writes a payment in CREATED state",
+    "Orchestrator calls the PSP and moves state through a state machine",
+    "Webhook handler updates state idempotently",
+    "Ledger service writes balanced entries in the same transaction as the state change",
+    "Reconciliation job and retry/outbox with queue for events"
+   ],
+   "scaling": [
+    "Shard payments by merchant or payment id",
+    "Outbox pattern for reliable event publishing",
+    "Multiple PSPs with routing and failover",
+    "Replicated database with synchronous standby"
+   ],
+   "tradeoffs": [
+    "Synchronous API vs async with polling/webhooks",
+    "Strong consistency on ledger vs throughput",
+    "Single PSP simplicity vs multi-PSP resilience",
+    "Saga with compensation vs distributed transaction"
+   ],
+   "pitfalls": [
+    "Retrying a charge after timeout without an idempotency key",
+    "Updating balances in place without a ledger",
+    "Treating a PSP timeout as failure",
+    "Storing raw card numbers"
+   ]
+  },
+  "followups": [
+   "The PSP timed out. What do you do and what do you tell the user?",
+   "How do you ensure the ledger is always balanced?",
+   "How would you detect and resolve a mismatch found in daily reconciliation?",
+   "How do you route between PSPs when one is degraded?"
+  ]
+ },
+ {
+  "id": "metrics-monitoring",
+  "title": "Design a metrics and monitoring system",
+  "category": "Infrastructure",
+  "difficulty": "Hard",
+  "minutes": 45,
+  "prompt": "Design a metrics and monitoring system that collects metrics from servers, stores them, and supports dashboards and alerting.",
+  "assumptions": [
+   "100k hosts each emitting 100 metrics every 10 seconds",
+   "Alerts should fire within 1 minute of a problem",
+   "Keep full-resolution data for 15 days and downsampled for 13 months",
+   "Dashboard queries return in under 1 second"
+  ],
+  "clarifications": [
+   {
+    "topic": "Functional scope",
+    "question": "What features are needed?",
+    "answer": "Metric ingestion, time series storage, query for dashboards, and alerting with notifications. Logs and traces are out of scope."
+   },
+   {
+    "topic": "Scale",
+    "question": "What is the ingest rate?",
+    "answer": "100k hosts x 100 metrics is 10M active series. At one point per 10 s that is 1M data points/s."
+   },
+   {
+    "topic": "Storage",
+    "question": "How much storage?",
+    "answer": "A raw point is about 16 bytes, but time-series compression reaches about 2 bytes. 1M x 86,400 x 2 B is about 170 GB/day compressed; 15 days is about 2.6 TB before replication."
+   },
+   {
+    "topic": "Latency",
+    "question": "What query latency?",
+    "answer": "p99 under 1 s for dashboard queries over the last 24 hours. Longer ranges hit downsampled data."
+   },
+   {
+    "topic": "Alerting",
+    "question": "How do alerts work?",
+    "answer": "Rules evaluated every 30-60 seconds over recent data, with thresholds and duration conditions. Notifications go to on-call tools. Alerts must not be lost."
+   },
+   {
+    "topic": "Collection",
+    "question": "Push or pull?",
+    "answer": "Either is acceptable. Discuss both; assume agents on each host that push to collectors."
+   },
+   {
+    "topic": "Cardinality",
+    "question": "Can users add labels freely?",
+    "answer": "Labels are allowed but high-cardinality labels (user IDs) are rejected or limited, since they explode series count."
+   },
+   {
+    "topic": "Availability",
+    "question": "How available must it be?",
+    "answer": "Ingest and alerting 99.99%. Dashboards can degrade. The monitoring system must not depend on the systems it monitors."
+   }
+  ],
+  "rubric": {
+   "requirements": [
+    "Ingest, store, query, alert",
+    "Non-functional: write throughput, retention, alert timeliness",
+    "Cardinality control",
+    "Independence from monitored infrastructure"
+   ],
+   "estimation": [
+    "100k x 100 = 10M series; /10 s = 1M points/s",
+    "Raw 1M x 16 B = 16 MB/s ~ 1.4 TB/day; compressed (~2 B) ~ 170 GB/day",
+    "15 days ~ 2.6 TB; x3 replicas ~ 8 TB",
+    "Downsampled 1-minute data is 6x fewer points, so 13 months stays manageable"
+   ],
+   "api": [
+    "POST /v1/write batch of (metric, labels, timestamp, value)",
+    "GET /v1/query?expr=&start=&end=&step=",
+    "PUT /v1/alert-rules",
+    "Notification webhooks to pager/chat"
+   ],
+   "dataModel": [
+    "Series id = hash(metric name + labels)",
+    "Time series blocks with delta-of-delta timestamps and XOR-compressed values",
+    "Inverted index from label -> series ids",
+    "Alert rule and state tables"
+   ],
+   "architecture": [
+    "Agents batch and send to collectors behind a load balancer",
+    "Ingest through a queue (Kafka) partitioned by series id",
+    "Time series DB nodes write to a WAL, memory head block and flush to disk blocks",
+    "Query service fans out to shards and merges",
+    "Alert evaluator reads recent data, dedups, routes via notification service; rollup jobs downsample"
+   ],
+   "scaling": [
+    "Shard by series hash, replicate 3x",
+    "Hot data in memory, cold in object storage",
+    "Pre-aggregate common queries",
+    "Limit per-tenant cardinality"
+   ],
+   "tradeoffs": [
+    "Push vs pull collection",
+    "Resolution vs retention vs cost",
+    "Exact vs approximate percentiles in downsampling",
+    "Evaluating alerts on stream vs on stored data"
+   ],
+   "pitfalls": [
+    "Using a general-purpose relational DB for time series",
+    "Unbounded label cardinality",
+    "Alerting depends on the same failing infrastructure",
+    "Averaging percentiles when downsampling"
+   ]
+  },
+  "followups": [
+   "How do you downsample p99 latency without losing correctness?",
+   "What happens to alerting if the storage cluster is down?",
+   "How do you stop one team's high-cardinality metric from hurting everyone?",
+   "How would you detect anomalies instead of using static thresholds?"
+  ]
+ },
+ {
+  "id": "message-queue",
+  "title": "Design a distributed message queue",
+  "category": "Messaging",
+  "difficulty": "Hard",
+  "minutes": 45,
+  "prompt": "Design a distributed message queue where producers publish messages to topics and consumers read them reliably.",
+  "assumptions": [
+   "500k messages per second sustained, 1M at peak",
+   "Messages average 1 KB",
+   "Messages are retained for 3 days",
+   "Replication factor 3"
+  ],
+  "clarifications": [
+   {
+    "topic": "Functional scope",
+    "question": "What does the queue provide?",
+    "answer": "Topics with partitions, publish, consume via consumer groups, and acknowledgements. Stream processing and schema registry are out of scope."
+   },
+   {
+    "topic": "Scale",
+    "question": "What are the throughput numbers?",
+    "answer": "500k msgs/s x 1 KB is 500 MB/s sustained and 1 GB/s at peak, across thousands of topics."
+   },
+   {
+    "topic": "Retention",
+    "question": "How long is data kept?",
+    "answer": "3 days by default, configurable per topic. Consumers can replay from any retained offset."
+   },
+   {
+    "topic": "Delivery guarantee",
+    "question": "What delivery semantics?",
+    "answer": "At-least-once by default. Exactly-once is a stretch goal using idempotent producers and transactions."
+   },
+   {
+    "topic": "Ordering",
+    "question": "What ordering do we guarantee?",
+    "answer": "Strict ordering within a partition. No ordering across partitions. Producers pick the partition via a key."
+   },
+   {
+    "topic": "Latency",
+    "question": "What latency is expected?",
+    "answer": "End-to-end p99 under 20 ms at normal load, with acknowledged writes durable on a quorum."
+   },
+   {
+    "topic": "Durability",
+    "question": "How durable are acked messages?",
+    "answer": "With acks=all, a message survives the loss of any two replicas. It is replicated to in-sync replicas before ack."
+   },
+   {
+    "topic": "Consumers",
+    "question": "How do consumers scale?",
+    "answer": "Each partition is consumed by exactly one consumer in a group, so parallelism equals partition count. Group rebalancing handles membership changes."
+   }
+  ],
+  "rubric": {
+   "requirements": [
+    "Topics, partitions, consumer groups, offsets",
+    "Non-functional: throughput, durability, ordering, replay",
+    "Delivery semantics clarified",
+    "Retention and replay"
+   ],
+   "estimation": [
+    "500k x 1 KB = 500 MB/s avg; 1 GB/s peak",
+    "3 days x 86,400 x 500 MB/s ~ 130 TB; x3 replicas ~ 390 TB",
+    "At ~10 MB/s per partition, peak 1 GB/s needs 100+ partitions (use several hundred across topics)",
+    "390 TB / 8 TB per broker ~ 50 brokers"
+   ],
+   "api": [
+    "produce(topic, key, value, acks) -> offset",
+    "poll(topic, group, max) -> messages",
+    "commit(group, topic, partition, offset)",
+    "Admin: create topic, partitions, retention"
+   ],
+   "dataModel": [
+    "Partition log: append-only segment files with sparse offset index",
+    "Metadata: topic -> partitions -> leader and replicas",
+    "Consumer group offsets stored in an internal topic",
+    "Segment files rolled by size/time and deleted by retention"
+   ],
+   "architecture": [
+    "Brokers host partition replicas; one leader serves reads and writes",
+    "Followers replicate; ISR set decides commit point",
+    "Controller (via Raft/ZooKeeper-like quorum) manages metadata and leader election",
+    "Sequential disk writes, page cache and zero-copy sends for throughput",
+    "Consumer group coordinator handles rebalances"
+   ],
+   "scaling": [
+    "Add partitions and brokers; reassign partitions",
+    "Batching and compression at producers",
+    "Rack-aware replica placement",
+    "Tiered storage for older segments"
+   ],
+   "tradeoffs": [
+    "Higher acks lowers loss risk but raises latency",
+    "More partitions raise parallelism but also overhead and rebalance time",
+    "At-least-once with idempotent consumers vs exactly-once cost",
+    "Pull-based consumers vs push"
+   ],
+   "pitfalls": [
+    "Treating the queue like a random-access database",
+    "Assuming global ordering",
+    "Ignoring leader failover and data loss window",
+    "One partition per topic limiting throughput"
+   ]
+  },
+  "followups": [
+   "What happens to in-flight messages when a partition leader crashes?",
+   "How do you implement exactly-once delivery?",
+   "How does a consumer group rebalance without long pauses?",
+   "How do you handle a hot partition caused by a skewed key?"
+  ]
+ },
+ {
+  "id": "api-gateway",
+  "title": "Design an API gateway",
+  "category": "Infrastructure",
+  "difficulty": "Medium",
+  "minutes": 35,
+  "prompt": "Design an API gateway that sits in front of many backend services and handles routing, authentication and traffic control for external clients.",
+  "assumptions": [
+   "50k requests per second at peak",
+   "200 backend services",
+   "Added latency under 10 ms at p99",
+   "99.99% availability"
+  ],
+  "clarifications": [
+   {
+    "topic": "Functional scope",
+    "question": "What does the gateway do?",
+    "answer": "Routing to backend services, authentication (JWT/API key), rate limiting, TLS termination, request/response transformation, and observability. Business logic is out of scope."
+   },
+   {
+    "topic": "Scale",
+    "question": "How much traffic?",
+    "answer": "50k req/s at peak, 15k/s on average, across 200 services with very different traffic."
+   },
+   {
+    "topic": "Latency",
+    "question": "How much overhead can the gateway add?",
+    "answer": "Under 10 ms p99, and under 2 ms for the routing step itself."
+   },
+   {
+    "topic": "Config",
+    "question": "How are routes configured?",
+    "answer": "Declaratively through a control plane. Changes propagate to all gateways within 30 seconds without restarts."
+   },
+   {
+    "topic": "Resilience",
+    "question": "What resilience features are needed?",
+    "answer": "Timeouts, retries with budgets for idempotent calls, circuit breakers, and load shedding per backend."
+   },
+   {
+    "topic": "Auth",
+    "question": "How is authentication done?",
+    "answer": "Validate JWT signatures locally using cached public keys. API keys are looked up in a cache backed by a store. Fine-grained authorization stays in services."
+   },
+   {
+    "topic": "Deployment",
+    "question": "How is the gateway deployed?",
+    "answer": "Multiple stateless instances across 3 availability zones behind a layer-4 load balancer."
+   },
+   {
+    "topic": "Protocols",
+    "question": "Which protocols?",
+    "answer": "HTTP/1.1, HTTP/2 and gRPC pass-through. WebSocket proxying is a stretch goal."
+   }
+  ],
+  "rubric": {
+   "requirements": [
+    "Routing, auth, rate limit, TLS, observability",
+    "Non-functional: low added latency, high availability",
+    "Control plane vs data plane separation",
+    "Resilience features"
+   ],
+   "estimation": [
+    "50k req/s peak; at ~10k rps per instance need 5, run ~15 across 3 AZs for N+2",
+    "Each request header/metadata logging ~ 500 B: 25 MB/s of access logs",
+    "JWT verification ~ 50 microseconds with cached keys",
+    "Connections: keep-alive pools to 200 services, thousands of connections per instance"
+   ],
+   "api": [
+    "Public: the same paths as backend APIs, routed by prefix or host",
+    "Control plane: PUT /routes/{id}, PUT /policies/{id}",
+    "Standard headers: X-Request-Id, X-RateLimit-*",
+    "Health endpoint for the load balancer"
+   ],
+   "dataModel": [
+    "Route table: match rules -> upstream, timeouts, policies",
+    "Consumer/API key records and plans",
+    "Rate limit counters (shared store)",
+    "Config versions with rollout state"
+   ],
+   "architecture": [
+    "Layer-4 LB -> stateless gateway cluster",
+    "Data plane filter chain: TLS, auth, rate limit, routing, retry, metrics",
+    "Control plane stores config and pushes to gateways",
+    "Service discovery for upstream instances",
+    "Centralized tracing and metrics"
+   ],
+   "scaling": [
+    "Scale gateway instances horizontally",
+    "Local rate limit counters synchronized with a shared store",
+    "Cache auth keys and tokens",
+    "Separate gateway pools per tenant or criticality"
+   ],
+   "tradeoffs": [
+    "Single shared gateway vs per-team gateways",
+    "Central auth at gateway vs in each service",
+    "Retries improve success but can amplify load",
+    "Pushing config vs pulling it"
+   ],
+   "pitfalls": [
+    "Making the gateway a single point of failure",
+    "Putting business logic into the gateway",
+    "Unbounded retries causing retry storms",
+    "Calling the auth service synchronously for every request"
+   ]
+  },
+  "followups": [
+   "How do you roll out a bad route change safely and roll it back fast?",
+   "How do you stop one slow backend from exhausting gateway resources?",
+   "How would you implement canary routing for a service?",
+   "How do you avoid the gateway becoming a bottleneck for large uploads?"
+  ]
+ },
+ {
+  "id": "leaderboard",
+  "title": "Design a real-time leaderboard",
+  "category": "Realtime",
+  "difficulty": "Medium",
+  "minutes": 35,
+  "prompt": "Design a real-time leaderboard for an online game that shows the top players and each player's own rank.",
+  "assumptions": [
+   "50M players",
+   "Up to 100k score updates per second at peak",
+   "50k rank lookups per second",
+   "Top 100 must reflect scores within 1 second"
+  ],
+  "clarifications": [
+   {
+    "topic": "Functional scope",
+    "question": "What does the leaderboard support?",
+    "answer": "Submit or increment a score, get the top N players, get a player's rank and score, and view the players ranked around them. Seasonal resets are included."
+   },
+   {
+    "topic": "Scale",
+    "question": "What is the load?",
+    "answer": "50M players, about 20k score updates/s on average and 100k/s at peak, plus 50k rank queries/s."
+   },
+   {
+    "topic": "Freshness",
+    "question": "How real-time must it be?",
+    "answer": "Top-100 and own rank must be accurate within 1 second."
+   },
+   {
+    "topic": "Ties",
+    "question": "How are ties handled?",
+    "answer": "Tie-break by earliest time the score was achieved."
+   },
+   {
+    "topic": "Seasons",
+    "question": "How often does the board reset?",
+    "answer": "Monthly seasons. Old seasons are archived and read-only."
+   },
+   {
+    "topic": "Scope",
+    "question": "Global only?",
+    "answer": "Global, plus per-country and friends leaderboards as an extension. Assume one score per player per season."
+   },
+   {
+    "topic": "Consistency",
+    "question": "Can ranks be approximate?",
+    "answer": "Exact for the top 1,000. For deep ranks (beyond 1M) an approximate rank is acceptable."
+   },
+   {
+    "topic": "Durability",
+    "question": "Can we lose scores?",
+    "answer": "No. The sorted structure is a derived view, while durable score events are the source of truth."
+   }
+  ],
+  "rubric": {
+   "requirements": [
+    "Update score, top N, own rank, neighbors, seasons",
+    "Non-functional: low latency reads, high write rate, freshness",
+    "Tie-break and consistency policy",
+    "Durability of source of truth"
+   ],
+   "estimation": [
+    "100k updates/s peak, 50k rank reads/s",
+    "Sorted set entry ~ 64 B x 50M ~ 3.2 GB for one board; fits in memory",
+    "A Redis sorted set does ~100k ops/s per node; use sharding or write batching for peak",
+    "Rank query is O(log N); top-K is O(log N + K)"
+   ],
+   "api": [
+    "POST /v1/scores {playerId, score}",
+    "GET /v1/leaderboard/top?limit=100",
+    "GET /v1/leaderboard/rank/{playerId}",
+    "GET /v1/leaderboard/around/{playerId}?range=10"
+   ],
+   "dataModel": [
+    "Sorted set per season: member = playerId, score = value (with timestamp tie-break encoded)",
+    "Durable score table or event log in a database",
+    "Player profile cache for names/avatars",
+    "Archived season snapshots"
+   ],
+   "architecture": [
+    "Game servers publish score events to a queue",
+    "Leaderboard writer updates the in-memory sorted set and appends to durable storage",
+    "Read API serves top-N from a cached view and rank from the sorted set",
+    "Replicas for read scaling; rebuild from the log on failure",
+    "Cron job rotates seasons and archives"
+   ],
+   "scaling": [
+    "Shard by score range for huge boards; global rank = sum of counts in higher shards",
+    "Cache top-100 for 1 s to absorb read bursts",
+    "Batch updates to reduce write ops",
+    "Separate boards per region merged periodically"
+   ],
+   "tradeoffs": [
+    "Exact rank everywhere vs approximate deep ranks",
+    "Single sorted set simple but limited vs sharded complexity",
+    "Write-through durability vs speed",
+    "SQL ORDER BY is simple but too slow at this scale"
+   ],
+   "pitfalls": [
+    "Running ORDER BY and COUNT on a relational table per request",
+    "Scanning all players to compute rank",
+    "No durable log, so a cache loss destroys data",
+    "Ignoring ties"
+   ]
+  },
+  "followups": [
+   "How would you shard the leaderboard across servers and still compute exact rank?",
+   "How do you recover the sorted set after a crash?",
+   "How would you build per-friend leaderboards?",
+   "How would you handle a tournament finale where 5M players update scores in one minute?"
+  ]
+ },
+ {
+  "id": "hotel-booking",
+  "title": "Design a hotel booking system",
+  "category": "Commerce",
+  "difficulty": "Medium",
+  "minutes": 40,
+  "prompt": "Design a hotel booking system where users search for hotels, check room availability for their dates and reserve a room.",
+  "assumptions": [
+   "500k hotels with a total of 50M rooms",
+   "1M bookings per day",
+   "Search traffic is 100x bookings",
+   "Reservations must never exceed room inventory"
+  ],
+  "clarifications": [
+   {
+    "topic": "Functional scope",
+    "question": "What are the main flows?",
+    "answer": "Search hotels by location, dates and guests; view room availability and price; book; cancel. Reviews and loyalty are out of scope."
+   },
+   {
+    "topic": "Scale",
+    "question": "What are the volumes?",
+    "answer": "1M bookings/day is about 12/s average and 50/s at peak. Searches at 100x are 100M/day, about 1.2k/s average and 5k/s at peak."
+   },
+   {
+    "topic": "Inventory",
+    "question": "How is availability modeled?",
+    "answer": "Per hotel, room type and date. Hotels have about 10 room types, and we expose 365 days ahead, so about 1.8B inventory rows."
+   },
+   {
+    "topic": "Consistency",
+    "question": "What consistency is needed?",
+    "answer": "Booking must be strongly consistent per room type and date, with no overselling. Search results can be a few minutes stale."
+   },
+   {
+    "topic": "Payment",
+    "question": "When is the customer charged?",
+    "answer": "Pay at checkout through a PSP, or pay at the property. The reservation holds inventory for 10 minutes during checkout."
+   },
+   {
+    "topic": "Overbooking",
+    "question": "Do hotels overbook?",
+    "answer": "Not by default. A configurable overbooking percentage per hotel is a stretch goal."
+   },
+   {
+    "topic": "Cancellation",
+    "question": "How do cancellations work?",
+    "answer": "Free cancellation until a deadline defined per rate plan. Cancelling restores inventory immediately."
+   },
+   {
+    "topic": "Idempotency",
+    "question": "What if the user double-clicks book?",
+    "answer": "The booking request carries an idempotency key; duplicates return the original result."
+   }
+  ],
+  "rubric": {
+   "requirements": [
+    "Search, availability, book, cancel",
+    "Non-functional: no overbooking, read-heavy search",
+    "Inventory granularity per room type and date",
+    "Hold during checkout"
+   ],
+   "estimation": [
+    "1M/day ~ 12/s avg, ~50/s peak bookings; search 100M/day ~ 1.2k/s, 5k/s peak",
+    "Inventory rows 500k x 10 x 365 ~ 1.8B x ~50 B ~ 90 GB",
+    "Booking record ~ 1 KB: 1 GB/day",
+    "Search needs a geo and attribute index, not a SQL scan"
+   ],
+   "api": [
+    "GET /v1/hotels/search?location=&checkIn=&checkOut=&guests=",
+    "GET /v1/hotels/{id}/availability",
+    "POST /v1/reservations {roomTypeId, dates, idempotencyKey}",
+    "DELETE /v1/reservations/{id}"
+   ],
+   "dataModel": [
+    "room_inventory(hotel_id, room_type, date, total, reserved)",
+    "reservation(id, user, hotel, room_type, dates, status)",
+    "Hotel catalog with geo coordinates",
+    "Search index (Elasticsearch-like) denormalized from catalog and inventory"
+   ],
+   "architecture": [
+    "Search service queries the search index with geo filters, then checks availability from a cache",
+    "Reservation service runs a transaction: check reserved < total for each night and increment",
+    "Hold with expiry, then confirm after payment",
+    "Events update the search index asynchronously",
+    "Payment saga with compensation on failure"
+   ],
+   "scaling": [
+    "Shard inventory by hotel id",
+    "Cache availability aggregates with short TTL",
+    "Read replicas for catalog",
+    "Scale search index horizontally"
+   ],
+   "tradeoffs": [
+    "Strong consistency in booking vs staleness in search",
+    "Pessimistic locking vs optimistic version check",
+    "Row-per-date inventory vs availability intervals",
+    "Overbooking vs customer experience"
+   ],
+   "pitfalls": [
+    "Checking availability in the application and then writing",
+    "Searching availability with a heavy SQL join",
+    "Ignoring multi-night bookings where one night fails",
+    "No idempotency on booking"
+   ]
+  },
+  "followups": [
+   "How do you atomically reserve a 5-night stay when each night is a separate row?",
+   "How do you keep search results fresh after bookings?",
+   "How would you support overbooking safely?",
+   "How would you handle a flash sale on one city?"
+  ]
+ },
+ {
+  "id": "collaborative-docs",
+  "title": "Design a collaborative document editor",
+  "category": "Realtime",
+  "difficulty": "Hard",
+  "minutes": 45,
+  "prompt": "Design a collaborative document editor where multiple users edit the same document simultaneously and see each other's changes in real time.",
+  "assumptions": [
+   "10M daily active users",
+   "500k concurrent editors at peak, about 1 operation per second each",
+   "Remote edits appear within 200 ms",
+   "Up to 100 concurrent editors per document, typically 2 to 5"
+  ],
+  "clarifications": [
+   {
+    "topic": "Functional scope",
+    "question": "What does the editor support?",
+    "answer": "Rich text editing, real-time collaboration, cursor and presence indicators, version history and offline editing. Comments and suggestions are out of scope."
+   },
+   {
+    "topic": "Scale",
+    "question": "What is the load?",
+    "answer": "500k concurrent editors x 1 op/s is 500k ops/s at peak, mostly small operations of about 100 bytes, so around 50 MB/s."
+   },
+   {
+    "topic": "Latency",
+    "question": "How fast must edits propagate?",
+    "answer": "Under 200 ms p95 between collaborators in the same region."
+   },
+   {
+    "topic": "Conflict handling",
+    "question": "What guarantee do we need on concurrent edits?",
+    "answer": "All clients must converge to the same document without losing intent. Use Operational Transformation or CRDTs."
+   },
+   {
+    "topic": "Document size",
+    "question": "How large are documents?",
+    "answer": "Up to 1M characters (about 1.5 MB) and typically under 100 KB."
+   },
+   {
+    "topic": "Offline",
+    "question": "Is offline editing required?",
+    "answer": "Yes. Edits made offline are merged on reconnect without data loss."
+   },
+   {
+    "topic": "History",
+    "question": "How long is version history kept?",
+    "answer": "All changes for 30 days, then periodic snapshots indefinitely."
+   },
+   {
+    "topic": "Permissions",
+    "question": "How is access controlled?",
+    "answer": "Owner, editor, commenter, viewer roles checked on connect and on each operation."
+   }
+  ],
+  "rubric": {
+   "requirements": [
+    "Real-time edit, presence, history, offline",
+    "Non-functional: low latency, convergence, durability",
+    "Clarify OT vs CRDT choice",
+    "Access control"
+   ],
+   "estimation": [
+    "500k ops/s peak x 100 B = 50 MB/s",
+    "Each op appended to a log: 500k x 86,400 x 100 B worst case ~ 4 TB/day, realistically far lower due to average load",
+    "Per-document server holds the document in memory: 1.5 MB x docs in memory",
+    "WebSocket connections: 500k at ~50k each ~ 10-20 servers"
+   ],
+   "api": [
+    "WebSocket /v1/docs/{id}/session carrying operations, presence and acks",
+    "GET /v1/docs/{id} snapshot at revision",
+    "GET /v1/docs/{id}/history",
+    "POST /v1/docs/{id}/share"
+   ],
+   "dataModel": [
+    "Operation log per document ordered by revision",
+    "Periodic snapshots (every N ops)",
+    "Document metadata and ACL",
+    "Presence kept in memory only"
+   ],
+   "architecture": [
+    "Clients connect over WebSocket to a collaboration server that owns the document (sticky by doc id)",
+    "Server orders operations (OT) or merges CRDT updates and broadcasts to all clients",
+    "Operations appended to a durable log, snapshots written periodically",
+    "Routing layer maps doc id to server via consistent hashing",
+    "Clients keep a local copy with optimistic apply"
+   ],
+   "scaling": [
+    "Shard documents across collaboration servers",
+    "Compact logs into snapshots",
+    "Presence via a lightweight pub/sub",
+    "Move a document to another server when load shifts"
+   ],
+   "tradeoffs": [
+    "OT needs a central server but is compact; CRDT is decentralized but has metadata overhead",
+    "Strong ordering by one server vs peer-to-peer",
+    "Snapshot frequency vs replay cost",
+    "Optimistic local apply vs waiting for server ack"
+   ],
+   "pitfalls": [
+    "Last-write-wins for the whole document",
+    "Locking paragraphs or the whole document",
+    "Sending the full document on every keystroke",
+    "Ignoring reconnect and missed operations"
+   ]
+  },
+  "followups": [
+   "How would you resolve two users inserting at the same position simultaneously?",
+   "What happens if the collaboration server for a document crashes mid-session?",
+   "How would you implement version history and restore?",
+   "How would you support a document with 1,000 concurrent viewers?"
+  ]
+ },
+ {
+  "id": "llm-chat-service",
+  "title": "Design an LLM chat service",
+  "category": "AI",
+  "difficulty": "Hard",
+  "minutes": 45,
+  "prompt": "Design a chat service where users hold conversations with a large language model and see responses streamed token by token.",
+  "assumptions": [
+   "20M daily active users sending 10 messages each",
+   "Average prompt of 2,000 tokens including history and response of 500 tokens",
+   "First token within 1 second",
+   "Streaming speed of about 50 tokens per second per user"
+  ],
+  "clarifications": [
+   {
+    "topic": "Functional scope",
+    "question": "What features are included?",
+    "answer": "Multi-turn conversations with saved history, streamed responses, stop generation, and regenerate. Tools, file uploads and fine-tuning are out of scope."
+   },
+   {
+    "topic": "Scale",
+    "question": "What is the request rate?",
+    "answer": "20M x 10 = 200M requests/day, about 2.3k/s average and 7k/s at peak."
+   },
+   {
+    "topic": "Token volume",
+    "question": "How many tokens do we generate?",
+    "answer": "200M x 500 = 100B output tokens/day, about 1.16M tokens/s average and 3.5M at peak. Assume one GPU sustains about 2,500 output tokens/s with continuous batching."
+   },
+   {
+    "topic": "Concurrency",
+    "question": "How many streams are active at once?",
+    "answer": "A response lasts about 10 s, so 2.3k/s x 10 s is about 23k concurrent streams on average and about 70k at peak."
+   },
+   {
+    "topic": "Latency",
+    "question": "What latency targets?",
+    "answer": "Time to first token under 1 s at p95, then about 50 tokens/s."
+   },
+   {
+    "topic": "History",
+    "question": "How is conversation history stored?",
+    "answer": "Each conversation is stored durably and loaded on each turn. The prompt is truncated or summarized to fit a 32k token context."
+   },
+   {
+    "topic": "Capacity",
+    "question": "What if demand exceeds GPU capacity?",
+    "answer": "Queue with admission control, prioritize paid users, and return a clear busy message rather than timing out."
+   },
+   {
+    "topic": "Safety",
+    "question": "Do we apply moderation?",
+    "answer": "Yes, input and output filters run as lightweight classifiers. Their design is out of scope but they must not add more than 100 ms."
+   }
+  ],
+  "rubric": {
+   "requirements": [
+    "Chat, history, streaming, stop, regenerate",
+    "Non-functional: time to first token, throughput, cost",
+    "GPU capacity awareness",
+    "Moderation hook"
+   ],
+   "estimation": [
+    "200M req/day ~ 2.3k/s avg, ~7k/s peak",
+    "Output: 100B tokens/day ~ 1.16M tokens/s avg; at 2.5k tok/s per GPU ~ 460 GPUs avg, ~1,400 at peak",
+    "Concurrent streams: 2.3k x 10 s ~ 23k avg, ~70k peak",
+    "Storage: 200M x ~3 KB = 600 GB/day of conversation text"
+   ],
+   "api": [
+    "POST /v1/conversations/{id}/messages with SSE streaming response",
+    "POST /v1/conversations/{id}/stop",
+    "GET /v1/conversations and GET /v1/conversations/{id}",
+    "DELETE /v1/conversations/{id}"
+   ],
+   "dataModel": [
+    "conversation(id, user, title, updated_at)",
+    "message(id, conversation_id, role, content, tokens, ts)",
+    "Usage and quota counters per user",
+    "KV cache entries keyed by prompt prefix (in inference layer)"
+   ],
+   "architecture": [
+    "API gateway with auth, quota, rate limiting",
+    "Chat service loads history, builds the prompt, calls the inference router",
+    "Inference router sends requests to GPU pools with continuous batching, streams tokens back over SSE",
+    "Prefix/KV caching reuses the computation of shared conversation prefixes",
+    "Message persisted when the stream completes; moderation on input and output"
+   ],
+   "scaling": [
+    "Autoscale GPU replicas on queue depth",
+    "Separate pools by model and by priority",
+    "Route requests with affinity to maximize KV cache hits",
+    "Use smaller models or quantization for cheap tiers"
+   ],
+   "tradeoffs": [
+    "Batch size raises throughput but increases latency",
+    "Longer context raises quality and cost",
+    "Dedicated vs shared GPU capacity",
+    "Streaming adds connection cost but improves perceived latency"
+   ],
+   "pitfalls": [
+    "Waiting for the full response before returning",
+    "One request per GPU with no batching",
+    "Resending and storing the full history inefficiently each turn",
+    "No back-pressure when GPUs saturate"
+   ]
+  },
+  "followups": [
+   "How do you keep time to first token low during traffic spikes?",
+   "How would you use prefix caching across turns of the same conversation?",
+   "What happens to in-flight streams when a GPU node fails?",
+   "How would you reduce cost per token by 2x without hurting quality?"
+  ]
+ },
+ {
+  "id": "rag-pipeline",
+  "title": "Design a retrieval-augmented generation (RAG) system",
+  "category": "AI",
+  "difficulty": "Hard",
+  "minutes": 45,
+  "prompt": "Design a retrieval-augmented generation (RAG) system that answers questions over a company's private documents using an LLM.",
+  "assumptions": [
+   "10M documents, about 200M chunks of roughly 500 tokens",
+   "500 queries per second at peak",
+   "End-to-end answer latency under 4 seconds at p95",
+   "New or updated documents searchable within 5 minutes"
+  ],
+  "clarifications": [
+   {
+    "topic": "Functional scope",
+    "question": "What does the system do?",
+    "answer": "Ingest documents, index them, answer natural-language questions with citations to source passages. Fine-tuning models is out of scope."
+   },
+   {
+    "topic": "Scale",
+    "question": "How large is the corpus?",
+    "answer": "10M documents averaging 5 pages, split into about 200M chunks. A 1024-dimension float32 embedding is 4 KB, so about 800 GB of raw vectors."
+   },
+   {
+    "topic": "Query load",
+    "question": "How much traffic?",
+    "answer": "About 100 queries/s on average and 500/s at peak."
+   },
+   {
+    "topic": "Latency",
+    "question": "What is the budget?",
+    "answer": "4 s p95 end to end: retrieval and reranking under 500 ms, the rest is LLM generation with streaming."
+   },
+   {
+    "topic": "Freshness",
+    "question": "How do updates flow?",
+    "answer": "Ingest handles about 100k new or changed documents/day, and they must be queryable within 5 minutes. Deletions must take effect within minutes."
+   },
+   {
+    "topic": "Access control",
+    "question": "Do users see everything?",
+    "answer": "No. Documents have ACLs, and retrieval must only return chunks the user may read. This is a hard requirement."
+   },
+   {
+    "topic": "Quality",
+    "question": "How is quality measured?",
+    "answer": "Retrieval recall at k, answer faithfulness (grounded in sources), and user feedback. Answers must cite sources and say when the context is insufficient."
+   },
+   {
+    "topic": "Data types",
+    "question": "Which formats?",
+    "answer": "PDF, Word, HTML and plain text. Tables and images are stretch goals."
+   }
+  ],
+  "rubric": {
+   "requirements": [
+    "Ingest, retrieve, generate with citations",
+    "Non-functional: latency, freshness, ACL enforcement",
+    "Quality metrics for retrieval and grounding",
+    "Corpus size and update rate"
+   ],
+   "estimation": [
+    "10M docs x 20 chunks = 200M chunks",
+    "200M x 4 KB = 800 GB vectors; with 8-bit quantization ~200 GB, or PQ smaller",
+    "Ingest: 100k docs/day x 20 chunks = 2M embeddings/day ~ 23/s, easy",
+    "LLM prompt: top 8 chunks x 500 tokens = 4k tokens context per query"
+   ],
+   "api": [
+    "POST /v1/ask {question, filters} streams answer with citations",
+    "POST /v1/documents upload or connector sync",
+    "DELETE /v1/documents/{id}",
+    "POST /v1/feedback"
+   ],
+   "dataModel": [
+    "Chunk table: id, doc_id, text, metadata, ACL ids",
+    "Vector index (ANN, e.g. HNSW/IVF) with metadata filters",
+    "Keyword index (BM25) for hybrid search",
+    "Document registry with version and ingest status"
+   ],
+   "architecture": [
+    "Ingestion: parse, clean, chunk, embed, write to vector and keyword indexes via a queue",
+    "Query: rewrite query, embed, hybrid retrieve with ACL filter, rerank with a cross-encoder",
+    "Prompt builder packs top chunks and instructions, calls LLM with streaming",
+    "Response includes citations and a fallback if no good context",
+    "Caching of embeddings and frequent answers"
+   ],
+   "scaling": [
+    "Shard the vector index by document/tenant; replicate for QPS",
+    "Quantize vectors to cut memory",
+    "Autoscale embedding workers",
+    "Cache query embeddings and results"
+   ],
+   "tradeoffs": [
+    "Chunk size: small gives precision, large gives context",
+    "Hybrid retrieval and reranking raise quality but add latency",
+    "ANN recall vs speed",
+    "Larger context window vs cost and distraction"
+   ],
+   "pitfalls": [
+    "Ignoring ACLs, leaking restricted data",
+    "Fixed-size chunking that splits sentences or tables",
+    "Dense-only retrieval missing exact terms",
+    "No evaluation set or hallucination handling"
+   ]
+  },
+  "followups": [
+   "How do you enforce document-level permissions in the ANN search efficiently?",
+   "How do you evaluate and improve retrieval quality over time?",
+   "How do you handle a document that is updated or deleted?",
+   "How would you reduce hallucinations when retrieval returns nothing relevant?"
+  ]
+ },
+ {
+  "id": "pastebin",
+  "title": "Design a paste sharing service",
+  "category": "Storage",
+  "difficulty": "Easy",
+  "minutes": 30,
+  "prompt": "Design a paste sharing service where users store snippets of text and share them through a short link.",
+  "assumptions": [
+   "1M new pastes per day",
+   "Reads outnumber writes 10 to 1",
+   "Pastes average 10 KB with a 10 MB maximum",
+   "Pastes expire after a user-chosen time, default 1 year"
+  ],
+  "clarifications": [
+   {
+    "topic": "Functional scope",
+    "question": "What does the service do?",
+    "answer": "Create a paste, get a short URL, view it, optionally set expiry and visibility (public, unlisted). Accounts and editing are out of scope."
+   },
+   {
+    "topic": "Scale",
+    "question": "What traffic?",
+    "answer": "1M pastes/day is about 12 writes/s. With 10:1 reads, about 120 reads/s average and 400/s at peak."
+   },
+   {
+    "topic": "Storage",
+    "question": "How much storage?",
+    "answer": "1M x 10 KB is 10 GB/day, about 3.65 TB/year. Over 5 years that is about 18 TB."
+   },
+   {
+    "topic": "Short key",
+    "question": "How are links generated?",
+    "answer": "8-character base62 key, which yields 62^8 combinations, about 218 trillion. Keys are random so they are not guessable."
+   },
+   {
+    "topic": "Expiry",
+    "question": "What happens at expiry?",
+    "answer": "The paste becomes unavailable immediately, and the data is deleted by a background job within a day."
+   },
+   {
+    "topic": "Latency",
+    "question": "What latency is expected?",
+    "answer": "Reads under 200 ms p99. Creates under 500 ms."
+   },
+   {
+    "topic": "Availability",
+    "question": "How available must it be?",
+    "answer": "99.9% is enough for this product."
+   },
+   {
+    "topic": "Abuse",
+    "question": "Do we worry about abuse?",
+    "answer": "Basic per-IP rate limiting and a size cap. Malware or content scanning is out of scope."
+   }
+  ],
+  "rubric": {
+   "requirements": [
+    "Create, read, expiry, visibility",
+    "Non-functional: simple, durable, modest availability",
+    "Key generation approach",
+    "Abuse controls"
+   ],
+   "estimation": [
+    "1M/day ~ 12 writes/s; reads ~120/s avg, ~400/s peak",
+    "10 GB/day, 3.65 TB/year, ~18 TB over 5 years",
+    "Key space 62^8 ~ 2.2e14 vs ~1.8B pastes over 5 years: collisions negligible",
+    "Metadata ~ 200 B x 1M = 200 MB/day"
+   ],
+   "api": [
+    "POST /v1/pastes {content, expiresIn, visibility} returns {key, url}",
+    "GET /v1/pastes/{key} returns content",
+    "DELETE /v1/pastes/{key} with a delete token",
+    "Rate limit headers"
+   ],
+   "dataModel": [
+    "paste metadata(key PK, size, created_at, expires_at, visibility, blob_ref)",
+    "Content stored in object storage keyed by blob_ref",
+    "Optional cache for hot pastes",
+    "Expiry index for cleanup"
+   ],
+   "architecture": [
+    "Stateless API behind a load balancer",
+    "Key generation service pre-generates random keys (key-generation DB) or uses random with collision check",
+    "Metadata in a key-value or SQL store, content in object storage",
+    "CDN/cache in front of reads for popular pastes",
+    "Cleanup worker deletes expired items"
+   ],
+   "scaling": [
+    "Shard metadata by key hash",
+    "Cache hot pastes in Redis/CDN",
+    "Object storage scales horizontally",
+    "Replicate across zones"
+   ],
+   "tradeoffs": [
+    "Store content in the DB vs object storage",
+    "Pre-generated keys vs random with retry",
+    "Lazy expiry vs active deletion",
+    "CDN caching vs freshness on delete"
+   ],
+   "pitfalls": [
+    "Storing large blobs inside the relational table",
+    "Sequential, guessable keys exposing private pastes",
+    "Never cleaning expired data",
+    "Over-engineering for scale this small"
+   ]
+  },
+  "followups": [
+   "How would you pre-generate keys safely across multiple servers?",
+   "How would you delete expired pastes without scanning the entire table?",
+   "How would you support private pastes with passwords?",
+   "How would the design change at 100x the traffic?"
+  ]
+ },
+ {
+  "id": "unique-id-generator",
+  "title": "Design a distributed unique ID generator",
+  "category": "Infrastructure",
+  "difficulty": "Medium",
+  "minutes": 30,
+  "prompt": "Design a distributed service that generates unique, roughly time-sortable 64-bit IDs for many applications.",
+  "assumptions": [
+   "100k IDs per second overall, peaking at 1M per second",
+   "1,000 application servers need IDs",
+   "IDs fit in 64 bits and sort roughly by time",
+   "No coordination on the hot path for each ID"
+  ],
+  "clarifications": [
+   {
+    "topic": "Functional scope",
+    "question": "What properties must the IDs have?",
+    "answer": "Globally unique, 64-bit integers, roughly increasing with time. Strict global ordering is not required."
+   },
+   {
+    "topic": "Scale",
+    "question": "What throughput?",
+    "answer": "100k IDs/s average, 1M/s at peak, across 1,000 servers."
+   },
+   {
+    "topic": "Latency",
+    "question": "How fast must generation be?",
+    "answer": "Under 1 ms, ideally in-process with no network call."
+   },
+   {
+    "topic": "Availability",
+    "question": "What if part of the system fails?",
+    "answer": "ID generation must keep working if the coordination service is down, as long as workers already hold a worker identity."
+   },
+   {
+    "topic": "Ordering",
+    "question": "Do IDs need strict ordering?",
+    "answer": "No. Roughly time-ordered (within a few ms) is enough, e.g. for sorting posts by id."
+   },
+   {
+    "topic": "Lifetime",
+    "question": "How long should the scheme last?",
+    "answer": "At least 69 years, using a custom epoch."
+   },
+   {
+    "topic": "Clock",
+    "question": "What do we assume about clocks?",
+    "answer": "NTP-synchronized clocks that may drift or step backward by tens of milliseconds. The design must handle backward clock movement safely."
+   },
+   {
+    "topic": "Predictability",
+    "question": "Do IDs need to be unguessable?",
+    "answer": "No. Public exposure of sequential IDs is acceptable for this use."
+   }
+  ],
+  "rubric": {
+   "requirements": [
+    "Unique, 64-bit, time-sortable",
+    "Non-functional: no hot-path coordination, high throughput",
+    "Clock drift handling",
+    "Lifetime requirement"
+   ],
+   "estimation": [
+    "41 bits timestamp in ms ~ 2^41 ms ~ 69.7 years",
+    "10 bits worker id = 1,024 workers",
+    "12 bits sequence = 4,096 IDs per ms per worker ~ 4M IDs/s per worker",
+    "1M/s peak across 1,000 workers = 1k/s each, far under 4M/s capacity"
+   ],
+   "api": [
+    "generateId() in-process library call or GET /v1/id over RPC",
+    "Batch: GET /v1/ids?count=100",
+    "Decode helper: id -> timestamp, worker",
+    "Admin: assign worker id"
+   ],
+   "dataModel": [
+    "ID layout: sign bit | 41-bit timestamp | 10-bit worker id | 12-bit sequence",
+    "Worker id registry in ZooKeeper/etcd with leases",
+    "Last timestamp and sequence kept in memory per worker",
+    "Custom epoch constant"
+   ],
+   "architecture": [
+    "Snowflake-style generator embedded as a library or small service",
+    "Worker id assigned at startup from a coordination service, with a lease",
+    "Sequence resets each millisecond; if exhausted, wait for the next ms",
+    "Clock regression: refuse to issue or wait until the clock catches up",
+    "Alternatives: UUID, DB ticket servers, Redis INCR, ULID"
+   ],
+   "scaling": [
+    "Add more workers up to the 1,024 limit",
+    "Rebalance bit allocation if needed (more worker bits, fewer sequence bits)",
+    "Datacenter bits for multi-region",
+    "Each worker is independent, so scaling is linear"
+   ],
+   "tradeoffs": [
+    "Snowflake vs UUID (128-bit, no ordering) vs DB auto-increment (single bottleneck)",
+    "Time-sortable leaks creation time",
+    "Clock dependence vs coordination",
+    "Bits allocated to worker vs sequence"
+   ],
+   "pitfalls": [
+    "Ignoring clock moving backward, producing duplicates",
+    "Two workers sharing the same worker id",
+    "A central counter on every request",
+    "Using random numbers without a collision analysis"
+   ]
+  },
+  "followups": [
+   "What happens if the clock moves backward by 50 ms?",
+   "How do you guarantee two processes never get the same worker id?",
+   "How would you support IDs across multiple data centers?",
+   "Why might you avoid exposing these IDs directly to users?"
+  ]
+ },
+ {
+  "id": "distributed-lock",
+  "title": "Design a distributed lock service",
+  "category": "Infrastructure",
+  "difficulty": "Medium",
+  "minutes": 35,
+  "prompt": "Design a distributed lock service that lets processes on different machines get exclusive access to a shared resource.",
+  "assumptions": [
+   "100k lock operations per second",
+   "1M distinct locks",
+   "Default lease of 30 seconds",
+   "Acquire latency under 10 ms"
+  ],
+  "clarifications": [
+   {
+    "topic": "Functional scope",
+    "question": "What operations are offered?",
+    "answer": "acquire(lockName, ttl), release(lockName, token), renew(lockName, token). Read-write locks and semaphores are out of scope."
+   },
+   {
+    "topic": "Scale",
+    "question": "How much load?",
+    "answer": "100k ops/s overall, up to 1M distinct lock names. Lock metadata is about 100 B each, so about 100 MB in total."
+   },
+   {
+    "topic": "Safety",
+    "question": "What is the main safety property?",
+    "answer": "At most one holder at any time. A client that is paused or partitioned must not corrupt the protected resource after its lease ends."
+   },
+   {
+    "topic": "Liveness",
+    "question": "What if a holder crashes?",
+    "answer": "The lease expires after its TTL and the lock becomes available. No manual intervention is needed."
+   },
+   {
+    "topic": "Fencing",
+    "question": "How do we protect the resource?",
+    "answer": "Each acquisition returns a monotonically increasing fencing token. The resource rejects writes carrying a token older than the highest it has seen."
+   },
+   {
+    "topic": "Fairness",
+    "question": "Must waiters be served in order?",
+    "answer": "Not required. FIFO queuing is a nice-to-have through watches."
+   },
+   {
+    "topic": "Availability",
+    "question": "What availability?",
+    "answer": "99.99% via a 5-node consensus cluster tolerating 2 failures."
+   },
+   {
+    "topic": "Scope",
+    "question": "Multi-region?",
+    "answer": "Out of scope. A single region with cross-zone replication."
+   }
+  ],
+  "rubric": {
+   "requirements": [
+    "Acquire, release, renew with leases",
+    "Safety above liveness, clearly argued",
+    "Fencing tokens against stale holders",
+    "Failure and partition behavior"
+   ],
+   "estimation": [
+    "100k ops/s vs a single Raft group at about 10-30k writes/s with batching: shard locks across ~10 groups",
+    "1M locks x 100 B = 100 MB in memory per cluster",
+    "Lease renewals: if 100k holders renew every 10 s, 10k ops/s steady load",
+    "Latency: one Raft round trip across zones ~ 2-5 ms"
+   ],
+   "api": [
+    "acquire(name, ttl) -> {token, fencingToken} or fail/wait",
+    "release(name, token)",
+    "renew(name, token, ttl)",
+    "Optional watch(name) to be notified when free"
+   ],
+   "dataModel": [
+    "lock(name, owner, token, fencing_counter, expires_at)",
+    "Raft log and state machine",
+    "Global or per-lock fencing counter",
+    "Client session records"
+   ],
+   "architecture": [
+    "Replicated state machine on a Raft cluster (like etcd/ZooKeeper/Chubby)",
+    "Leader serializes all lock operations; writes commit on a majority",
+    "Leases and expiry evaluated by the leader's clock",
+    "Clients keep sessions alive with heartbeats and handle lease loss",
+    "Shard lock names across multiple Raft groups for throughput"
+   ],
+   "scaling": [
+    "Shard by lock name hash across Raft groups",
+    "Read-only checks served by followers with caution",
+    "Batch heartbeats per client session",
+    "Clients back off with jitter on contention"
+   ],
+   "tradeoffs": [
+    "Consensus-based locks (strong) vs Redis single-node locks (fast, weaker)",
+    "Short TTL speeds recovery but risks premature loss; long TTL slows it",
+    "Fencing tokens add resource-side complexity",
+    "Fair queues vs thundering herd"
+   ],
+   "pitfalls": [
+    "Believing the lock alone gives safety without fencing",
+    "Relying on client clocks for expiry",
+    "Redis SETNX on a single node as the only guarantee",
+    "Releasing a lock that someone else now owns"
+   ]
+  },
+  "followups": [
+   "A client holds the lock, then pauses for 60 seconds from a GC. What happens when it wakes?",
+   "Why is a plain Redis SETNX lock not safe under failover?",
+   "How would you build a leader election on top of this?",
+   "How do you avoid a thundering herd when a hot lock is released?"
+  ]
+ },
+ {
+  "id": "food-delivery",
+  "title": "Design a food delivery platform",
+  "category": "Commerce",
+  "difficulty": "Hard",
+  "minutes": 45,
+  "prompt": "Design a food delivery platform where customers order from restaurants and couriers deliver the food.",
+  "assumptions": [
+   "5M orders per day with peaks at lunch and dinner about 5x average",
+   "500k restaurants and 300k active couriers",
+   "Couriers send location every 5 seconds",
+   "Delivery in 30 to 45 minutes"
+  ],
+  "clarifications": [
+   {
+    "topic": "Functional scope",
+    "question": "What flows must we support?",
+    "answer": "Browse and search restaurants, place an order and pay, restaurant accepts, courier assignment, live order tracking. Reviews and promotions are out of scope."
+   },
+   {
+    "topic": "Scale",
+    "question": "What are the traffic numbers?",
+    "answer": "5M orders/day is about 58/s average and 300/s at peak. 300k couriers x 1 update per 5 s is 60k location updates/s."
+   },
+   {
+    "topic": "Search",
+    "question": "How heavy is browsing?",
+    "answer": "About 50M browse sessions/day, roughly 600 searches/s on average and 3k/s at peak, filtered by location and cuisine."
+   },
+   {
+    "topic": "Assignment",
+    "question": "How are couriers assigned?",
+    "answer": "After the restaurant accepts, the system picks a courier near the restaurant considering travel time, current load and food prep time. Batching two orders per courier is allowed."
+   },
+   {
+    "topic": "ETA",
+    "question": "How is ETA computed?",
+    "answer": "From prep time estimates plus travel time via a routing service. Updated every minute and shown to the customer."
+   },
+   {
+    "topic": "Consistency",
+    "question": "What must be consistent?",
+    "answer": "Order state and payment are strongly consistent. Location, menus and ETAs are eventually consistent."
+   },
+   {
+    "topic": "Reliability",
+    "question": "What if a restaurant or courier cancels?",
+    "answer": "The order moves through a state machine. A cancelled courier triggers reassignment, and a restaurant rejection triggers a refund."
+   },
+   {
+    "topic": "Inventory",
+    "question": "Do we track item availability?",
+    "answer": "Restaurants mark items out of stock. Updates reach customers within 1 minute."
+   }
+  ],
+  "rubric": {
+   "requirements": [
+    "Browse, order, accept, assign, track",
+    "Non-functional: peak handling, real-time tracking, correctness of orders",
+    "Order state machine and failure paths",
+    "Scoped out features"
+   ],
+   "estimation": [
+    "5M orders/day ~ 58/s avg, ~300/s peak",
+    "300k couriers / 5 s = 60k location writes/s, ~100 B each = 6 MB/s",
+    "Searches ~ 600/s avg, ~3k/s peak, served from a geo-aware index",
+    "Orders: 5M x 2 KB = 10 GB/day"
+   ],
+   "api": [
+    "GET /v1/restaurants?lat=&lng=&cuisine=",
+    "POST /v1/orders {restaurantId, items, paymentToken, idempotencyKey}",
+    "GET /v1/orders/{id} and a stream for tracking",
+    "PUT /v1/couriers/location"
+   ],
+   "dataModel": [
+    "order(id, customer, restaurant, courier, state, total, timestamps)",
+    "restaurant and menu catalog, item stock flags",
+    "Courier state and geo index",
+    "Order events log"
+   ],
+   "architecture": [
+    "Search service over a geo-sharded index of restaurants",
+    "Order service runs the order state machine and a payment saga",
+    "Dispatch service finds candidate couriers via the geo index and scores them",
+    "Location ingestion updates an in-memory index; tracking service pushes to customers",
+    "Notification service for status updates"
+   ],
+   "scaling": [
+    "Shard by city or geo cell",
+    "Queue for dispatch and event processing",
+    "Cache menus aggressively with short TTL",
+    "Scale at lunch and dinner with autoscaling and pre-warmed capacity"
+   ],
+   "tradeoffs": [
+    "Greedy assignment vs batched optimization",
+    "Order batching improves efficiency but increases delivery time",
+    "Pre-assigning couriers early vs late",
+    "Accuracy of ETA vs complexity"
+   ],
+   "pitfalls": [
+    "Treating dispatch as nearest courier only, ignoring prep time",
+    "Writing every GPS ping to the main DB",
+    "No idempotency around payments",
+    "Single global database for all cities"
+   ]
+  },
+  "followups": [
+   "How do you decide when to dispatch a courier relative to food preparation?",
+   "How would you handle a restaurant that suddenly goes offline with active orders?",
+   "How would you batch multiple orders onto one courier?",
+   "How do you keep ETAs accurate during peak hours?"
+  ]
+ }
+]

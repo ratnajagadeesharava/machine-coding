@@ -1,0 +1,18 @@
+[package]
+name = "p128_local_search_ranking"
+version = "0.1.0"
+edition = "2021"
+publish = false
+description = "Local Search with Ranking - machine coding practice"
+
+[features]
+# Interviewer-only scenarios: cargo test --features hidden
+hidden = []
+
+[dependencies]
+playground-support = { path = "../../support" }
+
+[[test]]
+name = "hidden"
+path = "interviewer/hidden.rs"
+required-features = ["hidden"]

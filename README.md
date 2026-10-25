@@ -1,7 +1,7 @@
 # Machine Coding + LLD Interview Playground
 
 Practice for **machine-coding and low-level-design (LLD) interviews** at about the 6-year level, in **Java 21** and **Rust**.
-**122 problems**, each with requirements, a behavioural contract, runnable tests, optional hints, follow-ups and a scoring rubric.
+**143 problems**, each with requirements, a behavioural contract, runnable tests, optional hints, follow-ups and a scoring rubric.
 
 > **Give me the requirements. Give me the tests. Give me the playground. Do NOT give me the architecture.**
 
@@ -20,6 +20,8 @@ Data structures · Ownership of state · Concurrency model · Implementation · 
 
 READMEs describe **what** to build (observable behaviour, examples, edge cases), never **how**. Design advice lives only in each
 problem's opt-in `HINTS.md`, so you can try first and open one hint level at a time when stuck. See [CONTRIBUTING.md](CONTRIBUTING.md).
+
+> **Also in this repo: [HLD Room](hld/README.md)** - a whiteboard site where an AI interviewer (Claude) runs high-level system design interviews with you. 26 questions, live feedback, a scored report. Needs Node.js and an Anthropic API key.
 
 ## Contents
 
@@ -115,7 +117,7 @@ contract: `mvn test -Phidden` / `cargo test --features hidden`.
 | [2. Concurrency](#track-2---concurrency) | 74-81, 120-122 (+ 13, 20, 22, 24, 27-31, 115, 118) | locks, deadlocks, wait/notify, thread pools, parallel algorithms, concurrent data structures | [Ordered Printer (Turn Taking)](java/problems/76-ordered-printer/README.md) |
 | [3. Classic product systems](#track-3---classic-product-systems) | 82-95 (+ 11, 15) | URL shortener, ticketing, food delivery, file system, text editor, SQL engine | [URL Shortener](java/problems/82-url-shortener/README.md) |
 | [4. Distributed systems](#track-4---distributed-systems-in-process-simulations) | 96-105 | consistent hashing, idempotency, leases, gossip, CRDTs, quorums, Raft, 2PC, sagas | [Consistent Hash Ring](java/problems/96-consistent-hashing/README.md) |
-| [5. Microsoft LLD round](#track-5---microsoft-lld-round-questions) | 106-114 | job scheduler, autofill, comments, document search, data-source layer, config service, parking strategies, multi-module logging, elevator feasibility | [Job Scheduler](java/problems/106-job-scheduler/README.md) |
+| [5. Microsoft LLD round](#track-5---microsoft-lld-round-questions) | 106-114, 123-143 (+ many existing, tagged below) | job scheduler, autofill, comments, document search, data-source layer, config service, parking strategies, multi-module logging, elevator feasibility | [Job Scheduler](java/problems/106-job-scheduler/README.md) |
 | [6. Search, typeahead and RAG](#track-6---search-typeahead-and-rag) | 115-119 | typeahead, inverted index, query pipeline, result cache, retrieval component | [Autocomplete / Typeahead Service](java/problems/115-autocomplete-typeahead/README.md) |
 
 ### Suggested paths
@@ -301,6 +303,33 @@ render these as checkboxes. `cargo play list` shows the real pass/fail status.
 - [ ] 120 · [Thread-Safe Trie](java/problems/120-thread-safe-trie/README.md) · [rust](rust/problems/120-thread-safe-trie/README.md)
 - [ ] 121 · [Concurrent Bloom Filter](java/problems/121-concurrent-bloom-filter/README.md) · [rust](rust/problems/121-concurrent-bloom-filter/README.md)
 - [ ] 122 · [Versioned Value Store](java/problems/122-versioned-value-store/README.md) · [rust](rust/problems/122-versioned-value-store/README.md)
+
+</details>
+
+<details>
+<summary><b>123-143 Microsoft LLD round (more questions)</b></summary>
+
+- [ ] 123 · [Snake Game With Food And Score](java/problems/123-snake-game/README.md) · [rust](rust/problems/123-snake-game/README.md)
+- [ ] 124 · [Kafka-Like Message Streaming Service](java/problems/124-kafka-streaming/README.md) · [rust](rust/problems/124-kafka-streaming/README.md)
+- [ ] 125 · [Music Streaming and Search](java/problems/125-music-streaming/README.md) · [rust](rust/problems/125-music-streaming/README.md)
+- [ ] 126 · [Alert Monitoring System](java/problems/126-alert-monitoring/README.md) · [rust](rust/problems/126-alert-monitoring/README.md)
+- [ ] 127 · [Browser History Manager](java/problems/127-browser-history/README.md) · [rust](rust/problems/127-browser-history/README.md)
+- [ ] 128 · [Local Search with Ranking](java/problems/128-local-search-ranking/README.md) · [rust](rust/problems/128-local-search-ranking/README.md)
+- [ ] 129 · [Job Posting with Candidate Matching](java/problems/129-job-candidate-matching/README.md) · [rust](rust/problems/129-job-candidate-matching/README.md)
+- [ ] 130 · [Ludo](java/problems/130-ludo/README.md) · [rust](rust/problems/130-ludo/README.md)
+- [ ] 131 · [Shortest Distance and Nearest Landmarks](java/problems/131-landmark-distances/README.md) · [rust](rust/problems/131-landmark-distances/README.md)
+- [ ] 132 · [Word Processor](java/problems/132-word-processor/README.md) · [rust](rust/problems/132-word-processor/README.md)
+- [ ] 133 · [Spreadsheet Grid](java/problems/133-spreadsheet-grid/README.md) · [rust](rust/problems/133-spreadsheet-grid/README.md)
+- [ ] 134 · [Dictionary App](java/problems/134-dictionary-app/README.md) · [rust](rust/problems/134-dictionary-app/README.md)
+- [ ] 135 · [Container Orchestrator](java/problems/135-container-orchestrator/README.md) · [rust](rust/problems/135-container-orchestrator/README.md)
+- [ ] 136 · [Fantasy Team Leaderboard](java/problems/136-fantasy-leaderboard/README.md) · [rust](rust/problems/136-fantasy-leaderboard/README.md)
+- [ ] 137 · [Configurable Time Window Hit Counter](java/problems/137-hit-counter-window/README.md) · [rust](rust/problems/137-hit-counter-window/README.md)
+- [ ] 138 · [Multi-Threaded Page Visit Counter](java/problems/138-page-visit-counter/README.md) · [rust](rust/problems/138-page-visit-counter/README.md)
+- [ ] 139 · [Shopping Cart](java/problems/139-shopping-cart/README.md) · [rust](rust/problems/139-shopping-cart/README.md)
+- [ ] 140 · [Custom HashMap](java/problems/140-custom-hashmap/README.md) · [rust](rust/problems/140-custom-hashmap/README.md)
+- [ ] 141 · [Matrix Traversal Strategies](java/problems/141-matrix-traversal/README.md) · [rust](rust/problems/141-matrix-traversal/README.md)
+- [ ] 142 · [Restaurant Customer Tokens](java/problems/142-restaurant-tokens/README.md) · [rust](rust/problems/142-restaurant-tokens/README.md)
+- [ ] 143 · [Excel Cell Values and Sum Formulas](java/problems/143-excel-formulas/README.md) · [rust](rust/problems/143-excel-formulas/README.md)
 
 </details>
 
@@ -611,6 +640,49 @@ Also practise the existing [Parking Lot](java/problems/01-parking-lot/README.md)
 | 117 | [Search Query Pipeline](java/problems/117-query-pipeline/README.md) | Medium-Hard | 60 min | L2 |
 | 118 | [Search Result Cache](java/problems/118-search-result-cache/README.md) | Hard | 75 min | L2 |
 | 119 | [Mini RAG Retrieval Component](java/problems/119-mini-rag-retriever/README.md) | Hard | 90 min | L2 |
+| Step 10 | [Snake Game With Food And Score](java/problems/123-snake-game/README.md) **new** | Medium | 45 min | grid movement rules, growth on food, wall/self collision, tail-vacating move, scale | [java](java/problems/123-snake-game/README.md) · [rust](rust/problems/123-snake-game/README.md) | ☐ |
+| Step 11 | [Kafka-Like Message Streaming Service](java/problems/124-kafka-streaming/README.md) **new** | Hard | 90 min | partitions and offsets, key hashing, consumer groups, range rebalance, commits, retention | [java](java/problems/124-kafka-streaming/README.md) · [rust](rust/problems/124-kafka-streaming/README.md) | ☐ |
+| Step 12 | [Music Streaming and Search](java/problems/125-music-streaming/README.md) **new** | Medium-Hard | 75 min | prefix search ranking, play counts, playlists, queue, recommendations, concurrent counters | [java](java/problems/125-music-streaming/README.md) · [rust](rust/problems/125-music-streaming/README.md) | ☐ |
+| Step 13 | [Alert Monitoring System](java/problems/126-alert-monitoring/README.md) **new** | Medium-Hard | 75 min | windowed aggregates, OK/PENDING/FIRING/RESOLVED state machine, cooldown, channel routing | [java](java/problems/126-alert-monitoring/README.md) · [rust](rust/problems/126-alert-monitoring/README.md) | ☐ |
+| Step 14 | [Browser History Manager](java/problems/127-browser-history/README.md) **new** | Medium | 45 min | tabs with back/forward, global history queries, most visited, capacity eviction | [java](java/problems/127-browser-history/README.md) · [rust](rust/problems/127-browser-history/README.md) | ☐ |
+| Step 15 | [Local Search with Ranking](java/problems/128-local-search-ranking/README.md) **new** | Medium-Hard | 60 min | filters plus an exact integer ranking formula, ties, atomic updates, scale | [java](java/problems/128-local-search-ranking/README.md) · [rust](rust/problems/128-local-search-ranking/README.md) | ☐ |
+| Step 16 | [Job Posting with Candidate Matching](java/problems/129-job-candidate-matching/README.md) **new** | Medium-Hard | 60 min | eligibility rules, an exact match score, ranking both ways, applications and closing jobs | [java](java/problems/129-job-candidate-matching/README.md) · [rust](rust/problems/129-job-candidate-matching/README.md) | ☐ |
+| Step 17 | [Ludo](java/problems/130-ludo/README.md) **new** | Hard | 90 min | dice-driven turns, captures, safe cells and blocks, home column, three-sixes rule | [java](java/problems/130-ludo/README.md) · [rust](rust/problems/130-ludo/README.md) | ☐ |
+| Step 18 | [Shortest Distance and Nearest Landmarks](java/problems/131-landmark-distances/README.md) **new** | Medium | 60 min | weighted graph shortest paths, lexicographic tie-break, nearest landmarks, updates | [java](java/problems/131-landmark-distances/README.md) · [rust](rust/problems/131-landmark-distances/README.md) | ☐ |
+| Step 19 | [Word Processor](java/problems/132-word-processor/README.md) **new** | Medium-Hard | 75 min | rich-text runs, shared format values, find/replace, paragraph alignment, million-character scale | [java](java/problems/132-word-processor/README.md) · [rust](rust/problems/132-word-processor/README.md) | ☐ |
+| Step 20 | [Spreadsheet Grid](java/problems/133-spreadsheet-grid/README.md) **new** | Medium-Hard | 75 min | cell values, shared styles, copy/move/sort, row and column insertion, sparse scale | [java](java/problems/133-spreadsheet-grid/README.md) · [rust](rust/problems/133-spreadsheet-grid/README.md) | ☐ |
+| Step 21 | [Dictionary App](java/problems/134-dictionary-app/README.md) **new** | Medium | 45 min | words with multiple meanings, synonyms, prefix and substring search, edit-distance suggestions | [java](java/problems/134-dictionary-app/README.md) · [rust](rust/problems/134-dictionary-app/README.md) | ☐ |
+| Step 22 | [Container Orchestrator](java/problems/135-container-orchestrator/README.md) **new** | Hard | 90 min | fit strategies, preemption by priority, node failure rescheduling, no over-commit | [java](java/problems/135-container-orchestrator/README.md) · [rust](rust/problems/135-container-orchestrator/README.md) | ☐ |
+| Step 23 | [Fantasy Team Leaderboard](java/problems/136-fantasy-leaderboard/README.md) **new** | Medium-Hard | 60 min | roster validation, exact half-point scoring, competition ranking, corrections, concurrency | [java](java/problems/136-fantasy-leaderboard/README.md) · [rust](rust/problems/136-fantasy-leaderboard/README.md) | ☐ |
+| Step 24 | [Configurable Time Window Hit Counter](java/problems/137-hit-counter-window/README.md) **new** | Medium | 45 min | time windows, expiry boundary, shrinking and growing windows, bounded memory, clock clamping | [java](java/problems/137-hit-counter-window/README.md) · [rust](rust/problems/137-hit-counter-window/README.md) | ☐ |
+| Step 25 | [Multi-Threaded Page Visit Counter](java/problems/138-page-visit-counter/README.md) **new** | Medium | 45 min | URL normalisation, exact concurrent totals and uniques, consistent snapshots, memory bound | [java](java/problems/138-page-visit-counter/README.md) · [rust](rust/problems/138-page-visit-counter/README.md) | ☐ |
+| Step 26 | [Shopping Cart](java/problems/139-shopping-cart/README.md) **new** | Medium | 60 min | stock, promotions, coupons, tax allocation, atomic checkout | [java](java/problems/139-shopping-cart/README.md) · [rust](rust/problems/139-shopping-cart/README.md) | ☐ |
+| Step 27 | [Custom HashMap](java/problems/140-custom-hashmap/README.md) **new** | Medium | 60 min | hasher-driven buckets, exact resize rule, insertion-ordered iteration, collisions | [java](java/problems/140-custom-hashmap/README.md) · [rust](rust/problems/140-custom-hashmap/README.md) | ☐ |
+| Step 28 | [Matrix Traversal Strategies](java/problems/141-matrix-traversal/README.md) **new** | Medium | 45 min | nine traversal orders, lazy cursors, user-defined strategies, huge virtual matrices | [java](java/problems/141-matrix-traversal/README.md) · [rust](rust/problems/141-matrix-traversal/README.md) | ☐ |
+| Step 29 | [Restaurant Customer Tokens](java/problems/142-restaurant-tokens/README.md) **new** | Medium | 45 min | priority queue with anti-starvation, no-shows and recall, wait estimates | [java](java/problems/142-restaurant-tokens/README.md) · [rust](rust/problems/142-restaurant-tokens/README.md) | ☐ |
+| Step 30 | [Excel Cell Values and Sum Formulas](java/problems/143-excel-formulas/README.md) **new** | Hard | 90 min | parser and evaluator, SUM ranges, dependency recompute counts, cycles and error values | [java](java/problems/143-excel-formulas/README.md) · [rust](rust/problems/143-excel-formulas/README.md) | ☐ |
+
+### Existing problems also asked in Microsoft LLD rounds
+
+These live in other tracks; they carry the **Microsoft LLD** tag in the [catalogue](#full-catalogue).
+
+| Question | Problem here |
+|---|---|
+| Parking Lot | [Parking Lot](java/problems/01-parking-lot/README.md) |
+| Elevator System | [Elevator System](java/problems/02-elevator/README.md) |
+| Vending Machine (exact payment is one of its scenarios) | [Vending Machine](java/problems/05-vending-machine/README.md) |
+| Chess | [Chess](java/problems/07-chess/README.md) |
+| Tic-Tac-Toe | [Tic-Tac-Toe](java/problems/08-tic-tac-toe/README.md) |
+| Snake and Ladder | [Snake and Ladder](java/problems/09-snake-and-ladder/README.md) |
+| Rate Limiter | [Rate Limiter](java/problems/20-rate-limiter/README.md) |
+| Notification System | [Notification System](java/problems/23-notification-system/README.md) |
+| Logging Framework | [Logging Framework](java/problems/25-logging-framework/README.md) |
+| Text Editor with Undo and Redo | [Text Editor with Undo/Redo](java/problems/85-text-editor-undo/README.md) |
+| Movie Ticket Booking | [Movie Ticket Booking](java/problems/89-movie-ticketing/README.md) |
+| Autocomplete (Google-like search autocomplete) | [Autocomplete / Typeahead Service](java/problems/115-autocomplete-typeahead/README.md) |
+| Parking Lot with strategies, multi-threaded | [Parking Lot](java/problems/01-parking-lot/README.md), [Parking Lot with Allocation Strategies](java/problems/112-parking-lot-strategies/README.md) |
+| Single-lift elevator and request feasibility | [Elevator System](java/problems/02-elevator/README.md), [Elevator Request Feasibility](java/problems/114-elevator-feasibility/README.md) |
+
 
 ## Track 6 - Search, typeahead and RAG
 
@@ -634,132 +706,153 @@ Search-system questions that interviews often build on a first-round design: typ
 
 ## Full catalogue
 
-Every problem, in folder order. Level: L1 almost empty, L2 contract provided, L3 contract plus test infrastructure.
+Every problem, in folder order. The **Microsoft LLD** tag marks questions reported for Microsoft LLD rounds. Level: L1 almost empty, L2 contract provided, L3 contract plus test infrastructure.
 
-| # | Problem | Difficulty | Time | Level | Track | Code |
-|--:|---|---|---:|:---:|---|---|
-| 01 | Parking Lot | Medium-Hard | 90 min | L1 | Foundations | [java](java/problems/01-parking-lot/README.md) · [rust](rust/problems/01-parking-lot/README.md) |
-| 02 | Elevator System | Hard | 90 min | L1 | Foundations | [java](java/problems/02-elevator/README.md) · [rust](rust/problems/02-elevator/README.md) |
-| 03 | Library Management | Medium | 60 min | L1 | Foundations | [java](java/problems/03-library/README.md) · [rust](rust/problems/03-library/README.md) |
-| 04 | Coffee Machine | Medium | 60 min | L1 | Foundations | [java](java/problems/04-coffee-machine/README.md) · [rust](rust/problems/04-coffee-machine/README.md) |
-| 05 | Vending Machine | Medium | 60 min | L1 | Foundations | [java](java/problems/05-vending-machine/README.md) · [rust](rust/problems/05-vending-machine/README.md) |
-| 06 | ATM | Medium | 60 min | L1 | Foundations | [java](java/problems/06-atm/README.md) · [rust](rust/problems/06-atm/README.md) |
-| 07 | Chess | Senior | 120 min | L1 | Foundations | [java](java/problems/07-chess/README.md) · [rust](rust/problems/07-chess/README.md) |
-| 08 | Tic-Tac-Toe | Medium | 45 min | L1 | Foundations | [java](java/problems/08-tic-tac-toe/README.md) · [rust](rust/problems/08-tic-tac-toe/README.md) |
-| 09 | Snake and Ladder | Medium | 45 min | L1 | Foundations | [java](java/problems/09-snake-and-ladder/README.md) · [rust](rust/problems/09-snake-and-ladder/README.md) |
-| 10 | Flight Booking | Hard | 90 min | L1 | Foundations | [java](java/problems/10-flight-booking/README.md) · [rust](rust/problems/10-flight-booking/README.md) |
-| 11 | Hotel Booking | Hard | 90 min | L1 | Foundations (+ Product systems) | [java](java/problems/11-hotel-booking/README.md) · [rust](rust/problems/11-hotel-booking/README.md) |
-| 12 | Travel Itinerary Planner | Medium-Hard | 90 min | L1 | Foundations | [java](java/problems/12-travel-itinerary/README.md) · [rust](rust/problems/12-travel-itinerary/README.md) |
-| 13 | Bus / Train Seat Booking | Medium-Hard | 90 min | L1 | Foundations (+ Concurrency) | [java](java/problems/13-seat-booking/README.md) · [rust](rust/problems/13-seat-booking/README.md) |
-| 14 | Ride Sharing | Medium-Hard | 90 min | L1 | Foundations | [java](java/problems/14-ride-sharing/README.md) · [rust](rust/problems/14-ride-sharing/README.md) |
-| 15 | Splitwise | Medium | 60 min | L1 | Foundations (+ Product systems) | [java](java/problems/15-splitwise/README.md) · [rust](rust/problems/15-splitwise/README.md) |
-| 16 | Digital Wallet | Medium-Hard | 90 min | L1 | Foundations | [java](java/problems/16-wallet/README.md) · [rust](rust/problems/16-wallet/README.md) |
-| 17 | Stock Exchange Order Book | Hard | 120 min | L1 | Foundations | [java](java/problems/17-order-book/README.md) · [rust](rust/problems/17-order-book/README.md) |
-| 18 | LRU Cache | Medium | 45 min | L2 | Foundations | [java](java/problems/18-lru-cache/README.md) · [rust](rust/problems/18-lru-cache/README.md) |
-| 19 | LFU Cache | Medium-Hard | 60 min | L2 | Foundations | [java](java/problems/19-lfu-cache/README.md) · [rust](rust/problems/19-lfu-cache/README.md) |
-| 20 | Rate Limiter | Medium-Hard | 60 min | L3 | Foundations (+ Concurrency) | [java](java/problems/20-rate-limiter/README.md) · [rust](rust/problems/20-rate-limiter/README.md) |
-| 21 | In-Memory Key-Value Store | Medium-Hard | 90 min | L1 | Foundations | [java](java/problems/21-key-value-store/README.md) · [rust](rust/problems/21-key-value-store/README.md) |
-| 22 | Pub-Sub Message Broker | Medium-Hard | 90 min | L1 | Foundations (+ Concurrency) | [java](java/problems/22-pub-sub/README.md) · [rust](rust/problems/22-pub-sub/README.md) |
-| 23 | Notification System | Medium-Hard | 90 min | L2 | Foundations | [java](java/problems/23-notification-system/README.md) · [rust](rust/problems/23-notification-system/README.md) |
-| 24 | Task Scheduler | Hard | 90 min | L3 | Foundations (+ Concurrency) | [java](java/problems/24-task-scheduler/README.md) · [rust](rust/problems/24-task-scheduler/README.md) |
-| 25 | Logging Framework | Medium-Hard | 90 min | L2 | Foundations | [java](java/problems/25-logging-framework/README.md) · [rust](rust/problems/25-logging-framework/README.md) |
-| 26 | Metrics Collector | Medium-Hard | 60 min | L1 | Foundations | [java](java/problems/26-metrics/README.md) · [rust](rust/problems/26-metrics/README.md) |
-| 27 | Circuit Breaker | Medium-Hard | 60 min | L3 | Foundations (+ Concurrency) | [java](java/problems/27-circuit-breaker/README.md) · [rust](rust/problems/27-circuit-breaker/README.md) |
-| 28 | Bounded Blocking Buffer | Hard | 90 min | L3 | Foundations (+ Concurrency) | [java](java/problems/28-blocking-queue/README.md) · [rust](rust/problems/28-blocking-queue/README.md) |
-| 29 | Worker Pool | Hard | 90 min | L3 | Foundations (+ Concurrency) | [java](java/problems/29-worker-pool/README.md) · [rust](rust/problems/29-worker-pool/README.md) |
-| 30 | Concurrent Cache with Loaders | Hard | 90 min | L3 | Foundations (+ Concurrency) | [java](java/problems/30-concurrent-cache/README.md) · [rust](rust/problems/30-concurrent-cache/README.md) |
-| 31 | In-Process Event Bus | Hard | 120 min | L3 | Foundations (+ Concurrency) | [java](java/problems/31-event-bus/README.md) · [rust](rust/problems/31-event-bus/README.md) |
-| 32 | Board Game Engine | Hard | 120 min | L1 | Foundations | [java](java/problems/32-board-game-engine/README.md) · [rust](rust/problems/32-board-game-engine/README.md) |
-| 33 | Classes and Objects | Easy | 30 min | L2 | Foundations | [java](java/problems/33-classes-objects/README.md) · [rust](rust/problems/33-classes-objects/README.md) |
-| 34 | Interfaces | Easy | 30 min | L2 | Foundations | [java](java/problems/34-interfaces/README.md) · [rust](rust/problems/34-interfaces/README.md) |
-| 35 | Inheritance | Easy | 30 min | L2 | Foundations | [java](java/problems/35-inheritance/README.md) · [rust](rust/problems/35-inheritance/README.md) |
-| 36 | Polymorphism | Easy | 30 min | L2 | Foundations | [java](java/problems/36-polymorphism/README.md) · [rust](rust/problems/36-polymorphism/README.md) |
-| 37 | Abstraction | Medium | 30 min | L2 | Foundations | [java](java/problems/37-abstraction/README.md) · [rust](rust/problems/37-abstraction/README.md) |
-| 38 | Encapsulation | Medium | 30 min | L2 | Foundations | [java](java/problems/38-encapsulation/README.md) · [rust](rust/problems/38-encapsulation/README.md) |
-| 39 | Aggregation | Easy | 30 min | L2 | Foundations | [java](java/problems/39-aggregation/README.md) · [rust](rust/problems/39-aggregation/README.md) |
-| 40 | Composition | Medium | 40 min | L2 | Foundations | [java](java/problems/40-composition/README.md) · [rust](rust/problems/40-composition/README.md) |
-| 41 | Association | Medium | 40 min | L2 | Foundations | [java](java/problems/41-association/README.md) · [rust](rust/problems/41-association/README.md) |
-| 42 | DRY — Don't Repeat Yourself | Medium | 30 min | L2 | Foundations | [java](java/problems/42-dry/README.md) · [rust](rust/problems/42-dry/README.md) |
-| 43 | KISS — Keep It Simple | Easy | 20 min | L2 | Foundations | [java](java/problems/43-kiss/README.md) · [rust](rust/problems/43-kiss/README.md) |
-| 44 | YAGNI — You Aren't Gonna Need It | Easy | 25 min | L2 | Foundations | [java](java/problems/44-yagni/README.md) · [rust](rust/problems/44-yagni/README.md) |
-| 45 | Law of Demeter | Medium | 40 min | L2 | Foundations | [java](java/problems/45-law-of-demeter/README.md) · [rust](rust/problems/45-law-of-demeter/README.md) |
-| 46 | SRP — Single Responsibility Principle | Medium | 40 min | L2 | Foundations | [java](java/problems/46-srp/README.md) · [rust](rust/problems/46-srp/README.md) |
-| 47 | OCP — Open/Closed Principle | Medium | 35 min | L2 | Foundations | [java](java/problems/47-ocp/README.md) · [rust](rust/problems/47-ocp/README.md) |
-| 48 | LSP — Liskov Substitution Principle | Medium | 40 min | L2 | Foundations | [java](java/problems/48-lsp/README.md) · [rust](rust/problems/48-lsp/README.md) |
-| 49 | ISP — Interface Segregation Principle | Medium | 35 min | L2 | Foundations | [java](java/problems/49-isp/README.md) · [rust](rust/problems/49-isp/README.md) |
-| 50 | DIP — Dependency Inversion Principle | Medium | 35 min | L2 | Foundations | [java](java/problems/50-dip/README.md) · [rust](rust/problems/50-dip/README.md) |
-| 51 | SOLID Summary — Meal Order Checkout | Hard | 75 min | L2 | Foundations | [java](java/problems/51-solid-summary/README.md) · [rust](rust/problems/51-solid-summary/README.md) |
-| 52 | Singleton | Medium | 30 min | L2 | Foundations | [java](java/problems/52-singleton/README.md) · [rust](rust/problems/52-singleton/README.md) |
-| 53 | Factory Method | Medium | 35 min | L2 | Foundations | [java](java/problems/53-factory-method/README.md) · [rust](rust/problems/53-factory-method/README.md) |
-| 54 | Abstract Factory | Medium | 45 min | L2 | Foundations | [java](java/problems/54-abstract-factory/README.md) · [rust](rust/problems/54-abstract-factory/README.md) |
-| 55 | Builder | Medium | 45 min | L2 | Foundations | [java](java/problems/55-builder/README.md) · [rust](rust/problems/55-builder/README.md) |
-| 56 | Prototype | Medium | 40 min | L2 | Foundations | [java](java/problems/56-prototype/README.md) · [rust](rust/problems/56-prototype/README.md) |
-| 57 | Adapter | Medium | 35 min | L2 | Foundations | [java](java/problems/57-adapter/README.md) · [rust](rust/problems/57-adapter/README.md) |
-| 58 | Facade | Medium | 35 min | L2 | Foundations | [java](java/problems/58-facade/README.md) · [rust](rust/problems/58-facade/README.md) |
-| 59 | Decorator | Medium | 40 min | L2 | Foundations | [java](java/problems/59-decorator/README.md) · [rust](rust/problems/59-decorator/README.md) |
-| 60 | Composite | Medium | 40 min | L2 | Foundations | [java](java/problems/60-composite/README.md) · [rust](rust/problems/60-composite/README.md) |
-| 61 | Proxy | Medium | 45 min | L2 | Foundations | [java](java/problems/61-proxy/README.md) · [rust](rust/problems/61-proxy/README.md) |
-| 62 | Bridge | Hard | 50 min | L2 | Foundations | [java](java/problems/62-bridge/README.md) · [rust](rust/problems/62-bridge/README.md) |
-| 63 | Flyweight | Medium | 40 min | L2 | Foundations | [java](java/problems/63-flyweight/README.md) · [rust](rust/problems/63-flyweight/README.md) |
-| 64 | Iterator | Medium | 45 min | L2 | Foundations | [java](java/problems/64-iterator/README.md) · [rust](rust/problems/64-iterator/README.md) |
-| 65 | Observer | Medium | 40 min | L2 | Foundations | [java](java/problems/65-observer/README.md) · [rust](rust/problems/65-observer/README.md) |
-| 66 | Strategy | Medium | 40 min | L2 | Foundations | [java](java/problems/66-strategy/README.md) · [rust](rust/problems/66-strategy/README.md) |
-| 67 | Command | Hard | 50 min | L2 | Foundations | [java](java/problems/67-command/README.md) · [rust](rust/problems/67-command/README.md) |
-| 68 | State | Hard | 60 min | L2 | Foundations | [java](java/problems/68-state/README.md) · [rust](rust/problems/68-state/README.md) |
-| 69 | Template Method | Medium | 40 min | L2 | Foundations | [java](java/problems/69-template-method/README.md) · [rust](rust/problems/69-template-method/README.md) |
-| 70 | Visitor | Hard | 50 min | L2 | Foundations | [java](java/problems/70-visitor/README.md) · [rust](rust/problems/70-visitor/README.md) |
-| 71 | Mediator | Hard | 60 min | L2 | Foundations | [java](java/problems/71-mediator/README.md) · [rust](rust/problems/71-mediator/README.md) |
-| 72 | Memento | Hard | 50 min | L2 | Foundations | [java](java/problems/72-memento/README.md) · [rust](rust/problems/72-memento/README.md) |
-| 73 | Chain of Responsibility | Medium | 45 min | L2 | Foundations | [java](java/problems/73-chain-of-responsibility/README.md) · [rust](rust/problems/73-chain-of-responsibility/README.md) |
-| 74 | Concurrent LRU Cache (Read-Write Lock) | Medium-Hard | 60 min | L3 | Concurrency | [java](java/problems/74-rw-lock-lru-cache/README.md) · [rust](rust/problems/74-rw-lock-lru-cache/README.md) |
-| 75 | Bank Transfers Without Deadlock | Medium | 45 min | L3 | Concurrency | [java](java/problems/75-bank-transfer/README.md) · [rust](rust/problems/75-bank-transfer/README.md) |
-| 76 | Ordered Printer (Turn Taking) | Medium | 45 min | L3 | Concurrency | [java](java/problems/76-ordered-printer/README.md) · [rust](rust/problems/76-ordered-printer/README.md) |
-| 77 | Dining Philosophers | Medium-Hard | 60 min | L3 | Concurrency | [java](java/problems/77-dining-philosophers/README.md) · [rust](rust/problems/77-dining-philosophers/README.md) |
-| 78 | Bounded Connection Pool | Medium-Hard | 60 min | L3 | Concurrency | [java](java/problems/78-connection-pool/README.md) · [rust](rust/problems/78-connection-pool/README.md) |
-| 79 | Parallel Merge Sort | Medium-Hard | 60 min | L3 | Concurrency | [java](java/problems/79-parallel-merge-sort/README.md) · [rust](rust/problems/79-parallel-merge-sort/README.md) |
-| 80 | Parallel Word Count | Medium | 45 min | L3 | Concurrency | [java](java/problems/80-parallel-word-count/README.md) · [rust](rust/problems/80-parallel-word-count/README.md) |
-| 81 | Parallel Web Crawler | Hard | 90 min | L3 | Concurrency | [java](java/problems/81-parallel-crawler/README.md) · [rust](rust/problems/81-parallel-crawler/README.md) |
-| 82 | URL Shortener | Medium | 45 min | L2 | Product systems | [java](java/problems/82-url-shortener/README.md) · [rust](rust/problems/82-url-shortener/README.md) |
-| 83 | Feature Flag Service | Medium | 45 min | L2 | Product systems | [java](java/problems/83-feature-flags/README.md) · [rust](rust/problems/83-feature-flags/README.md) |
-| 84 | In-Memory File System with Permissions | Medium-Hard | 75 min | L2 | Product systems | [java](java/problems/84-file-system-permissions/README.md) · [rust](rust/problems/84-file-system-permissions/README.md) |
-| 85 | Text Editor with Undo/Redo | Medium | 60 min | L2 | Product systems | [java](java/problems/85-text-editor-undo/README.md) · [rust](rust/problems/85-text-editor-undo/README.md) |
-| 86 | Document Versioning with Merge | Hard | 75 min | L2 | Product systems | [java](java/problems/86-document-versioning/README.md) · [rust](rust/problems/86-document-versioning/README.md) |
-| 87 | Expense Groups (Splitwise) | Hard | 75 min | L2 | Product systems | [java](java/problems/87-expense-groups/README.md) · [rust](rust/problems/87-expense-groups/README.md) |
-| 88 | Shared Event Calendar | Medium-Hard | 60 min | L2 | Product systems | [java](java/problems/88-event-calendar/README.md) · [rust](rust/problems/88-event-calendar/README.md) |
-| 89 | Movie Ticket Booking | Hard | 75 min | L2 | Product systems | [java](java/problems/89-movie-ticketing/README.md) · [rust](rust/problems/89-movie-ticketing/README.md) |
-| 90 | Food Delivery Dispatch | Hard | 75 min | L2 | Product systems | [java](java/problems/90-food-delivery/README.md) · [rust](rust/problems/90-food-delivery/README.md) |
-| 91 | Online Auction | Medium-Hard | 60 min | L2 | Product systems | [java](java/problems/91-online-auction/README.md) · [rust](rust/problems/91-online-auction/README.md) |
-| 92 | Chat System | Hard | 75 min | L2 | Product systems | [java](java/problems/92-chat-system/README.md) · [rust](rust/problems/92-chat-system/README.md) |
-| 93 | Cron Job Scheduler | Hard | 75 min | L2 | Product systems | [java](java/problems/93-cron-job-scheduler/README.md) · [rust](rust/problems/93-cron-job-scheduler/README.md) |
-| 94 | API Gateway | Hard | 75 min | L2 | Product systems | [java](java/problems/94-api-gateway/README.md) · [rust](rust/problems/94-api-gateway/README.md) |
-| 95 | Mini SQL Engine | Hard | 90 min | L2 | Product systems | [java](java/problems/95-sql-engine/README.md) · [rust](rust/problems/95-sql-engine/README.md) |
-| 96 | Consistent Hash Ring | Medium-Hard | 60 min | L2 | Distributed systems | [java](java/problems/96-consistent-hashing/README.md) · [rust](rust/problems/96-consistent-hashing/README.md) |
-| 97 | Idempotent Request Processor | Medium-Hard | 60 min | L2 | Distributed systems | [java](java/problems/97-idempotent-requests/README.md) · [rust](rust/problems/97-idempotent-requests/README.md) |
-| 98 | Lease Lock with Fencing Tokens | Medium-Hard | 50 min | L2 | Distributed systems | [java](java/problems/98-lock-lease-fencing/README.md) · [rust](rust/problems/98-lock-lease-fencing/README.md) |
-| 99 | Raft Leader Election | Hard | 90 min | L3 | Distributed systems | [java](java/problems/99-leader-election/README.md) · [rust](rust/problems/99-leader-election/README.md) |
-| 100 | Gossip Protocol with Failure Detection | Hard | 90 min | L3 | Distributed systems | [java](java/problems/100-gossip-protocol/README.md) · [rust](rust/problems/100-gossip-protocol/README.md) |
-| 101 | Two-Phase Commit | Hard | 120 min | L3 | Distributed systems | [java](java/problems/101-two-phase-commit/README.md) · [rust](rust/problems/101-two-phase-commit/README.md) |
-| 102 | Saga Orchestrator | Hard | 90 min | L3 | Distributed systems | [java](java/problems/102-saga-orchestrator/README.md) · [rust](rust/problems/102-saga-orchestrator/README.md) |
-| 103 | CRDT Replicated Store | Hard | 75 min | L3 | Distributed systems | [java](java/problems/103-crdt-replication/README.md) · [rust](rust/problems/103-crdt-replication/README.md) |
-| 104 | Quorum Key-Value Store | Hard | 90 min | L3 | Distributed systems | [java](java/problems/104-quorum-kv/README.md) · [rust](rust/problems/104-quorum-kv/README.md) |
-| 105 | Raft Log Replication | Hard | 120 min | L3 | Distributed systems | [java](java/problems/105-raft-log/README.md) · [rust](rust/problems/105-raft-log/README.md) |
-| 106 | Job Scheduler | Medium | 60 min | L2 | Microsoft LLD | [java](java/problems/106-job-scheduler/README.md) · [rust](rust/problems/106-job-scheduler/README.md) |
-| 107 | Excel-Like Autofill Engine | Medium | 45 min | L2 | Microsoft LLD | [java](java/problems/107-excel-autofill/README.md) · [rust](rust/problems/107-excel-autofill/README.md) |
-| 108 | Document Comment Service | Easy-Medium | 30 min | L2 | Microsoft LLD | [java](java/problems/108-document-comments/README.md) · [rust](rust/problems/108-document-comments/README.md) |
-| 109 | Document Line Search | Medium | 45 min | L2 | Microsoft LLD | [java](java/problems/109-document-line-search/README.md) · [rust](rust/problems/109-document-line-search/README.md) |
-| 110 | # 110 Runtime Data Source Access Layer | Medium | 45 min | L2 | Microsoft LLD | [java](java/problems/110-data-source-layer/README.md) · [rust](rust/problems/110-data-source-layer/README.md) |
-| 111 | Configuration Management Service | Medium | 60 min | L2 | Microsoft LLD | [java](java/problems/111-config-management/README.md) · [rust](rust/problems/111-config-management/README.md) |
-| 112 | Parking Lot with Allocation Strategies | Medium-Hard | 75 min | L2 | Microsoft LLD | [java](java/problems/112-parking-lot-strategies/README.md) · [rust](rust/problems/112-parking-lot-strategies/README.md) |
-| 113 | Multi-Module Logging Framework | Hard | 90 min | L2 | Microsoft LLD | [java](java/problems/113-multi-module-logging/README.md) · [rust](rust/problems/113-multi-module-logging/README.md) |
-| 114 | Elevator Request Feasibility | Hard | 90 min | L2 | Microsoft LLD | [java](java/problems/114-elevator-feasibility/README.md) · [rust](rust/problems/114-elevator-feasibility/README.md) |
-| 115 | Autocomplete / Typeahead Service | Hard | 75 min | L2 | Search and RAG | [java](java/problems/115-autocomplete-typeahead/README.md) · [rust](rust/problems/115-autocomplete-typeahead/README.md) |
-| 116 | In-Memory Search Engine | Hard | 90 min | L2 | Search and RAG | [java](java/problems/116-inverted-index-search/README.md) · [rust](rust/problems/116-inverted-index-search/README.md) |
-| 117 | Search Query Pipeline | Medium-Hard | 60 min | L2 | Search and RAG | [java](java/problems/117-query-pipeline/README.md) · [rust](rust/problems/117-query-pipeline/README.md) |
-| 118 | Search Result Cache | Hard | 75 min | L2 | Search and RAG | [java](java/problems/118-search-result-cache/README.md) · [rust](rust/problems/118-search-result-cache/README.md) |
-| 119 | Mini RAG Retrieval Component | Hard | 90 min | L2 | Search and RAG | [java](java/problems/119-mini-rag-retriever/README.md) · [rust](rust/problems/119-mini-rag-retriever/README.md) |
-| 120 | Thread-Safe Trie | Hard | 75 min | L2 | Concurrency | [java](java/problems/120-thread-safe-trie/README.md) · [rust](rust/problems/120-thread-safe-trie/README.md) |
-| 121 | Concurrent Bloom Filter | Hard | 60 min | L2 | Concurrency | [java](java/problems/121-concurrent-bloom-filter/README.md) · [rust](rust/problems/121-concurrent-bloom-filter/README.md) |
-| 122 | Versioned Value Store | Hard | 75 min | L2 | Concurrency | [java](java/problems/122-versioned-value-store/README.md) · [rust](rust/problems/122-versioned-value-store/README.md) |
+| # | Problem | Difficulty | Time | Level | Track | Tags | Code |
+|--:|---|---|---:|:---:|---|---|---|
+| 01 | Parking Lot | Medium-Hard | 90 min | L1 | Foundations | Microsoft LLD | [java](java/problems/01-parking-lot/README.md) · [rust](rust/problems/01-parking-lot/README.md) |
+| 02 | Elevator System | Hard | 90 min | L1 | Foundations | Microsoft LLD | [java](java/problems/02-elevator/README.md) · [rust](rust/problems/02-elevator/README.md) |
+| 03 | Library Management | Medium | 60 min | L1 | Foundations |  | [java](java/problems/03-library/README.md) · [rust](rust/problems/03-library/README.md) |
+| 04 | Coffee Machine | Medium | 60 min | L1 | Foundations |  | [java](java/problems/04-coffee-machine/README.md) · [rust](rust/problems/04-coffee-machine/README.md) |
+| 05 | Vending Machine | Medium | 60 min | L1 | Foundations | Microsoft LLD | [java](java/problems/05-vending-machine/README.md) · [rust](rust/problems/05-vending-machine/README.md) |
+| 06 | ATM | Medium | 60 min | L1 | Foundations |  | [java](java/problems/06-atm/README.md) · [rust](rust/problems/06-atm/README.md) |
+| 07 | Chess | Senior | 120 min | L1 | Foundations | Microsoft LLD | [java](java/problems/07-chess/README.md) · [rust](rust/problems/07-chess/README.md) |
+| 08 | Tic-Tac-Toe | Medium | 45 min | L1 | Foundations | Microsoft LLD | [java](java/problems/08-tic-tac-toe/README.md) · [rust](rust/problems/08-tic-tac-toe/README.md) |
+| 09 | Snake and Ladder | Medium | 45 min | L1 | Foundations | Microsoft LLD | [java](java/problems/09-snake-and-ladder/README.md) · [rust](rust/problems/09-snake-and-ladder/README.md) |
+| 10 | Flight Booking | Hard | 90 min | L1 | Foundations |  | [java](java/problems/10-flight-booking/README.md) · [rust](rust/problems/10-flight-booking/README.md) |
+| 11 | Hotel Booking | Hard | 90 min | L1 | Foundations (+ Product systems) |  | [java](java/problems/11-hotel-booking/README.md) · [rust](rust/problems/11-hotel-booking/README.md) |
+| 12 | Travel Itinerary Planner | Medium-Hard | 90 min | L1 | Foundations |  | [java](java/problems/12-travel-itinerary/README.md) · [rust](rust/problems/12-travel-itinerary/README.md) |
+| 13 | Bus / Train Seat Booking | Medium-Hard | 90 min | L1 | Foundations (+ Concurrency) |  | [java](java/problems/13-seat-booking/README.md) · [rust](rust/problems/13-seat-booking/README.md) |
+| 14 | Ride Sharing | Medium-Hard | 90 min | L1 | Foundations |  | [java](java/problems/14-ride-sharing/README.md) · [rust](rust/problems/14-ride-sharing/README.md) |
+| 15 | Splitwise | Medium | 60 min | L1 | Foundations (+ Product systems) |  | [java](java/problems/15-splitwise/README.md) · [rust](rust/problems/15-splitwise/README.md) |
+| 16 | Digital Wallet | Medium-Hard | 90 min | L1 | Foundations |  | [java](java/problems/16-wallet/README.md) · [rust](rust/problems/16-wallet/README.md) |
+| 17 | Stock Exchange Order Book | Hard | 120 min | L1 | Foundations |  | [java](java/problems/17-order-book/README.md) · [rust](rust/problems/17-order-book/README.md) |
+| 18 | LRU Cache | Medium | 45 min | L2 | Foundations |  | [java](java/problems/18-lru-cache/README.md) · [rust](rust/problems/18-lru-cache/README.md) |
+| 19 | LFU Cache | Medium-Hard | 60 min | L2 | Foundations |  | [java](java/problems/19-lfu-cache/README.md) · [rust](rust/problems/19-lfu-cache/README.md) |
+| 20 | Rate Limiter | Medium-Hard | 60 min | L3 | Foundations (+ Concurrency) | Microsoft LLD | [java](java/problems/20-rate-limiter/README.md) · [rust](rust/problems/20-rate-limiter/README.md) |
+| 21 | In-Memory Key-Value Store | Medium-Hard | 90 min | L1 | Foundations |  | [java](java/problems/21-key-value-store/README.md) · [rust](rust/problems/21-key-value-store/README.md) |
+| 22 | Pub-Sub Message Broker | Medium-Hard | 90 min | L1 | Foundations (+ Concurrency) |  | [java](java/problems/22-pub-sub/README.md) · [rust](rust/problems/22-pub-sub/README.md) |
+| 23 | Notification System | Medium-Hard | 90 min | L2 | Foundations | Microsoft LLD | [java](java/problems/23-notification-system/README.md) · [rust](rust/problems/23-notification-system/README.md) |
+| 24 | Task Scheduler | Hard | 90 min | L3 | Foundations (+ Concurrency) |  | [java](java/problems/24-task-scheduler/README.md) · [rust](rust/problems/24-task-scheduler/README.md) |
+| 25 | Logging Framework | Medium-Hard | 90 min | L2 | Foundations | Microsoft LLD | [java](java/problems/25-logging-framework/README.md) · [rust](rust/problems/25-logging-framework/README.md) |
+| 26 | Metrics Collector | Medium-Hard | 60 min | L1 | Foundations |  | [java](java/problems/26-metrics/README.md) · [rust](rust/problems/26-metrics/README.md) |
+| 27 | Circuit Breaker | Medium-Hard | 60 min | L3 | Foundations (+ Concurrency) |  | [java](java/problems/27-circuit-breaker/README.md) · [rust](rust/problems/27-circuit-breaker/README.md) |
+| 28 | Bounded Blocking Buffer | Hard | 90 min | L3 | Foundations (+ Concurrency) |  | [java](java/problems/28-blocking-queue/README.md) · [rust](rust/problems/28-blocking-queue/README.md) |
+| 29 | Worker Pool | Hard | 90 min | L3 | Foundations (+ Concurrency) |  | [java](java/problems/29-worker-pool/README.md) · [rust](rust/problems/29-worker-pool/README.md) |
+| 30 | Concurrent Cache with Loaders | Hard | 90 min | L3 | Foundations (+ Concurrency) |  | [java](java/problems/30-concurrent-cache/README.md) · [rust](rust/problems/30-concurrent-cache/README.md) |
+| 31 | In-Process Event Bus | Hard | 120 min | L3 | Foundations (+ Concurrency) |  | [java](java/problems/31-event-bus/README.md) · [rust](rust/problems/31-event-bus/README.md) |
+| 32 | Board Game Engine | Hard | 120 min | L1 | Foundations |  | [java](java/problems/32-board-game-engine/README.md) · [rust](rust/problems/32-board-game-engine/README.md) |
+| 33 | Classes and Objects | Easy | 30 min | L2 | Foundations |  | [java](java/problems/33-classes-objects/README.md) · [rust](rust/problems/33-classes-objects/README.md) |
+| 34 | Interfaces | Easy | 30 min | L2 | Foundations |  | [java](java/problems/34-interfaces/README.md) · [rust](rust/problems/34-interfaces/README.md) |
+| 35 | Inheritance | Easy | 30 min | L2 | Foundations |  | [java](java/problems/35-inheritance/README.md) · [rust](rust/problems/35-inheritance/README.md) |
+| 36 | Polymorphism | Easy | 30 min | L2 | Foundations |  | [java](java/problems/36-polymorphism/README.md) · [rust](rust/problems/36-polymorphism/README.md) |
+| 37 | Abstraction | Medium | 30 min | L2 | Foundations |  | [java](java/problems/37-abstraction/README.md) · [rust](rust/problems/37-abstraction/README.md) |
+| 38 | Encapsulation | Medium | 30 min | L2 | Foundations |  | [java](java/problems/38-encapsulation/README.md) · [rust](rust/problems/38-encapsulation/README.md) |
+| 39 | Aggregation | Easy | 30 min | L2 | Foundations |  | [java](java/problems/39-aggregation/README.md) · [rust](rust/problems/39-aggregation/README.md) |
+| 40 | Composition | Medium | 40 min | L2 | Foundations |  | [java](java/problems/40-composition/README.md) · [rust](rust/problems/40-composition/README.md) |
+| 41 | Association | Medium | 40 min | L2 | Foundations |  | [java](java/problems/41-association/README.md) · [rust](rust/problems/41-association/README.md) |
+| 42 | DRY — Don't Repeat Yourself | Medium | 30 min | L2 | Foundations |  | [java](java/problems/42-dry/README.md) · [rust](rust/problems/42-dry/README.md) |
+| 43 | KISS — Keep It Simple | Easy | 20 min | L2 | Foundations |  | [java](java/problems/43-kiss/README.md) · [rust](rust/problems/43-kiss/README.md) |
+| 44 | YAGNI — You Aren't Gonna Need It | Easy | 25 min | L2 | Foundations |  | [java](java/problems/44-yagni/README.md) · [rust](rust/problems/44-yagni/README.md) |
+| 45 | Law of Demeter | Medium | 40 min | L2 | Foundations |  | [java](java/problems/45-law-of-demeter/README.md) · [rust](rust/problems/45-law-of-demeter/README.md) |
+| 46 | SRP — Single Responsibility Principle | Medium | 40 min | L2 | Foundations |  | [java](java/problems/46-srp/README.md) · [rust](rust/problems/46-srp/README.md) |
+| 47 | OCP — Open/Closed Principle | Medium | 35 min | L2 | Foundations |  | [java](java/problems/47-ocp/README.md) · [rust](rust/problems/47-ocp/README.md) |
+| 48 | LSP — Liskov Substitution Principle | Medium | 40 min | L2 | Foundations |  | [java](java/problems/48-lsp/README.md) · [rust](rust/problems/48-lsp/README.md) |
+| 49 | ISP — Interface Segregation Principle | Medium | 35 min | L2 | Foundations |  | [java](java/problems/49-isp/README.md) · [rust](rust/problems/49-isp/README.md) |
+| 50 | DIP — Dependency Inversion Principle | Medium | 35 min | L2 | Foundations |  | [java](java/problems/50-dip/README.md) · [rust](rust/problems/50-dip/README.md) |
+| 51 | SOLID Summary — Meal Order Checkout | Hard | 75 min | L2 | Foundations |  | [java](java/problems/51-solid-summary/README.md) · [rust](rust/problems/51-solid-summary/README.md) |
+| 52 | Singleton | Medium | 30 min | L2 | Foundations |  | [java](java/problems/52-singleton/README.md) · [rust](rust/problems/52-singleton/README.md) |
+| 53 | Factory Method | Medium | 35 min | L2 | Foundations |  | [java](java/problems/53-factory-method/README.md) · [rust](rust/problems/53-factory-method/README.md) |
+| 54 | Abstract Factory | Medium | 45 min | L2 | Foundations |  | [java](java/problems/54-abstract-factory/README.md) · [rust](rust/problems/54-abstract-factory/README.md) |
+| 55 | Builder | Medium | 45 min | L2 | Foundations |  | [java](java/problems/55-builder/README.md) · [rust](rust/problems/55-builder/README.md) |
+| 56 | Prototype | Medium | 40 min | L2 | Foundations |  | [java](java/problems/56-prototype/README.md) · [rust](rust/problems/56-prototype/README.md) |
+| 57 | Adapter | Medium | 35 min | L2 | Foundations |  | [java](java/problems/57-adapter/README.md) · [rust](rust/problems/57-adapter/README.md) |
+| 58 | Facade | Medium | 35 min | L2 | Foundations |  | [java](java/problems/58-facade/README.md) · [rust](rust/problems/58-facade/README.md) |
+| 59 | Decorator | Medium | 40 min | L2 | Foundations |  | [java](java/problems/59-decorator/README.md) · [rust](rust/problems/59-decorator/README.md) |
+| 60 | Composite | Medium | 40 min | L2 | Foundations |  | [java](java/problems/60-composite/README.md) · [rust](rust/problems/60-composite/README.md) |
+| 61 | Proxy | Medium | 45 min | L2 | Foundations |  | [java](java/problems/61-proxy/README.md) · [rust](rust/problems/61-proxy/README.md) |
+| 62 | Bridge | Hard | 50 min | L2 | Foundations |  | [java](java/problems/62-bridge/README.md) · [rust](rust/problems/62-bridge/README.md) |
+| 63 | Flyweight | Medium | 40 min | L2 | Foundations |  | [java](java/problems/63-flyweight/README.md) · [rust](rust/problems/63-flyweight/README.md) |
+| 64 | Iterator | Medium | 45 min | L2 | Foundations |  | [java](java/problems/64-iterator/README.md) · [rust](rust/problems/64-iterator/README.md) |
+| 65 | Observer | Medium | 40 min | L2 | Foundations |  | [java](java/problems/65-observer/README.md) · [rust](rust/problems/65-observer/README.md) |
+| 66 | Strategy | Medium | 40 min | L2 | Foundations |  | [java](java/problems/66-strategy/README.md) · [rust](rust/problems/66-strategy/README.md) |
+| 67 | Command | Hard | 50 min | L2 | Foundations |  | [java](java/problems/67-command/README.md) · [rust](rust/problems/67-command/README.md) |
+| 68 | State | Hard | 60 min | L2 | Foundations |  | [java](java/problems/68-state/README.md) · [rust](rust/problems/68-state/README.md) |
+| 69 | Template Method | Medium | 40 min | L2 | Foundations |  | [java](java/problems/69-template-method/README.md) · [rust](rust/problems/69-template-method/README.md) |
+| 70 | Visitor | Hard | 50 min | L2 | Foundations |  | [java](java/problems/70-visitor/README.md) · [rust](rust/problems/70-visitor/README.md) |
+| 71 | Mediator | Hard | 60 min | L2 | Foundations |  | [java](java/problems/71-mediator/README.md) · [rust](rust/problems/71-mediator/README.md) |
+| 72 | Memento | Hard | 50 min | L2 | Foundations |  | [java](java/problems/72-memento/README.md) · [rust](rust/problems/72-memento/README.md) |
+| 73 | Chain of Responsibility | Medium | 45 min | L2 | Foundations |  | [java](java/problems/73-chain-of-responsibility/README.md) · [rust](rust/problems/73-chain-of-responsibility/README.md) |
+| 74 | Concurrent LRU Cache (Read-Write Lock) | Medium-Hard | 60 min | L3 | Concurrency |  | [java](java/problems/74-rw-lock-lru-cache/README.md) · [rust](rust/problems/74-rw-lock-lru-cache/README.md) |
+| 75 | Bank Transfers Without Deadlock | Medium | 45 min | L3 | Concurrency |  | [java](java/problems/75-bank-transfer/README.md) · [rust](rust/problems/75-bank-transfer/README.md) |
+| 76 | Ordered Printer (Turn Taking) | Medium | 45 min | L3 | Concurrency |  | [java](java/problems/76-ordered-printer/README.md) · [rust](rust/problems/76-ordered-printer/README.md) |
+| 77 | Dining Philosophers | Medium-Hard | 60 min | L3 | Concurrency |  | [java](java/problems/77-dining-philosophers/README.md) · [rust](rust/problems/77-dining-philosophers/README.md) |
+| 78 | Bounded Connection Pool | Medium-Hard | 60 min | L3 | Concurrency |  | [java](java/problems/78-connection-pool/README.md) · [rust](rust/problems/78-connection-pool/README.md) |
+| 79 | Parallel Merge Sort | Medium-Hard | 60 min | L3 | Concurrency |  | [java](java/problems/79-parallel-merge-sort/README.md) · [rust](rust/problems/79-parallel-merge-sort/README.md) |
+| 80 | Parallel Word Count | Medium | 45 min | L3 | Concurrency |  | [java](java/problems/80-parallel-word-count/README.md) · [rust](rust/problems/80-parallel-word-count/README.md) |
+| 81 | Parallel Web Crawler | Hard | 90 min | L3 | Concurrency |  | [java](java/problems/81-parallel-crawler/README.md) · [rust](rust/problems/81-parallel-crawler/README.md) |
+| 82 | URL Shortener | Medium | 45 min | L2 | Product systems |  | [java](java/problems/82-url-shortener/README.md) · [rust](rust/problems/82-url-shortener/README.md) |
+| 83 | Feature Flag Service | Medium | 45 min | L2 | Product systems |  | [java](java/problems/83-feature-flags/README.md) · [rust](rust/problems/83-feature-flags/README.md) |
+| 84 | In-Memory File System with Permissions | Medium-Hard | 75 min | L2 | Product systems |  | [java](java/problems/84-file-system-permissions/README.md) · [rust](rust/problems/84-file-system-permissions/README.md) |
+| 85 | Text Editor with Undo/Redo | Medium | 60 min | L2 | Product systems | Microsoft LLD | [java](java/problems/85-text-editor-undo/README.md) · [rust](rust/problems/85-text-editor-undo/README.md) |
+| 86 | Document Versioning with Merge | Hard | 75 min | L2 | Product systems |  | [java](java/problems/86-document-versioning/README.md) · [rust](rust/problems/86-document-versioning/README.md) |
+| 87 | Expense Groups (Splitwise) | Hard | 75 min | L2 | Product systems |  | [java](java/problems/87-expense-groups/README.md) · [rust](rust/problems/87-expense-groups/README.md) |
+| 88 | Shared Event Calendar | Medium-Hard | 60 min | L2 | Product systems |  | [java](java/problems/88-event-calendar/README.md) · [rust](rust/problems/88-event-calendar/README.md) |
+| 89 | Movie Ticket Booking | Hard | 75 min | L2 | Product systems | Microsoft LLD | [java](java/problems/89-movie-ticketing/README.md) · [rust](rust/problems/89-movie-ticketing/README.md) |
+| 90 | Food Delivery Dispatch | Hard | 75 min | L2 | Product systems |  | [java](java/problems/90-food-delivery/README.md) · [rust](rust/problems/90-food-delivery/README.md) |
+| 91 | Online Auction | Medium-Hard | 60 min | L2 | Product systems |  | [java](java/problems/91-online-auction/README.md) · [rust](rust/problems/91-online-auction/README.md) |
+| 92 | Chat System | Hard | 75 min | L2 | Product systems |  | [java](java/problems/92-chat-system/README.md) · [rust](rust/problems/92-chat-system/README.md) |
+| 93 | Cron Job Scheduler | Hard | 75 min | L2 | Product systems |  | [java](java/problems/93-cron-job-scheduler/README.md) · [rust](rust/problems/93-cron-job-scheduler/README.md) |
+| 94 | API Gateway | Hard | 75 min | L2 | Product systems |  | [java](java/problems/94-api-gateway/README.md) · [rust](rust/problems/94-api-gateway/README.md) |
+| 95 | Mini SQL Engine | Hard | 90 min | L2 | Product systems |  | [java](java/problems/95-sql-engine/README.md) · [rust](rust/problems/95-sql-engine/README.md) |
+| 96 | Consistent Hash Ring | Medium-Hard | 60 min | L2 | Distributed systems |  | [java](java/problems/96-consistent-hashing/README.md) · [rust](rust/problems/96-consistent-hashing/README.md) |
+| 97 | Idempotent Request Processor | Medium-Hard | 60 min | L2 | Distributed systems |  | [java](java/problems/97-idempotent-requests/README.md) · [rust](rust/problems/97-idempotent-requests/README.md) |
+| 98 | Lease Lock with Fencing Tokens | Medium-Hard | 50 min | L2 | Distributed systems |  | [java](java/problems/98-lock-lease-fencing/README.md) · [rust](rust/problems/98-lock-lease-fencing/README.md) |
+| 99 | Raft Leader Election | Hard | 90 min | L3 | Distributed systems |  | [java](java/problems/99-leader-election/README.md) · [rust](rust/problems/99-leader-election/README.md) |
+| 100 | Gossip Protocol with Failure Detection | Hard | 90 min | L3 | Distributed systems |  | [java](java/problems/100-gossip-protocol/README.md) · [rust](rust/problems/100-gossip-protocol/README.md) |
+| 101 | Two-Phase Commit | Hard | 120 min | L3 | Distributed systems |  | [java](java/problems/101-two-phase-commit/README.md) · [rust](rust/problems/101-two-phase-commit/README.md) |
+| 102 | Saga Orchestrator | Hard | 90 min | L3 | Distributed systems |  | [java](java/problems/102-saga-orchestrator/README.md) · [rust](rust/problems/102-saga-orchestrator/README.md) |
+| 103 | CRDT Replicated Store | Hard | 75 min | L3 | Distributed systems |  | [java](java/problems/103-crdt-replication/README.md) · [rust](rust/problems/103-crdt-replication/README.md) |
+| 104 | Quorum Key-Value Store | Hard | 90 min | L3 | Distributed systems |  | [java](java/problems/104-quorum-kv/README.md) · [rust](rust/problems/104-quorum-kv/README.md) |
+| 105 | Raft Log Replication | Hard | 120 min | L3 | Distributed systems |  | [java](java/problems/105-raft-log/README.md) · [rust](rust/problems/105-raft-log/README.md) |
+| 106 | Job Scheduler | Medium | 60 min | L2 | Microsoft LLD | Microsoft LLD | [java](java/problems/106-job-scheduler/README.md) · [rust](rust/problems/106-job-scheduler/README.md) |
+| 107 | Excel-Like Autofill Engine | Medium | 45 min | L2 | Microsoft LLD | Microsoft LLD | [java](java/problems/107-excel-autofill/README.md) · [rust](rust/problems/107-excel-autofill/README.md) |
+| 108 | Document Comment Service | Easy-Medium | 30 min | L2 | Microsoft LLD | Microsoft LLD | [java](java/problems/108-document-comments/README.md) · [rust](rust/problems/108-document-comments/README.md) |
+| 109 | Document Line Search | Medium | 45 min | L2 | Microsoft LLD | Microsoft LLD | [java](java/problems/109-document-line-search/README.md) · [rust](rust/problems/109-document-line-search/README.md) |
+| 110 | # 110 Runtime Data Source Access Layer | Medium | 45 min | L2 | Microsoft LLD | Microsoft LLD | [java](java/problems/110-data-source-layer/README.md) · [rust](rust/problems/110-data-source-layer/README.md) |
+| 111 | Configuration Management Service | Medium | 60 min | L2 | Microsoft LLD | Microsoft LLD | [java](java/problems/111-config-management/README.md) · [rust](rust/problems/111-config-management/README.md) |
+| 112 | Parking Lot with Allocation Strategies | Medium-Hard | 75 min | L2 | Microsoft LLD | Microsoft LLD | [java](java/problems/112-parking-lot-strategies/README.md) · [rust](rust/problems/112-parking-lot-strategies/README.md) |
+| 113 | Multi-Module Logging Framework | Hard | 90 min | L2 | Microsoft LLD | Microsoft LLD | [java](java/problems/113-multi-module-logging/README.md) · [rust](rust/problems/113-multi-module-logging/README.md) |
+| 114 | Elevator Request Feasibility | Hard | 90 min | L2 | Microsoft LLD | Microsoft LLD | [java](java/problems/114-elevator-feasibility/README.md) · [rust](rust/problems/114-elevator-feasibility/README.md) |
+| 115 | Autocomplete / Typeahead Service | Hard | 75 min | L2 | Search and RAG (+ Concurrency) | Microsoft LLD | [java](java/problems/115-autocomplete-typeahead/README.md) · [rust](rust/problems/115-autocomplete-typeahead/README.md) |
+| 116 | In-Memory Search Engine | Hard | 90 min | L2 | Search and RAG |  | [java](java/problems/116-inverted-index-search/README.md) · [rust](rust/problems/116-inverted-index-search/README.md) |
+| 117 | Search Query Pipeline | Medium-Hard | 60 min | L2 | Search and RAG |  | [java](java/problems/117-query-pipeline/README.md) · [rust](rust/problems/117-query-pipeline/README.md) |
+| 118 | Search Result Cache | Hard | 75 min | L2 | Search and RAG (+ Concurrency) |  | [java](java/problems/118-search-result-cache/README.md) · [rust](rust/problems/118-search-result-cache/README.md) |
+| 119 | Mini RAG Retrieval Component | Hard | 90 min | L2 | Search and RAG |  | [java](java/problems/119-mini-rag-retriever/README.md) · [rust](rust/problems/119-mini-rag-retriever/README.md) |
+| 120 | Thread-Safe Trie | Hard | 75 min | L2 | Concurrency |  | [java](java/problems/120-thread-safe-trie/README.md) · [rust](rust/problems/120-thread-safe-trie/README.md) |
+| 121 | Concurrent Bloom Filter | Hard | 60 min | L2 | Concurrency |  | [java](java/problems/121-concurrent-bloom-filter/README.md) · [rust](rust/problems/121-concurrent-bloom-filter/README.md) |
+| 122 | Versioned Value Store | Hard | 75 min | L2 | Concurrency |  | [java](java/problems/122-versioned-value-store/README.md) · [rust](rust/problems/122-versioned-value-store/README.md) |
+| 123 | Snake Game With Food And Score | Medium | 45 min | L2 | Microsoft LLD | Microsoft LLD | [java](java/problems/123-snake-game/README.md) · [rust](rust/problems/123-snake-game/README.md) |
+| 124 | Kafka-Like Message Streaming Service | Hard | 90 min | L2 | Microsoft LLD | Microsoft LLD | [java](java/problems/124-kafka-streaming/README.md) · [rust](rust/problems/124-kafka-streaming/README.md) |
+| 125 | Music Streaming and Search | Medium-Hard | 75 min | L2 | Microsoft LLD | Microsoft LLD | [java](java/problems/125-music-streaming/README.md) · [rust](rust/problems/125-music-streaming/README.md) |
+| 126 | Alert Monitoring System | Medium-Hard | 75 min | L2 | Microsoft LLD | Microsoft LLD | [java](java/problems/126-alert-monitoring/README.md) · [rust](rust/problems/126-alert-monitoring/README.md) |
+| 127 | Browser History Manager | Medium | 45 min | L2 | Microsoft LLD | Microsoft LLD | [java](java/problems/127-browser-history/README.md) · [rust](rust/problems/127-browser-history/README.md) |
+| 128 | Local Search with Ranking | Medium-Hard | 60 min | L2 | Microsoft LLD | Microsoft LLD | [java](java/problems/128-local-search-ranking/README.md) · [rust](rust/problems/128-local-search-ranking/README.md) |
+| 129 | Job Posting with Candidate Matching | Medium-Hard | 60 min | L2 | Microsoft LLD | Microsoft LLD | [java](java/problems/129-job-candidate-matching/README.md) · [rust](rust/problems/129-job-candidate-matching/README.md) |
+| 130 | Ludo | Hard | 90 min | L2 | Microsoft LLD | Microsoft LLD | [java](java/problems/130-ludo/README.md) · [rust](rust/problems/130-ludo/README.md) |
+| 131 | Shortest Distance and Nearest Landmarks | Medium | 60 min | L2 | Microsoft LLD | Microsoft LLD | [java](java/problems/131-landmark-distances/README.md) · [rust](rust/problems/131-landmark-distances/README.md) |
+| 132 | Word Processor | Medium-Hard | 75 min | L2 | Microsoft LLD | Microsoft LLD | [java](java/problems/132-word-processor/README.md) · [rust](rust/problems/132-word-processor/README.md) |
+| 133 | Spreadsheet Grid | Medium-Hard | 75 min | L2 | Microsoft LLD | Microsoft LLD | [java](java/problems/133-spreadsheet-grid/README.md) · [rust](rust/problems/133-spreadsheet-grid/README.md) |
+| 134 | Dictionary App | Medium | 45 min | L2 | Microsoft LLD | Microsoft LLD | [java](java/problems/134-dictionary-app/README.md) · [rust](rust/problems/134-dictionary-app/README.md) |
+| 135 | Container Orchestrator | Hard | 90 min | L2 | Microsoft LLD | Microsoft LLD | [java](java/problems/135-container-orchestrator/README.md) · [rust](rust/problems/135-container-orchestrator/README.md) |
+| 136 | Fantasy Team Leaderboard | Medium-Hard | 60 min | L2 | Microsoft LLD | Microsoft LLD | [java](java/problems/136-fantasy-leaderboard/README.md) · [rust](rust/problems/136-fantasy-leaderboard/README.md) |
+| 137 | Configurable Time Window Hit Counter | Medium | 45 min | L2 | Microsoft LLD | Microsoft LLD | [java](java/problems/137-hit-counter-window/README.md) · [rust](rust/problems/137-hit-counter-window/README.md) |
+| 138 | Multi-Threaded Page Visit Counter | Medium | 45 min | L2 | Microsoft LLD | Microsoft LLD | [java](java/problems/138-page-visit-counter/README.md) · [rust](rust/problems/138-page-visit-counter/README.md) |
+| 139 | Shopping Cart | Medium | 60 min | L2 | Microsoft LLD | Microsoft LLD | [java](java/problems/139-shopping-cart/README.md) · [rust](rust/problems/139-shopping-cart/README.md) |
+| 140 | Custom HashMap | Medium | 60 min | L2 | Microsoft LLD | Microsoft LLD | [java](java/problems/140-custom-hashmap/README.md) · [rust](rust/problems/140-custom-hashmap/README.md) |
+| 141 | Matrix Traversal Strategies | Medium | 45 min | L2 | Microsoft LLD | Microsoft LLD | [java](java/problems/141-matrix-traversal/README.md) · [rust](rust/problems/141-matrix-traversal/README.md) |
+| 142 | Restaurant Customer Tokens | Medium | 45 min | L2 | Microsoft LLD | Microsoft LLD | [java](java/problems/142-restaurant-tokens/README.md) · [rust](rust/problems/142-restaurant-tokens/README.md) |
+| 143 | Excel Cell Values and Sum Formulas | Hard | 90 min | L2 | Microsoft LLD | Microsoft LLD | [java](java/problems/143-excel-formulas/README.md) · [rust](rust/problems/143-excel-formulas/README.md) |
 
 ### What the concept drills (33-73) practise
 
