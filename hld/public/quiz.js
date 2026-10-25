@@ -140,30 +140,51 @@ function allQuizzes() {
   return [...mine, ...bank];
 }
 
+function quizCard(q, inSeries) {
+  const att = S.attempts[q.id];
+  const missed = att?.last?.missed?.length || 0;
+  const meta = h('div', { class: 'meta' },
+    h('span', { text: `${q.questionCount} questions` }),
+    h('span', { text: fmtMinutes(q.estimatedMinutes) }),
+    q.topic && !inSeries ? h('span', { text: q.topic }) : null,
+    att?.best != null ? h('span', { class: 'badge', text: `Best ${att.best}%` }) : null,
+    q.custom ? h('span', { class: 'badge ai', text: 'AI generated' }) : null);
+  const actions = h('div', { class: 'card-actions' },
+    h('button', { class: 'btn primary small', type: 'button', text: 'Start', onclick: () => startQuiz(q.id, 'full') }),
+    q.questionCount > QUICK_COUNT + 2 ? h('button', { class: 'btn small', type: 'button', text: `Quick ${QUICK_COUNT}`, onclick: () => startQuiz(q.id, 'quick') }) : null,
+    missed ? h('button', { class: 'btn small', type: 'button', text: `Retry missed (${missed})`, onclick: () => startQuiz(q.id, 'missed') }) : null,
+    q.custom ? h('button', { class: 'btn ghost small', type: 'button', text: 'Delete', onclick: () => deleteCustom(q) }) : null);
+  return h('article', { class: 'card' + (inSeries ? ' in-series' : '') },
+    h('h3', { text: q.title }),
+    q.description ? h('p', { class: 'muted', text: q.description }) : null,
+    meta,
+    q.source && !inSeries ? h('p', { class: 'muted', text: `Source: ${q.source}` }) : null,
+    actions);
+}
+
+// Quizzes that share a `series` are shown together under one heading, split into small sub-topic quizzes.
 function renderCards() {
   els.cards.replaceChildren();
   const list = allQuizzes();
   if (!list.length) { els.cards.append(h('p', { class: 'empty', text: 'No quizzes yet. Create one with AI on the right.' })); return; }
+  const series = new Map();
+  const single = [];
   for (const q of list) {
-    const att = S.attempts[q.id];
-    const missed = att?.last?.missed?.length || 0;
-    const meta = h('div', { class: 'meta' },
-      h('span', { text: `${q.questionCount} questions` }),
-      h('span', { text: fmtMinutes(q.estimatedMinutes) }),
-      q.topic ? h('span', { text: q.topic }) : null,
-      att?.best != null ? h('span', { class: 'badge', text: `Best ${att.best}%` }) : null,
-      q.custom ? h('span', { class: 'badge ai', text: 'AI generated' }) : null);
-    const actions = h('div', { class: 'card-actions' },
-      h('button', { class: 'btn primary small', type: 'button', text: 'Start', onclick: () => startQuiz(q.id, 'full') }),
-      q.questionCount > QUICK_COUNT + 2 ? h('button', { class: 'btn small', type: 'button', text: `Quick ${QUICK_COUNT}`, onclick: () => startQuiz(q.id, 'quick') }) : null,
-      missed ? h('button', { class: 'btn small', type: 'button', text: `Retry missed (${missed})`, onclick: () => startQuiz(q.id, 'missed') }) : null,
-      q.custom ? h('button', { class: 'btn ghost small', type: 'button', text: 'Delete', onclick: () => deleteCustom(q) }) : null);
-    els.cards.append(h('article', { class: 'card' },
-      h('h3', { text: q.title }),
-      q.description ? h('p', { class: 'muted', text: q.description }) : null,
-      meta,
-      q.source ? h('p', { class: 'muted', text: `Source: ${q.source}` }) : null,
-      actions));
+    if (q.series && !q.custom) { if (!series.has(q.series)) series.set(q.series, []); series.get(q.series).push(q); } else single.push(q);
+  }
+  for (const q of single) els.cards.append(quizCard(q, false));
+  for (const [id, items] of series) {
+    items.sort((x, y) => (x.seriesOrder || 0) - (y.seriesOrder || 0));
+    const done = items.filter((q) => S.attempts[q.id]?.best != null).length;
+    const total = items.reduce((n, q) => n + q.questionCount, 0);
+    const key = `series-open:${id}`;
+    const box = h('details', { class: 'series', open: store.get(key, true) !== false },
+      h('summary', {},
+        h('span', { class: 'series-name' }, h('b', { text: items[0].seriesTitle }), h('span', { class: 'muted', text: `${items.length} sub-topic quizzes · ${total} questions` })),
+        h('span', { class: 'series-progress' }, h('span', { class: 'progress' }, h('i', { style: `width:${Math.round((done / items.length) * 100)}%` })), h('span', { class: 'muted', text: `${done}/${items.length} done` }))),
+      h('div', { class: 'series-body' }, ...items.map((q, i) => h('div', { class: 'series-item' }, h('span', { class: 'series-num', text: String(i + 1) }), quizCard(q, true)))));
+    box.addEventListener('toggle', () => store.set(key, box.open));
+    els.cards.append(box);
   }
 }
 

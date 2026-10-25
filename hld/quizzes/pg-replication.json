@@ -1,0 +1,201 @@
+{
+  "id": "pg-replication",
+  "title": "PostgreSQL: replication & availability",
+  "topic": "PostgreSQL",
+  "series": "postgres-system-design",
+  "seriesTitle": "PostgreSQL for system design interviews",
+  "seriesOrder": 7,
+  "description": "Synchronous versus asynchronous replication, read replicas, replication lag and read-your-writes, and how failover works.",
+  "source": "Study notes: when and how to use PostgreSQL in system design interviews",
+  "estimatedMinutes": 5,
+  "questions": [
+    {
+      "id": "async-default",
+      "concept": "Replication modes",
+      "type": "single",
+      "difficulty": 1,
+      "prompt": "What does asynchronous replication, the default, do on commit?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Confirms to the client immediately and sends changes to replicas afterwards.",
+          "why": "Right: fast but replicas lag."
+        },
+        {
+          "id": "b",
+          "text": "Waits for at least one replica to acknowledge before confirming.",
+          "why": "That describes synchronous replication."
+        },
+        {
+          "id": "c",
+          "text": "Rejects writes until all replicas are fully caught up.",
+          "why": "Neither mode behaves like this."
+        },
+        {
+          "id": "d",
+          "text": "Stops replicating whenever the primary is busy.",
+          "why": "Replication continues in the background."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Async maximises write speed but allows a window of lost writes if the primary dies before replicas catch up."
+    },
+    {
+      "id": "sync-cost",
+      "concept": "Durability trade-off",
+      "type": "single",
+      "difficulty": 2,
+      "prompt": "What is the trade-off of synchronous replication?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Stronger durability across nodes, paid for with higher write latency.",
+          "why": "Right: every commit waits on a replica."
+        },
+        {
+          "id": "b",
+          "text": "Lower write latency and weaker durability.",
+          "why": "It is the opposite."
+        },
+        {
+          "id": "c",
+          "text": "No cost, because replicas are free to wait for most everyday workloads.",
+          "why": "The primary's clients feel the wait."
+        },
+        {
+          "id": "d",
+          "text": "It only works if the replica is in a different region in a typical production setup.",
+          "why": "Location is not a requirement, though distance raises the cost."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "A hybrid is common: one or two synchronous replicas for safety, more asynchronous ones for read scaling."
+    },
+    {
+      "id": "read-scaling",
+      "concept": "Read scaling",
+      "type": "single",
+      "difficulty": 1,
+      "prompt": "What do read replicas primarily buy you?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Read throughput that multiplies by the number of replicas.",
+          "why": "Right: spread read queries across copies."
+        },
+        {
+          "id": "b",
+          "text": "Write throughput that multiplies by the number of replicas.",
+          "why": "All writes still go to the primary."
+        },
+        {
+          "id": "c",
+          "text": "Elimination of every consistency concern.",
+          "why": "Replication lag introduces new ones."
+        },
+        {
+          "id": "d",
+          "text": "Automatic sharding of large tables.",
+          "why": "Replicas are full copies, not shards."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Send writes to the primary and reads to replicas: great for read-heavy products."
+    },
+    {
+      "id": "read-your-writes",
+      "concept": "Replication lag",
+      "type": "single",
+      "difficulty": 3,
+      "prompt": "A user posts, refreshes immediately and does not see the post. Which fix is most appropriate?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Route that user's reads to the primary for a short time after they write.",
+          "why": "Right: restores read-your-writes without reading everything from the primary."
+        },
+        {
+          "id": "b",
+          "text": "Remove all replicas and read only from the primary as a general rule of thumb.",
+          "why": "It removes the lag but throws away read scaling."
+        },
+        {
+          "id": "c",
+          "text": "Tell the user to refresh until the post shows up.",
+          "why": "That is a poor experience, not a design."
+        },
+        {
+          "id": "d",
+          "text": "Switch the database to eventual consistency everywhere under normal operating conditions.",
+          "why": "The lag is already eventual consistency; that is the problem."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Replication lag is the key caveat. Pin recent writers to the primary or read from a replica that has caught up."
+    },
+    {
+      "id": "hybrid-sync",
+      "concept": "Replication modes",
+      "type": "truefalse",
+      "difficulty": 2,
+      "prompt": "True or false: a common setup keeps one or two synchronous replicas for durability and adds asynchronous replicas to scale reads.",
+      "options": [
+        {
+          "id": "a",
+          "text": "True",
+          "why": "Correct: this hybrid is widely used."
+        },
+        {
+          "id": "b",
+          "text": "False",
+          "why": "It is a standard pattern, not an unsupported one."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "PostgreSQL lets you choose which replicas are synchronous, so you can balance durability against write latency."
+    },
+    {
+      "id": "failover",
+      "concept": "High availability",
+      "type": "single",
+      "difficulty": 2,
+      "prompt": "When the primary fails, what is the rough failover sequence?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Detect the failure, promote a replica, update connection info, repoint applications.",
+          "why": "Right: the standard four steps."
+        },
+        {
+          "id": "b",
+          "text": "Delete the failed node and recreate every table from scratch in the majority of deployments.",
+          "why": "Replicas already hold the data."
+        },
+        {
+          "id": "c",
+          "text": "Pause all writes until an engineer restores a backup without any extra configuration.",
+          "why": "Automatic failover avoids that."
+        },
+        {
+          "id": "d",
+          "text": "Merge all replicas into one big table.",
+          "why": "Replicas are copies; one is simply promoted."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Managed services such as RDS or Cloud SQL automate this. Mention replication as reliability, not only scaling."
+    }
+  ]
+}

@@ -1,0 +1,267 @@
+{
+  "id": "pg-scaling-writes",
+  "title": "PostgreSQL: scaling writes",
+  "topic": "PostgreSQL",
+  "series": "postgres-system-design",
+  "seriesTitle": "PostgreSQL for system design interviews",
+  "seriesOrder": 6,
+  "description": "What to reach for when one node is not enough: vertical scaling, batching, write offloading, partitioning, sharding and connection pooling.",
+  "source": "Study notes: when and how to use PostgreSQL in system design interviews",
+  "estimatedMinutes": 7,
+  "questions": [
+    {
+      "id": "first-step",
+      "concept": "Vertical scaling",
+      "type": "single",
+      "difficulty": 1,
+      "prompt": "A single node nears its write limit. What is the simplest first lever?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Bigger hardware: faster NVMe disks for the WAL, more RAM, more cores.",
+          "why": "Right: easy, though rarely the most impressive answer."
+        },
+        {
+          "id": "b",
+          "text": "Dropping all constraints from every table.",
+          "why": "That sacrifices integrity for a small gain."
+        },
+        {
+          "id": "c",
+          "text": "Moving every table to a different database engine.",
+          "why": "That is a rewrite, not a first step."
+        },
+        {
+          "id": "d",
+          "text": "Adding more read replicas to absorb the writes.",
+          "why": "Replicas cannot accept writes in a standard setup."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Vertical scaling is a fine start, but you should follow it with architectural options."
+    },
+    {
+      "id": "batching",
+      "concept": "Batching",
+      "type": "single",
+      "difficulty": 2,
+      "prompt": "Instead of 1,000 single-row inserts you send one multi-row INSERT in one transaction. What is the main risk?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Writes buffered in the server before the commit are lost if it crashes.",
+          "why": "Right: the batch is the unit of loss."
+        },
+        {
+          "id": "b",
+          "text": "The database will refuse any transaction with over ten rows.",
+          "why": "Large batches are normal and supported."
+        },
+        {
+          "id": "c",
+          "text": "Indexes stop being maintained during the batch.",
+          "why": "They are maintained, just more efficiently."
+        },
+        {
+          "id": "d",
+          "text": "Foreign keys are ignored inside batches.",
+          "why": "Constraints still apply."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Batching cuts per-transaction overhead. Balance batch size against the data you can afford to lose or replay."
+    },
+    {
+      "id": "offloading",
+      "concept": "Write offloading",
+      "type": "single",
+      "difficulty": 2,
+      "prompt": "Which writes are the best candidates for asynchronous offloading through a queue such as Kafka?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Analytics events and last-seen timestamps, which need no immediate visibility.",
+          "why": "Right: non-critical, latency-tolerant writes."
+        },
+        {
+          "id": "b",
+          "text": "The initial payment record for a checkout.",
+          "why": "Money movement needs a synchronous, durable write."
+        },
+        {
+          "id": "c",
+          "text": "Account creation that must reject duplicate usernames in the majority of deployments.",
+          "why": "Uniqueness needs an immediate decision from the database."
+        },
+        {
+          "id": "d",
+          "text": "Any write that happens inside a multi-table transaction as a general rule of thumb.",
+          "why": "Transactions need to stay together in one place."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Queue the noncritical writes and apply them in batches. Keep correctness-critical writes synchronous."
+    },
+    {
+      "id": "partitioning-benefit",
+      "concept": "Partitioning",
+      "type": "single",
+      "difficulty": 2,
+      "prompt": "Why does time-based partitioning of a posts table help both reads and writes?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Recent-data queries touch only recent partitions, and index updates stay small.",
+          "why": "Right: smaller scans and per-partition indexes."
+        },
+        {
+          "id": "b",
+          "text": "It removes the need for any indexes at all in a typical production setup.",
+          "why": "Partitions still use indexes."
+        },
+        {
+          "id": "c",
+          "text": "It spreads the table across several machines automatically without any extra configuration.",
+          "why": "Partitions live in one database; spreading across machines is sharding."
+        },
+        {
+          "id": "d",
+          "text": "It makes old data impossible to query.",
+          "why": "Old partitions remain queryable."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Partitioning suits data with a natural lifecycle. Old partitions can move to cheaper storage or be dropped quickly."
+    },
+    {
+      "id": "sharding-key",
+      "concept": "Sharding",
+      "type": "single",
+      "difficulty": 3,
+      "prompt": "Users mostly read their own posts. What is a sound shard key for the posts table?",
+      "options": [
+        {
+          "id": "a",
+          "text": "user_id, so each user's posts live on one shard.",
+          "why": "Right: avoids scatter-gather for the common query."
+        },
+        {
+          "id": "b",
+          "text": "A random value per post, to spread load evenly for most everyday workloads.",
+          "why": "It balances writes but forces cross-shard reads of a user's posts."
+        },
+        {
+          "id": "c",
+          "text": "The post's created_at date, bucketed by day.",
+          "why": "It sends all new writes to the same hot shard."
+        },
+        {
+          "id": "d",
+          "text": "The length of the post content.",
+          "why": "It has no relationship to the access pattern."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Shard on the column you query by most, and be explicit about the cost of cross-shard queries."
+    },
+    {
+      "id": "builtin-sharding",
+      "concept": "Sharding",
+      "type": "truefalse",
+      "difficulty": 2,
+      "prompt": "True or false: PostgreSQL ships with built-in automatic sharding like DynamoDB.",
+      "options": [
+        {
+          "id": "a",
+          "text": "True",
+          "why": "It does not have automatic built-in sharding."
+        },
+        {
+          "id": "b",
+          "text": "False",
+          "why": "Correct: manual sharding or Citus."
+        }
+      ],
+      "correct": [
+        "b"
+      ],
+      "explanation": "You implement sharding yourself, or use a service like Citus that handles much of it."
+    },
+    {
+      "id": "pooling",
+      "concept": "Connection pooling",
+      "type": "single",
+      "difficulty": 3,
+      "prompt": "Hundreds of application instances open connections and the database slows down. What fits?",
+      "options": [
+        {
+          "id": "a",
+          "text": "A pooler such as PgBouncer multiplexing many clients onto few connections.",
+          "why": "Right: each connection is a process, so fewer is better."
+        },
+        {
+          "id": "b",
+          "text": "Give every application instance a dedicated database process under normal operating conditions.",
+          "why": "That is what overloads memory and CPU."
+        },
+        {
+          "id": "c",
+          "text": "Increase max_connections to the number of clients as a general rule of thumb.",
+          "why": "More processes worsen context switching."
+        },
+        {
+          "id": "d",
+          "text": "Disable the buffer cache to free memory.",
+          "why": "The cache is central to performance."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "PostgreSQL forks a process per connection, so pooling is essentially mandatory at scale."
+    },
+    {
+      "id": "order-of-options",
+      "concept": "Choosing a strategy",
+      "type": "single",
+      "difficulty": 3,
+      "prompt": "Writes reach 20k per second and the team wants the least complex fix that works. Which ordering of options is most sensible?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Batching and offloading, then partitioning, then sharding if still needed.",
+          "why": "Right: escalate complexity only when needed."
+        },
+        {
+          "id": "b",
+          "text": "Sharding first, since it always solves write scaling in the majority of deployments.",
+          "why": "It adds the most complexity; try cheaper options first."
+        },
+        {
+          "id": "c",
+          "text": "Switch databases immediately without measuring without any extra configuration.",
+          "why": "Scale alone is not a justification."
+        },
+        {
+          "id": "d",
+          "text": "Add indexes on every column to speed writes.",
+          "why": "More indexes slow writes."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Start simple, measure, and say what trigger would make you shard."
+    }
+  ]
+}

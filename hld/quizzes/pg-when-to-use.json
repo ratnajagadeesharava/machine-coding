@@ -1,0 +1,269 @@
+{
+  "id": "pg-when-to-use",
+  "title": "PostgreSQL: when to use it",
+  "topic": "PostgreSQL",
+  "series": "postgres-system-design",
+  "seriesTitle": "PostgreSQL for system design interviews",
+  "seriesOrder": 1,
+  "description": "The default-choice mindset: what PostgreSQL does well, where it struggles, and how to justify the choice (or an alternative) out loud.",
+  "source": "Study notes: when and how to use PostgreSQL in system design interviews",
+  "estimatedMinutes": 6,
+  "questions": [
+    {
+      "id": "default-choice",
+      "concept": "Default database choice",
+      "type": "single",
+      "difficulty": 1,
+      "prompt": "In a system design interview with no unusual requirements, how should you treat PostgreSQL?",
+      "options": [
+        {
+          "id": "a",
+          "text": "As the default choice, then explain any reason you would deviate from it.",
+          "why": "Right: starting from a strong general-purpose default is easier to defend."
+        },
+        {
+          "id": "b",
+          "text": "As a last resort, only after proving every NoSQL option fails first.",
+          "why": "It is the reverse: PostgreSQL is a safe starting point, not a last resort."
+        },
+        {
+          "id": "c",
+          "text": "As a tool reserved for banks and other finance-only systems.",
+          "why": "It suits many domains: e-commerce, content, analytics at reasonable scale."
+        },
+        {
+          "id": "d",
+          "text": "As a poor choice for anything that needs to scale beyond one node.",
+          "why": "Replication, partitioning and sharding take it much further than one node."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Start with PostgreSQL and justify deviations. That is much stronger than starting with a niche store and arguing it beats PostgreSQL."
+    },
+    {
+      "id": "strengths",
+      "concept": "Where PostgreSQL shines",
+      "type": "multi",
+      "difficulty": 1,
+      "prompt": "Select all the needs where PostgreSQL is a particularly good fit.",
+      "options": [
+        {
+          "id": "a",
+          "text": "Complex relationships between entities that need joins and foreign keys.",
+          "why": "Yes: relational integrity is a core strength."
+        },
+        {
+          "id": "b",
+          "text": "A mix of structured data and flexible semi-structured metadata (JSONB).",
+          "why": "Yes: JSONB gives document-style flexibility in the same database."
+        },
+        {
+          "id": "c",
+          "text": "Built-in full-text search and geospatial queries (with PostGIS).",
+          "why": "Yes: these remove the need for extra systems in many designs."
+        },
+        {
+          "id": "d",
+          "text": "Millions of writes per second with no joins and no transactions.",
+          "why": "That is an extreme write-throughput case where other stores fit better."
+        }
+      ],
+      "correct": [
+        "a",
+        "b",
+        "c"
+      ],
+      "explanation": "PostgreSQL combines relational integrity, flexible JSONB, search and geo features. Extreme write rates are where you start looking elsewhere."
+    },
+    {
+      "id": "extreme-writes",
+      "concept": "When to look elsewhere",
+      "type": "single",
+      "difficulty": 2,
+      "prompt": "A telemetry pipeline must absorb millions of small writes per second with no joins. Which concern most weakens PostgreSQL here?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Every write needs a WAL entry and index updates, creating I/O bottlenecks.",
+          "why": "Right: per-write durability and index maintenance cap throughput per node."
+        },
+        {
+          "id": "b",
+          "text": "PostgreSQL cannot store timestamps accurately enough for telemetry.",
+          "why": "It stores timestamps with microsecond resolution; precision is not the issue."
+        },
+        {
+          "id": "c",
+          "text": "PostgreSQL has no way to run more than one server at a time.",
+          "why": "It supports replication and sharding; the issue is write cost, not server count."
+        },
+        {
+          "id": "d",
+          "text": "PostgreSQL rejects tables that contain more than a million rows.",
+          "why": "There is no such limit; tables can hold far more than that."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Per-write WAL and index costs, plus coordination across shards, make millions of writes per second a poor fit. Consider Cassandra or a queue plus batching."
+    },
+    {
+      "id": "multi-region",
+      "concept": "When to look elsewhere",
+      "type": "single",
+      "difficulty": 3,
+      "prompt": "Users on three continents must all write locally with low latency, and the writes must stay globally consistent. What is the core PostgreSQL limitation?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Its single-primary design makes true active-active writes across regions hard.",
+          "why": "Right: one region owns writes; multi-primary needs conflict handling PostgreSQL lacks."
+        },
+        {
+          "id": "b",
+          "text": "It cannot create replicas outside the region where the primary runs in a typical production setup.",
+          "why": "Cross-region replicas are possible; they are read-only copies."
+        },
+        {
+          "id": "c",
+          "text": "It has no transactions that span more than one table at a time for most everyday workloads.",
+          "why": "Multi-table transactions are a standard feature."
+        },
+        {
+          "id": "d",
+          "text": "It stores data in a format that cannot be sent over a network.",
+          "why": "Replication ships WAL over the network routinely."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "One primary accepts writes. Active-active needs something built for it: CockroachDB for global ACID, Cassandra or DynamoDB global tables for eventual consistency."
+    },
+    {
+      "id": "key-value",
+      "concept": "When to look elsewhere",
+      "type": "single",
+      "difficulty": 2,
+      "prompt": "Your access pattern is purely get/put by key, with no joins or ad hoc queries. Which statement is most accurate?",
+      "options": [
+        {
+          "id": "a",
+          "text": "PostgreSQL works but is overkill; Redis or DynamoDB fit the pattern better.",
+          "why": "Right: MVCC, WAL and the planner add overhead you would not use."
+        },
+        {
+          "id": "b",
+          "text": "PostgreSQL is the only database that can serve a key lookup quickly.",
+          "why": "Many stores serve key lookups quickly; most do it with less overhead."
+        },
+        {
+          "id": "c",
+          "text": "Key-value access patterns are impossible to model in a SQL table.",
+          "why": "A two-column table models it fine; it is just not the best tool."
+        },
+        {
+          "id": "d",
+          "text": "PostgreSQL requires a separate cache before it can answer any lookup under normal operating conditions.",
+          "why": "It answers indexed lookups directly; a cache is an optimisation."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Do not pay for a query planner and MVCC when you only need get/put. Pick the simpler store and say why."
+    },
+    {
+      "id": "scale-alone",
+      "concept": "Justifying the choice",
+      "type": "truefalse",
+      "difficulty": 2,
+      "prompt": "True or false: \"NoSQL scales better, so we should not use PostgreSQL\" is a strong justification on its own.",
+      "options": [
+        {
+          "id": "a",
+          "text": "True",
+          "why": "It is too broad to defend without a concrete requirement."
+        },
+        {
+          "id": "b",
+          "text": "False",
+          "why": "Correct: you need a specific limit such as write rate or multi-region writes."
+        }
+      ],
+      "correct": [
+        "b"
+      ],
+      "explanation": "Scalability alone is not a good reason to leave PostgreSQL; it handles large scale with replication, partitioning and sharding. Name the concrete requirement instead."
+    },
+    {
+      "id": "consolidate",
+      "concept": "Fewer moving parts",
+      "type": "single",
+      "difficulty": 2,
+      "prompt": "A product needs relational data, flexible post metadata and basic text search. What is the simplest sound architecture?",
+      "options": [
+        {
+          "id": "a",
+          "text": "PostgreSQL alone, using JSONB for metadata and full-text search for text.",
+          "why": "Right: one system covers all three, with less to operate."
+        },
+        {
+          "id": "b",
+          "text": "PostgreSQL for users, MongoDB for metadata and Elasticsearch for search as a general rule of thumb.",
+          "why": "Three systems add operational and consistency cost the needs do not justify yet."
+        },
+        {
+          "id": "c",
+          "text": "MongoDB alone, because it handles flexible metadata natively.",
+          "why": "It loses relational integrity that the data model relies on."
+        },
+        {
+          "id": "d",
+          "text": "Elasticsearch alone, because it can also store all the user records.",
+          "why": "It is a search engine, not a transactional source of truth."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "PostgreSQL features often remove the need for MongoDB or Elasticsearch. Add them only when a requirement outgrows the built-ins."
+    },
+    {
+      "id": "interview-depth",
+      "concept": "Interview focus",
+      "type": "single",
+      "difficulty": 1,
+      "prompt": "What does an interviewer usually want to see when you bring up PostgreSQL?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Informed architectural decisions about fit, trade-offs and scale.",
+          "why": "Right: the interview tests design judgement, not administration."
+        },
+        {
+          "id": "b",
+          "text": "A detailed walkthrough of MVCC and WAL internals from memory in the majority of deployments.",
+          "why": "Too deep is a common trap unless the interviewer asks."
+        },
+        {
+          "id": "c",
+          "text": "The exact syntax of every PostgreSQL configuration parameter.",
+          "why": "Configuration trivia is not what a design interview measures."
+        },
+        {
+          "id": "d",
+          "text": "A claim that PostgreSQL is better than every other database.",
+          "why": "Overbroad claims without trade-offs sound weak."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Be a decision-maker, not a DBA: relationships, consistency, query patterns and scale, with internals only when they change the decision."
+    }
+  ]
+}

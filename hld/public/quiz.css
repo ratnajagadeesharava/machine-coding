@@ -178,3 +178,21 @@ h3 { font-size: 16px; margin: 0 0 10px; }
 .run-timer.low { background: var(--danger-soft); color: var(--danger); animation: pulse 1s ease-in-out infinite; }
 @keyframes pulse { 50% { opacity: .55; } }
 @media (prefers-reduced-motion: reduce) { .run-timer.low { animation: none; } }
+
+/* series: sub-topic quizzes grouped under one heading */
+.series { background: var(--panel); border: 1px solid var(--line); border-radius: 20px; padding: 6px; }
+.series > summary { list-style: none; cursor: pointer; display: flex; justify-content: space-between; align-items: center; gap: 16px; padding: 16px 18px; border-radius: 16px; flex-wrap: wrap; }
+.series > summary::-webkit-details-marker { display: none; }
+.series > summary::before { content: "\25B8"; color: var(--muted); margin-right: 10px; transition: transform .15s; }
+.series[open] > summary::before { transform: rotate(90deg); }
+.series > summary:hover { background: var(--accent-soft); }
+.series-name { display: grid; flex: 1; min-width: 220px; }
+.series-name b { font-family: var(--qdisplay); font-size: 20px; letter-spacing: -0.015em; }
+.series-progress { display: flex; align-items: center; gap: 10px; font-size: 14px; }
+.series-progress .progress { width: 120px; height: 8px; }
+.series-body { display: grid; gap: 12px; padding: 4px 12px 14px; }
+.series-item { display: grid; grid-template-columns: 34px minmax(0, 1fr); gap: 10px; align-items: start; }
+.series-num { margin-top: 18px; width: 30px; height: 30px; border-radius: 50%; display: grid; place-items: center; font-weight: 800; font-size: 14px; background: var(--accent-soft); color: var(--accent); }
+.card.in-series { padding: 16px 20px; }
+.card.in-series h3 { font-size: 18px; }
+@media (max-width: 560px) { .series-item { grid-template-columns: 1fr; } .series-num { display: none; } }

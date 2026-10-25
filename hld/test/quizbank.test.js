@@ -68,3 +68,16 @@ test('loadQuizzes rejects an invalid quiz file with a readable message', async (
   assert.throws(() => loadQuizzes(tmp), /Invalid quiz bad\.json/);
   assert.deepEqual(loadQuizzes(path.join(tmp, 'missing')), []);
 });
+
+test('the PostgreSQL series is split into small sub-topic quizzes', () => {
+  const pg = quizzes.filter((q) => q.series === 'postgres-system-design').sort((a, b) => a.seriesOrder - b.seriesOrder);
+  assert.equal(pg.length, 8);
+  assert.deepEqual(pg.map((q) => q.seriesOrder), [1, 2, 3, 4, 5, 6, 7, 8]);
+  for (const q of pg) {
+    assert.ok(q.questions.length >= 5 && q.questions.length <= 10, `${q.id} should stay small`);
+    assert.equal(q.seriesTitle, pg[0].seriesTitle);
+  }
+  const summary = quizSummary(pg[0]);
+  assert.equal(summary.series, 'postgres-system-design');
+  assert.equal(summary.seriesOrder, 1);
+});

@@ -328,7 +328,8 @@ try {
   await page.waitForSelector('.card');
   await page.click('.card:has-text("AI generated") .btn:has-text("Delete")');
   await page.click('#confirm-yes');
-  await page.waitForFunction(() => document.querySelectorAll('.card').length === 1);
+  await page.waitForFunction(() => !document.querySelector('.card .badge.ai'));
+  assert.equal(await page.locator('.series .card').count(), 8, 'the PostgreSQL series stays grouped');
 
   assert.deepEqual(errors, [], `browser errors: ${errors.join(' | ')}`);
   console.log('e2e ok');
