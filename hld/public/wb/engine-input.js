@@ -25,6 +25,7 @@ export function installInput(P) {
     };
     const svg = this.svg;
     on(svg, 'pointerdown', this._onDown);
+    for (const t of ['mousedown', 'mouseup', 'auxclick']) on(svg, t, (e) => { if (e.button === 1) e.preventDefault(); }); // no X11 middle-click paste
     on(svg, 'pointermove', this._onMove);
     on(svg, 'pointerup', this._onUp);
     on(svg, 'pointercancel', this._onUp);
@@ -119,6 +120,7 @@ export function installInput(P) {
     // multi-click polyline in progress: this click adds a point
     if (this._g && this._g.type === 'multi') { if (e.button === 0) this._multiClick(e); e.preventDefault(); return; }
     if (this._g) return;
+    if (e.button === 1) this._midAt = Date.now();
     const panning = e.button === 1 || (e.button === 0 && (this._space || this._tool === 'hand'));
     if (panning) { this._startPan(e); e.preventDefault(); return; }
     if (e.button !== 0) return;

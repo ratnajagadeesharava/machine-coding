@@ -637,7 +637,7 @@ await test('library: built-in tiles, search, click + drag insert, my library per
   await page.click('[data-action="library-rename"]');
   await page.fill('[data-action="prompt-input"]', 'Renamed');
   await page.click('[data-action="prompt-ok"]');
-  assert.equal(await page.locator('[data-source="mine"] .wbm-lib-name').first().textContent(), 'Renamed');
+  await page.waitForFunction(() => document.querySelector('[data-source="mine"] .wbm-lib-name')?.textContent === 'Renamed');
   // export
   const [dl] = await Promise.all([page.waitForEvent('download'), page.click('[data-action="library-export"]')]);
   const libFile = path.join(TMP, 'out.hldlib.json');

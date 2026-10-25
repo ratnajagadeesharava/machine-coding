@@ -762,6 +762,7 @@ await test('zoom: Ctrl+wheel anchors at the cursor, clamped; keys; zoomToFit / z
 });
 
 await test('pan: wheel, Space-drag, middle-drag, hand tool', async () => {
+  const before = (await items()).length;
   await page.mouse.move(600, 400);
   await page.mouse.wheel(0, 100);
   let v = await page.evaluate(() => wb.view);
@@ -784,7 +785,7 @@ await test('pan: wheel, Space-drag, middle-drag, hand tool', async () => {
   await drag(300, 300, 320, 340);
   v = await page.evaluate(() => wb.view);
   near(v.x, 20); near(v.y, -60);
-  assert.equal((await items()).length, 0, JSON.stringify(await items()));
+  assert.equal((await items()).length, before, JSON.stringify(await items()));
 });
 
 await test('grid: pattern follows the view; moves snap to the grid', async () => {

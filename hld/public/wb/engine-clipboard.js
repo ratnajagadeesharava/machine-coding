@@ -114,6 +114,7 @@ export function installClipboard(P) {
   // Browser paste event (Ctrl/Cmd+V, context menu of the browser).
   P._onPaste = function _onPaste(e) {
     if (!this._keyboard || !this._canEdit() || this._editor) return;
+    if (this._midAt && Date.now() - this._midAt < 1000) return; // X11 middle-click paste
     const t = e.target;
     if (t && t.closest && t.closest('input,textarea,select,[contenteditable=""],[contenteditable="true"],dialog,[role="dialog"]')) return;
     const cd = e.clipboardData;
