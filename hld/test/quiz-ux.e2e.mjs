@@ -67,8 +67,20 @@ try {
     await page.waitForSelector('#q-options .opt');
     assert.match(await page.textContent('#page-sub'), /Weak spots/);
   });
-  await step('progress exports as a file', async () => {
+  await step('cards show Completed / In progress / Not started', async () => {
+    assert.match(await page.textContent('[data-quiz="pg-replication"] .status'), /Completed/);
+    assert.match(await page.textContent('[data-quiz="pg-when-to-use"] .status'), /Not started/);
+    assert.equal(await page.locator('.series-num.done').count(), 1);
     await page.click('#btn-quit'); await page.click('#confirm-yes');
+    await page.waitForSelector('.card');
+    await page.click('[data-quiz="pg-when-to-use"] .btn.primary');
+    await page.waitForSelector('#q-options .opt');
+    await page.keyboard.press('1');
+    await page.click('#btn-quit'); await page.click('#confirm-yes');
+    await page.waitForSelector('.card');
+    assert.match(await page.textContent('[data-quiz="pg-replication"] .btn'), /Retake/);
+  });
+  await step('progress exports as a file', async () => {
     await page.waitForSelector('.hist-tools');
     const [dl] = await Promise.all([page.waitForEvent('download'), page.click('text=Export progress')]);
     const data = JSON.parse(fs.readFileSync(await dl.path(), 'utf8'));

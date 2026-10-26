@@ -1,9 +1,9 @@
 /* Whiteboard menus, dialogs, palette, find bar and library (agent D). Everything is namespaced .wbm-*.
    Colours come from the site variables (--card --ink --muted --line --accent --accent-soft --danger --shadow) with fallbacks. */
 .wbm-menu-root, body > .wbm-popover, .wbm-dialog, .wbm-search, .wbm-library, .wbm-toasts, .wbm-drop-hint {
-  --wbm-card: var(--card, #ffffff); --wbm-ink: var(--ink, #1b1e33); --wbm-muted: var(--muted, #646a85); --wbm-line: var(--line, #dcdfee);
-  --wbm-accent: var(--accent, #4f46e5); --wbm-accent-soft: var(--accent-soft, #e4e3fd); --wbm-accent-ink: var(--accent-ink, #fff);
-  --wbm-danger: var(--danger, #c2255c); --wbm-shadow: var(--shadow, 0 6px 24px rgba(30, 32, 80, .12));
+  --wbm-card: var(--card, #ffffff); --wbm-ink: var(--ink, #1f1d16); --wbm-muted: var(--muted, #6a6552); --wbm-line: var(--line, #e6e0c9);
+  --wbm-accent: var(--accent, #f2b705); --wbm-accent-strong: var(--accent-strong, #8a5a00); --wbm-accent-soft: var(--accent-soft, #fdf0c4); --wbm-accent-ink: var(--accent-ink, #1f1d16);
+  --wbm-danger: var(--danger, #c62828); --wbm-shadow: var(--shadow, 0 6px 24px rgba(40, 30, 0, .12));
   --wbm-hover: color-mix(in srgb, var(--wbm-ink) 7%, transparent);
   font-family: var(--sans, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif); font-size: 13.5px; color: var(--wbm-ink);
 }
@@ -13,19 +13,19 @@
 /* Explicit whiteboard theme (set from JS) wins over the OS preference, like chrome.css does. */
 [data-wbm-theme="dark"].wbm-menu-root, [data-wbm-theme="dark"].wbm-popover, [data-wbm-theme="dark"].wbm-dialog, [data-wbm-theme="dark"].wbm-search,
 [data-wbm-theme="dark"].wbm-library, [data-wbm-theme="dark"].wbm-toasts, [data-wbm-theme="dark"].wbm-drop-hint {
-  --wbm-card: #1b1f3a; --wbm-ink: #e9ebff; --wbm-muted: #9aa0c3; --wbm-line: #2b3055; --wbm-accent: #8b8cff; --wbm-accent-soft: #26294f; --wbm-accent-ink: #0e1030;
-  --wbm-danger: #ff8aa5; --wbm-shadow: 0 6px 24px rgba(0, 0, 0, .4); color-scheme: dark;
+  --wbm-card: #212019; --wbm-ink: #f5f1e3; --wbm-muted: #a39d86; --wbm-line: #333022; --wbm-accent: #ffc933; --wbm-accent-strong: #ffc933; --wbm-accent-soft: #3a3010; --wbm-accent-ink: #1a1500;
+  --wbm-danger: #ff8a80; --wbm-shadow: 0 6px 24px rgba(0, 0, 0, .4); color-scheme: dark;
 }
 [data-wbm-theme="light"].wbm-menu-root, [data-wbm-theme="light"].wbm-popover, [data-wbm-theme="light"].wbm-dialog, [data-wbm-theme="light"].wbm-search,
 [data-wbm-theme="light"].wbm-library, [data-wbm-theme="light"].wbm-toasts, [data-wbm-theme="light"].wbm-drop-hint {
-  --wbm-card: #ffffff; --wbm-ink: #1b1e33; --wbm-muted: #646a85; --wbm-line: #dcdfee; --wbm-accent: #4f46e5; --wbm-accent-soft: #e4e3fd; --wbm-accent-ink: #fff;
-  --wbm-danger: #c2255c; --wbm-shadow: 0 6px 24px rgba(30, 32, 80, .12); color-scheme: light;
+  --wbm-card: #ffffff; --wbm-ink: #1f1d16; --wbm-muted: #6a6552; --wbm-line: #e6e0c9; --wbm-accent: #f2b705; --wbm-accent-strong: #8a5a00; --wbm-accent-soft: #fdf0c4; --wbm-accent-ink: #1f1d16;
+  --wbm-danger: #c62828; --wbm-shadow: 0 6px 24px rgba(40, 30, 0, .12); color-scheme: light;
 }
 
 /* ---- shared controls ---- */
 .wbm-icon { flex: none; display: block; }
 .wbm-btn { display: inline-flex; align-items: center; gap: 6px; padding: 7px 12px; border-radius: 9px; border: 1px solid var(--wbm-line); background: var(--wbm-card); color: var(--wbm-ink); font: inherit; font-weight: 600; cursor: pointer; line-height: 1.2; }
-.wbm-btn:hover:not(:disabled) { border-color: var(--wbm-accent); color: var(--wbm-accent); }
+.wbm-btn:hover:not(:disabled) { border-color: var(--wbm-accent); color: var(--wbm-accent-strong); }
 .wbm-btn:disabled { opacity: .45; cursor: not-allowed; }
 .wbm-btn-primary { background: var(--wbm-accent); border-color: var(--wbm-accent); color: var(--wbm-accent-ink); }
 .wbm-btn-primary:hover:not(:disabled) { color: var(--wbm-accent-ink); filter: brightness(1.08); }
@@ -47,7 +47,7 @@
 /* ---- hamburger + popover menus (z 40) ---- */
 .wbm-menu-root { position: relative; z-index: 40; }
 .wbm-hamburger { display: grid; place-items: center; width: 38px; height: 38px; padding: 0; border-radius: 10px; border: 1px solid var(--wbm-line); background: var(--wbm-card); color: var(--wbm-ink); box-shadow: var(--wbm-shadow); cursor: pointer; }
-.wbm-hamburger:hover, .wbm-hamburger[aria-expanded="true"] { border-color: var(--wbm-accent); color: var(--wbm-accent); }
+.wbm-hamburger:hover, .wbm-hamburger[aria-expanded="true"] { border-color: var(--wbm-accent); color: var(--wbm-accent-strong); }
 .wbm-popover { z-index: 40; min-width: 230px; max-width: 320px; padding: 6px; border-radius: 12px; border: 1px solid var(--wbm-line); background: var(--wbm-card); box-shadow: var(--wbm-shadow); animation: wbm-pop .1s ease-out; }
 .wbm-main-menu { position: absolute; top: calc(100% + 8px); left: 0; width: 280px; max-height: calc(100vh - 80px); overflow-y: auto; }
 .wbm-ctx { position: fixed; width: max-content; min-width: 220px; max-height: calc(100vh - 16px); overflow-y: auto; }
@@ -59,9 +59,9 @@
 .wbm-item-label { flex: 1; white-space: nowrap; }
 .wbm-item-sc { margin-left: 18px; font-size: 11.5px; color: var(--wbm-muted); white-space: nowrap; letter-spacing: .01em; }
 .wbm-item-chev { color: var(--wbm-muted); display: grid; }
-.wbm-item-check { width: 16px; display: grid; place-items: center; color: var(--wbm-accent); visibility: hidden; margin-left: 6px; }
+.wbm-item-check { width: 16px; display: grid; place-items: center; color: var(--wbm-accent-strong); visibility: hidden; margin-left: 6px; }
 .wbm-item.wbm-on .wbm-item-check { visibility: visible; }
-.wbm-item.wbm-on .wbm-item-icon { color: var(--wbm-accent); }
+.wbm-item.wbm-on .wbm-item-icon { color: var(--wbm-accent-strong); }
 .wbm-menu-label { padding: 4px 8px 6px; font-size: 11.5px; font-weight: 700; color: var(--wbm-muted); text-transform: uppercase; letter-spacing: .05em; }
 .wbm-swatches { display: flex; align-items: center; gap: 8px; padding: 2px 8px 6px; }
 .wbm-swatch { width: 26px; height: 26px; padding: 0; border-radius: 8px; border: 1px solid var(--wbm-line); background: var(--sw, #fff); cursor: pointer; }
@@ -140,7 +140,7 @@
 .wbm-lib-title { margin: 0; font-size: 15px; font-weight: 700; }
 .wbm-tabs { display: flex; gap: 4px; padding: 4px 12px 0; border-bottom: 1px solid var(--wbm-line); }
 .wbm-tab { padding: 7px 10px; border: 0; border-bottom: 2px solid transparent; background: transparent; color: var(--wbm-muted); font: inherit; font-weight: 600; cursor: pointer; margin-bottom: -1px; }
-.wbm-tab[aria-selected="true"] { color: var(--wbm-accent); border-bottom-color: var(--wbm-accent); }
+.wbm-tab[aria-selected="true"] { color: var(--wbm-accent-strong); border-bottom-color: var(--wbm-accent); }
 .wbm-tab:hover { color: var(--wbm-ink); }
 .wbm-lib-search { margin: 10px 12px 4px; width: calc(100% - 24px); }
 .wbm-lib-body { flex: 1; min-height: 0; overflow-y: auto; padding: 4px 12px 12px; }
