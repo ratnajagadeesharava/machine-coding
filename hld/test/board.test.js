@@ -288,3 +288,10 @@ test('rotatePoint rotates about a centre', () => {
   assert.ok(Math.abs(p.x) < 1e-9 && Math.abs(p.y - 10) < 1e-9);
   assert.deepEqual(rotatePoint({ x: 3, y: 4 }, { x: 0, y: 0 }, 0), { x: 3, y: 4 });
 });
+
+test('new text defaults to the normal sans font, not hand-drawn', async () => {
+  const { DEFAULT_STYLE, FONT_FAMILIES, createElement } = await import('../shared/board.js');
+  assert.equal(DEFAULT_STYLE.fontFamily, 2);
+  assert.equal(FONT_FAMILIES[DEFAULT_STYLE.fontFamily].name, 'Normal');
+  assert.equal(createElement('text', { id: 1 }).fontFamily, 2);
+});

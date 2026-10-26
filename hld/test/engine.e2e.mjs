@@ -716,6 +716,49 @@ await test('copy puts readable text on the system clipboard, not JSON, and still
   assert.equal((await items())[1].text, 'https://example.com/');
 });
 
+await test('double-click text: friendly font, placeholder, Tab indents, Shift+Tab outdents', async () => {
+  await page.evaluate(() => wb.setBoard({ version: 2, items: [], nextId: 1 }));
+  await page.mouse.dblclick(400, 300);
+  await page.waitForFunction(() => wb.editingId !== null);
+  const ta = page.locator('textarea.wb-editor');
+  assert.equal(await ta.getAttribute('placeholder'), 'Type here…');
+  assert.ok((await ta.evaluate((e) => e.getBoundingClientRect().width)) >= 120, 'empty editor is wide enough to read the placeholder');
+  await page.keyboard.type('a');
+  await page.keyboard.press('Tab');
+  await page.keyboard.type('b');
+  assert.equal(await ta.inputValue(), 'a  b', 'Tab inserted two spaces and stayed in the editor');
+  await page.keyboard.press('Home');
+  await page.keyboard.press('Shift+Tab');
+  assert.equal(await ta.inputValue(), 'a  b', 'nothing to remove at the start of the line');
+  await page.keyboard.press('End');
+  await page.keyboard.press('Enter');
+  await page.keyboard.type('x');
+  await page.keyboard.press('Home');
+  await page.keyboard.press('Tab');
+  assert.equal(await ta.inputValue(), 'a  b\n  x', 'Tab at the start of a line indents it');
+  await page.keyboard.press('Shift+Tab');
+  assert.equal(await ta.inputValue(), 'a  b\nx', 'Shift+Tab removes the indent');
+  await page.keyboard.press('Escape');
+  assert.equal((await items()).length, 1);
+  assert.equal(await page.evaluate(() => wb.editingId), null);
+});
+
+await test('Tab on the canvas selects the next element, Shift+Tab the previous', async () => {
+  await page.evaluate(() => wb.setBoard({ version: 2, items: [], nextId: 1 }));
+  for (const [x, y] of [[200, 200], [420, 200], [640, 200]]) { await press('r'); await drag(x, y, x + 120, y + 80); }
+  await page.evaluate(() => wb.clearSelection());
+  const sel = () => page.evaluate(() => [...wb.selection]);
+  const ids = (await items()).map((e) => e.id);
+  await page.keyboard.press('Tab');
+  assert.deepEqual(await sel(), [ids[0]]);
+  await page.keyboard.press('Tab');
+  assert.deepEqual(await sel(), [ids[1]]);
+  await page.keyboard.press('Shift+Tab');
+  assert.deepEqual(await sel(), [ids[0]]);
+  await page.keyboard.press('Shift+Tab');
+  assert.deepEqual(await sel(), [ids[ids.length - 1]], 'wraps around');
+});
+
 await test('paste plain text creates a text element; Ctrl+Shift+V pastes our payload as text', async () => {
   await page.evaluate(() => navigator.clipboard.writeText('pasted from outside'));
   await page.mouse.move(300, 300);

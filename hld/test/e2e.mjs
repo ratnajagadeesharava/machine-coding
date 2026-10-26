@@ -90,6 +90,20 @@ try {
   assert.match(await page.textContent('#timer'), /30:00/, 'the time override applies');
   assert.match(await page.textContent('#q-chips'), /Staff/);
   assert.match(await page.textContent('#q-chips'), /Tough/);
+  // the side panels can be dragged wider, the choice survives a reload, and double-click resets it
+  {
+    const width = (sel) => page.evaluate((q) => Math.round(document.querySelector(q).getBoundingClientRect().width), sel);
+    const before = await width('#q-panel');
+    const bar = await page.locator('.resizer-right').boundingBox();
+    await page.mouse.move(bar.x + 3, bar.y + 200); await page.mouse.down(); await page.mouse.move(bar.x + 123, bar.y + 200, { steps: 4 }); await page.mouse.up();
+    const wider = await width('#q-panel');
+    assert.ok(wider >= before + 100, `question panel grew (${before} -> ${wider})`);
+    await page.reload();
+    await page.waitForSelector('#q-title:not(:has-text("Loading"))');
+    assert.equal(await width('#q-panel'), wider, 'width is remembered');
+    await page.dblclick('.resizer-right');
+    assert.equal(await width('#q-panel'), before, 'double-click resets');
+  }
 
   // left panel shows only the question, and closes/reopens
   assert.equal(await page.locator('#q-panel').isVisible(), true);
