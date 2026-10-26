@@ -7,7 +7,7 @@ import {
   explainContext, explainSystem, generateSystem, generateUser, GENERATE_SCHEMA, normaliseGenerated,
 } from './quiz.js';
 
-export const DEFAULT_MODEL = 'claude-opus-5-5';
+export const DEFAULT_MODEL = 'claude-sonnet-5-5';
 
 export class AriaError extends Error {
   constructor(message, status = 502) {
