@@ -1,6 +1,8 @@
 package contract;
 
-/** Thin test entry point. Your design lives behind it. Must be thread-safe. */
+/**
+ * Thin test entry point. Your design lives behind it. Must be thread-safe.
+ */
 public interface OrderedPrinter {
 
     /**
