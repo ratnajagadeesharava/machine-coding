@@ -23,10 +23,21 @@ const step = async (name, fn) => { await fn(); console.log('  ok  ' + name); };
 try {
   await page.goto(url);
   await page.waitForSelector('.card');
-  await step('index lists every quiz and search filters it', async () => {
-    assert.equal(await page.locator('.toc-item').count(), 9);
+  await step('home is a topic index; search finds quizzes across topics; a topic opens its own page', async () => {
+    assert.equal(await page.locator('.topic-card').count(), 1);
+    assert.equal(await page.locator('.card:has-text("PostgreSQL: replication")').count(), 0, 'sub-quizzes are not listed on the index');
     await page.fill('#quiz-search', 'replication');
-    assert.equal(await page.locator('.card:visible').count(), 1);
+    assert.ok(await page.locator('.result-item .card:visible').count() >= 1);
+    assert.match(await page.textContent('.result-item .crumb'), /PostgreSQL/);
+    await page.fill('#quiz-search', 'zzzz');
+    assert.equal(await page.isVisible('#no-match'), true);
+    await page.fill('#quiz-search', '');
+    await page.click('.topic-card .btn');
+    await page.waitForSelector('.topic-head');
+    assert.equal(await page.locator('.series-item .card').count(), 8);
+    assert.equal(await page.locator('.toc-item').count(), 8);
+    await page.fill('#quiz-search', 'indexing');
+    assert.equal(await page.locator('.series-item .card:visible').count(), 1);
     await page.fill('#quiz-search', '');
   });
   await step('question map, flag, back and forward keys', async () => {
@@ -59,6 +70,7 @@ try {
     await page.click('#confirm-yes');
     await page.waitForSelector('#view-result:not([hidden])');
     await page.click('#btn-home');
+    await page.click('.topic-head .back');
     await page.waitForSelector('.upnext-card');
     assert.match(await page.textContent('.upnext-card'), /WEAK SPOTS/i);
   });
@@ -68,17 +80,32 @@ try {
     assert.match(await page.textContent('#page-sub'), /Weak spots/);
   });
   await step('cards show Completed / In progress / Not started', async () => {
+    await page.click('#btn-quit'); await page.click('#confirm-yes');
+    await page.waitForSelector('.topic-card');
+    assert.match(await page.textContent('.topic-card .status'), /done/);
+    await page.click('.topic-card .btn');
+    await page.waitForSelector('[data-quiz="pg-replication"]');
     assert.match(await page.textContent('[data-quiz="pg-replication"] .status'), /Completed/);
     assert.match(await page.textContent('[data-quiz="pg-when-to-use"] .status'), /Not started/);
     assert.equal(await page.locator('.series-num.done').count(), 1);
-    await page.click('#btn-quit'); await page.click('#confirm-yes');
-    await page.waitForSelector('.card');
     await page.click('[data-quiz="pg-when-to-use"] .btn.primary');
     await page.waitForSelector('#q-options .opt');
     await page.keyboard.press('1');
     await page.click('#btn-quit'); await page.click('#confirm-yes');
     await page.waitForSelector('.card');
     assert.match(await page.textContent('[data-quiz="pg-replication"] .btn'), /Retake/);
+  });
+  await step('light / dark toggle switches and is remembered', async () => {
+    const bg = () => page.evaluate(() => getComputedStyle(document.body).backgroundColor);
+    const before = await bg();
+    await page.click('[data-theme-btn]');
+    const after = await bg();
+    assert.notEqual(before, after);
+    await page.reload();
+    await page.waitForSelector('.card');
+    assert.equal(await bg(), after, 'choice survives a reload');
+    await page.click('[data-theme-btn]');
+    assert.equal(await bg(), before);
   });
   await step('progress exports as a file', async () => {
     await page.waitForSelector('.hist-tools');

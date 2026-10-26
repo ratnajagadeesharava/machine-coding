@@ -238,7 +238,8 @@ try {
   await page.goto(url);
   await page.click('.nav a[href="/quiz.html"]');
   await page.waitForSelector('.card');
-  assert.match(await page.textContent('.card h3'), /Scaling Reads/);
+  assert.match(await page.textContent('.card:has-text("Scaling Reads") h3'), /Scaling Reads/);
+  assert.equal(await page.locator('.topic-card').count(), 1, 'the PostgreSQL topic is one card, not eight');
   assert.equal(await page.locator('#btn-quit:not([hidden])').count(), 0);
 
   const answer = async (right) => {
@@ -319,6 +320,8 @@ try {
   await page.selectOption('#gen-count', '5');
   await page.click('#gen-btn');
   await page.waitForFunction(() => /Created/.test(document.querySelector('#gen-status')?.textContent || ''));
+  await page.click('.topic-card:has-text("My generated quizzes") .btn');
+  await page.waitForSelector('.card:has-text("AI generated")');
   assert.equal(await page.locator('.card:has-text("AI generated")').count(), 1);
   await page.click('.card:has-text("AI generated") .btn:has-text("Start")');
   await page.waitForSelector('#q-options .opt');
@@ -328,8 +331,7 @@ try {
   await page.waitForSelector('.card');
   await page.click('.card:has-text("AI generated") .btn:has-text("Delete")');
   await page.click('#confirm-yes');
-  await page.waitForFunction(() => !document.querySelector('.card .badge.ai'));
-  assert.equal(await page.locator('.series .card').count(), 8, 'the PostgreSQL series stays grouped');
+  await page.waitForFunction(() => !document.querySelector('.card .badge.ai') && document.querySelectorAll('.topic-card').length === 1);
 
   assert.deepEqual(errors, [], `browser errors: ${errors.join(' | ')}`);
   console.log('e2e ok');

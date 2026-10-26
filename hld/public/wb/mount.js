@@ -84,7 +84,11 @@ function loadSavedMode(key) {
   } catch { return {}; }
 }
 
-const prefersDark = () => { try { return window.matchMedia('(prefers-color-scheme: dark)').matches; } catch { return false; } };
+const prefersDark = () => {
+  const forced = document.documentElement.dataset.theme; // set by the host page's theme switch
+  if (forced === 'dark' || forced === 'light') return forced === 'dark';
+  try { return window.matchMedia('(prefers-color-scheme: dark)').matches; } catch { return false; }
+};
 
 export function mountWhiteboard(container, options = {}) {
   injectStyles();
@@ -221,6 +225,11 @@ export function mountWhiteboard(container, options = {}) {
 
   // The library button and the `library` request (from the palette or the menu) toggle the right-hand panel.
   cleanups.push(wb.on('request', (e) => { if (e && e.name === 'library') toggleLibrary(); }));
+
+  // A host page can announce a light/dark switch with a `hld:theme` event; the board follows it.
+  const onHostTheme = (e) => { const t = e && e.detail; if ((t === 'light' || t === 'dark') && wb.setMode) wb.setMode({ theme: t }); };
+  window.addEventListener('hld:theme', onHostTheme);
+  cleanups.push(() => window.removeEventListener('hld:theme', onHostTheme));
 
   // The image tool (toolbar button, key 9, palette) asks for a picture: open the file picker and drop it in the centre of the view.
   cleanups.push(wb.on('request', async (e) => {

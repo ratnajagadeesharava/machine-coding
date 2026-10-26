@@ -23,7 +23,7 @@ const S = { history: [], summaries: [], custom: [], attempts: {}, health: { ai: 
 const els = {
   title: $('#page-title'), sub: $('#page-sub'), quit: $('#btn-quit'), banner: $('#banner'),
   views: { home: $('#view-home'), run: $('#view-run'), result: $('#view-result') },
-  cards: $('#cards'), toc: $('#toc'), stats: $('#stats'), search: $('#quiz-search'), noMatch: $('#no-match'),
+  cards: $('#cards'), toc: $('#toc'), stats: $('#stats'), search: $('#quiz-search'), noMatch: $('#no-match'), heading: $('#list-heading'),
   genForm: $('#gen-form'), genTopic: $('#gen-topic'), genNotes: $('#gen-notes'), genCount: $('#gen-count'), genLevel: $('#gen-level'), genBtn: $('#gen-btn'), genStatus: $('#gen-status'),
   fill: $('#progress-fill'), progress: document.querySelector('.progress'), count: $('#run-count'), instant: $('#instant'),
   concept: $('#q-concept'), diff: $('#q-diff'), prompt: $('#q-prompt'), hint: $('#q-hint'), options: $('#q-options'),
@@ -180,34 +180,91 @@ function quizCard(q, inSeries) {
     actions);
 }
 
-// Quizzes that share a `series` are shown together under one heading, split into small sub-topic quizzes.
+// ---------- topics ----------
+// The home page is an index of topics (a series of sub-topic quizzes, a single quiz, or your own generated quizzes).
+// Opening a topic (#/topic/<id>) shows just its quizzes, so the page stays small however many quizzes exist.
+function buildTopics(list) {
+  const map = new Map();
+  for (const q of list) {
+    let id; let title; let description;
+    if (q.custom) { id = 'mine'; title = 'My generated quizzes'; description = 'Quizzes you created with AI. They are saved in this browser.'; }
+    else if (q.series) { id = q.series; title = q.seriesTitle; description = q.seriesDescription || ''; }
+    else { id = `quiz-${q.id}`; title = q.title; description = q.description; }
+    if (!map.has(id)) map.set(id, { id, title, description, items: [], single: !q.custom && !q.series });
+    map.get(id).items.push(q);
+  }
+  const topics = [...map.values()];
+  for (const t of topics) t.items.sort((x, y) => (x.seriesOrder || 0) - (y.seriesOrder || 0));
+  return topics.sort((x, y) => (x.id === 'mine') - (y.id === 'mine') || x.title.localeCompare(y.title));
+}
+const topicStats = (t) => ({
+  done: t.items.filter((q) => S.attempts[q.id]?.best != null).length,
+  questions: t.items.reduce((n, q) => n + q.questionCount, 0),
+  minutes: t.items.reduce((n, q) => n + q.estimatedMinutes, 0),
+  running: t.items.some((q) => savedRun()?.quizId === q.id),
+});
+const routeTopic = () => { const m = /^#\/topic\/(.+)$/.exec(location.hash); return m ? decodeURIComponent(m[1]) : null; };
+const goTopic = (id) => { location.hash = id ? `#/topic/${encodeURIComponent(id)}` : ''; if (!id && !location.hash) renderCards(); };
+const searchTerm = () => (els.search?.value || '').trim().toLowerCase();
+const matches = (q, t) => !searchTerm() || `${q.title} ${q.description} ${q.topic} ${t?.title || ''}`.toLowerCase().includes(searchTerm());
+
+function topicCard(t) {
+  const st = topicStats(t);
+  const pct = Math.round((st.done / t.items.length) * 100);
+  return h('article', { class: 'card topic-card', dataset: { topic: t.id } },
+    h('div', { class: 'card-top' }, h('h3', { text: t.title }),
+      st.running ? h('span', { class: 'status prog', text: 'In progress' }) : st.done === t.items.length ? h('span', { class: 'status done', text: '✓ All done' }) : st.done ? h('span', { class: 'status prog', text: `${st.done}/${t.items.length} done` }) : null),
+    t.description ? h('p', { class: 'muted', text: t.description }) : null,
+    h('div', { class: 'meta' }, h('span', { text: `${t.items.length} quizzes` }), h('span', { text: `${st.questions} questions` }), h('span', { text: fmtMinutes(st.minutes) })),
+    h('div', { class: 'topic-progress' }, h('span', { class: 'progress' }, h('i', { style: `width:${pct}%` })), h('span', { class: 'muted', text: `${st.done}/${t.items.length}` })),
+    h('div', { class: 'card-actions' }, h('button', { class: 'btn primary small', type: 'button', text: st.done ? 'Continue' : 'Open topic', onclick: () => goTopic(t.id) })));
+}
+
 function renderCards() {
   els.cards.replaceChildren();
   const list = allQuizzes();
-  if (!list.length) { els.cards.append(h('p', { class: 'empty', text: 'No quizzes yet. Create one with AI on the right.' })); return; }
-  const series = new Map();
-  const single = [];
-  for (const q of list) {
-    if (q.series && !q.custom) { if (!series.has(q.series)) series.set(q.series, []); series.get(q.series).push(q); } else single.push(q);
+  const topics = buildTopics(list);
+  const open = routeTopic();
+  const topic = open ? topics.find((t) => t.id === open) : null;
+  if (open && !topic) { location.hash = ''; return; }
+  document.body.classList.toggle('in-topic', !!topic);
+  els.search.placeholder = topic ? `Search in ${topic.title}` : 'Search topics and quizzes';
+  els.heading.textContent = topic ? 'QUIZZES IN THIS TOPIC' : searchTerm() ? 'SEARCH RESULTS' : 'TOPICS';
+  let shown = 0;
+
+  if (topic) {
+    const st = topicStats(topic);
+    els.cards.append(h('div', { class: 'topic-head' },
+      h('a', { class: 'back', href: '#', onclick: (e) => { e.preventDefault(); goTopic(null); } }, '← All topics'),
+      h('h2', { text: topic.title }),
+      topic.description ? h('p', { class: 'muted', text: topic.description }) : null,
+      h('div', { class: 'topic-progress' }, h('span', { class: 'progress' }, h('i', { style: `width:${Math.round((st.done / topic.items.length) * 100)}%` })), h('span', { class: 'muted', text: `${st.done}/${topic.items.length} done · ${st.questions} questions` }))));
+    topic.items.forEach((q, i) => {
+      if (!matches(q, topic)) return;
+      shown += 1;
+      els.cards.append(h('div', { class: 'series-item' }, h('span', { class: 'series-num' + (badgeFor(q) != null ? ' done' : ''), text: badgeFor(q) != null ? '✓' : String(i + 1) }), quizCard(q, true)));
+    });
+  } else if (searchTerm()) {
+    for (const t of topics) {
+      for (const q of t.items) {
+        if (!matches(q, t)) continue;
+        shown += 1;
+        els.cards.append(h('div', { class: 'result-item' },
+          t.single ? null : h('a', { class: 'crumb', href: `#/topic/${encodeURIComponent(t.id)}`, text: `${t.title} ›` }), quizCard(q, true)));
+      }
+    }
+  } else {
+    for (const t of topics) { shown += 1; els.cards.append(t.single ? quizCard(t.items[0], false) : topicCard(t)); }
   }
-  for (const q of single) els.cards.append(quizCard(q, false));
-  for (const [id, items] of series) {
-    items.sort((x, y) => (x.seriesOrder || 0) - (y.seriesOrder || 0));
-    const done = items.filter((q) => S.attempts[q.id]?.best != null).length;
-    const total = items.reduce((n, q) => n + q.questionCount, 0);
-    const key = `series-open:${id}`;
-    const box = h('details', { class: 'series', id: `series-${id}`, open: store.get(key, true) !== false },
-      h('summary', {},
-        h('span', { class: 'series-name' }, h('b', { text: items[0].seriesTitle }), h('span', { class: 'muted', text: `${items.length} sub-topic quizzes · ${total} questions` })),
-        h('span', { class: 'series-progress' }, h('span', { class: 'progress' }, h('i', { style: `width:${Math.round((done / items.length) * 100)}%` })), h('span', { class: 'muted', text: `${done}/${items.length} done` }))),
-      h('div', { class: 'series-body' }, ...items.map((q, i) => h('div', { class: 'series-item' }, h('span', { class: 'series-num' + (badgeFor(q) != null ? ' done' : ''), text: badgeFor(q) != null ? '✓' : String(i + 1) }), quizCard(q, true)))));
-    box.addEventListener('toggle', () => store.set(key, box.open));
-    els.cards.append(box);
-  }
-  renderToc(single, series);
+  if (!list.length) els.cards.append(h('p', { class: 'empty', text: 'No quizzes yet. Create one with AI on the right.' }));
+  els.noMatch.hidden = shown > 0 || !list.length;
+  renderToc(topics, topic);
+  els.stats.hidden = !!topic || !!searchTerm();
+  els.upnext.dataset.hide = topic || searchTerm() ? '1' : '';
   renderStats(list);
   renderUpNext();
-  applySearch();
+  const t = topic ? `${topic.title} - Quizzes` : 'Quizzes';
+  if (S.view === 'home') { document.title = `${t} - HLD Room`; els.title.textContent = topic ? topic.title : 'Quizzes'; els.sub.textContent = topic ? 'Pick a sub-topic quiz.' : 'Check what you know, then see why.'; }
 }
 
 // ---------- index (table of contents), stats and search ----------
@@ -216,36 +273,39 @@ function tocLink(q, num) {
   const best = badgeFor(q);
   return h('a', { class: 'toc-item' + (best != null ? ' done' : ''), href: `#quiz-${q.id}`, dataset: { target: q.id }, onclick: (e) => { e.preventDefault(); gotoQuiz(q.id); } },
     h('span', { class: 'toc-mark', text: best != null ? '✓' : num != null ? String(num) : '' }),
-    h('span', { class: 'toc-title', text: (t => t.charAt(0).toUpperCase() + t.slice(1))(q.title.replace(/^PostgreSQL:\s*/, '')) }),
+    h('span', { class: 'toc-title', text: (t => t.charAt(0).toUpperCase() + t.slice(1))(q.title.replace(/^[A-Za-z ]+:\s*/, '')) }),
     best != null ? h('span', { class: 'toc-score', text: `${best}%` }) : null);
 }
-function renderToc(single, series) {
+function renderToc(topics, topic) {
   const nav = els.toc;
-  if (!nav) return;
-  nav.replaceChildren(h('div', { class: 'toc-head', text: 'CONTENTS' }));
-  if (single.length) {
-    nav.append(h('div', { class: 'toc-group' }, h('div', { class: 'toc-name', text: 'Single quizzes' }), ...single.map((q) => tocLink(q, null))));
+  nav.replaceChildren();
+  if (topic) {
+    nav.append(h('a', { class: 'toc-back', href: '#', onclick: (e) => { e.preventDefault(); goTopic(null); } }, '← All topics'),
+      h('div', { class: 'toc-head', text: topic.title.toUpperCase() }),
+      h('div', { class: 'toc-group' }, ...topic.items.map((q, i) => tocLink(q, i + 1))));
+    return;
   }
-  for (const [id, items] of series) {
-    const done = items.filter((q) => badgeFor(q) != null).length;
-    nav.append(h('div', { class: 'toc-group' },
-      h('a', { class: 'toc-name link', href: `#series-${id}`, onclick: (e) => { e.preventDefault(); gotoSeries(id); } }, h('span', { text: items[0].seriesTitle }), h('span', { class: 'toc-count', text: `${done}/${items.length}` })),
-      ...items.map((q, i) => tocLink(q, i + 1))));
+  nav.append(h('div', { class: 'toc-head', text: 'TOPICS' }));
+  for (const t of topics) {
+    const st = topicStats(t);
+    nav.append(h('a', { class: 'toc-topic' + (st.done === t.items.length ? ' done' : ''), href: `#/topic/${encodeURIComponent(t.id)}`, onclick: (e) => { e.preventDefault(); if (t.single) gotoQuiz(t.items[0].id); else goTopic(t.id); } },
+      h('span', { class: 'toc-mark', text: st.done === t.items.length ? '✓' : String(t.items.length) }),
+      h('span', { class: 'toc-title', text: t.title }),
+      h('span', { class: 'toc-count', text: `${st.done}/${t.items.length}` })));
   }
-}
-function gotoSeries(id) {
-  const box = document.getElementById(`series-${id}`);
-  if (!box) return;
-  box.open = true;
-  box.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 function gotoQuiz(id) {
-  const card = document.getElementById(`quiz-${id}`);
-  if (!card) return;
-  const box = card.closest('details');
-  if (box) box.open = true;
-  card.scrollIntoView({ behavior: 'smooth', block: 'start' });
-  card.classList.remove('flash'); void card.offsetWidth; card.classList.add('flash');
+  const q = allQuizzes().find((x) => x.id === id);
+  const t = q && buildTopics(allQuizzes()).find((x) => x.items.some((i) => i.id === id));
+  const scroll = () => {
+    const card = document.getElementById(`quiz-${id}`);
+    if (!card) return;
+    card.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    card.classList.remove('flash'); void card.offsetWidth; card.classList.add('flash');
+  };
+  if (t && !t.single && routeTopic() !== t.id) { location.hash = `#/topic/${encodeURIComponent(t.id)}`; setTimeout(scroll, 60); return; }
+  if (t && t.single && routeTopic()) { goTopic(null); setTimeout(scroll, 60); return; }
+  scroll();
 }
 // One smart suggestion at the top: resume, practise weak spots, continue the series, or revisit an old quiz.
 function renderUpNext() {
@@ -262,6 +322,7 @@ function renderUpNext() {
       h('button', { class: 'btn ghost', type: 'button', text: 'Discard', onclick: () => { clearRun(); renderUpNext(); } })]);
     box.hidden = false; return;
   }
+  if (box.dataset.hide) { box.hidden = true; return; } // suggestions only on the main index; a saved run always shows
   const weak = weakRefs().length;
   if (weak >= 3) {
     card('WEAK SPOTS', `${weak} questions to revisit`, 'A mixed round of up to 15 questions you got wrong, across every quiz. Answer one right and it leaves the list.', [
@@ -304,27 +365,7 @@ function renderStats(list) {
     tile(String(questions), 'questions available'),
     tile(String(streakDays()), 'day streak'));
 }
-function applySearch() {
-  const term = (els.search?.value || '').trim().toLowerCase();
-  let shown = 0;
-  for (const card of els.cards.querySelectorAll('.card')) {
-    const hit = !term || card.dataset.search.includes(term);
-    card.hidden = !hit;
-    const row = card.closest('.series-item');
-    if (row) row.hidden = !hit;
-    if (hit) shown += 1;
-  }
-  for (const box of els.cards.querySelectorAll('details.series')) {
-    const any = [...box.querySelectorAll('.card')].some((c) => !c.hidden);
-    box.hidden = !any;
-    if (term && any) box.open = true;
-  }
-  for (const link of document.querySelectorAll('.toc-item')) {
-    const card = document.getElementById(`quiz-${link.dataset.target}`);
-    link.hidden = !!card && card.hidden;
-  }
-  if (els.noMatch) els.noMatch.hidden = shown > 0;
-}
+const applySearch = () => renderCards();
 // Highlight the index entry for the quiz nearest the top third of the screen.
 function watchToc() {
   let queued = false;
@@ -848,6 +889,7 @@ async function init() {
   renderHistory();
   watchToc();
   els.search.addEventListener('input', applySearch);
+  window.addEventListener('hashchange', () => { els.search.value = ''; renderCards(); window.scrollTo({ top: 0 }); });
 }
 
 init();

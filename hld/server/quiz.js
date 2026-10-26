@@ -26,7 +26,7 @@ export function quizSummary(q) {
   return {
     id: q.id, title: q.title, topic: q.topic || '', description: q.description || '', source: q.source || '',
     estimatedMinutes: q.estimatedMinutes || Math.max(1, Math.round(q.questions.length * 0.7)), questionCount: q.questions.length,
-    ...(q.series ? { series: q.series, seriesTitle: q.seriesTitle || q.series, seriesOrder: Number(q.seriesOrder) || 0 } : {}),
+    ...(q.series ? { series: q.series, seriesTitle: q.seriesTitle || q.series, seriesOrder: Number(q.seriesOrder) || 0, seriesDescription: q.seriesDescription || '' } : {}),
   };
 }
 

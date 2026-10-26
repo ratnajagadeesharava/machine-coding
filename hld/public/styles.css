@@ -112,3 +112,15 @@ a.btn.primary { color: var(--accent-ink); }
 .keydlg-msg.err { color: var(--danger); }
 .keydlg-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 12px; }
 .topbar .actions { display: flex; align-items: center; gap: 8px; }
+
+/* forced dark (theme toggle) */
+:root[data-theme="dark"] {
+    --bg: #151515; --panel: #1b1a17; --card: #212019; --ink: #f5f1e3; --muted: #a39d86; --line: #333022;
+    --accent: #ffc933; --accent2: #ff9f1c; --accent-soft: #3a3010; --accent-ink: #1a1500; --accent-strong: #ffc933; --danger: #ff8a80; --danger-soft: #3d1f1c;
+    --board: #1c1b17; --dot: #3a3727; --shape-fill: #262419; --shape-stroke: #f5f1e3; --shadow: 0 6px 24px rgba(0,0,0,.4);
+    color-scheme: dark;
+  }
+:root[data-theme="dark"] .banner { background: #3a3114; color: #f3e3b0; border-color: #5a4c1f; } :root[data-theme="dark"] .banner.info { background: var(--accent-soft); color: var(--ink); }
+:root[data-theme="dark"] .chip-pill.Easy { background: #1d3a29; color: #8fdcab; }
+  :root[data-theme="dark"] .chip-pill.Medium { background: #3a3114; color: #f3d98a; }
+.themebtn { width: 40px; padding: 0; justify-content: center; }

@@ -197,5 +197,6 @@
       ],
       "explanation": "Managed services such as RDS or Cloud SQL automate this. Mention replication as reliability, not only scaling."
     }
-  ]
+  ],
+  "seriesDescription": "Everything to know about PostgreSQL for system design interviews: when to pick it, SQL and ACID basics, indexing, scaling writes, replication and concurrency control, in eight short quizzes."
 }
