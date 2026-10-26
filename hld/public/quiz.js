@@ -226,7 +226,7 @@ function gotoQuiz(id) {
   if (!card) return;
   const box = card.closest('details');
   if (box) box.open = true;
-  card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  card.scrollIntoView({ behavior: 'smooth', block: 'start' });
   card.classList.remove('flash'); void card.offsetWidth; card.classList.add('flash');
 }
 function renderStats(list) {
