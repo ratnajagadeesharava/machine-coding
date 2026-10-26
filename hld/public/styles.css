@@ -1,21 +1,22 @@
 /* Shared by every page: theme tokens, header/nav, buttons, banner, dialogs, form fields. Page styles live in home.css, room.css, quiz.css; the whiteboard's own styling lives in wb/*.css. */
 :root {
-  --bg: #f4f0e9;
-  --panel: #f8f5ef;
-  --card: #fffdf9;
-  --ink: #1c2420;
-  --muted: #6c746e;
-  --line: #ddd6ca;
-  --accent: #0f6b63;
-  --accent-soft: #dcefec;
+  --bg: #f4f5fa;
+  --panel: #eceef7;
+  --card: #ffffff;
+  --ink: #1b1e33;
+  --muted: #646a85;
+  --line: #dcdfee;
+  --accent: #4f46e5;
+  --accent-soft: #e4e3fd;
   --accent-ink: #ffffff;
-  --danger: #b3261e;
-  --danger-soft: #f8e1df;
+  --accent2: #7c3aed;
+  --danger: #c2255c;
+  --danger-soft: #fbe3ec;
   --board: #ffffff;
-  --dot: #cfc8bb;
+  --dot: #cdd0e6;
   --shape-fill: #ffffff;
-  --shape-stroke: #1f2a25;
-  --shadow: 0 6px 24px rgba(40, 32, 20, 0.10);
+  --shape-stroke: #1b1e33;
+  --shadow: 0 6px 24px rgba(30, 32, 80, 0.10);
   --sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   --hand: "Segoe Print", "Bradley Hand", "Chalkboard SE", "Comic Sans MS", "Marker Felt", cursive;
   --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
@@ -23,9 +24,9 @@
 }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
-    --bg: #14181a; --panel: #181d1f; --card: #1f2528; --ink: #e8ece9; --muted: #98a39d; --line: #2e3639;
-    --accent: #3fb3a5; --accent-soft: #1b3a37; --accent-ink: #06201d; --danger: #f2877f; --danger-soft: #3b1f1d;
-    --board: #1b2023; --dot: #333c3f; --shape-fill: #232a2d; --shape-stroke: #dfe7e2; --shadow: 0 6px 24px rgba(0,0,0,.4);
+    --bg: #10121f; --panel: #151830; --card: #1b1f3a; --ink: #e9ebff; --muted: #9aa0c3; --line: #2b3055;
+    --accent: #8b8cff; --accent2: #b58cff; --accent-soft: #26294f; --accent-ink: #0e1030; --danger: #ff8aa5; --danger-soft: #3d1f2c;
+    --board: #161a33; --dot: #2f3560; --shape-fill: #1e2342; --shape-stroke: #e4e6ff; --shadow: 0 6px 24px rgba(0,0,0,.4);
     color-scheme: dark;
   }
 }
@@ -109,3 +110,4 @@ a.btn.primary { color: var(--accent-ink); }
 .keydlg-msg { min-height: 20px; margin: 8px 0 0 !important; }
 .keydlg-msg.err { color: var(--danger); }
 .keydlg-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 12px; }
+.topbar .actions { display: flex; align-items: center; gap: 8px; }

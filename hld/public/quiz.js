@@ -2,7 +2,7 @@
 // and generate new quizzes with Claude. Progress lives in this browser's localStorage.
 import './apikey.js';
 import {
-  isCorrect, numberFor, mulberry32, pickQuestions, presentQuestion, scoreAttempt, validateQuiz,
+  isCorrect, numberFor, mulberry32, pickQuestions, presentQuestion, scoreAttempt, shuffle, validateQuiz,
 } from '/shared/quiz.js';
 
 const $ = (sel) => document.querySelector(sel);
@@ -23,7 +23,7 @@ const S = { history: [], summaries: [], custom: [], attempts: {}, health: { ai: 
 const els = {
   title: $('#page-title'), sub: $('#page-sub'), quit: $('#btn-quit'), banner: $('#banner'),
   views: { home: $('#view-home'), run: $('#view-run'), result: $('#view-result') },
-  cards: $('#cards'),
+  cards: $('#cards'), toc: $('#toc'), stats: $('#stats'), search: $('#quiz-search'), noMatch: $('#no-match'),
   genForm: $('#gen-form'), genTopic: $('#gen-topic'), genNotes: $('#gen-notes'), genCount: $('#gen-count'), genLevel: $('#gen-level'), genBtn: $('#gen-btn'), genStatus: $('#gen-status'),
   fill: $('#progress-fill'), progress: document.querySelector('.progress'), count: $('#run-count'), instant: $('#instant'),
   concept: $('#q-concept'), diff: $('#q-diff'), prompt: $('#q-prompt'), hint: $('#q-hint'), options: $('#q-options'),
@@ -33,6 +33,7 @@ const els = {
   ring: $('#ring'), ringPct: $('#ring-pct'), resultTitle: $('#result-title'), resultSub: $('#result-sub'), clock: $('#run-clock'), timer: $('#run-timer'), limit: $('#limit'), limitLabel: $('#limit-label'),
   retryMissed: $('#btn-retry-missed'), retake: $('#btn-retake'), home: $('#btn-home'),
   byConcept: $('#by-concept'), review: $('#review'), onlyWrong: $('#only-wrong'),
+  map: $('#q-map'), prev: $('#btn-prev'), flag: $('#btn-flag'), finish: $('#btn-finish'), upnext: $('#upnext'),
   confirm: $('#confirm'), confirmText: $('#confirm-text'), confirmYes: $('#confirm-yes'), confirmNo: $('#confirm-no'),
 };
 
@@ -43,6 +44,7 @@ function h(tag, props = {}, ...kids) {
     if (v == null || v === false) continue;
     if (k === 'class') el.className = v;
     else if (k === 'text') el.textContent = v;
+    else if (k === 'dataset') Object.assign(el.dataset, v);
     else if (k.startsWith('on')) el.addEventListener(k.slice(2), v);
     else el.setAttribute(k, v === true ? '' : String(v));
   }
@@ -128,7 +130,7 @@ function startTimer() {
 }
 function stopTimer() { if (tickId) clearInterval(tickId); tickId = null; }
 
-const modeLabel = (m) => (m === 'quick' ? `Quick ${QUICK_COUNT}` : m === 'missed' ? 'Retry missed' : 'Full quiz');
+const modeLabel = (m) => (m === 'weak' ? 'Weak spots' : m === 'quick' ? `Quick ${QUICK_COUNT}` : m === 'missed' ? 'Retry missed' : 'Full quiz');
 const fmtMinutes = (n) => `~${n} min`;
 
 function allQuizzes() {
@@ -154,7 +156,7 @@ function quizCard(q, inSeries) {
     q.questionCount > QUICK_COUNT + 2 ? h('button', { class: 'btn small', type: 'button', text: `Quick ${QUICK_COUNT}`, onclick: () => startQuiz(q.id, 'quick') }) : null,
     missed ? h('button', { class: 'btn small', type: 'button', text: `Retry missed (${missed})`, onclick: () => startQuiz(q.id, 'missed') }) : null,
     q.custom ? h('button', { class: 'btn ghost small', type: 'button', text: 'Delete', onclick: () => deleteCustom(q) }) : null);
-  return h('article', { class: 'card' + (inSeries ? ' in-series' : '') },
+  return h('article', { class: 'card' + (inSeries ? ' in-series' : ''), id: `quiz-${q.id}`, dataset: { quiz: q.id, search: `${q.title} ${q.description} ${q.topic}`.toLowerCase() } },
     h('h3', { text: q.title }),
     q.description ? h('p', { class: 'muted', text: q.description }) : null,
     meta,
@@ -178,7 +180,7 @@ function renderCards() {
     const done = items.filter((q) => S.attempts[q.id]?.best != null).length;
     const total = items.reduce((n, q) => n + q.questionCount, 0);
     const key = `series-open:${id}`;
-    const box = h('details', { class: 'series', open: store.get(key, true) !== false },
+    const box = h('details', { class: 'series', id: `series-${id}`, open: store.get(key, true) !== false },
       h('summary', {},
         h('span', { class: 'series-name' }, h('b', { text: items[0].seriesTitle }), h('span', { class: 'muted', text: `${items.length} sub-topic quizzes · ${total} questions` })),
         h('span', { class: 'series-progress' }, h('span', { class: 'progress' }, h('i', { style: `width:${Math.round((done / items.length) * 100)}%` })), h('span', { class: 'muted', text: `${done}/${items.length} done` }))),
@@ -186,6 +188,144 @@ function renderCards() {
     box.addEventListener('toggle', () => store.set(key, box.open));
     els.cards.append(box);
   }
+  renderToc(single, series);
+  renderStats(list);
+  renderUpNext();
+  applySearch();
+}
+
+// ---------- index (table of contents), stats and search ----------
+const badgeFor = (q) => { const b = S.attempts[q.id]?.best; return b == null ? null : b; };
+function tocLink(q, num) {
+  const best = badgeFor(q);
+  return h('a', { class: 'toc-item' + (best != null ? ' done' : ''), href: `#quiz-${q.id}`, dataset: { target: q.id }, onclick: (e) => { e.preventDefault(); gotoQuiz(q.id); } },
+    h('span', { class: 'toc-mark', text: best != null ? '✓' : num != null ? String(num) : '' }),
+    h('span', { class: 'toc-title', text: (t => t.charAt(0).toUpperCase() + t.slice(1))(q.title.replace(/^PostgreSQL:\s*/, '')) }),
+    best != null ? h('span', { class: 'toc-score', text: `${best}%` }) : null);
+}
+function renderToc(single, series) {
+  const nav = els.toc;
+  if (!nav) return;
+  nav.replaceChildren(h('div', { class: 'toc-head', text: 'CONTENTS' }));
+  if (single.length) {
+    nav.append(h('div', { class: 'toc-group' }, h('div', { class: 'toc-name', text: 'Single quizzes' }), ...single.map((q) => tocLink(q, null))));
+  }
+  for (const [id, items] of series) {
+    const done = items.filter((q) => badgeFor(q) != null).length;
+    nav.append(h('div', { class: 'toc-group' },
+      h('a', { class: 'toc-name link', href: `#series-${id}`, onclick: (e) => { e.preventDefault(); gotoSeries(id); } }, h('span', { text: items[0].seriesTitle }), h('span', { class: 'toc-count', text: `${done}/${items.length}` })),
+      ...items.map((q, i) => tocLink(q, i + 1))));
+  }
+}
+function gotoSeries(id) {
+  const box = document.getElementById(`series-${id}`);
+  if (!box) return;
+  box.open = true;
+  box.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+function gotoQuiz(id) {
+  const card = document.getElementById(`quiz-${id}`);
+  if (!card) return;
+  const box = card.closest('details');
+  if (box) box.open = true;
+  card.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  card.classList.remove('flash'); void card.offsetWidth; card.classList.add('flash');
+}
+// One smart suggestion at the top: resume, practise weak spots, continue the series, or revisit an old quiz.
+function renderUpNext() {
+  const box = els.upnext;
+  if (!box) return;
+  const list = allQuizzes();
+  const card = (kicker, title, text, actions) => box.replaceChildren(h('div', { class: 'upnext-card' },
+    h('div', { class: 'upnext-body' }, h('span', { class: 'kicker', text: kicker }), h('h3', { text: title }), h('p', { class: 'muted', text })), h('div', { class: 'upnext-actions' }, ...actions)));
+  const run = savedRun();
+  if (run) {
+    const done = Object.values(run.answers || {}).filter((a) => a.length).length;
+    card('PICK UP WHERE YOU LEFT OFF', run.title || 'Quiz in progress', `${done} of ${run.order.length} answered · ${fmtClock(run.elapsed || 0)} elapsed`, [
+      h('button', { class: 'btn primary', type: 'button', text: 'Resume', onclick: resumeRun }),
+      h('button', { class: 'btn ghost', type: 'button', text: 'Discard', onclick: () => { clearRun(); renderUpNext(); } })]);
+    box.hidden = false; return;
+  }
+  const weak = weakRefs().length;
+  if (weak >= 3) {
+    card('WEAK SPOTS', `${weak} questions to revisit`, 'A mixed round of up to 15 questions you got wrong, across every quiz. Answer one right and it leaves the list.', [
+      h('button', { class: 'btn primary', type: 'button', text: 'Practise weak spots', onclick: startWeak })]);
+    box.hidden = false; return;
+  }
+  const nextInSeries = list.filter((q) => q.series && !q.custom).sort((a, b) => (a.seriesOrder || 0) - (b.seriesOrder || 0)).find((q) => badgeFor(q) == null);
+  const anyDone = list.some((q) => badgeFor(q) != null);
+  if (nextInSeries && anyDone) {
+    card('UP NEXT', nextInSeries.title, `${nextInSeries.questionCount} questions · ${fmtMinutes(nextInSeries.estimatedMinutes)}. Next sub-topic in ${nextInSeries.seriesTitle}.`, [
+      h('button', { class: 'btn primary', type: 'button', text: 'Start', onclick: () => startQuiz(nextInSeries.id, 'full') }),
+      h('button', { class: 'btn', type: 'button', text: 'Show in list', onclick: () => gotoQuiz(nextInSeries.id) })]);
+    box.hidden = false; return;
+  }
+  const stale = list.filter((q) => S.attempts[q.id]?.last && Date.now() - S.attempts[q.id].last.at > 3 * 864e5 && (S.attempts[q.id].best ?? 100) < 90)[0];
+  if (stale) {
+    card('TIME TO REVIEW', stale.title, `Your best was ${S.attempts[stale.id].best}% and it has been a few days. A quick round keeps it fresh.`, [
+      h('button', { class: 'btn primary', type: 'button', text: `Quick ${QUICK_COUNT}`, onclick: () => startQuiz(stale.id, stale.questionCount > QUICK_COUNT + 2 ? 'quick' : 'full') })]);
+    box.hidden = false; return;
+  }
+  box.hidden = true;
+}
+function streakDays() {
+  const days = new Set(S.history.map((r) => new Date(r.at).toDateString()));
+  let d = new Date();
+  if (!days.has(d.toDateString())) d = new Date(d - 864e5); // today may not have a quiz yet; the streak is still alive
+  let n = 0;
+  while (days.has(d.toDateString())) { n += 1; d = new Date(d - 864e5); }
+  return n;
+}
+function renderStats(list) {
+  if (!els.stats) return;
+  const done = list.filter((q) => badgeFor(q) != null);
+  const avg = done.length ? Math.round(done.reduce((n, q) => n + badgeFor(q), 0) / done.length) : null;
+  const questions = list.reduce((n, q) => n + q.questionCount, 0);
+  const tile = (value, label) => h('div', { class: 'stat' }, h('b', { text: value }), h('span', { class: 'muted', text: label }));
+  els.stats.replaceChildren(
+    tile(`${done.length}/${list.length}`, 'quizzes completed'),
+    tile(avg == null ? '-' : `${avg}%`, 'average best score'),
+    tile(String(questions), 'questions available'),
+    tile(String(streakDays()), 'day streak'));
+}
+function applySearch() {
+  const term = (els.search?.value || '').trim().toLowerCase();
+  let shown = 0;
+  for (const card of els.cards.querySelectorAll('.card')) {
+    const hit = !term || card.dataset.search.includes(term);
+    card.hidden = !hit;
+    const row = card.closest('.series-item');
+    if (row) row.hidden = !hit;
+    if (hit) shown += 1;
+  }
+  for (const box of els.cards.querySelectorAll('details.series')) {
+    const any = [...box.querySelectorAll('.card')].some((c) => !c.hidden);
+    box.hidden = !any;
+    if (term && any) box.open = true;
+  }
+  for (const link of document.querySelectorAll('.toc-item')) {
+    const card = document.getElementById(`quiz-${link.dataset.target}`);
+    link.hidden = !!card && card.hidden;
+  }
+  if (els.noMatch) els.noMatch.hidden = shown > 0;
+}
+// Highlight the index entry for the quiz nearest the top third of the screen.
+function watchToc() {
+  let queued = false;
+  const update = () => {
+    queued = false;
+    if (S.view !== 'home') return;
+    const line = window.innerHeight * 0.4;
+    let best = null;
+    for (const c of els.cards.querySelectorAll('.card')) {
+      if (c.hidden || !c.offsetParent) continue;
+      const r = c.getBoundingClientRect();
+      if (r.top <= line && r.bottom > 80) best = c; else if (!best) best = c;
+    }
+    for (const l of document.querySelectorAll('.toc-item')) l.classList.toggle('on', !!best && l.dataset.target === best.dataset.quiz);
+  };
+  window.addEventListener('scroll', () => { if (!queued) { queued = true; requestAnimationFrame(update); } }, { passive: true });
+  update();
 }
 
 async function deleteCustom(q) {
@@ -211,6 +351,17 @@ async function loadFull(id) {
   return quiz;
 }
 
+function beginRun(quiz, mode, presented, extra = {}) {
+  S.run = { quiz, mode, questions: presented, i: 0, answers: {}, checked: {}, flagged: {}, tutor: {}, elapsed: 0, ...extra };
+  els.title.textContent = quiz.title;
+  els.sub.textContent = `${modeLabel(mode)} · ${presented.length} questions`;
+  document.title = `${quiz.title} - Quizzes - HLD Room`;
+  show('run');
+  renderQuestion();
+  startTimer();
+  persistRun();
+}
+
 async function startQuiz(id, mode) {
   let quiz;
   try { quiz = await loadFull(id); } catch (err) { flash(err.message); return; }
@@ -223,13 +374,56 @@ async function startQuiz(id, mode) {
     questions = quiz.questions.filter((q) => ids.has(q.id));
     if (!questions.length) { flash('Nothing missed to retry.'); return; }
   }
-  S.run = { quiz, mode, questions: questions.map((q) => presentQuestion(q, rand)), i: 0, answers: {}, checked: {}, tutor: {}, elapsed: 0 };
-  els.title.textContent = quiz.title;
-  els.sub.textContent = `${modeLabel(mode)} · ${S.run.questions.length} questions`;
-  document.title = `${quiz.title} - Quizzes - HLD Room`;
-  show('run');
-  renderQuestion();
-  startTimer();
+  beginRun(quiz, mode, questions.map((q) => presentQuestion(q, rand)));
+}
+
+// ---------- weak spots: everything you missed, across all quizzes, in one practice round ----------
+const WEAK_ID = 'weak-spots';
+const weakRefs = () => Object.entries(S.attempts).flatMap(([quizId, a]) => (a?.last?.missed || []).map((qid) => [quizId, qid]));
+async function buildWeak(refs) {
+  const byQuiz = new Map();
+  for (const [quizId] of refs) if (!byQuiz.has(quizId)) { try { byQuiz.set(quizId, await loadFull(quizId)); } catch { /* quiz removed */ } }
+  const questions = [];
+  for (const [quizId, qid] of refs) {
+    const src = byQuiz.get(quizId)?.questions.find((q) => q.id === qid);
+    if (src) questions.push({ ...src, id: `${quizId}::${qid}`, src: [quizId, qid] });
+  }
+  return { id: WEAK_ID, title: 'Weak spots practice', questions };
+}
+async function startWeak() {
+  const quiz = await buildWeak(weakRefs());
+  if (!quiz.questions.length) { flash('No missed questions to practise yet.'); return; }
+  const rand = mulberry32((Math.random() * 2 ** 32) >>> 0);
+  const picked = shuffle(quiz.questions, rand).slice(0, 15);
+  beginRun(quiz, 'weak', picked.map((q) => presentQuestion(q, rand)));
+}
+
+// ---------- resume: the running quiz is saved after every action ----------
+function persistRun() {
+  const run = S.run;
+  if (!run || run.result) return;
+  store.set('run', {
+    quizId: run.quiz.id, mode: run.mode, i: run.i, answers: run.answers, checked: run.checked, flagged: run.flagged, elapsed: Math.round(run.elapsed), at: Date.now(),
+    order: run.questions.map((q) => [q.id, q.options.map((o) => o.id)]), refs: run.mode === 'weak' ? run.questions.map((q) => q.src) : undefined, title: run.quiz.title,
+  });
+}
+const clearRun = () => store.set('run', null);
+const savedRun = () => { const r = store.get('run', null); return r && typeof r === 'object' && r.quizId && Array.isArray(r.order) ? r : null; };
+async function resumeRun() {
+  const r = savedRun();
+  if (!r) return;
+  try {
+    const quiz = r.mode === 'weak' ? await buildWeak(r.refs || []) : await loadFull(r.quizId);
+    const byId = new Map(quiz.questions.map((q) => [q.id, q]));
+    const presented = r.order.map(([qid, optIds]) => {
+      const q = byId.get(qid);
+      if (!q) return null;
+      const opts = optIds.map((id) => q.options.find((o) => o.id === id)).filter(Boolean);
+      return opts.length === q.options.length ? { ...q, options: opts } : q;
+    }).filter(Boolean);
+    if (!presented.length) throw new Error('empty');
+    beginRun(quiz, r.mode, presented, { i: Math.min(r.i, presented.length - 1), answers: r.answers || {}, checked: r.checked || {}, flagged: r.flagged || {}, elapsed: r.elapsed || 0 });
+  } catch { clearRun(); flash('That saved quiz could not be restored.'); renderUpNext(); }
 }
 
 function flash(message) {
@@ -249,8 +443,12 @@ function renderQuestion() {
   const total = run.questions.length;
   const checked = !!run.checked[q.id];
   const sel = new Set(selectedIds());
-  els.fill.style.width = `${(run.i / total) * 100}%`;
-  els.progress.setAttribute('aria-valuenow', String(Math.round((run.i / total) * 100)));
+  renderMap();
+  els.flag.setAttribute('aria-pressed', String(!!run.flagged[q.id]));
+  els.flag.classList.toggle('on', !!run.flagged[q.id]);
+  els.prev.disabled = run.i === 0;
+  els.fill.style.width = `${(Object.keys(run.answers).filter((id) => run.answers[id].length).length / total) * 100}%`;
+  els.progress.setAttribute('aria-valuenow', String(Math.round((Object.keys(run.answers).length / total) * 100)));
   els.count.textContent = `Question ${run.i + 1} of ${total}`;
   els.concept.textContent = q.concept;
   els.diff.replaceChildren(...[1, 2, 3].map((n) => h('i', { class: n <= q.difficulty ? 'on' : '' })));
@@ -289,6 +487,44 @@ function renderQuestion() {
   }
 }
 
+function renderMap() {
+  const run = S.run;
+  els.map.replaceChildren(...run.questions.map((q, n) => {
+    const answered = (run.answers[q.id] || []).length > 0;
+    let state = answered ? 'answered' : '';
+    if (run.checked[q.id]) state = isCorrect(q, run.answers[q.id]) ? 'right' : 'wrong';
+    return h('button', {
+      type: 'button', class: `map-dot ${state}${n === run.i ? ' cur' : ''}${run.flagged[q.id] ? ' flag' : ''}`, text: String(n + 1),
+      title: `Question ${n + 1}${run.flagged[q.id] ? ' (flagged)' : ''}`, 'aria-label': `Go to question ${n + 1}${answered ? ', answered' : ''}${run.flagged[q.id] ? ', flagged' : ''}`,
+      'aria-current': n === run.i ? 'step' : null, onclick: () => goto(n),
+    });
+  }));
+  els.map.querySelector('.cur')?.scrollIntoView({ block: 'nearest', inline: 'center' });
+}
+function goto(n) {
+  const run = S.run;
+  if (n < 0 || n >= run.questions.length || n === run.i) return;
+  run.i = n;
+  renderQuestion();
+  persistRun();
+}
+function toggleFlag() {
+  const run = S.run; const q = cur();
+  if (run.flagged[q.id]) delete run.flagged[q.id]; else run.flagged[q.id] = true;
+  renderQuestion();
+  persistRun();
+}
+async function finishEarly() {
+  const run = S.run;
+  const blank = run.questions.filter((q) => !(run.answers[q.id] || []).length).length;
+  const flagged = Object.keys(run.flagged).length;
+  if (blank || flagged) {
+    const parts = [blank ? `${blank} unanswered question${blank > 1 ? 's' : ''}` : '', flagged ? `${flagged} flagged for review` : ''].filter(Boolean).join(' and ');
+    if (!(await askConfirm(`You still have ${parts}. Finish anyway? Unanswered questions count as wrong.`, 'Finish quiz'))) return;
+  }
+  finish();
+}
+
 function choose(id) {
   const q = cur();
   if (S.run.checked[q.id]) return;
@@ -296,6 +532,7 @@ function choose(id) {
   if (q.type === 'multi') { if (now.has(id)) now.delete(id); else now.add(id); } else { now.clear(); now.add(id); }
   S.run.answers[q.id] = [...now];
   renderQuestion();
+  persistRun();
   els.options.querySelector(`[data-id="${id}"]`)?.focus();
 }
 
@@ -304,21 +541,26 @@ function check() {
   if (!selectedIds().length || S.run.checked[q.id]) return;
   S.run.checked[q.id] = true;
   renderQuestion();
+  persistRun();
   els.next.focus();
 }
 
 function next() {
   const run = S.run;
   if (!els.instant.checked && !selectedIds().length) return;
-  if (run.i < run.questions.length - 1) { run.i += 1; renderQuestion(); els.options.querySelector('.opt')?.focus(); } else finish();
+  if (run.i < run.questions.length - 1) { run.i += 1; renderQuestion(); persistRun(); els.options.querySelector('.opt')?.focus(); } else finish();
 }
 
+els.prev.addEventListener('click', () => goto(S.run.i - 1));
+els.flag.addEventListener('click', toggleFlag);
+els.finish.addEventListener('click', finishEarly);
+window.addEventListener('beforeunload', persistRun);
 els.check.addEventListener('click', check);
 els.next.addEventListener('click', next);
 els.limit.addEventListener('change', () => { store.set('limit', els.limit.checked); renderClock(); });
 els.instant.addEventListener('change', () => { store.set('instant', els.instant.checked); if (S.run) renderQuestion(); });
 els.quit.addEventListener('click', async () => {
-  if (await askConfirm('Quit this quiz? Your answers so far will not be saved.', 'Quit quiz')) { stopTimer(); S.run = null; show('home'); renderCards(); }
+  if (await askConfirm('Quit this quiz? Your answers so far will not be saved.', 'Quit quiz')) { stopTimer(); clearRun(); S.run = null; show('home'); renderCards(); renderUpNext(); }
 });
 
 document.addEventListener('keydown', (e) => {
@@ -327,6 +569,9 @@ document.addEventListener('keydown', (e) => {
   const t = e.target;
   if (t && (t.tagName === 'INPUT' && t.type !== 'checkbox' || t.tagName === 'TEXTAREA')) return;
   const q = cur();
+  if (e.key === 'ArrowLeft') { e.preventDefault(); goto(S.run.i - 1); return; }
+  if (e.key === 'ArrowRight') { e.preventDefault(); goto(S.run.i + 1); return; }
+  if (e.key.toLowerCase() === 'f') { e.preventDefault(); toggleFlag(); return; }
   const pick = /^[1-6]$/.test(e.key) ? Number(e.key) - 1 : -1;
   if (pick >= 0 && pick < q.options.length) { e.preventDefault(); choose(q.options[pick].id); return; }
   // Enter on an answer option (focus stays there after choosing) still checks / moves on; on the other buttons it presses them.
@@ -392,6 +637,19 @@ els.tutorForm.addEventListener('submit', (e) => {
 // ---------- results ----------
 function recordAttempt(result) {
   const run = S.run;
+  if (run.mode === 'weak') {
+    // Questions answered correctly leave the weak list; the others stay for next time.
+    for (const q of run.questions) {
+      if (!q.src || !isCorrect(q, run.answers[q.id])) continue;
+      const a = S.attempts[q.src[0]];
+      if (a?.last) a.last.missed = a.last.missed.filter((id) => id !== q.src[1]);
+    }
+    store.set('attempts', S.attempts);
+    S.history = [{ quizId: WEAK_ID, title: run.quiz.title, at: Date.now(), seconds: result.seconds, mode: 'weak', percent: result.percent, score: result.score, total: result.total }, ...S.history].slice(0, 100);
+    store.set('history', S.history);
+    renderHistory();
+    return;
+  }
   const prev = S.attempts[run.quiz.id] || { best: null, count: 0, last: null };
   const asked = new Set(run.questions.map((q) => q.id));
   const carried = (prev.last?.missed || []).filter((id) => !asked.has(id));
@@ -409,6 +667,33 @@ function recordAttempt(result) {
   renderHistory();
 }
 
+// Progress lives only in this browser, so offer a backup file you can move to another browser.
+function exportProgress() {
+  const data = { app: 'hld-room-quizzes', version: 1, at: new Date().toISOString(), attempts: S.attempts, history: S.history, custom: S.custom };
+  const url = URL.createObjectURL(new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' }));
+  const a = h('a', { href: url, download: 'hld-quiz-progress.json' });
+  document.body.append(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+function importProgress() {
+  const input = h('input', { type: 'file', accept: 'application/json,.json' });
+  input.addEventListener('change', async () => {
+    try {
+      const data = JSON.parse(await input.files[0].text());
+      if (data?.app !== 'hld-room-quizzes') throw new Error('not a progress file');
+      S.attempts = { ...S.attempts, ...(data.attempts && typeof data.attempts === 'object' ? data.attempts : {}) };
+      S.history = [...(Array.isArray(data.history) ? data.history : []), ...S.history].filter((r) => r && typeof r.title === 'string' && Number.isFinite(r.percent))
+        .sort((x, y) => y.at - x.at).filter((r, i, all) => all.findIndex((o) => o.at === r.at && o.title === r.title) === i).slice(0, 100);
+      const known = new Set(S.custom.map((q) => q.id));
+      S.custom = [...S.custom, ...(Array.isArray(data.custom) ? data.custom.filter((q) => validateQuiz(q).length === 0 && !known.has(q.id)) : [])];
+      store.set('attempts', S.attempts); store.set('history', S.history); store.set('custom', S.custom);
+      renderCards(); renderHistory();
+      flash('Progress imported.');
+    } catch { flash('That file is not a quiz progress export.'); }
+  });
+  input.click();
+}
+
 function renderHistory() {
   const box = document.getElementById('history');
   if (!box) return;
@@ -418,7 +703,10 @@ function renderHistory() {
     h('span', { class: 'hist-main' }, h('b', { text: r.title }), h('span', { class: 'muted', text: `${r.score}/${r.total} · ${modeLabel(r.mode)}${r.seconds != null ? ` · ${fmtClock(r.seconds)}` : ''} · ${new Date(r.at).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' })}` }))));
   box.replaceChildren(
     h('div', { class: 'hist-head' }, h('h2', { class: 'eyebrow', text: 'RECENT RESULTS' }),
-      h('button', { class: 'btn ghost small', type: 'button', text: 'Clear', onclick: () => { S.history = []; store.set('history', []); renderHistory(); } })),
+      h('span', { class: 'hist-tools' },
+        h('button', { class: 'btn ghost small', type: 'button', text: 'Export progress', onclick: exportProgress }),
+        h('button', { class: 'btn ghost small', type: 'button', text: 'Import', onclick: importProgress }),
+        h('button', { class: 'btn ghost small', type: 'button', text: 'Clear', onclick: () => { S.history = []; store.set('history', []); renderHistory(); } }))),
     h('ul', { class: 'hist-list' }, ...rows));
 }
 
@@ -428,6 +716,7 @@ function finish() {
   const result = scoreAttempt({ questions: run.questions }, run.answers);
   run.result = result;
   result.seconds = Math.round(run.elapsed);
+  clearRun();
   recordAttempt(result);
   els.fill.style.width = '100%';
   els.title.textContent = run.quiz.title;
@@ -438,7 +727,7 @@ function finish() {
   els.ringPct.textContent = `${p}%`;
   els.resultTitle.textContent = p >= 90 ? 'Excellent' : p >= 70 ? 'Solid' : p >= 50 ? 'Getting there' : 'Keep practising';
   els.resultSub.textContent = `${result.score} of ${result.total} correct · ${modeLabel(run.mode)} · ${fmtClock(result.seconds)}`;
-  const missedAll = S.attempts[run.quiz.id].last.missed;
+  const missedAll = run.mode === 'weak' ? [] : S.attempts[run.quiz.id].last.missed;
   els.retryMissed.hidden = missedAll.length === 0;
   els.retryMissed.textContent = `Retry missed (${missedAll.length})`;
   els.byConcept.replaceChildren(...result.byConcept.map((c) => {
@@ -475,9 +764,9 @@ function renderReview() {
 }
 
 els.onlyWrong.addEventListener('change', () => { if (S.run) renderReview(); });
-els.retake.addEventListener('click', () => startQuiz(S.run.quiz.id, S.run.mode === 'missed' ? 'full' : S.run.mode));
+els.retake.addEventListener('click', () => (S.run.mode === 'weak' ? startWeak() : startQuiz(S.run.quiz.id, S.run.mode === 'missed' ? 'full' : S.run.mode)));
 els.retryMissed.addEventListener('click', () => startQuiz(S.run.quiz.id, 'missed'));
-els.home.addEventListener('click', () => { S.run = null; show('home'); renderCards(); });
+els.home.addEventListener('click', () => { S.run = null; show('home'); renderCards(); renderUpNext(); });
 
 // ---------- generator ----------
 els.genForm.addEventListener('submit', async (e) => {
@@ -541,6 +830,8 @@ async function init() {
   show('home');
   renderCards();
   renderHistory();
+  watchToc();
+  els.search.addEventListener('input', applySearch);
 }
 
 init();
