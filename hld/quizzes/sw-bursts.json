@@ -1,0 +1,268 @@
+{
+  "id": "sw-bursts",
+  "title": "Scaling writes: bursts, queues and load shedding",
+  "topic": "Scaling writes",
+  "series": "scaling-writes-pattern",
+  "seriesTitle": "Scaling writes for system design",
+  "seriesOrder": 5,
+  "seriesDescription": "How to scale write-heavy systems in an interview: vertical scaling and database choice, sharding and partition keys, vertical partitioning, queues and load shedding, batching, hierarchical aggregation, and the resharding and hot-key deep dives.",
+  "description": "Why autoscaling is not a panacea, how queues absorb bursts, when they mask a deeper problem, and how to shed low-value writes.",
+  "source": "Study notes: the scaling writes pattern",
+  "estimatedMinutes": 8,
+  "questions": [
+    {
+      "id": "why-not-autoscale",
+      "concept": "Autoscaling limits",
+      "type": "single",
+      "difficulty": 2,
+      "prompt": "Why is autoscaling not a complete answer to a 4x peak?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Scaling takes time and, for databases, can mean downtime or reduced throughput while it happens.",
+          "why": "Right: slow exactly when you need it."
+        },
+        {
+          "id": "b",
+          "text": "Autoscaling is illegal in production in the majority of deployments.",
+          "why": "Not a real constraint."
+        },
+        {
+          "id": "c",
+          "text": "Autoscaling only works for read traffic without any extra configuration.",
+          "why": "It can scale write capacity too."
+        },
+        {
+          "id": "d",
+          "text": "Autoscaling makes writes free during peaks.",
+          "why": "It does not remove cost or delay."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Without help, you would have to run at 25% utilisation to handle a 4x burst."
+    },
+    {
+      "id": "queue-benefit",
+      "concept": "Burst absorption",
+      "type": "single",
+      "difficulty": 1,
+      "prompt": "What is the main benefit of putting a queue in front of the database?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Burst absorption: the queue buffers spikes while the database writes at a steady rate.",
+          "why": "Right: it decouples accepting from processing."
+        },
+        {
+          "id": "b",
+          "text": "It makes the database faster per write for most everyday workloads.",
+          "why": "It does not speed the database."
+        },
+        {
+          "id": "c",
+          "text": "It makes writes synchronous and immediately visible.",
+          "why": "It makes them asynchronous."
+        },
+        {
+          "id": "d",
+          "text": "It removes the need for a database in a typical production setup.",
+          "why": "The data still must be stored."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Clients may need a way to check later that the write completed."
+    },
+    {
+      "id": "queue-limits",
+      "concept": "Queue limits",
+      "type": "single",
+      "difficulty": 3,
+      "prompt": "When is a queue the wrong tool?",
+      "options": [
+        {
+          "id": "a",
+          "text": "When steady-state input exceeds database capacity, so the backlog grows without bound.",
+          "why": "Right: it only hides the problem."
+        },
+        {
+          "id": "b",
+          "text": "When bursts are short-lived and the system can tolerate delay in a typical production setup.",
+          "why": "That is when queues shine."
+        },
+        {
+          "id": "c",
+          "text": "When you want to absorb a flash of traffic for most everyday workloads under normal operating conditions.",
+          "why": "A good use; it does not answer the question asked."
+        },
+        {
+          "id": "d",
+          "text": "When processing can be retried safely.",
+          "why": "Retries are easier with a queue."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Use queues for short bursts, not to patch a database that cannot handle the steady load."
+    },
+    {
+      "id": "queue-async",
+      "concept": "Async confirmation",
+      "type": "truefalse",
+      "difficulty": 2,
+      "prompt": "True or false: with a write queue, the app server only knows the write was queued, not that it reached the database.",
+      "options": [
+        {
+          "id": "a",
+          "text": "True",
+          "why": "Correct: the confirmation is only that it was accepted."
+        },
+        {
+          "id": "b",
+          "text": "False",
+          "why": "It does not confirm the database write."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Clients often need a callback or status check, and reads may briefly miss the new data."
+    },
+    {
+      "id": "requirements",
+      "concept": "Requirements check",
+      "type": "single",
+      "difficulty": 2,
+      "prompt": "What should you check before adding a queue?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Whether the product tolerates delayed writes and inconsistent reads.",
+          "why": "Right: a queue can break key requirements."
+        },
+        {
+          "id": "b",
+          "text": "Whether the queue vendor has a nice logo.",
+          "why": "Not a technical criterion."
+        },
+        {
+          "id": "c",
+          "text": "Whether the database is already at zero load.",
+          "why": "Not the point; it does not answer the question asked."
+        },
+        {
+          "id": "d",
+          "text": "Whether every write is financially critical, because queues need that.",
+          "why": "It is the opposite concern."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Ask about tolerance for delay at the requirements stage."
+    },
+    {
+      "id": "shed-what",
+      "concept": "What to shed",
+      "type": "single",
+      "difficulty": 2,
+      "prompt": "During overload, which writes should a location-tracking system drop first?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Updates within seconds of a previous one, since a fresher update is coming anyway.",
+          "why": "Right: they are the least valuable."
+        },
+        {
+          "id": "b",
+          "text": "The first location ever sent by a new user without any extra configuration.",
+          "why": "It is high value; it does not answer the question asked."
+        },
+        {
+          "id": "c",
+          "text": "Every write from every user equally at random as a general rule of thumb in the majority of deployments.",
+          "why": "Prioritise rather than drop blindly."
+        },
+        {
+          "id": "d",
+          "text": "Payments, to protect location data.",
+          "why": "Business-critical writes come first."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "For analytics, drop impressions before clicks."
+    },
+    {
+      "id": "why-shed",
+      "concept": "Why shed load",
+      "type": "single",
+      "difficulty": 3,
+      "prompt": "Why is load shedding better than letting everything fail?",
+      "options": [
+        {
+          "id": "a",
+          "text": "It keeps a bad situation (too much load) from turning into a disaster (system failure).",
+          "why": "Right: a release valve."
+        },
+        {
+          "id": "b",
+          "text": "It guarantees no user is affected.",
+          "why": "Some users are affected."
+        },
+        {
+          "id": "c",
+          "text": "It lets the system accept unlimited traffic in a typical production setup for most everyday workloads.",
+          "why": "It limits what is accepted."
+        },
+        {
+          "id": "d",
+          "text": "It removes the need for capacity planning under normal operating conditions as a general rule of thumb.",
+          "why": "You still plan capacity."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Decide in advance which writes matter most to the business."
+    },
+    {
+      "id": "queue-vs-shed",
+      "concept": "Queue or shed",
+      "type": "single",
+      "difficulty": 3,
+      "prompt": "Clients send fresh GPS points every few seconds and traffic spikes. Which approach fits best?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Shed the redundant updates, since a newer one will replace them.",
+          "why": "Right: a queue would only build a stale backlog."
+        },
+        {
+          "id": "b",
+          "text": "Queue everything, however large the backlog becomes in the majority of deployments.",
+          "why": "Stale data would be processed late."
+        },
+        {
+          "id": "c",
+          "text": "Autoscale the database and accept downtime without any extra configuration.",
+          "why": "That is slow and risky."
+        },
+        {
+          "id": "d",
+          "text": "Stop all location updates for every user.",
+          "why": "That removes the feature entirely."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "When data is superseded quickly, dropping is better than buffering."
+    }
+  ]
+}

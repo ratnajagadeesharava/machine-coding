@@ -24,7 +24,7 @@ try {
   await page.goto(url);
   await page.waitForSelector('.card');
   await step('home is a topic index; search finds quizzes across topics; a topic opens its own page', async () => {
-    assert.equal(await page.locator('.topic-card').count(), 2);
+    assert.equal(await page.locator('.topic-card').count(), 3);
     assert.equal(await page.locator('.card:has-text("PostgreSQL: replication")').count(), 0, 'sub-quizzes are not listed on the index');
     await page.fill('#quiz-search', 'replication');
     assert.ok(await page.locator('.result-item .card:visible').count() >= 1);

@@ -1,0 +1,270 @@
+{
+  "id": "sw-deep-dives",
+  "title": "Scaling writes: resharding and hot keys",
+  "topic": "Scaling writes",
+  "series": "scaling-writes-pattern",
+  "seriesTitle": "Scaling writes for system design",
+  "seriesOrder": 8,
+  "seriesDescription": "How to scale write-heavy systems in an interview: vertical scaling and database choice, sharding and partition keys, vertical partitioning, queues and load shedding, batching, hierarchical aggregation, and the resharding and hot-key deep dives.",
+  "description": "The classic follow-ups: adding shards without downtime and handling a key that is too popular even for a single shard.",
+  "source": "Study notes: the scaling writes pattern",
+  "estimatedMinutes": 8,
+  "questions": [
+    {
+      "id": "resharding-naive",
+      "concept": "Offline resharding",
+      "type": "single",
+      "difficulty": 2,
+      "prompt": "Why is \"take the system offline, rehash and move everything\" a poor way to add shards?",
+      "options": [
+        {
+          "id": "a",
+          "text": "It means hours of downtime for large datasets.",
+          "why": "Right: production systems migrate gradually."
+        },
+        {
+          "id": "b",
+          "text": "Rehashing is impossible with consistent hashing.",
+          "why": "It is possible; it does not answer the question asked."
+        },
+        {
+          "id": "c",
+          "text": "Shards cannot be added to a running system ever.",
+          "why": "They can with the right approach."
+        },
+        {
+          "id": "d",
+          "text": "It loses all indexes permanently.",
+          "why": "Not the reason; it does not answer the question asked."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Gradual migration keeps the service available."
+    },
+    {
+      "id": "dual-write",
+      "concept": "Dual-write migration",
+      "type": "single",
+      "difficulty": 3,
+      "prompt": "What does the dual-write phase of a live migration do?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Writes go to both old and new shards while reads prefer the new one, as data moves gradually.",
+          "why": "Right: no data is lost during migration."
+        },
+        {
+          "id": "b",
+          "text": "It writes only to the old shard until the migration is over.",
+          "why": "The new shard would miss writes."
+        },
+        {
+          "id": "c",
+          "text": "It pauses all reads during the migration for most everyday workloads.",
+          "why": "The aim is no downtime."
+        },
+        {
+          "id": "d",
+          "text": "It copies data to a third backup region in a typical production setup.",
+          "why": "Unrelated; it does not answer the question asked."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Once the new shard has caught up, the old location can be retired."
+    },
+    {
+      "id": "hot-key",
+      "concept": "Hot key idea",
+      "type": "single",
+      "difficulty": 2,
+      "prompt": "A viral post receives 100,000 likes per second and even its own shard is overwhelmed. What is the idea?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Split the key into sub-keys so writes spread over several shards, then sum them on read.",
+          "why": "Right: works for aggregatable data."
+        },
+        {
+          "id": "b",
+          "text": "Move the post to a bigger single server only in the majority of deployments.",
+          "why": "Even a dedicated shard may not be enough."
+        },
+        {
+          "id": "c",
+          "text": "Reject all likes for that post as a general rule of thumb.",
+          "why": "That loses the data you need."
+        },
+        {
+          "id": "d",
+          "text": "Delete the post under normal operating conditions.",
+          "why": "Not a solution; it does not answer the question asked."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "This works for counts, views and balances but not for data that must stay atomic, like profiles."
+    },
+    {
+      "id": "split-all",
+      "concept": "Splitting every key",
+      "type": "single",
+      "difficulty": 3,
+      "prompt": "What is the downside of splitting every key k ways up front?",
+      "options": [
+        {
+          "id": "a",
+          "text": "The dataset grows k times and every read must visit k sub-keys.",
+          "why": "Right: a big hammer with read amplification."
+        },
+        {
+          "id": "b",
+          "text": "The writes become slower on every shard under normal operating conditions.",
+          "why": "Write volume per shard falls."
+        },
+        {
+          "id": "c",
+          "text": "Sub-keys cannot be summed.",
+          "why": "They can; it does not answer the question asked."
+        },
+        {
+          "id": "d",
+          "text": "It requires deleting the primary key as a general rule of thumb.",
+          "why": "Not required; it does not answer the question asked."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "If a small k brings writes within capacity, it may still be worth it."
+    },
+    {
+      "id": "split-dynamic",
+      "concept": "Dynamic splitting",
+      "type": "single",
+      "difficulty": 3,
+      "prompt": "How does dynamic hot-key splitting differ from splitting every key?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Only keys detected as hot are split, so cold keys stay cheap to read.",
+          "why": "Right: targeted and cheaper overall."
+        },
+        {
+          "id": "b",
+          "text": "It splits keys at random every second in a typical production setup.",
+          "why": "Splits are driven by detection."
+        },
+        {
+          "id": "c",
+          "text": "It never needs readers to know anything in the majority of deployments without any extra configuration.",
+          "why": "Readers must agree on which keys are hot."
+        },
+        {
+          "id": "d",
+          "text": "It stores each hot key in memory only.",
+          "why": "Unrelated; it does not answer the question asked."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Writers and readers must agree on which sub-keys exist."
+    },
+    {
+      "id": "readers-agree",
+      "concept": "Reader agreement",
+      "type": "single",
+      "difficulty": 3,
+      "prompt": "Which approach do most production systems use so readers see all sub-keys?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Readers always check all sub-keys, accepting read amplification for simplicity.",
+          "why": "Right: simple and easy to understand."
+        },
+        {
+          "id": "b",
+          "text": "Writers announce each split and every reader must acknowledge it first for most everyday workloads.",
+          "why": "More complex and less common."
+        },
+        {
+          "id": "c",
+          "text": "Readers pick one sub-key at random.",
+          "why": "They would miss counts."
+        },
+        {
+          "id": "d",
+          "text": "Readers skip sub-keys and rely on a nightly job under normal operating conditions.",
+          "why": "Counts would be stale."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Avoid over-engineering in the interview."
+    },
+    {
+      "id": "split-works-for",
+      "concept": "Aggregatable data",
+      "type": "multi",
+      "difficulty": 2,
+      "prompt": "Select all kinds of data where key splitting works.",
+      "options": [
+        {
+          "id": "a",
+          "text": "Like counts.",
+          "why": "Yes: they can be summed."
+        },
+        {
+          "id": "b",
+          "text": "View counts.",
+          "why": "Yes: aggregatable; it does not answer the question asked."
+        },
+        {
+          "id": "c",
+          "text": "Account balances kept as additive entries.",
+          "why": "Yes: they can be aggregated."
+        },
+        {
+          "id": "d",
+          "text": "A user profile that must be updated atomically.",
+          "why": "No: it cannot be split and summed."
+        }
+      ],
+      "correct": [
+        "a",
+        "b",
+        "c"
+      ],
+      "explanation": "Atomic data is rarely under the same write pressure."
+    },
+    {
+      "id": "principle",
+      "concept": "Core principle",
+      "type": "truefalse",
+      "difficulty": 1,
+      "prompt": "True or false: the heart of write scaling is reducing the throughput each individual component has to handle.",
+      "options": [
+        {
+          "id": "a",
+          "text": "True",
+          "why": "Correct: that is the unifying principle."
+        },
+        {
+          "id": "b",
+          "text": "False",
+          "why": "It is the unifying principle of the pattern."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Whether by shards, queues or batches, each component should carry a manageable load."
+    }
+  ]
+}

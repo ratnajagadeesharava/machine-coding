@@ -1,0 +1,171 @@
+{
+  "id": "sw-vertical-partitioning",
+  "title": "Scaling writes: vertical partitioning",
+  "topic": "Scaling writes",
+  "series": "scaling-writes-pattern",
+  "seriesTitle": "Scaling writes for system design",
+  "seriesOrder": 4,
+  "seriesDescription": "How to scale write-heavy systems in an interview: vertical scaling and database choice, sharding and partition keys, vertical partitioning, queues and load shedding, batching, hierarchical aggregation, and the resharding and hot-key deep dives.",
+  "description": "Splitting a table by access pattern and sending each part to storage that suits it.",
+  "source": "Study notes: the scaling writes pattern",
+  "estimatedMinutes": 5,
+  "questions": [
+    {
+      "id": "what-vp",
+      "concept": "What it is",
+      "type": "single",
+      "difficulty": 1,
+      "prompt": "What is vertical partitioning?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Splitting columns into separate tables by how the data is used.",
+          "why": "Right: columns, not rows."
+        },
+        {
+          "id": "b",
+          "text": "Splitting rows across servers by key hash.",
+          "why": "That is horizontal sharding."
+        },
+        {
+          "id": "c",
+          "text": "Copying a table to a second server as a general rule of thumb.",
+          "why": "That is replication; it does not answer the question asked."
+        },
+        {
+          "id": "d",
+          "text": "Compressing a table to save disk space.",
+          "why": "That is storage tuning."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Different access patterns get their own tables and stores."
+    },
+    {
+      "id": "why-vp",
+      "concept": "Isolating workloads",
+      "type": "single",
+      "difficulty": 2,
+      "prompt": "A posts table is hammered by content writes, constant like-count updates and analytics scans. How does splitting it help?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Each part can live on a store tuned for its pattern, so operations stop interfering.",
+          "why": "Right: isolate the workloads."
+        },
+        {
+          "id": "b",
+          "text": "It guarantees every query becomes a single join in a typical production setup for most everyday workloads.",
+          "why": "It often adds joins; it does not answer the question asked."
+        },
+        {
+          "id": "c",
+          "text": "It removes the need for any indexes under normal operating conditions as a general rule of thumb.",
+          "why": "Indexes are still needed."
+        },
+        {
+          "id": "d",
+          "text": "It makes all writes synchronous.",
+          "why": "Unrelated; it does not answer the question asked."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "This is as much a modelling decision as a physical one."
+    },
+    {
+      "id": "vp-stores",
+      "concept": "Matching stores",
+      "type": "multi",
+      "difficulty": 2,
+      "prompt": "Select all sensible storage choices for the parts of a post.",
+      "options": [
+        {
+          "id": "a",
+          "text": "Post content: B-tree indexes tuned for reads.",
+          "why": "Yes: write-once, read-many."
+        },
+        {
+          "id": "b",
+          "text": "Post metrics: in-memory storage or specialised counters.",
+          "why": "Yes: high-frequency updates."
+        },
+        {
+          "id": "c",
+          "text": "Post analytics: time-series or column-oriented storage.",
+          "why": "Yes: append-only data."
+        },
+        {
+          "id": "d",
+          "text": "Everything in one table so nothing can be inconsistent.",
+          "why": "No: that recreates the problem."
+        }
+      ],
+      "correct": [
+        "a",
+        "b",
+        "c"
+      ],
+      "explanation": "Match each part to its workload."
+    },
+    {
+      "id": "metrics-write",
+      "concept": "Hot write path",
+      "type": "single",
+      "difficulty": 3,
+      "prompt": "Which part of a social post gets the highest-frequency writes?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Engagement metrics such as likes and views.",
+          "why": "Right: updated constantly."
+        },
+        {
+          "id": "b",
+          "text": "The post content, which is written once in the majority of deployments.",
+          "why": "It is write-once; it does not answer the question asked."
+        },
+        {
+          "id": "c",
+          "text": "The creation timestamp without any extra configuration.",
+          "why": "Written once with the content."
+        },
+        {
+          "id": "d",
+          "text": "The author id.",
+          "why": "Written once; it does not answer the question asked."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "That is why metrics are a prime candidate for batching and aggregation."
+    },
+    {
+      "id": "vp-tradeoff",
+      "concept": "Cost of splitting",
+      "type": "truefalse",
+      "difficulty": 3,
+      "prompt": "True or false: splitting a post across several tables means some views may need to read from more than one place.",
+      "options": [
+        {
+          "id": "a",
+          "text": "True",
+          "why": "Correct: it is a trade-off."
+        },
+        {
+          "id": "b",
+          "text": "False",
+          "why": "Splitting does add reads across parts."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "The cost is extra lookups or joins when you need content and metrics together."
+    }
+  ]
+}

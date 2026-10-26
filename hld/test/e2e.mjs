@@ -253,7 +253,7 @@ try {
   await page.click('.nav a[href="/quiz.html"]');
   await page.waitForSelector('.card');
   assert.match(await page.textContent('.card:has-text("Scaling Reads") h3'), /Scaling Reads/);
-  assert.equal(await page.locator('.topic-card').count(), 2, 'each series is one topic card, not eight quizzes');
+  assert.equal(await page.locator('.topic-card').count(), 3, 'each series is one topic card, not eight quizzes');
   assert.equal(await page.locator('#btn-quit:not([hidden])').count(), 0);
 
   const answer = async (right) => {
@@ -345,7 +345,7 @@ try {
   await page.waitForSelector('.card');
   await page.click('.card:has-text("AI generated") .btn:has-text("Delete")');
   await page.click('#confirm-yes');
-  await page.waitForFunction(() => !document.querySelector('.card .badge.ai') && document.querySelectorAll('.topic-card').length === 2);
+  await page.waitForFunction(() => !document.querySelector('.card .badge.ai') && document.querySelectorAll('.topic-card').length === 3);
 
   assert.deepEqual(errors, [], `browser errors: ${errors.join(' | ')}`);
   console.log('e2e ok');

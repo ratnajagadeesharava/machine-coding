@@ -1,0 +1,237 @@
+{
+  "id": "sw-vertical-and-db",
+  "title": "Scaling writes: hardware and database choice",
+  "topic": "Scaling writes",
+  "series": "scaling-writes-pattern",
+  "seriesTitle": "Scaling writes for system design",
+  "seriesOrder": 2,
+  "seriesDescription": "How to scale write-heavy systems in an interview: vertical scaling and database choice, sharding and partition keys, vertical partitioning, queues and load shedding, batching, hierarchical aggregation, and the resharding and hot-key deep dives.",
+  "description": "Exhausting vertical scaling, why append-only stores write fast, and how to tune a database for write-heavy workloads.",
+  "source": "Study notes: the scaling writes pattern",
+  "estimatedMinutes": 7,
+  "questions": [
+    {
+      "id": "bottlenecks",
+      "concept": "Vertical scaling",
+      "type": "single",
+      "difficulty": 1,
+      "prompt": "Writes are bottlenecked by which resources?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Disk I/O, CPU or network bandwidth, which you should confirm before changing architecture.",
+          "why": "Right: find the wall you are hitting."
+        },
+        {
+          "id": "b",
+          "text": "Only the colour of the dashboard without any extra configuration.",
+          "why": "Not a real bottleneck."
+        },
+        {
+          "id": "c",
+          "text": "The number of tables, regardless of load in a typical production setup.",
+          "why": "Table count is not the limit."
+        },
+        {
+          "id": "d",
+          "text": "The client browser version in the majority of deployments.",
+          "why": "Unrelated to server write capacity."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "A quick calculation of actual throughput versus hardware capability shows whether you are near a limit."
+    },
+    {
+      "id": "big-hardware",
+      "concept": "Hardware ceilings",
+      "type": "single",
+      "difficulty": 2,
+      "prompt": "Why mention modern hardware (for example 200 cores and 10 Gbit networking) in an interview?",
+      "options": [
+        {
+          "id": "a",
+          "text": "To show you did not add complexity when bigger hardware would do.",
+          "why": "Right: avoid premature architecture."
+        },
+        {
+          "id": "b",
+          "text": "Because interviewers never accept hardware as an answer in a typical production setup.",
+          "why": "Many appreciate it, though some move the goalposts."
+        },
+        {
+          "id": "c",
+          "text": "Because 4-core machines cannot run databases for most everyday workloads.",
+          "why": "They can; the point is range."
+        },
+        {
+          "id": "d",
+          "text": "To avoid discussing sharding forever.",
+          "why": "Sharding often still comes up."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Make the case, but do not argue if the interviewer wants to move on."
+    },
+    {
+      "id": "cassandra-why",
+      "concept": "Write-optimised stores",
+      "type": "single",
+      "difficulty": 2,
+      "prompt": "Why can Cassandra sustain such high write rates?",
+      "options": [
+        {
+          "id": "a",
+          "text": "It appends to a commit log sequentially instead of updating data in place with disk seeks.",
+          "why": "Right: sequential writes are cheap."
+        },
+        {
+          "id": "b",
+          "text": "It keeps all data only in memory and never writes to disk under normal operating conditions as a general rule of thumb.",
+          "why": "It persists to disk through a commit log."
+        },
+        {
+          "id": "c",
+          "text": "It has no replication, so there is less to write in the majority of deployments without any extra configuration.",
+          "why": "It replicates; that is not the reason."
+        },
+        {
+          "id": "d",
+          "text": "It rejects any write that needs an index.",
+          "why": "It is not defined by rejecting writes."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "The trade-off is read performance: reads may check several files and merge results."
+    },
+    {
+      "id": "other-stores",
+      "concept": "Write-optimised stores",
+      "type": "multi",
+      "difficulty": 2,
+      "prompt": "Select all store types that favour high-volume writes in this pattern.",
+      "options": [
+        {
+          "id": "a",
+          "text": "Time-series databases such as InfluxDB or TimescaleDB.",
+          "why": "Yes: built for sequential timestamped writes."
+        },
+        {
+          "id": "b",
+          "text": "Log-structured stores such as LevelDB.",
+          "why": "Yes: they append instead of updating in place."
+        },
+        {
+          "id": "c",
+          "text": "Column stores such as ClickHouse for analytics batches.",
+          "why": "Yes: they batch writes efficiently."
+        },
+        {
+          "id": "d",
+          "text": "A fully normalised database with many triggers and foreign keys.",
+          "why": "No: that adds work to every write."
+        }
+      ],
+      "correct": [
+        "a",
+        "b",
+        "c"
+      ],
+      "explanation": "Choose a specialised store only if the write volume justifies architecting around it."
+    },
+    {
+      "id": "tuning",
+      "concept": "Write optimisation",
+      "type": "single",
+      "difficulty": 3,
+      "prompt": "Which change makes a general-purpose database faster for writes?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Reducing index overhead, since every index must be updated on each write.",
+          "why": "Right: fewer indexes, faster writes."
+        },
+        {
+          "id": "b",
+          "text": "Adding an index to every column.",
+          "why": "That slows writes down."
+        },
+        {
+          "id": "c",
+          "text": "Turning on every trigger and constraint under normal operating conditions.",
+          "why": "That adds per-write cost."
+        },
+        {
+          "id": "d",
+          "text": "Running full-text indexing on every insert in a typical production setup for most everyday workloads.",
+          "why": "That is expensive during high-write periods."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "You pay for it on reads, so know your access patterns first."
+    },
+    {
+      "id": "wal-batching",
+      "concept": "Write optimisation",
+      "type": "truefalse",
+      "difficulty": 3,
+      "prompt": "True or false: tuning write-ahead logging so the database batches several transactions before flushing can improve write throughput.",
+      "options": [
+        {
+          "id": "a",
+          "text": "True",
+          "why": "Correct: batching flushes reduces disk work."
+        },
+        {
+          "id": "b",
+          "text": "False",
+          "why": "It does help; flushes are the common bottleneck."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Disk flush is the usual bottleneck, so amortising it across transactions helps, at some durability cost."
+    },
+    {
+      "id": "explain-choice",
+      "concept": "Explaining choices",
+      "type": "single",
+      "difficulty": 2,
+      "prompt": "Which statement best justifies choosing a faster write store?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Append-only writes avoid the in-place B-tree updates a relational database performs.",
+          "why": "Right: name the mechanism."
+        },
+        {
+          "id": "b",
+          "text": "It is a faster database without any extra configuration in a typical production setup.",
+          "why": "Too vague: explain why."
+        },
+        {
+          "id": "c",
+          "text": "NoSQL always scales better than SQL as a general rule of thumb in the majority of deployments.",
+          "why": "A broad claim without nuance."
+        },
+        {
+          "id": "d",
+          "text": "Everybody uses it.",
+          "why": "Popularity is not a technical reason."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Do not say \"use a faster database\"; explain why it is faster and what you give up."
+    }
+  ]
+}
