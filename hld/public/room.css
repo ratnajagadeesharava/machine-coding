@@ -28,7 +28,7 @@
 .side-tab { writing-mode: vertical-rl; width: 34px; padding: 14px 0; border: 0; background: var(--panel); color: var(--muted); font-weight: 700; font-size: 13px; letter-spacing: .1em; text-transform: uppercase; }
 .side-left .side-tab { border-right: 1px solid var(--line); }
 .side-right .side-tab { border-left: 1px solid var(--line); }
-.side-tab:hover { background: var(--accent-soft); color: var(--accent); }
+.side-tab:hover { background: var(--accent-soft); color: var(--accent-strong); }
 .side-tab[hidden] { display: none; }
 
 .stage { flex: 1; min-width: 0; min-height: 0; position: relative; background: var(--board); }
@@ -45,7 +45,7 @@
 .board-line { font-size: 13px; color: var(--muted); }
 .chips { display: flex; flex-wrap: wrap; gap: 8px; padding: 14px 18px 4px; }
 .chip { border: 1px solid var(--line); background: var(--card); border-radius: 999px; padding: 8px 14px; font-size: 14px; }
-.chip:hover:not(:disabled) { border-color: var(--accent); color: var(--accent); }
+.chip:hover:not(:disabled) { border-color: var(--accent); color: var(--accent-strong); }
 .chip:disabled { opacity: .5; cursor: not-allowed; }
 .chat { flex: 1; min-height: 0; overflow-y: auto; padding: 14px 18px; display: flex; flex-direction: column; gap: 14px; }
 .msg { display: grid; gap: 4px; max-width: 94%; }
@@ -70,7 +70,7 @@
 .report-body { padding: 20px 22px 26px; display: grid; gap: 18px; overflow-y: auto; max-height: calc(90vh - 80px); }
 .verdict { display: flex; align-items: center; gap: 12px; }
 .verdict b { font-size: 22px; }
-.verdict .tag { padding: 4px 12px; border-radius: 999px; font-weight: 700; font-size: 14px; background: var(--accent-soft); color: var(--accent); }
+.verdict .tag { padding: 4px 12px; border-radius: 999px; font-weight: 700; font-size: 14px; background: var(--accent-soft); color: var(--accent-strong); }
 .verdict .tag.bad { background: var(--danger-soft); color: var(--danger); }
 .areas { display: grid; gap: 12px; }
 .area { display: grid; gap: 4px; }

@@ -131,6 +131,15 @@ function startTimer() {
 function stopTimer() { if (tickId) clearInterval(tickId); tickId = null; }
 
 const modeLabel = (m) => (m === 'weak' ? 'Weak spots' : m === 'quick' ? `Quick ${QUICK_COUNT}` : m === 'missed' ? 'Retry missed' : 'Full quiz');
+const ago = (t) => {
+  const m = Math.round((Date.now() - t) / 60000);
+  if (m < 1) return 'just now';
+  if (m < 60) return `${m} min ago`;
+  const hrs = Math.round(m / 60);
+  if (hrs < 24) return `${hrs} h ago`;
+  const d = Math.round(hrs / 24);
+  return d === 1 ? 'yesterday' : `${d} days ago`;
+};
 const fmtMinutes = (n) => `~${n} min`;
 
 function allQuizzes() {
@@ -144,6 +153,9 @@ function allQuizzes() {
 
 function quizCard(q, inSeries) {
   const att = S.attempts[q.id];
+  const last = att?.last;
+  const run = savedRun();
+  const inProgress = run && run.quizId === q.id;
   const missed = att?.last?.missed?.length || 0;
   const meta = h('div', { class: 'meta' },
     h('span', { text: `${q.questionCount} questions` }),
@@ -152,12 +164,16 @@ function quizCard(q, inSeries) {
     att?.best != null ? h('span', { class: 'badge', text: `Best ${att.best}%` }) : null,
     q.custom ? h('span', { class: 'badge ai', text: 'AI generated' }) : null);
   const actions = h('div', { class: 'card-actions' },
-    h('button', { class: 'btn primary small', type: 'button', text: 'Start', onclick: () => startQuiz(q.id, 'full') }),
+    h('button', { class: inProgress || !(att?.best != null || last) ? 'btn primary small' : 'btn small', type: 'button', text: inProgress ? 'Resume' : att?.best != null || last ? 'Retake' : 'Start', onclick: () => (inProgress ? resumeRun() : startQuiz(q.id, 'full')) }),
     q.questionCount > QUICK_COUNT + 2 ? h('button', { class: 'btn small', type: 'button', text: `Quick ${QUICK_COUNT}`, onclick: () => startQuiz(q.id, 'quick') }) : null,
     missed ? h('button', { class: 'btn small', type: 'button', text: `Retry missed (${missed})`, onclick: () => startQuiz(q.id, 'missed') }) : null,
     q.custom ? h('button', { class: 'btn ghost small', type: 'button', text: 'Delete', onclick: () => deleteCustom(q) }) : null);
-  return h('article', { class: 'card' + (inSeries ? ' in-series' : ''), id: `quiz-${q.id}`, dataset: { quiz: q.id, search: `${q.title} ${q.description} ${q.topic}`.toLowerCase() } },
-    h('h3', { text: q.title }),
+  const status = inProgress ? h('span', { class: 'status prog', text: 'In progress' })
+    : att?.best != null || last ? h('span', { class: 'status done', title: last ? `Last attempt ${new Date(last.at).toLocaleString()}` : '' }, '✓ Completed',
+      last ? h('span', { class: 'status-detail', text: ` · last ${last.percent}% · ${ago(last.at)}` }) : null)
+    : h('span', { class: 'status new', text: 'Not started' });
+  return h('article', { class: 'card' + (inSeries ? ' in-series' : '') + (inProgress ? ' is-progress' : att?.best != null || last ? ' is-done' : ''), id: `quiz-${q.id}`, dataset: { quiz: q.id, search: `${q.title} ${q.description} ${q.topic}`.toLowerCase() } },
+    h('div', { class: 'card-top' }, h('h3', { text: q.title }), status),
     q.description ? h('p', { class: 'muted', text: q.description }) : null,
     meta,
     q.source && !inSeries ? h('p', { class: 'muted', text: `Source: ${q.source}` }) : null,
@@ -184,7 +200,7 @@ function renderCards() {
       h('summary', {},
         h('span', { class: 'series-name' }, h('b', { text: items[0].seriesTitle }), h('span', { class: 'muted', text: `${items.length} sub-topic quizzes · ${total} questions` })),
         h('span', { class: 'series-progress' }, h('span', { class: 'progress' }, h('i', { style: `width:${Math.round((done / items.length) * 100)}%` })), h('span', { class: 'muted', text: `${done}/${items.length} done` }))),
-      h('div', { class: 'series-body' }, ...items.map((q, i) => h('div', { class: 'series-item' }, h('span', { class: 'series-num', text: String(i + 1) }), quizCard(q, true)))));
+      h('div', { class: 'series-body' }, ...items.map((q, i) => h('div', { class: 'series-item' }, h('span', { class: 'series-num' + (badgeFor(q) != null ? ' done' : ''), text: badgeFor(q) != null ? '✓' : String(i + 1) }), quizCard(q, true)))));
     box.addEventListener('toggle', () => store.set(key, box.open));
     els.cards.append(box);
   }
