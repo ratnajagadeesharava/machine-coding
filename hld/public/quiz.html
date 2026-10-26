@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Quizzes - HLD Room</title>
-  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%230f6b63'/%3E%3Crect x='6' y='7' width='9' height='8' rx='2' fill='none' stroke='white' stroke-width='2'/%3E%3Crect x='17' y='17' width='9' height='8' rx='2' fill='none' stroke='white' stroke-width='2'/%3E%3Cpath d='M15 11h4v6' fill='none' stroke='white' stroke-width='2'/%3E%3C/svg%3E">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%234f46e5'/%3E%3Crect x='6' y='7' width='9' height='8' rx='2' fill='none' stroke='white' stroke-width='2'/%3E%3Crect x='17' y='17' width='9' height='8' rx='2' fill='none' stroke='white' stroke-width='2'/%3E%3Cpath d='M15 11h4v6' fill='none' stroke='white' stroke-width='2'/%3E%3C/svg%3E">
   <link rel="stylesheet" href="/styles.css">
   <link rel="stylesheet" href="/quiz.css">
 </head>
@@ -32,6 +32,7 @@
     <div class="home-grid">
       <nav id="toc" class="toc" aria-label="Quiz index"></nav>
       <div class="home-main">
+        <div id="upnext" class="upnext" hidden></div>
         <div id="stats" class="stats" aria-label="Your progress"></div>
         <div class="list-head">
           <h2 class="eyebrow">AVAILABLE QUIZZES</h2>
@@ -73,6 +74,7 @@
         <label class="toggle"><input id="instant" type="checkbox" checked> Show answer after each question</label>
       </div>
     </div>
+    <div id="q-map" class="q-map" role="group" aria-label="Question navigator"></div>
     <article class="qcard" id="qcard" aria-live="polite">
       <div class="qtags"><span id="q-concept" class="chip-tag"></span><span id="q-diff" class="dots" aria-label="difficulty"></span></div>
       <h2 id="q-prompt" class="q-prompt"></h2>
@@ -91,7 +93,10 @@
         </div>
       </div>
       <div class="run-actions">
-        <span class="muted kb">Keys: 1-6 select · Enter check / next</span>
+        <span class="muted kb">Keys: 1-6 select · Enter check / next · ← → move · F flag</span>
+        <button id="btn-prev" class="btn" type="button">Back</button>
+        <button id="btn-flag" class="btn" type="button" aria-pressed="false" title="Flag this question to come back to it (F)">Flag</button>
+        <button id="btn-finish" class="btn ghost" type="button">Finish</button>
         <button id="btn-check" class="btn primary" type="button" disabled>Check answer</button>
         <button id="btn-next" class="btn primary" type="button" hidden>Next</button>
       </div>

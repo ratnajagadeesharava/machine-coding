@@ -1,9 +1,9 @@
 /* Whiteboard menus, dialogs, palette, find bar and library (agent D). Everything is namespaced .wbm-*.
    Colours come from the site variables (--card --ink --muted --line --accent --accent-soft --danger --shadow) with fallbacks. */
 .wbm-menu-root, body > .wbm-popover, .wbm-dialog, .wbm-search, .wbm-library, .wbm-toasts, .wbm-drop-hint {
-  --wbm-card: var(--card, #fffdf9); --wbm-ink: var(--ink, #1c2420); --wbm-muted: var(--muted, #6c746e); --wbm-line: var(--line, #ddd6ca);
-  --wbm-accent: var(--accent, #0f6b63); --wbm-accent-soft: var(--accent-soft, #dcefec); --wbm-accent-ink: var(--accent-ink, #fff);
-  --wbm-danger: var(--danger, #b3261e); --wbm-shadow: var(--shadow, 0 6px 24px rgba(40, 32, 20, .12));
+  --wbm-card: var(--card, #ffffff); --wbm-ink: var(--ink, #1b1e33); --wbm-muted: var(--muted, #646a85); --wbm-line: var(--line, #dcdfee);
+  --wbm-accent: var(--accent, #4f46e5); --wbm-accent-soft: var(--accent-soft, #e4e3fd); --wbm-accent-ink: var(--accent-ink, #fff);
+  --wbm-danger: var(--danger, #c2255c); --wbm-shadow: var(--shadow, 0 6px 24px rgba(30, 32, 80, .12));
   --wbm-hover: color-mix(in srgb, var(--wbm-ink) 7%, transparent);
   font-family: var(--sans, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif); font-size: 13.5px; color: var(--wbm-ink);
 }
@@ -13,13 +13,13 @@
 /* Explicit whiteboard theme (set from JS) wins over the OS preference, like chrome.css does. */
 [data-wbm-theme="dark"].wbm-menu-root, [data-wbm-theme="dark"].wbm-popover, [data-wbm-theme="dark"].wbm-dialog, [data-wbm-theme="dark"].wbm-search,
 [data-wbm-theme="dark"].wbm-library, [data-wbm-theme="dark"].wbm-toasts, [data-wbm-theme="dark"].wbm-drop-hint {
-  --wbm-card: #1f2528; --wbm-ink: #e8ece9; --wbm-muted: #98a39d; --wbm-line: #2e3639; --wbm-accent: #3fb3a5; --wbm-accent-soft: #1b3a37; --wbm-accent-ink: #06201d;
-  --wbm-danger: #f2877f; --wbm-shadow: 0 6px 24px rgba(0, 0, 0, .4); color-scheme: dark;
+  --wbm-card: #1b1f3a; --wbm-ink: #e9ebff; --wbm-muted: #9aa0c3; --wbm-line: #2b3055; --wbm-accent: #8b8cff; --wbm-accent-soft: #26294f; --wbm-accent-ink: #0e1030;
+  --wbm-danger: #ff8aa5; --wbm-shadow: 0 6px 24px rgba(0, 0, 0, .4); color-scheme: dark;
 }
 [data-wbm-theme="light"].wbm-menu-root, [data-wbm-theme="light"].wbm-popover, [data-wbm-theme="light"].wbm-dialog, [data-wbm-theme="light"].wbm-search,
 [data-wbm-theme="light"].wbm-library, [data-wbm-theme="light"].wbm-toasts, [data-wbm-theme="light"].wbm-drop-hint {
-  --wbm-card: #fffdf9; --wbm-ink: #1c2420; --wbm-muted: #6c746e; --wbm-line: #ddd6ca; --wbm-accent: #0f6b63; --wbm-accent-soft: #dcefec; --wbm-accent-ink: #fff;
-  --wbm-danger: #b3261e; --wbm-shadow: 0 6px 24px rgba(40, 32, 20, .12); color-scheme: light;
+  --wbm-card: #ffffff; --wbm-ink: #1b1e33; --wbm-muted: #646a85; --wbm-line: #dcdfee; --wbm-accent: #4f46e5; --wbm-accent-soft: #e4e3fd; --wbm-accent-ink: #fff;
+  --wbm-danger: #c2255c; --wbm-shadow: 0 6px 24px rgba(30, 32, 80, .12); color-scheme: light;
 }
 
 /* ---- shared controls ---- */
