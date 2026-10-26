@@ -107,6 +107,24 @@ try {
     await page.click('[data-theme-btn]');
     assert.equal(await bg(), before);
   });
+  await step('model picker saves the choice and sends it with API calls', async () => {
+    await page.goto(url);
+    await page.waitForSelector('.topic-card');
+    await page.click('[data-keybtn]');
+    await page.selectOption('#keydlg-model', 'claude-opus-5-5');
+    assert.equal(await page.evaluate(() => localStorage.getItem('hld-model')), 'claude-opus-5-5');
+    assert.match(await page.textContent('[data-keybtn]'), /Opus 5\.5/);
+    await page.keyboard.press('Escape');
+    const req = page.waitForRequest((r) => r.url().includes('/api/health'));
+    await page.reload();
+    assert.equal((await req).headers()['x-hld-model'], 'claude-opus-5-5');
+    await page.waitForSelector('.topic-card');
+    await page.click('[data-keybtn]');
+    await page.selectOption('#keydlg-model', 'claude-sonnet-5-5');
+    await page.keyboard.press('Escape');
+    assert.equal(await page.evaluate(() => localStorage.getItem('hld-model')), null, 'default model clears the override');
+    await page.waitForSelector('.topic-card');
+  });
   await step('progress exports as a file', async () => {
     await page.waitForSelector('.hist-tools');
     const [dl] = await Promise.all([page.waitForEvent('download'), page.click('text=Export progress')]);

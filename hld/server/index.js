@@ -5,7 +5,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import Anthropic from '@anthropic-ai/sdk';
 import { sanitizeBoard } from '../shared/board.js';
-import { AriaError, createAi, DEFAULT_MODEL, friendlyError } from './ai.js';
+import { AriaError, createAi, DEFAULT_MODEL, friendlyError, MODELS } from './ai.js';
 import { loadEnvFile } from './env.js';
 import { createMockClient } from './mock.js';
 import { cleanInterviewQuestion } from './question.js';
@@ -117,16 +117,25 @@ export function createServer({ ai, questions, quizzes = [], mode = 'off', model 
   const KEY_RE = /^sk-ant-[A-Za-z0-9_-]{10,400}$/;
   const keyed = new Map();
   // The AI to use for this request: the server's own (env key / demo mode), else one built from the browser's key.
+  // The browser may also pick one of the known models with the x-hld-model header.
+  const pick = (req) => { const m = req.headers['x-hld-model']; return typeof m === 'string' && MODELS.some((x) => x.id === m) ? m : null; };
+  const cached = (id, build) => {
+    if (!keyed.has(id)) {
+      if (keyed.size >= 12) keyed.delete(keyed.keys().next().value);
+      keyed.set(id, build());
+    }
+    return keyed.get(id);
+  };
   function aiFor(req) {
-    if (ai) return ai;
+    const wanted = pick(req);
+    if (ai) {
+      if (mode !== 'live' || !wanted || wanted === model || !makeAi) return ai;
+      return cached(`env|${wanted}`, () => makeAi(null, wanted));
+    }
     const key = req.headers['x-anthropic-key'];
     if (!makeAi || typeof key !== 'string' || !key) return null;
     if (!KEY_RE.test(key)) throw new HttpError(400, 'That does not look like an Anthropic API key (it should start with sk-ant-).');
-    if (!keyed.has(key)) {
-      if (keyed.size >= 5) keyed.delete(keyed.keys().next().value);
-      keyed.set(key, makeAi(key));
-    }
-    return keyed.get(key);
+    return cached(`${key}|${wanted || model}`, () => makeAi(key, wanted || model));
   }
   const quizById = new Map(quizzes.map((q) => [q.id, q]));
   const allow = makeRateLimiter(rateLimit, 60_000);
@@ -246,7 +255,7 @@ export function createServer({ ai, questions, quizzes = [], mode = 'off', model 
       if (p.startsWith('/api/')) {
         if (p === '/api/health' && req.method === 'GET') {
           const a = ai || (() => { try { return aiFor(req); } catch { return null; } })();
-          return json(res, 200, { ok: true, ai: ai ? mode : a ? 'live' : 'off', model: a ? model : null, ...(!ai && makeAi ? { browserKey: !!a, canUseBrowserKey: true } : {}) });
+          return json(res, 200, { ok: true, ai: ai ? mode : a ? 'live' : 'off', model: a ? (mode === 'mock' ? model : pick(req) || model) : null, ...(mode !== 'mock' ? { models: MODELS, defaultModel: model } : {}), ...(!ai && makeAi ? { browserKey: !!a, canUseBrowserKey: true } : {}) });
         }
         if (p === '/api/questions' && req.method === 'GET') return json(res, 200, questions.map(publicQuestion));
         if (p === '/api/quizzes' && req.method === 'GET') return json(res, 200, quizzes.map(quizSummary));
@@ -300,7 +309,7 @@ function main() {
     ai = createAi({ client: new Anthropic({ apiKey: env.ANTHROPIC_API_KEY }), model, effort: env.HLD_EFFORT || 'default' });
     mode = 'live';
   }
-  const makeAi = (apiKey) => createAi({ client: new Anthropic({ apiKey }), model, effort: env.HLD_EFFORT || 'default' });
+  const makeAi = (apiKey, chosen) => createAi({ client: new Anthropic({ apiKey: apiKey || env.ANTHROPIC_API_KEY }), model: chosen || model, effort: env.HLD_EFFORT || 'default' });
   const server = createServer({ ai, questions, quizzes, mode, model: mode === 'mock' ? 'mock' : model, makeAi });
   server.listen(port, host, () => {
     console.log(`HLD Room: http://${host === '0.0.0.0' ? 'localhost' : host}:${port}`);

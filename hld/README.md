@@ -108,7 +108,7 @@ Set in `hld/.env` or the environment.
 | Variable | Default | Meaning |
 |---|---|---|
 | `ANTHROPIC_API_KEY` | - | Your key. Required for the real AI. |
-| `HLD_MODEL` | `claude-sonnet-5-5` | Model Aria uses. For the strongest answers try `claude-opus-5-5`; for the cheapest try `claude-haiku-5-5`. |
+| `HLD_MODEL` | `claude-sonnet-5-5` | Default model Aria uses. Anyone using the page can pick Sonnet, Opus, Haiku or Fable from the key button (top right); that choice is saved in the browser. For the strongest answers try `claude-opus-5-5`; for the cheapest try `claude-haiku-5-5`. |
 | `HLD_EFFORT` | `default` | `default` = low effort for chat and check-ins, high for the final report. Or `low`/`medium`/`high`/`xhigh`/`max` for everything, or `none` to send no effort setting (needed for older models that do not support it). |
 | `PORT` | `3000` | Port to listen on. |
 | `HLD_HOST` | `127.0.0.1` | Bind address. Only change it if you understand that anyone who can reach the port can spend your key. |
