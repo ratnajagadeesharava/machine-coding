@@ -277,3 +277,8 @@ html { scroll-behavior: auto; }
 .card.is-done { border-left: 5px solid #22a55b; }
 .card.is-progress { border-left: 5px solid #3b82f6; }
 .series-num.done { background: #22a55b; color: #fff; }
+
+/* forced dark (theme toggle) */
+:root[data-theme="dark"] .badge.ai { background: #123a35; color: #7fe0d0; }
+:root[data-theme="dark"] #btn-flag.on { background: #14284d; color: #9ec0ff; }
+:root[data-theme="dark"] .status.done { color: #6fdc9a; } :root[data-theme="dark"] .status.prog { background: #14284d; color: #9ec0ff; }

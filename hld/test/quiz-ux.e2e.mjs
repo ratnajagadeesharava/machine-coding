@@ -80,6 +80,18 @@ try {
     await page.waitForSelector('.card');
     assert.match(await page.textContent('[data-quiz="pg-replication"] .btn'), /Retake/);
   });
+  await step('light / dark toggle switches and is remembered', async () => {
+    const bg = () => page.evaluate(() => getComputedStyle(document.body).backgroundColor);
+    const before = await bg();
+    await page.click('[data-theme-btn]');
+    const after = await bg();
+    assert.notEqual(before, after);
+    await page.reload();
+    await page.waitForSelector('.card');
+    assert.equal(await bg(), after, 'choice survives a reload');
+    await page.click('[data-theme-btn]');
+    assert.equal(await bg(), before);
+  });
   await step('progress exports as a file', async () => {
     await page.waitForSelector('.hist-tools');
     const [dl] = await Promise.all([page.waitForEvent('download'), page.click('text=Export progress')]);
