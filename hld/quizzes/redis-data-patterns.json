@@ -1,0 +1,303 @@
+{
+  "id": "redis-data-patterns",
+  "title": "Redis: leaderboards, rate limiting & geo",
+  "topic": "Redis",
+  "series": "redis-system-design",
+  "seriesTitle": "Redis for system design interviews",
+  "seriesOrder": 6,
+  "seriesDescription": "How to use Redis in system design interviews: the data model, durability limits, clustering, caching, distributed locks, leaderboards, rate limiting, geo search, streams and pub/sub, with the trade-offs interviewers probe.",
+  "description": "Sorted sets for rankings, fixed and sliding window rate limiters, and geohash-backed proximity search.",
+  "source": "Study notes: how to use Redis in system design interviews",
+  "estimatedMinutes": 7,
+  "questions": [
+    {
+      "id": "leaderboard",
+      "concept": "Leaderboards",
+      "type": "single",
+      "difficulty": 1,
+      "prompt": "Which Redis structure suits a leaderboard of the most-liked posts?",
+      "options": [
+        {
+          "id": "a",
+          "text": "A sorted set, scoring each member by its like count.",
+          "why": "Right: rank queries are logarithmic."
+        },
+        {
+          "id": "b",
+          "text": "A list, appending each like to the end.",
+          "why": "A list has no ranking by score."
+        },
+        {
+          "id": "c",
+          "text": "A hash from post id to like count, sorted by the client.",
+          "why": "Sorting on the client defeats the point."
+        },
+        {
+          "id": "d",
+          "text": "A pub/sub channel carrying like events.",
+          "why": "Pub/Sub is not stored or ranked."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "ZADD sets or replaces a member's score, so re-adding a post with a new count moves its rank."
+    },
+    {
+      "id": "trim",
+      "concept": "Leaderboards",
+      "type": "single",
+      "difficulty": 3,
+      "prompt": "ZREMRANGEBYRANK tiger_posts 0 -6 keeps what?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Only the top five posts by score.",
+          "why": "Right: negative indexes count from the highest rank."
+        },
+        {
+          "id": "b",
+          "text": "Only the lowest five posts by score.",
+          "why": "It removes the lowest, keeping the top."
+        },
+        {
+          "id": "c",
+          "text": "Everything except the single lowest post.",
+          "why": "It removes ranks up to sixth from the top."
+        },
+        {
+          "id": "d",
+          "text": "Nothing, because the range is invalid.",
+          "why": "The range is valid and meaningful."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Periodically trimming keeps the sorted set small."
+    },
+    {
+      "id": "fixed-window",
+      "concept": "Rate limiting",
+      "type": "single",
+      "difficulty": 2,
+      "prompt": "How does a fixed-window limiter work with INCR?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Increment a per-window counter; reject once the count exceeds N.",
+          "why": "Right: simple and cheap."
+        },
+        {
+          "id": "b",
+          "text": "Store each request in a list and count the list.",
+          "why": "That is closer to a sliding window and costs more memory."
+        },
+        {
+          "id": "c",
+          "text": "Delete the counter on every request.",
+          "why": "Then the count would never grow."
+        },
+        {
+          "id": "d",
+          "text": "Use pub/sub to broadcast request counts.",
+          "why": "Pub/Sub is not a counter."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Return 429, often with a Retry-After header."
+    },
+    {
+      "id": "expire-once",
+      "concept": "Rate limiting",
+      "type": "single",
+      "difficulty": 3,
+      "prompt": "When should the window expiry be set in the fixed-window limiter?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Only when INCR returns 1, the first request of the window.",
+          "why": "Right: otherwise traffic keeps pushing the reset forward."
+        },
+        {
+          "id": "b",
+          "text": "On every request, to keep the key alive.",
+          "why": "A steady stream would never see a fresh window."
+        },
+        {
+          "id": "c",
+          "text": "Never, because Redis expires counters itself.",
+          "why": "Without an expiry the counter never resets."
+        },
+        {
+          "id": "d",
+          "text": "Only when the count exceeds N.",
+          "why": "The window must start on the first request."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Run INCR and EXPIRE as one Lua script so a crash between them cannot leave a counter that never resets."
+    },
+    {
+      "id": "sliding-window",
+      "concept": "Sliding window",
+      "type": "multi",
+      "difficulty": 3,
+      "prompt": "Select all steps of a sliding-window limiter using a sorted set per user.",
+      "options": [
+        {
+          "id": "a",
+          "text": "Remove entries older than the window with ZREMRANGEBYSCORE.",
+          "why": "Yes: drop expired timestamps."
+        },
+        {
+          "id": "b",
+          "text": "Count what is left with ZCARD.",
+          "why": "Yes: that is the current request count."
+        },
+        {
+          "id": "c",
+          "text": "Add the new request with ZADD if the count is under N.",
+          "why": "Yes: record accepted requests."
+        },
+        {
+          "id": "d",
+          "text": "Delete the user's whole key after every request.",
+          "why": "No: that would erase the history you need."
+        }
+      ],
+      "correct": [
+        "a",
+        "b",
+        "c"
+      ],
+      "explanation": "Run the sequence as a Lua script so it executes atomically."
+    },
+    {
+      "id": "geo-commands",
+      "concept": "Proximity search",
+      "type": "single",
+      "difficulty": 1,
+      "prompt": "Which commands add a point and search near a location?",
+      "options": [
+        {
+          "id": "a",
+          "text": "GEOADD to index it and GEOSEARCH to query a radius.",
+          "why": "Right: built-in geospatial support."
+        },
+        {
+          "id": "b",
+          "text": "SADD and SMEMBERS on a set of coordinates in the majority of deployments.",
+          "why": "Sets have no distance search."
+        },
+        {
+          "id": "c",
+          "text": "XADD and XREAD on a stream of coordinates.",
+          "why": "Streams are logs, not spatial indexes."
+        },
+        {
+          "id": "d",
+          "text": "PUBLISH and SUBSCRIBE on a location channel as a general rule of thumb.",
+          "why": "Pub/Sub does not store points."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Under the hood, geo data is a sorted set keyed by geohash."
+    },
+    {
+      "id": "geo-complexity",
+      "concept": "Proximity search",
+      "type": "single",
+      "difficulty": 3,
+      "prompt": "Why does GEOSEARCH cost O(N + log M) with two different counts?",
+      "options": [
+        {
+          "id": "a",
+          "text": "It first collects N candidates in grid-aligned boxes, then filters to the M within the exact radius.",
+          "why": "Right: the boxes are imprecise."
+        },
+        {
+          "id": "b",
+          "text": "It scans every key in the database twice for most everyday workloads under normal operating conditions.",
+          "why": "It seeks into one sorted set."
+        },
+        {
+          "id": "c",
+          "text": "It sorts all members on every query.",
+          "why": "The set is already ordered by geohash."
+        },
+        {
+          "id": "d",
+          "text": "It runs one query on each replica and merges them without any extra configuration in a typical production setup.",
+          "why": "There is no such merge."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Geohashes make a sorted-set seek possible; the second pass trims the bounding-box overshoot."
+    },
+    {
+      "id": "leaderboard-scale",
+      "concept": "Leaderboards",
+      "type": "truefalse",
+      "difficulty": 2,
+      "prompt": "True or false: sorted sets suit leaderboards partly because high write throughput and low read latency keep up where a SQL database starts to struggle.",
+      "options": [
+        {
+          "id": "a",
+          "text": "True",
+          "why": "Correct: that is the practical advantage at scale."
+        },
+        {
+          "id": "b",
+          "text": "False",
+          "why": "It is a good fit at scale."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Rank queries are logarithmic and the data lives in memory."
+    },
+    {
+      "id": "lua-why",
+      "concept": "Atomic scripts",
+      "type": "single",
+      "difficulty": 2,
+      "prompt": "Why wrap a multi-step rate limit check in a Lua script?",
+      "options": [
+        {
+          "id": "a",
+          "text": "The whole script runs as one atomic command, so concurrent requests cannot interleave.",
+          "why": "Right: no race between the steps."
+        },
+        {
+          "id": "b",
+          "text": "Lua is required for any use of sorted sets as a general rule of thumb in the majority of deployments.",
+          "why": "Sorted sets work with plain commands."
+        },
+        {
+          "id": "c",
+          "text": "Lua scripts avoid network latency entirely without any extra configuration in a typical production setup.",
+          "why": "The client still makes one round trip."
+        },
+        {
+          "id": "d",
+          "text": "Lua scripts make the data durable.",
+          "why": "Scripts do not change durability."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Atomic scripts are the standard trick for lock release and rate limiting alike."
+    }
+  ]
+}

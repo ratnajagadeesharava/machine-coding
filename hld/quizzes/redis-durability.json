@@ -1,0 +1,237 @@
+{
+  "id": "redis-durability",
+  "title": "Redis: durability & replication",
+  "topic": "Redis",
+  "series": "redis-system-design",
+  "seriesTitle": "Redis for system design interviews",
+  "seriesOrder": 2,
+  "seriesDescription": "How to use Redis in system design interviews: the data model, durability limits, clustering, caching, distributed locks, leaderboards, rate limiting, geo search, streams and pub/sub, with the trade-offs interviewers probe.",
+  "description": "RDB versus AOF, why acknowledged writes can vanish, asynchronous replication and why Redis is not a system of record.",
+  "source": "Study notes: how to use Redis in system design interviews",
+  "estimatedMinutes": 6,
+  "questions": [
+    {
+      "id": "rdb",
+      "concept": "Persistence",
+      "type": "single",
+      "difficulty": 1,
+      "prompt": "What do you lose if Redis crashes when it only uses RDB snapshots?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Everything written since the last snapshot.",
+          "why": "Right: RDB is a periodic point-in-time copy."
+        },
+        {
+          "id": "b",
+          "text": "Nothing, because every write is on disk before the reply.",
+          "why": "That would require fsync on every write, which RDB does not do."
+        },
+        {
+          "id": "c",
+          "text": "Only keys that have a TTL.",
+          "why": "TTL has no bearing on what is persisted."
+        },
+        {
+          "id": "d",
+          "text": "The keys but never the values.",
+          "why": "Whole entries are lost, not parts of them."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "RDB trades safety for speed and a small footprint. Mention the window of loss explicitly."
+    },
+    {
+      "id": "aof",
+      "concept": "Persistence",
+      "type": "single",
+      "difficulty": 2,
+      "prompt": "With AOF at its default, how much acknowledged data can a crash lose?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Up to about one second of writes, since it fsyncs once per second.",
+          "why": "Right: the log is flushed each second by default."
+        },
+        {
+          "id": "b",
+          "text": "Nothing at all, because every write is fsynced.",
+          "why": "That needs the always setting, which few deployments use."
+        },
+        {
+          "id": "c",
+          "text": "Everything since the last snapshot, which could be hours.",
+          "why": "That describes RDB only."
+        },
+        {
+          "id": "d",
+          "text": "Only writes made by clients that disconnected.",
+          "why": "Connection state is not the issue."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "You can configure fsync on every write, but it costs the speed people chose Redis for."
+    },
+    {
+      "id": "commit-on-disk",
+      "concept": "Persistence",
+      "type": "truefalse",
+      "difficulty": 2,
+      "prompt": "True or false: with its defaults, Redis gives the same commit-is-on-disk guarantee as a relational database.",
+      "options": [
+        {
+          "id": "a",
+          "text": "True",
+          "why": "It does not by default."
+        },
+        {
+          "id": "b",
+          "text": "False",
+          "why": "Correct: defaults accept a window of loss."
+        }
+      ],
+      "correct": [
+        "b"
+      ],
+      "explanation": "Redis intentionally trades that guarantee for speed. MemoryDB-style services give disk-based durability at some cost in latency."
+    },
+    {
+      "id": "async-repl",
+      "concept": "Replication",
+      "type": "single",
+      "difficulty": 3,
+      "prompt": "A primary acknowledges a write and dies before the replica sees it. The replica is promoted. What happened to the write?",
+      "options": [
+        {
+          "id": "a",
+          "text": "It is lost, because Redis replication is asynchronous.",
+          "why": "Right: the primary acknowledged before replicating."
+        },
+        {
+          "id": "b",
+          "text": "It is recovered automatically from the client library cache.",
+          "why": "Clients do not keep a durable copy of acknowledged writes."
+        },
+        {
+          "id": "c",
+          "text": "It is replayed from the replica's own disk on promotion.",
+          "why": "The replica never received it."
+        },
+        {
+          "id": "d",
+          "text": "It stays pending and is applied when the old primary returns.",
+          "why": "The old primary is replaced; its unreplicated writes are discarded."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "This is the deepest reason Redis is not a system of record, and it matters again for locks."
+    },
+    {
+      "id": "alternative",
+      "concept": "Durability options",
+      "type": "single",
+      "difficulty": 2,
+      "prompt": "You love Redis semantics but need disk-based durability. What is the interview-level answer?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Use a durable Redis-compatible service such as AWS MemoryDB, accepting some speed cost.",
+          "why": "Right: durability is available if you trade a bit of speed."
+        },
+        {
+          "id": "b",
+          "text": "Switch to RDB snapshots every second to make it durable for most everyday workloads.",
+          "why": "Snapshots are periodic copies, not a per-write guarantee."
+        },
+        {
+          "id": "c",
+          "text": "Add more replicas, since asynchronous replication is durable in a typical production setup.",
+          "why": "Async replicas can still miss the last acknowledged writes."
+        },
+        {
+          "id": "d",
+          "text": "Durability is impossible with any in-memory system.",
+          "why": "Systems exist that journal writes durably."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Or keep the system of record elsewhere and treat Redis as a fast layer in front of it."
+    },
+    {
+      "id": "replica-reads",
+      "concept": "Replica reads",
+      "type": "multi",
+      "difficulty": 3,
+      "prompt": "Select all true statements about reading from Redis replicas.",
+      "options": [
+        {
+          "id": "a",
+          "text": "In cluster mode, a client issues READONLY to allow reads from replicas.",
+          "why": "Yes: otherwise it reads from primaries."
+        },
+        {
+          "id": "b",
+          "text": "Replica reads can be stale by the replication lag.",
+          "why": "Yes: that is the price of scaling reads."
+        },
+        {
+          "id": "c",
+          "text": "Replicas multiply read capacity but not write capacity.",
+          "why": "Yes: all writes still go to the primary of each slot."
+        },
+        {
+          "id": "d",
+          "text": "Replica reads are always fully consistent with the primary.",
+          "why": "No: replication is asynchronous."
+        }
+      ],
+      "correct": [
+        "a",
+        "b",
+        "c"
+      ],
+      "explanation": "Replicas help reads and availability, not writes, and they do not make Redis a source of truth."
+    },
+    {
+      "id": "system-of-record",
+      "concept": "Design choice",
+      "type": "single",
+      "difficulty": 3,
+      "prompt": "A designer wants Redis as the only store for customer orders. What is the strongest objection?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Async replication and persistence loss windows mean acknowledged orders can vanish.",
+          "why": "Right: that is unacceptable for a system of record."
+        },
+        {
+          "id": "b",
+          "text": "Redis cannot store more than one value per key in the majority of deployments.",
+          "why": "Values can be rich structures like hashes."
+        },
+        {
+          "id": "c",
+          "text": "Redis has no way to look up an order by its key under normal operating conditions as a general rule of thumb.",
+          "why": "Key lookup is its strength."
+        },
+        {
+          "id": "d",
+          "text": "Redis is too slow for order volumes.",
+          "why": "Speed is not the problem."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Keep orders in a durable database. Redis may cache them or hold derived data."
+    }
+  ]
+}

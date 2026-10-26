@@ -1,0 +1,270 @@
+{
+  "id": "redis-basics",
+  "title": "Redis: the basics",
+  "topic": "Redis",
+  "series": "redis-system-design",
+  "seriesTitle": "Redis for system design interviews",
+  "seriesOrder": 1,
+  "seriesDescription": "How to use Redis in system design interviews: the data model, durability limits, clustering, caching, distributed locks, leaderboards, rate limiting, geo search, streams and pub/sub, with the trade-offs interviewers probe.",
+  "description": "What Redis is, why one thread makes it fast and predictable, its data structures, how commands look and how fast it really is.",
+  "source": "Study notes: how to use Redis in system design interviews",
+  "estimatedMinutes": 6,
+  "questions": [
+    {
+      "id": "data-model",
+      "concept": "Data model",
+      "type": "single",
+      "difficulty": 1,
+      "prompt": "What is Redis's underlying model?",
+      "options": [
+        {
+          "id": "a",
+          "text": "A key-value store whose values are data structures such as hashes and sorted sets.",
+          "why": "Right: every object is a value stored at a string key."
+        },
+        {
+          "id": "b",
+          "text": "A relational store with tables, rows and a query planner.",
+          "why": "Redis has no tables, joins or planner; that is deliberate."
+        },
+        {
+          "id": "c",
+          "text": "A document database that indexes every field of every value.",
+          "why": "Values are not indexed by field; you reach data through its key."
+        },
+        {
+          "id": "d",
+          "text": "A column store that keeps each attribute in its own file.",
+          "why": "Redis keeps data in memory as keyed data structures."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Keys are strings and the value is where the data structure lives. The way you choose keys is the way you organise and scale the data."
+    },
+    {
+      "id": "single-thread",
+      "concept": "Execution model",
+      "type": "single",
+      "difficulty": 2,
+      "prompt": "Why is Redis's one-command-at-a-time execution a feature rather than a limit?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Command execution never needs locks, and simple commands finish in microseconds.",
+          "why": "Right: atomicity comes for free and one core is rarely the bottleneck."
+        },
+        {
+          "id": "b",
+          "text": "It lets Redis use every CPU core at once for a single command.",
+          "why": "The point is the opposite: commands run one after another."
+        },
+        {
+          "id": "c",
+          "text": "It guarantees every write reaches disk before the reply is sent.",
+          "why": "Durability depends on persistence settings, not on threading."
+        },
+        {
+          "id": "d",
+          "text": "It removes the need for any network protocol between client and server.",
+          "why": "Clients still talk to Redis over a wire protocol (RESP)."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Think \"one command at a time, in order\". That is why a Lua script or a single command is atomic and easy to reason about."
+    },
+    {
+      "id": "structures",
+      "concept": "Data structures",
+      "type": "multi",
+      "difficulty": 1,
+      "prompt": "Select all the data structures Redis supports out of the box.",
+      "options": [
+        {
+          "id": "a",
+          "text": "Sorted sets, usable as priority queues and leaderboards.",
+          "why": "Yes: scored members kept in rank order."
+        },
+        {
+          "id": "b",
+          "text": "Streams, which are append-only logs.",
+          "why": "Yes: the basis for work queues and event logs."
+        },
+        {
+          "id": "c",
+          "text": "Geospatial indexes for proximity search.",
+          "why": "Yes: GEOADD and GEOSEARCH are built in."
+        },
+        {
+          "id": "d",
+          "text": "Relational tables with foreign keys and joins.",
+          "why": "No: Redis has no relational model."
+        }
+      ],
+      "correct": [
+        "a",
+        "b",
+        "c"
+      ],
+      "explanation": "Hashes, lists, sets, sorted sets, streams and geo indexes cover most interview needs. Redis 8 adds JSON, Bloom filters and time series."
+    },
+    {
+      "id": "commands",
+      "concept": "Commands",
+      "type": "single",
+      "difficulty": 1,
+      "prompt": "What does the sequence SET foo 1, then INCR foo return from INCR?",
+      "options": [
+        {
+          "id": "a",
+          "text": "2, the incremented value.",
+          "why": "Right: INCR atomically adds one and returns the result."
+        },
+        {
+          "id": "b",
+          "text": "1, the original value.",
+          "why": "INCR returns the new value, not the old one."
+        },
+        {
+          "id": "c",
+          "text": "An error, because strings cannot be incremented.",
+          "why": "A string holding an integer can be incremented."
+        },
+        {
+          "id": "d",
+          "text": "OK, and the value is changed later in the background.",
+          "why": "The change and reply happen immediately."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Redis commands read like their data structure analogues, which makes them easy to reason about."
+    },
+    {
+      "id": "speed",
+      "concept": "Performance",
+      "type": "single",
+      "difficulty": 2,
+      "prompt": "Roughly what can one Redis node do?",
+      "options": [
+        {
+          "id": "a",
+          "text": "About 100k writes per second, with sub-millisecond reads over the network.",
+          "why": "Right: a handy interview-level figure."
+        },
+        {
+          "id": "b",
+          "text": "About 100 writes per second, because it fsyncs every one in a typical production setup.",
+          "why": "That is far too low; it keeps data in memory."
+        },
+        {
+          "id": "c",
+          "text": "Millions of complex multi-table joins per second for most everyday workloads.",
+          "why": "Redis has no joins."
+        },
+        {
+          "id": "d",
+          "text": "The speed depends only on how many keys exist.",
+          "why": "Command cost and network round trips matter more than key count."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Speed comes from being in-memory. It makes some anti-patterns affordable, such as many tiny commands, especially when pipelined."
+    },
+    {
+      "id": "n-plus-one",
+      "concept": "Performance",
+      "type": "single",
+      "difficulty": 3,
+      "prompt": "You must fetch 100 cached items. What is the best way to do that against Redis?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Pipeline the commands or use MGET so one round trip serves all of them.",
+          "why": "Right: the server cost is tiny; round trips are what add up."
+        },
+        {
+          "id": "b",
+          "text": "Fetch each item one by one, since Redis is too fast to matter under normal operating conditions.",
+          "why": "It works, but 100 round trips are avoidable latency."
+        },
+        {
+          "id": "c",
+          "text": "Copy all 100 items into a single huge string value first as a general rule of thumb.",
+          "why": "That is awkward and loses per-item expiry."
+        },
+        {
+          "id": "d",
+          "text": "Use a SQL join between the keys.",
+          "why": "Redis has no joins."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "N+1 against Redis will not sink a design, but pipelining or MGET still pays one round trip instead of a hundred."
+    },
+    {
+      "id": "everything-memory",
+      "concept": "Performance",
+      "type": "truefalse",
+      "difficulty": 1,
+      "prompt": "True or false: Redis is fast mainly because it keeps its data in memory.",
+      "options": [
+        {
+          "id": "a",
+          "text": "True",
+          "why": "Correct: speed is a function of its in-memory design."
+        },
+        {
+          "id": "b",
+          "text": "False",
+          "why": "It is the in-memory design that gives it the speed."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Memory access is far cheaper than disk. The price is cost per gigabyte and weaker default durability."
+    },
+    {
+      "id": "simple-wins",
+      "concept": "Design philosophy",
+      "type": "single",
+      "difficulty": 2,
+      "prompt": "Why do interviewers like Redis answers that stay close to simple data structures?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Scaling consequences are easy to reason about without knowing Redis internals.",
+          "why": "Right: you can go deep without trivia."
+        },
+        {
+          "id": "b",
+          "text": "Redis hides all distribution details so nothing needs discussing in the majority of deployments.",
+          "why": "You still must reason about keys, slots and failures."
+        },
+        {
+          "id": "c",
+          "text": "Redis chooses the best data structure for you automatically without any extra configuration.",
+          "why": "You pick the structure and design the key."
+        },
+        {
+          "id": "d",
+          "text": "Simple structures cannot fail, so there is nothing to probe.",
+          "why": "Interviewers probe durability, hot keys and clustering."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Redis is deliberately simple: no optimisers or query planners, just fast operations on known structures."
+    }
+  ]
+}

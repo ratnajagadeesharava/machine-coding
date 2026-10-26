@@ -81,3 +81,13 @@ test('the PostgreSQL series is split into small sub-topic quizzes', () => {
   assert.equal(summary.series, 'postgres-system-design');
   assert.equal(summary.seriesOrder, 1);
 });
+
+test('the Redis series is split into small sub-topic quizzes', () => {
+  const redis = quizzes.filter((q) => q.series === 'redis-system-design').sort((a, b) => a.seriesOrder - b.seriesOrder);
+  assert.equal(redis.length, 8);
+  assert.deepEqual(redis.map((q) => q.seriesOrder), [1, 2, 3, 4, 5, 6, 7, 8]);
+  for (const q of redis) {
+    assert.ok(q.questions.length >= 5 && q.questions.length <= 10, `${q.id} should stay small`);
+    assert.ok(q.seriesDescription && q.seriesTitle);
+  }
+});

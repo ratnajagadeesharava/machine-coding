@@ -1,0 +1,204 @@
+{
+  "id": "redis-choosing",
+  "title": "Redis: when to use it and when not to",
+  "topic": "Redis",
+  "series": "redis-system-design",
+  "seriesTitle": "Redis for system design interviews",
+  "seriesOrder": 8,
+  "seriesDescription": "How to use Redis in system design interviews: the data model, durability limits, clustering, caching, distributed locks, leaderboards, rate limiting, geo search, streams and pub/sub, with the trade-offs interviewers probe.",
+  "description": "The boundaries: what Redis is great for, what it should never be your only copy of, and how to justify it in an interview.",
+  "source": "Study notes: how to use Redis in system design interviews",
+  "estimatedMinutes": 5,
+  "questions": [
+    {
+      "id": "versatile",
+      "concept": "Why Redis",
+      "type": "single",
+      "difficulty": 1,
+      "prompt": "Why is Redis such a useful technology to master for interviews?",
+      "options": [
+        {
+          "id": "a",
+          "text": "One simple tool covers caching, locks, leaderboards, rate limiting, geo search, queues and Pub/Sub.",
+          "why": "Right: versatility and simplicity."
+        },
+        {
+          "id": "b",
+          "text": "It replaces every database, so no other store is needed.",
+          "why": "It does not replace the databases you still need."
+        },
+        {
+          "id": "c",
+          "text": "It has a powerful query planner that tunes your queries.",
+          "why": "Redis deliberately has no planner."
+        },
+        {
+          "id": "d",
+          "text": "It stores data on disk first, so it is always safe under normal operating conditions.",
+          "why": "It is in-memory first."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Learn a few technologies deeply instead of dozens shallowly."
+    },
+    {
+      "id": "dont-use",
+      "concept": "Poor fits",
+      "type": "multi",
+      "difficulty": 2,
+      "prompt": "Select all situations where Redis is a poor primary choice.",
+      "options": [
+        {
+          "id": "a",
+          "text": "You need a system of record where acknowledged writes must not vanish.",
+          "why": "Yes: async replication and loss windows."
+        },
+        {
+          "id": "b",
+          "text": "The working set cannot economically fit in RAM.",
+          "why": "Yes: memory is the costliest place to keep data."
+        },
+        {
+          "id": "c",
+          "text": "You need joins and ad hoc cross-key queries.",
+          "why": "Yes: Redis has none."
+        },
+        {
+          "id": "d",
+          "text": "You need a fast shared counter for rate limiting.",
+          "why": "No: that is a great fit."
+        }
+      ],
+      "correct": [
+        "a",
+        "b",
+        "c"
+      ],
+      "explanation": "Plus: durable replayable streams with long retention for many consumers belong to Kafka."
+    },
+    {
+      "id": "cluster-multikey",
+      "concept": "Cluster limits",
+      "type": "single",
+      "difficulty": 3,
+      "prompt": "In a Redis cluster, when do multi-key operations work?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Only when all the keys are in the same slot, for example via hash tags.",
+          "why": "Right: no cross-node router."
+        },
+        {
+          "id": "b",
+          "text": "Always, because the cluster merges results across nodes for most everyday workloads.",
+          "why": "It does not merge."
+        },
+        {
+          "id": "c",
+          "text": "Never, because multi-key commands are not supported under normal operating conditions.",
+          "why": "They are, within one slot."
+        },
+        {
+          "id": "d",
+          "text": "Only on replicas.",
+          "why": "The restriction is about slots, not roles."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Design keys around the commands you need to run together."
+    },
+    {
+      "id": "cache-vs-record",
+      "concept": "Justification",
+      "type": "single",
+      "difficulty": 2,
+      "prompt": "How would you describe Redis next to a relational database in a typical design?",
+      "options": [
+        {
+          "id": "a",
+          "text": "A fast layer for derived or ephemeral data, with the durable database as source of truth.",
+          "why": "Right: each does what it is best at."
+        },
+        {
+          "id": "b",
+          "text": "A replacement for the database for any workload as a general rule of thumb in the majority of deployments.",
+          "why": "Durability and query limits stop that."
+        },
+        {
+          "id": "c",
+          "text": "A backup copy that must be written first without any extra configuration in a typical production setup.",
+          "why": "It is not a backup."
+        },
+        {
+          "id": "d",
+          "text": "Only useful when the database is down.",
+          "why": "It is used during normal operation."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Say what lives where and what happens if Redis loses data."
+    },
+    {
+      "id": "redis-is-simple",
+      "concept": "Design philosophy",
+      "type": "truefalse",
+      "difficulty": 1,
+      "prompt": "True or false: Redis relies on a query planner and optimiser to execute your commands efficiently.",
+      "options": [
+        {
+          "id": "a",
+          "text": "True",
+          "why": "Redis keeps commands simple instead of planning them."
+        },
+        {
+          "id": "b",
+          "text": "False",
+          "why": "Correct: it has no planner or optimiser."
+        }
+      ],
+      "correct": [
+        "b"
+      ],
+      "explanation": "Redis is deliberately simple: commands do simple operations fast."
+    },
+    {
+      "id": "memory-cost",
+      "concept": "Memory cost",
+      "type": "single",
+      "difficulty": 2,
+      "prompt": "You must store 5 TB of rarely read data. What does this argue for?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Not holding it all in Redis, because RAM is the most expensive place to keep data.",
+          "why": "Right: cache only the hot subset."
+        },
+        {
+          "id": "b",
+          "text": "Putting it all in Redis, since memory is cheap for most everyday workloads under normal operating conditions.",
+          "why": "Memory is expensive."
+        },
+        {
+          "id": "c",
+          "text": "Using Redis Pub/Sub to store it.",
+          "why": "Pub/Sub stores nothing."
+        },
+        {
+          "id": "d",
+          "text": "Enabling AOF so the data costs less as a general rule of thumb in the majority of deployments.",
+          "why": "AOF does not reduce memory use."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Keep cold data in cheaper storage and use Redis for the working set."
+    }
+  ]
+}

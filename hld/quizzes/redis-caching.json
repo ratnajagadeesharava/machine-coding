@@ -1,0 +1,235 @@
+{
+  "id": "redis-caching",
+  "title": "Redis: caching",
+  "topic": "Redis",
+  "series": "redis-system-design",
+  "seriesTitle": "Redis for system design interviews",
+  "seriesOrder": 4,
+  "seriesDescription": "How to use Redis in system design interviews: the data model, durability limits, clustering, caching, distributed locks, leaderboards, rate limiting, geo search, streams and pub/sub, with the trade-offs interviewers probe.",
+  "description": "Using Redis as a cache: key design, TTL versus eviction, memory limits, and the trade-offs around staleness.",
+  "source": "Study notes: how to use Redis in system design interviews",
+  "estimatedMinutes": 6,
+  "questions": [
+    {
+      "id": "key-design",
+      "concept": "Key design",
+      "type": "single",
+      "difficulty": 1,
+      "prompt": "How do you cache a product in Redis?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Use a key like product:123 with a JSON blob or hash as the value.",
+          "why": "Right: cache keys are Redis keys, cached values are Redis values."
+        },
+        {
+          "id": "b",
+          "text": "Create a new table named product with a row per field.",
+          "why": "Redis has no tables."
+        },
+        {
+          "id": "c",
+          "text": "Store every product under the same key and filter on read.",
+          "why": "That makes one huge hot key."
+        },
+        {
+          "id": "d",
+          "text": "Use the product description text as the key.",
+          "why": "Keys should be stable identifiers, not long content."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Distribution across the cluster is trivial: more capacity means more nodes."
+    },
+    {
+      "id": "ttl-vs-eviction",
+      "concept": "TTL vs eviction",
+      "type": "single",
+      "difficulty": 2,
+      "prompt": "What is the difference between TTL and an eviction policy?",
+      "options": [
+        {
+          "id": "a",
+          "text": "TTL handles staleness per key; eviction frees memory when the instance is full.",
+          "why": "Right: two different jobs."
+        },
+        {
+          "id": "b",
+          "text": "They are two names for the same setting.",
+          "why": "They solve different problems."
+        },
+        {
+          "id": "c",
+          "text": "TTL frees memory under pressure; eviction expires keys on a timer.",
+          "why": "That reverses them."
+        },
+        {
+          "id": "d",
+          "text": "TTL applies only to lists; eviction applies only to strings.",
+          "why": "Both are general mechanisms."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Expiration guarantees you never read a key after its TTL; eviction decides what to throw away when memory runs out."
+    },
+    {
+      "id": "memory-full",
+      "concept": "Memory limits",
+      "type": "single",
+      "difficulty": 3,
+      "prompt": "Redis is out of memory and no eviction policy is configured. What happens by default?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Redis rejects writes once memory is full.",
+          "why": "Right: it does not silently drop data."
+        },
+        {
+          "id": "b",
+          "text": "Redis evicts the least recently used keys automatically.",
+          "why": "That needs a policy such as allkeys-lru."
+        },
+        {
+          "id": "c",
+          "text": "Redis doubles its memory using disk swap.",
+          "why": "It does not grow on its own."
+        },
+        {
+          "id": "d",
+          "text": "Redis deletes the oldest key regardless of settings.",
+          "why": "Without a policy it refuses writes instead."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "For a cache, configure an eviction policy like allkeys-lru so old keys make room for new ones."
+    },
+    {
+      "id": "lru-approx",
+      "concept": "Eviction policy",
+      "type": "truefalse",
+      "difficulty": 3,
+      "prompt": "True or false: Redis approximates LRU by sampling keys, which is good enough for a cache.",
+      "options": [
+        {
+          "id": "a",
+          "text": "True",
+          "why": "Correct: it samples rather than tracking exact order."
+        },
+        {
+          "id": "b",
+          "text": "False",
+          "why": "It does not track exact order."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Tracking exact order is expensive. Sampling keeps the cost low and still evicts mostly cold keys."
+    },
+    {
+      "id": "stale",
+      "concept": "Client-side caching",
+      "type": "single",
+      "difficulty": 2,
+      "prompt": "What is the cost of putting a small in-memory cache in each app server in front of Redis?",
+      "options": [
+        {
+          "id": "a",
+          "text": "A second cache to keep coherent, so data may be stale up to its TTL.",
+          "why": "Right: short TTLs on a small set of keys work best."
+        },
+        {
+          "id": "b",
+          "text": "It removes the need for Redis from the design.",
+          "why": "Redis still serves misses and shared data."
+        },
+        {
+          "id": "c",
+          "text": "It makes every read slower because of extra hops without any extra configuration.",
+          "why": "It removes hops for hits."
+        },
+        {
+          "id": "d",
+          "text": "It guarantees strong consistency across app servers in the majority of deployments.",
+          "why": "Separate caches drift."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Client-side caching trades freshness for load reduction on hot keys."
+    },
+    {
+      "id": "cache-aside",
+      "concept": "Cache-aside pattern",
+      "type": "single",
+      "difficulty": 2,
+      "prompt": "On a cache miss in the common pattern, what does the service do?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Reads from the database, then stores the result in Redis for next time.",
+          "why": "Right: the usual read-through flow."
+        },
+        {
+          "id": "b",
+          "text": "Returns an error because Redis has no data.",
+          "why": "A miss is normal and falls back to the source."
+        },
+        {
+          "id": "c",
+          "text": "Waits for Redis to fetch the data from the database itself in a typical production setup.",
+          "why": "Redis does not know your database."
+        },
+        {
+          "id": "d",
+          "text": "Deletes the database row to match the empty cache for most everyday workloads.",
+          "why": "The database stays the source of truth."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "The database remains the source of truth. Redis is a fast layer in front of it."
+    },
+    {
+      "id": "what-cached",
+      "concept": "Where Redis fits",
+      "type": "single",
+      "difficulty": 1,
+      "prompt": "Which choice best describes where Redis fits for a read-heavy product page?",
+      "options": [
+        {
+          "id": "a",
+          "text": "As a cache in front of the database, with TTLs to bound staleness.",
+          "why": "Right: the most common deployment."
+        },
+        {
+          "id": "b",
+          "text": "As the system of record, with the database removed under normal operating conditions.",
+          "why": "Durability limits make that risky."
+        },
+        {
+          "id": "c",
+          "text": "As a replacement for the CDN for static images as a general rule of thumb.",
+          "why": "Different layer and different purpose."
+        },
+        {
+          "id": "d",
+          "text": "As a message broker only, never for reads.",
+          "why": "Caching is the most common use."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "The most common deployment of Redis is a cache."
+    }
+  ]
+}
