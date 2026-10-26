@@ -7,15 +7,26 @@ const KEY_RE = /^sk-ant-[A-Za-z0-9_-]{10,400}$/;
 export function getKey() { try { return localStorage.getItem(STORE) || ''; } catch { return ''; } }
 export function setKey(k) { try { if (k) localStorage.setItem(STORE, k); else localStorage.removeItem(STORE); return true; } catch { return false; } }
 export const looksLikeKey = (k) => KEY_RE.test(k);
+const MODEL_STORE = 'hld-model';
+export const MODELS = [
+  { id: 'claude-sonnet-5-5', label: 'Sonnet 5.5', note: 'Balanced speed, quality and cost (default)' },
+  { id: 'claude-opus-5-5', label: 'Opus 5.5', note: 'Strongest answers, highest cost' },
+  { id: 'claude-haiku-5-5', label: 'Haiku 5.5', note: 'Fastest and cheapest' },
+  { id: 'claude-fable-5-1', label: 'Fable 5.1', note: 'Most capable of the family' },
+];
+export function getModel() { try { const v = localStorage.getItem(MODEL_STORE); return MODELS.some((m) => m.id === v) ? v : ''; } catch { return ''; } }
+export function setModel(id) { try { if (id) localStorage.setItem(MODEL_STORE, id); else localStorage.removeItem(MODEL_STORE); return true; } catch { return false; } }
 const mask = (k) => (k.length > 14 ? `${k.slice(0, 7)}...${k.slice(-4)}` : '');
 
 const realFetch = window.fetch.bind(window);
 window.fetch = (input, init = {}) => {
   const key = getKey();
+  const model = getModel();
   const url = typeof input === 'string' ? input : input && input.url;
-  if (key && typeof url === 'string' && url.startsWith('/api/')) {
+  if ((key || model) && typeof url === 'string' && url.startsWith('/api/')) {
     const headers = new Headers(init.headers || (input && input.headers) || {});
-    headers.set('x-anthropic-key', key);
+    if (key) headers.set('x-anthropic-key', key);
+    if (model) headers.set('x-hld-model', model);
     return realFetch(input, { ...init, headers });
   }
   return realFetch(input, init);
@@ -35,6 +46,14 @@ function openDialog(trigger) {
   const show = h('input', { type: 'checkbox', id: 'keydlg-show' });
   show.addEventListener('change', () => { input.type = show.checked ? 'text' : 'password'; });
   const cur = getKey();
+  const modelSel = h('select', { id: 'keydlg-model', 'aria-label': 'Model' });
+  modelSel.append(...MODELS.map((m) => { const o = h('option', { value: m.id, text: `${m.label} - ${m.note}` }); return o; }));
+  modelSel.value = getModel() || MODELS[0].id;
+  modelSel.addEventListener('change', () => {
+    setModel(modelSel.value === MODELS[0].id ? '' : modelSel.value);
+    msg.textContent = 'Model saved. It applies to your next request.'; msg.className = 'keydlg-msg ok';
+    const b = document.querySelector('[data-keybtn] .keybtn-model'); if (b) b.textContent = modelLabel();
+  });
   const status = h('p', { class: 'keydlg-cur', text: cur ? `Saved in this browser: ${mask(cur)}` : 'No key saved in this browser.' });
   const save = h('button', { type: 'button', class: 'btn primary', text: 'Save key' });
   const remove = h('button', { type: 'button', class: 'btn', text: 'Remove' });
@@ -50,9 +69,10 @@ function openDialog(trigger) {
   close.addEventListener('click', () => dlg.close());
   input.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); save.click(); } });
   dlg.append(
-    h('h2', { id: 'keydlg-title', text: 'Claude API key' }),
-    h('p', { class: 'muted', text: 'Paste your own key to use the AI features. It is stored only in this browser and sent to the local HLD Room server with each request. It is never written to disk by the server. If the server already has a key in .env, that one is used instead.' }),
+    h('h2', { id: 'keydlg-title', text: 'AI settings' }),
+    h('p', { class: 'muted', text: 'Choose the Claude model and paste your own key to use the AI features. It is stored only in this browser and sent to the local HLD Room server with each request. It is never written to disk by the server. If the server already has a key in .env, that one is used instead.' }),
     status,
+    h('label', { for: 'keydlg-model', text: 'Model' }), modelSel,
     h('label', { for: 'keydlg-input', text: 'API key' }), input,
     h('label', { class: 'keydlg-show', for: 'keydlg-show' }, show, ' Show key'),
     msg,
@@ -64,6 +84,7 @@ function openDialog(trigger) {
   input.focus();
 }
 
+const modelLabel = () => (MODELS.find((m) => m.id === (getModel() || MODELS[0].id)) || MODELS[0]).label;
 function mountButton() {
   const bar = document.querySelector('.topbar');
   if (!bar || bar.querySelector('[data-keybtn]')) return;
@@ -72,7 +93,7 @@ function mountButton() {
   const has = !!getKey();
   const b = h('button', { type: 'button', class: 'btn keybtn' + (has ? ' has-key' : ''), 'data-keybtn': '', title: 'Set your Claude API key', 'aria-label': 'Claude API key' });
   b.innerHTML = '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="8" cy="15" r="4"/><path d="M11 12l9-9M16 7l3 3M14 9l2 2"/></svg>';
-  b.append(h('span', { text: has ? 'Key set' : 'Add key' }));
+  b.append(h('span', { text: has ? 'Key set' : 'Add key' }), h('span', { class: 'keybtn-model', text: modelLabel() }));
   b.addEventListener('click', () => openDialog(b));
   actions.prepend(b);
 }

@@ -8,6 +8,13 @@ import {
 } from './quiz.js';
 
 export const DEFAULT_MODEL = 'claude-sonnet-5-5';
+// Models the browser may choose between (sent in the x-hld-model header). Anything else is ignored.
+export const MODELS = [
+  { id: 'claude-sonnet-5-5', label: 'Sonnet 5.5', note: 'Balanced speed, quality and cost (default)' },
+  { id: 'claude-opus-5-5', label: 'Opus 5.5', note: 'Strongest answers, highest cost' },
+  { id: 'claude-haiku-5-5', label: 'Haiku 5.5', note: 'Fastest and cheapest' },
+  { id: 'claude-fable-5-1', label: 'Fable 5.1', note: 'Most capable of the family' },
+];
 
 export class AriaError extends Error {
   constructor(message, status = 502) {

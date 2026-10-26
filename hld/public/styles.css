@@ -124,3 +124,8 @@ a.btn.primary { color: var(--accent-ink); }
 :root[data-theme="dark"] .chip-pill.Easy { background: #1d3a29; color: #8fdcab; }
   :root[data-theme="dark"] .chip-pill.Medium { background: #3a3114; color: #f3d98a; }
 .themebtn { width: 40px; padding: 0; justify-content: center; }
+
+.keybtn-model { font-weight: 500; font-size: 12.5px; color: var(--muted); padding-left: 8px; border-left: 1px solid var(--line); }
+.keydlg select { width: 100%; height: 42px; border: 1px solid var(--line); border-radius: 10px; background: var(--bg); padding: 0 10px; font: inherit; color: var(--ink); }
+.keydlg-msg.ok { color: #17803f; }
+@media (max-width: 700px) { .keybtn-model { display: none; } }

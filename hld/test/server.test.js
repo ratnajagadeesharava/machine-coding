@@ -268,3 +268,26 @@ test('a key sent from the browser enables the AI when the server has none', asyn
     assert.ok(made.length <= 1);
   } finally { srv.close(); }
 });
+
+test('the browser can pick a known model with x-hld-model; unknown values are ignored', async () => {
+  const { createServer } = await import('../server/index.js');
+  const { createAi, MODELS } = await import('../server/ai.js');
+  const { createMockClient } = await import('../server/mock.js');
+  const built = [];
+  const base = createAi({ client: createMockClient(), model: 'claude-sonnet-5-5', effort: 'none' });
+  const srv = createServer({ ai: base, questions: [], quizzes: [], mode: 'live', model: 'claude-sonnet-5-5', makeAi: (key, model) => { built.push([key, model]); return createAi({ client: createMockClient(), model, effort: 'none' }); } });
+  await new Promise((r) => srv.listen(0, '127.0.0.1', r));
+  const url = `http://127.0.0.1:${srv.address().port}`;
+  try {
+    let h = await (await fetch(`${url}/api/health`)).json();
+    assert.equal(h.model, 'claude-sonnet-5-5');
+    assert.deepEqual(h.models.map((m) => m.id), MODELS.map((m) => m.id));
+    h = await (await fetch(`${url}/api/health`, { headers: { 'x-hld-model': 'claude-opus-5-5' } })).json();
+    assert.equal(h.model, 'claude-opus-5-5');
+    h = await (await fetch(`${url}/api/health`, { headers: { 'x-hld-model': 'gpt-evil' } })).json();
+    assert.equal(h.model, 'claude-sonnet-5-5', 'unknown model ids are ignored');
+    const res = await fetch(`${url}/api/quiz/generate`, { method: 'POST', headers: { 'content-type': 'application/json', 'x-hld-model': 'claude-haiku-5-5' }, body: JSON.stringify({ topic: 'Caching basics', count: 5 }) });
+    await res.text();
+    assert.deepEqual(built, [[null, 'claude-haiku-5-5']], 'the server key is reused with the chosen model');
+  } finally { srv.close(); }
+});
