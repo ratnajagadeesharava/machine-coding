@@ -692,6 +692,30 @@ await test('duplicate (Ctrl+D), Alt-drag duplicates, copy / cut / paste, repeat 
   assert.equal(new Set((await items()).map((e) => e.id)).size, 5);
 });
 
+await test('copy puts readable text on the system clipboard, not JSON, and still pastes back as shapes', async () => {
+  await page.evaluate(() => { wb.setBoard({ version: 2, items: [], nextId: 1 }); });
+  await press('t');
+  await page.mouse.click(300, 300);
+  await page.keyboard.type('https://example.com/');
+  await page.keyboard.press('Escape');
+  await page.evaluate(() => wb.selectAll());
+  await press(`${MOD}+c`);
+  await page.waitForTimeout(150);
+  const flavours = await page.evaluate(async () => {
+    const [it] = await navigator.clipboard.read();
+    const out = {};
+    for (const t of it.types) out[t] = await (await it.getType(t)).text();
+    return out;
+  });
+  assert.equal(flavours['text/plain'], 'https://example.com/', 'other apps see plain words');
+  assert.ok(!/hld-whiteboard|"elements"/.test(flavours['text/plain']), 'no JSON in the plain text');
+  assert.ok(/data-hld-clip/.test(flavours['text/html']), 'board data rides in the html flavour');
+  await page.mouse.move(600, 500);
+  await press(`${MOD}+v`);
+  await page.waitForFunction(() => wb.board.items.length === 2);
+  assert.equal((await items())[1].text, 'https://example.com/');
+});
+
 await test('paste plain text creates a text element; Ctrl+Shift+V pastes our payload as text', async () => {
   await page.evaluate(() => navigator.clipboard.writeText('pasted from outside'));
   await page.mouse.move(300, 300);

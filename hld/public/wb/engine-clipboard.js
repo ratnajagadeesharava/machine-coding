@@ -2,7 +2,7 @@
 import { LIMITS, createElement, findItem, newId } from '../../shared/board.js';
 import { textSize } from './geometry.js';
 import * as ops from './ops.js';
-import { creationProps, decodeClip, encodeClip, fitSize } from './engine-util.js';
+import { clipFromHtml, clipHtml, clipPlain, creationProps, decodeClip, encodeClip, fitSize } from './engine-util.js';
 import { prepareImage } from './engine-image.js';
 
 export function installClipboard(P) {
@@ -20,10 +20,15 @@ export function installClipboard(P) {
     const text = encodeClip(els);
     this._clipText = text;
     this._clipPriority = true; // until the system clipboard is known to hold our payload
+    const plain = clipPlain(els);
     try {
-      const p = navigator.clipboard && navigator.clipboard.writeText ? navigator.clipboard.writeText(text) : null;
+      const cb = navigator.clipboard;
+      let p = null;
+      if (cb && cb.write && typeof ClipboardItem !== 'undefined') {
+        // Readable text for other apps, board data hidden in the HTML flavour for this whiteboard.
+        p = cb.write([new ClipboardItem({ 'text/plain': new Blob([plain], { type: 'text/plain' }), 'text/html': new Blob([clipHtml(els)], { type: 'text/html' }) })]);
+      } else if (cb && cb.writeText) p = cb.writeText(plain);
       if (p && p.then) p.then(() => { this._clipPriority = false; }, () => { /* denied: the internal clipboard still works */ });
-      else this._clipPriority = true;
     } catch { /* ignore */ }
     return true;
   };
@@ -48,6 +53,10 @@ export function installClipboard(P) {
         try {
           const items = await navigator.clipboard.read();
           for (const it of items) {
+            if (!plain && it.types.includes('text/html')) {
+              const els = clipFromHtml(await (await it.getType('text/html')).text());
+              if (els) { this._pasteElements(els, 'html:' + els.length + ':' + (els[0] && els[0].id), this._pasteTarget()); return; }
+            }
             const imgType = it.types.find((t) => t.startsWith('image/'));
             if (imgType && !plain) {
               const blob = await it.getType(imgType);
@@ -127,6 +136,8 @@ export function installClipboard(P) {
       files.slice(0, 5).forEach((f, i) => { this.addImageFile(f, { x: at.x + i * 24, y: at.y + i * 24 }).catch((err) => this._toast(err.message, 'error')); });
       return;
     }
+    const fromHtml = !plain && cd ? clipFromHtml(cd.getData('text/html')) : null;
+    if (fromHtml) { this._pasteElements(fromHtml, 'html:' + fromHtml.length + ':' + (fromHtml[0] && fromHtml[0].id), this._pasteTarget()); return; }
     const text = cd ? cd.getData('text/plain') : '';
     this._pasteText(text, { plain }).catch((err) => this._fail(err));
   };

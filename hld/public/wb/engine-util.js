@@ -22,6 +22,29 @@ export function encodeClip(elements) {
   return CLIP_MARKER + JSON.stringify({ type: 'hld-whiteboard/clipboard', version: 2, elements });
 }
 
+// The system clipboard gets readable text (so pasting into chat, notes or a terminal shows words, not JSON) and the
+// board data hidden in an HTML attribute that only this whiteboard looks for.
+const utf8ToB64 = (str) => btoa(unescape(encodeURIComponent(str)));
+const b64ToUtf8 = (b64) => decodeURIComponent(escape(atob(b64)));
+export function clipPlain(elements) {
+  const words = elements.map((e) => e.text || e.name || '').filter(Boolean).join('\n');
+  return words || `Whiteboard selection (${elements.length} element${elements.length === 1 ? '' : 's'})`;
+}
+const escHtml = (t) => String(t).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+export function clipHtml(elements) {
+  const payload = utf8ToB64(JSON.stringify({ type: 'hld-whiteboard/clipboard', version: 2, elements }));
+  return `<meta charset="utf-8"><span data-hld-clip="${payload}">${escHtml(clipPlain(elements)).replace(/\n/g, '<br>')}</span>`;
+}
+export function clipFromHtml(html) {
+  const m = typeof html === 'string' ? /data-hld-clip="([A-Za-z0-9+/=]+)"/.exec(html) : null;
+  if (!m) return null;
+  try {
+    const o = JSON.parse(b64ToUtf8(m[1]));
+    const els = Array.isArray(o?.elements) ? o.elements.filter((e) => e && typeof e === 'object' && typeof e.type === 'string') : [];
+    return els.length ? els : null;
+  } catch { return null; }
+}
+
 // -> { kind: 'hld', elements } | { kind: 'excalidraw', json } | { kind: 'text', text } | null
 export function decodeClip(text) {
   if (typeof text !== 'string' || !text.trim()) return null;
