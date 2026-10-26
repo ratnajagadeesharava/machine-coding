@@ -90,7 +90,7 @@ export const DEFAULT_STYLE = {
   roughness: 1,
   opacity: 100,
   roundness: 'round',
-  fontFamily: 1,
+  fontFamily: 2,
   fontSize: 20,
   textAlign: 'center',
   verticalAlign: 'middle',

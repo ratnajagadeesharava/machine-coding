@@ -903,6 +903,18 @@ export function installInput(P) {
       return;
     }
 
+    if (key === 'Tab' && !onButton && editable) {
+      const items = this._board.items.filter((i) => !i.locked);
+      if (items.length) {
+        prevent();
+        const cur = this._selection.size === 1 ? items.findIndex((i) => i.id === [...this._selection][0]) : -1;
+        const n = items.length;
+        const next = items[(cur + (shift ? -1 : 1) + n * 2) % n];
+        this.focusElement(next.id); // brings it into view if needed
+        this._setSelection(this._groupIds(next, false));
+        return;
+      }
+    }
     if (key === 'Escape') {
       if (this._g && this._g.type === 'multi') { this._finishMulti(); return; }
       if (this._g) { this._cancelGesture(); return; }

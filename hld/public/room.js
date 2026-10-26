@@ -3,6 +3,7 @@
 import './apikey.js';
 import { boardSignature, boardStats, emptyBoard, toAiBoard } from '/shared/board.js';
 import { mountWhiteboard } from '/wb/mount.js';
+import { makeResizable } from '/resize.js';
 import {
   LEVELS, STYLES, boardStore, getCustom, getLaunch, getUi, loadSession, saveSession, sessionKey, setUi,
 } from '/store.js';
@@ -37,6 +38,8 @@ const els = {
   report: $('#report'), reportBody: $('#report-body'), reportClose: $('#report-close'),
   confirm: $('#confirm'), confirmText: $('#confirm-text'), confirmYes: $('#confirm-yes'), confirmNo: $('#confirm-no'),
 };
+makeResizable(els.qPanel, 'question', 'right');
+makeResizable(els.botPanel, 'aria', 'left');
 
 // ---------- helpers ----------
 const clock = (ms) => {

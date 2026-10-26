@@ -112,7 +112,7 @@ test('applyStyle: text element is re-measured after font changes and keeps its a
   const mid = add(b, 'text', { x: 100, y: 100, text: 'Hello world', fontSize: 20, textAlign: 'center', w: 100, h: 25 });
   const right = add(b, 'text', { x: 100, y: 100, text: 'Hello world', fontSize: 20, textAlign: 'right', w: 100, h: 25 });
   applyStyle(b, ids(b), { fontSize: 36 });
-  const s = approxTextSize('Hello world', { fontFamily: 1, fontSize: 36 });
+  const s = approxTextSize('Hello world', { fontFamily: 2, fontSize: 36 }); // 2 = the default (Normal) font
   for (const t of [left, mid, right]) { assert.equal(t.fontSize, 36); assert.equal(t.w, s.w); assert.equal(t.h, s.h); }
   assert.equal(left.x, 100);
   assert.equal(mid.x + mid.w / 2, 150);

@@ -68,7 +68,8 @@
 }
 .wb-editor-text, .wb-editor-frame { white-space: pre; overflow-wrap: normal; word-break: normal; }
 .wb-editor-frame { font-weight: 500; }
-.wb-editor-frame, .wb-editor-text, .wb-editor-linear { box-shadow: 0 0 0 1px color-mix(in srgb, var(--wb-accent) 55%, transparent); }
+.wb-editor-frame, .wb-editor-text, .wb-editor-linear { box-shadow: 0 0 0 2px color-mix(in srgb, var(--wb-accent) 70%, transparent); background: color-mix(in srgb, var(--wb-accent) 6%, transparent); }
+.wb-editor::placeholder { color: color-mix(in srgb, currentColor 40%, transparent); opacity: 1; }
 @media (prefers-reduced-motion: reduce) {
   .wb-root * { transition: none !important; animation: none !important; }
 }

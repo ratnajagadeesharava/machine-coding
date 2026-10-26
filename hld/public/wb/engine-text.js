@@ -46,6 +46,7 @@ export function installText(P) {
     ta.setAttribute('autocapitalize', 'off');
     ta.setAttribute('autocomplete', 'off');
     ta.setAttribute('aria-label', kind === 'frame' ? 'Frame name' : 'Text');
+    ta.placeholder = kind === 'text' ? 'Type here…' : kind === 'frame' ? 'Frame name' : kind === 'linear' ? 'Label' : 'Label';
     ta.wrap = kind === 'text' || kind === 'frame' ? 'off' : 'soft';
     const field = kind === 'frame' ? 'name' : 'text';
     ta.value = (el[field] || '') + initial;
@@ -63,7 +64,10 @@ export function installText(P) {
       if (e.isComposing || ed.composing || e.keyCode === 229) return;
       if (e.key === 'Escape') { e.preventDefault(); this._finishEditor(); return; }
       if (e.key === 'Enter' && (e.ctrlKey || e.metaKey || (kind === 'frame' && !e.shiftKey))) { e.preventDefault(); this._finishEditor(); return; }
-      if (e.key === 'Tab') { e.preventDefault(); }
+      if (e.key === 'Tab') {
+        e.preventDefault();
+        if (kind === 'text' || kind === 'container') this._indentEditor(e.shiftKey);
+      }
     });
     ta.addEventListener('blur', () => { if (this._editor === ed) this._finishEditor(); });
     ta.addEventListener('pointerdown', (e) => e.stopPropagation());
@@ -77,6 +81,29 @@ export function installText(P) {
     focus();
     setTimeout(focus, 0);
     this._onEditorInput(true);
+  };
+
+  // Tab inserts two spaces (at the start of every selected line when several lines are selected); Shift+Tab removes them.
+  P._indentEditor = function _indentEditor(outdent) {
+    const ed = this._editor;
+    if (!ed) return;
+    const ta = ed.ta;
+    const IND = '  ';
+    const { selectionStart: a, selectionEnd: b, value } = ta;
+    const multi = value.slice(a, b).includes('\n');
+    if (!outdent && !multi) {
+      ta.setRangeText(IND, a, b, 'end');
+    } else {
+      const start = value.lastIndexOf('\n', a - 1) + 1;
+      const end = b;
+      const block = value.slice(start, end).split('\n');
+      const out = block.map((line) => (outdent ? line.replace(/^ {1,2}|^\t/, '') : IND + line));
+      const next = out.join('\n');
+      ta.setRangeText(next, start, end, 'preserve');
+      const delta = next.length - (end - start);
+      ta.setSelectionRange(Math.max(start, a + (outdent ? Math.min(0, out[0].length - block[0].length) : IND.length)), Math.max(start, b + delta));
+    }
+    this._onEditorInput();
   };
 
   P._onEditorInput = function _onEditorInput(silent = false) {
@@ -115,7 +142,7 @@ export function installText(P) {
     let size;
     if (ed.kind === 'text') {
       size = textSize(v || ' ', { fontFamily: el.fontFamily, fontSize: el.fontSize });
-      box = { x: el.x, y: el.y, w: Math.max(size.w, 4) + el.fontSize * 0.6, h: Math.max(size.h, el.fontSize * 1.25) };
+      box = { x: el.x, y: el.y, w: Math.max(size.w + el.fontSize * 0.6, v ? 4 : 130 / z), h: Math.max(size.h, el.fontSize * 1.25) };
       rotate = el.angle || 0; rotC = { x: el.x + el.w / 2, y: el.y + el.h / 2 };
     } else if (ed.kind === 'container') {
       const ib = innerBox(el);
