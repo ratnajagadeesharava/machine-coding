@@ -1,0 +1,301 @@
+{
+  "id": "redis-locks",
+  "title": "Redis: distributed locks",
+  "topic": "Redis",
+  "series": "redis-system-design",
+  "seriesTitle": "Redis for system design interviews",
+  "seriesOrder": 5,
+  "seriesDescription": "How to use Redis in system design interviews: the data model, durability limits, clustering, caching, distributed locks, leaderboards, rate limiting, geo search, streams and pub/sub, with the trade-offs interviewers probe.",
+  "description": "SET NX EX, tokens, safe release with Lua, why replication breaks locks, Redlock and fencing tokens, and when to avoid a distributed lock at all.",
+  "source": "Study notes: how to use Redis in system design interviews",
+  "estimatedMinutes": 8,
+  "questions": [
+    {
+      "id": "acquire",
+      "concept": "Acquiring a lock",
+      "type": "single",
+      "difficulty": 2,
+      "prompt": "What does SET lock:concert:343 my-token NX EX 30 do?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Creates the key only if it does not exist, with a 30 second expiry.",
+          "why": "Right: success means you own the lock."
+        },
+        {
+          "id": "b",
+          "text": "Overwrites the key and extends its life by 30 seconds.",
+          "why": "NX prevents overwriting an existing key."
+        },
+        {
+          "id": "c",
+          "text": "Reads the key and waits 30 seconds for it to appear.",
+          "why": "It writes; it does not wait."
+        },
+        {
+          "id": "d",
+          "text": "Locks the whole Redis instance for 30 seconds.",
+          "why": "It only creates one key."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "NX gives mutual exclusion; EX stops a crashed holder from keeping the lock forever."
+    },
+    {
+      "id": "why-expiry",
+      "concept": "Acquiring a lock",
+      "type": "single",
+      "difficulty": 1,
+      "prompt": "Why put an expiry on the lock key?",
+      "options": [
+        {
+          "id": "a",
+          "text": "So a crashed process cannot hold the lock forever.",
+          "why": "Right: the key disappears on its own."
+        },
+        {
+          "id": "b",
+          "text": "So the lock becomes faster to acquire.",
+          "why": "Expiry does not change speed."
+        },
+        {
+          "id": "c",
+          "text": "So other processes can read the lock holder's data.",
+          "why": "Expiry has nothing to do with data access."
+        },
+        {
+          "id": "d",
+          "text": "So Redis stores the key on disk.",
+          "why": "Expiry is unrelated to persistence."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Pick the expiry longer than the work and be ready for the case where it is not."
+    },
+    {
+      "id": "why-token",
+      "concept": "Releasing a lock",
+      "type": "single",
+      "difficulty": 3,
+      "prompt": "Why store a random token and avoid a plain DEL when releasing?",
+      "options": [
+        {
+          "id": "a",
+          "text": "DEL could remove a lock that another client now holds after yours expired.",
+          "why": "Right: only release if the token still matches."
+        },
+        {
+          "id": "b",
+          "text": "Tokens make the lock faster to acquire.",
+          "why": "They matter for release, not speed."
+        },
+        {
+          "id": "c",
+          "text": "DEL is not supported on keys with expiry.",
+          "why": "DEL works on any key."
+        },
+        {
+          "id": "d",
+          "text": "Tokens let replicas hold the lock too without any extra configuration.",
+          "why": "Replicas do not take part."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Check the token and delete in one atomic step."
+    },
+    {
+      "id": "lua-release",
+      "concept": "Releasing a lock",
+      "type": "single",
+      "difficulty": 3,
+      "prompt": "Why run the check-and-delete as a Lua script?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Redis runs the whole script as one command, so the check and delete are atomic.",
+          "why": "Right: nothing can slip in between."
+        },
+        {
+          "id": "b",
+          "text": "Lua is faster than any built-in command in a typical production setup for most everyday workloads.",
+          "why": "The reason is atomicity, not raw speed."
+        },
+        {
+          "id": "c",
+          "text": "Lua scripts persist the lock to disk.",
+          "why": "Scripts do not affect durability."
+        },
+        {
+          "id": "d",
+          "text": "Lua scripts bypass the single-thread model in the majority of deployments without any extra configuration.",
+          "why": "They run on that single thread."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "A GET followed by a DEL from the client would leave a gap where the lock could change hands."
+    },
+    {
+      "id": "pessimistic",
+      "concept": "Lock styles",
+      "type": "single",
+      "difficulty": 2,
+      "prompt": "A candidate calls the SET NX lock \"optimistic locking\". What is the correct correction?",
+      "options": [
+        {
+          "id": "a",
+          "text": "It is pessimistic: you take the lock before doing the work.",
+          "why": "Right: optimistic checks for conflicts at the end."
+        },
+        {
+          "id": "b",
+          "text": "It is optimistic, because it uses an expiry as a general rule of thumb.",
+          "why": "Expiry does not make it optimistic."
+        },
+        {
+          "id": "c",
+          "text": "It is neither, because Redis has no locking.",
+          "why": "The lock is built from SET NX."
+        },
+        {
+          "id": "d",
+          "text": "It is optimistic, because it never blocks anyone under normal operating conditions.",
+          "why": "It makes others wait or retry."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Redis also supports optimistic control: WATCH a key and run MULTI/EXEC; the transaction aborts if the key changed."
+    },
+    {
+      "id": "failover-lock",
+      "concept": "Failure modes",
+      "type": "single",
+      "difficulty": 3,
+      "prompt": "How can a single-node Redis lock be granted twice?",
+      "options": [
+        {
+          "id": "a",
+          "text": "The primary grants it, dies before replicating, and the promoted replica grants it again.",
+          "why": "Right: asynchronous replication loses the key."
+        },
+        {
+          "id": "b",
+          "text": "Two clients can both create the same key at once in the majority of deployments without any extra configuration.",
+          "why": "NX makes creation atomic; only one wins."
+        },
+        {
+          "id": "c",
+          "text": "The token is too short to be unique.",
+          "why": "Random tokens are unique enough; that is not the failure."
+        },
+        {
+          "id": "d",
+          "text": "Redis forgets the key when the TTL is too long in a typical production setup for most everyday workloads.",
+          "why": "A long TTL keeps the key longer, not shorter."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "This is why a Redis lock is an efficiency tool that occasionally fails."
+    },
+    {
+      "id": "redlock",
+      "concept": "Failure modes",
+      "type": "single",
+      "difficulty": 3,
+      "prompt": "What is the criticism of Redlock even though it uses a majority of nodes?",
+      "options": [
+        {
+          "id": "a",
+          "text": "A paused or slow client can still act after its lock expired.",
+          "why": "Right: timing assumptions can be broken."
+        },
+        {
+          "id": "b",
+          "text": "It needs a majority of nodes, so it can never be used under normal operating conditions.",
+          "why": "It can be used; the issue is its safety argument."
+        },
+        {
+          "id": "c",
+          "text": "It stores locks in a relational database.",
+          "why": "It uses several independent Redis nodes."
+        },
+        {
+          "id": "d",
+          "text": "It removes expiries, so locks never release as a general rule of thumb.",
+          "why": "Locks still expire."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "A fencing token, a number that increases with each grant and is checked by the storage layer, defends against stale holders. Redis does not provide one."
+    },
+    {
+      "id": "avoid-lock",
+      "concept": "Choosing a mechanism",
+      "type": "single",
+      "difficulty": 3,
+      "prompt": "If a stale lock holder would corrupt your data, what is the better design?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Enforce the invariant where the data lives, for example a row lock or a conditional UPDATE with a version.",
+          "why": "Right: the database makes the check atomic."
+        },
+        {
+          "id": "b",
+          "text": "Raise the Redis lock expiry to several hours in the majority of deployments without any extra configuration in a typical production setup.",
+          "why": "A long expiry does not stop stale holders."
+        },
+        {
+          "id": "c",
+          "text": "Add more Redis replicas for the lock key for most everyday workloads under normal operating conditions.",
+          "why": "Async replicas do not give the guarantee."
+        },
+        {
+          "id": "d",
+          "text": "Retry the lock acquisition more often.",
+          "why": "Retries do not fix correctness."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Or use a consensus system such as ZooKeeper or etcd. Treat a Redis lock as an efficiency tool."
+    },
+    {
+      "id": "lock-expiry-needed",
+      "concept": "Lock styles",
+      "type": "truefalse",
+      "difficulty": 1,
+      "prompt": "True or false: a SET NX EX lock needs no expiry because the holder always releases it.",
+      "options": [
+        {
+          "id": "a",
+          "text": "True",
+          "why": "It does need one."
+        },
+        {
+          "id": "b",
+          "text": "False",
+          "why": "Correct: the expiry covers crashed holders."
+        }
+      ],
+      "correct": [
+        "b"
+      ],
+      "explanation": "Processes crash. Without an expiry, a dead holder would block everyone forever."
+    }
+  ]
+}

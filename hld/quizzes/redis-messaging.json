@@ -1,0 +1,301 @@
+{
+  "id": "redis-messaging",
+  "title": "Redis: streams & pub/sub",
+  "topic": "Redis",
+  "series": "redis-system-design",
+  "seriesTitle": "Redis for system design interviews",
+  "seriesOrder": 7,
+  "seriesDescription": "How to use Redis in system design interviews: the data model, durability limits, clustering, caching, distributed locks, leaderboards, rate limiting, geo search, streams and pub/sub, with the trade-offs interviewers probe.",
+  "description": "Work queues with streams and consumer groups, at-least-once processing, Pub/Sub delivery guarantees, sharded Pub/Sub and when to choose Kafka.",
+  "source": "Study notes: how to use Redis in system design interviews",
+  "estimatedMinutes": 8,
+  "questions": [
+    {
+      "id": "stream-basics",
+      "concept": "Streams",
+      "type": "single",
+      "difficulty": 1,
+      "prompt": "What is a Redis stream?",
+      "options": [
+        {
+          "id": "a",
+          "text": "An append-only log that consumers can read from and replay.",
+          "why": "Right: similar to a Kafka topic."
+        },
+        {
+          "id": "b",
+          "text": "A fire-and-forget broadcast that drops messages when nobody listens.",
+          "why": "That describes classic Pub/Sub."
+        },
+        {
+          "id": "c",
+          "text": "A sorted set keyed by timestamp that cannot be read back.",
+          "why": "Streams are readable and ordered."
+        },
+        {
+          "id": "d",
+          "text": "A cache entry that expires after one read.",
+          "why": "Stream entries are not consumed by reading."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Producers append with XADD; consumers read and track their position."
+    },
+    {
+      "id": "consumer-groups",
+      "concept": "Streams",
+      "type": "single",
+      "difficulty": 2,
+      "prompt": "What do consumer groups add to a stream?",
+      "options": [
+        {
+          "id": "a",
+          "text": "They coordinate which worker processes which entry and track entries pending acknowledgement.",
+          "why": "Right: the basis for a work queue."
+        },
+        {
+          "id": "b",
+          "text": "They copy every entry to every worker in a typical production setup.",
+          "why": "Each entry goes to one worker in the group."
+        },
+        {
+          "id": "c",
+          "text": "They make the stream durable regardless of persistence.",
+          "why": "Durability still follows your persistence settings."
+        },
+        {
+          "id": "d",
+          "text": "They remove the need for acknowledgements for most everyday workloads.",
+          "why": "Workers acknowledge to say they are done."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "XREADGROUP reads, processing happens, then the worker acknowledges."
+    },
+    {
+      "id": "worker-dies",
+      "concept": "Streams",
+      "type": "single",
+      "difficulty": 3,
+      "prompt": "A worker dies mid-task. How is the entry recovered?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Another worker claims it with XCLAIM or XAUTOCLAIM after its idle time grows.",
+          "why": "Right: pending entries carry an idle time."
+        },
+        {
+          "id": "b",
+          "text": "Redis re-queues it automatically the instant the worker disconnects.",
+          "why": "Claiming is done by workers."
+        },
+        {
+          "id": "c",
+          "text": "The entry is deleted so the job is never run.",
+          "why": "That would lose work."
+        },
+        {
+          "id": "d",
+          "text": "The producer must send it again.",
+          "why": "The entry is already in the stream."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Redis cannot tell a slow worker from a dead one, so an item can occasionally be processed twice. Make processing idempotent."
+    },
+    {
+      "id": "streams-vs-kafka",
+      "concept": "Choosing a broker",
+      "type": "single",
+      "difficulty": 3,
+      "prompt": "When is Kafka the better choice than Redis streams?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Long retention, replay for many independent consumers, or durable ordered throughput where loss is unacceptable.",
+          "why": "Right: that is where its complexity pays off."
+        },
+        {
+          "id": "b",
+          "text": "When the queue is small and Redis is already in the design for most everyday workloads under normal operating conditions.",
+          "why": "That favours Redis streams."
+        },
+        {
+          "id": "c",
+          "text": "When you need the fastest possible single-key lookups as a general rule of thumb in the majority of deployments.",
+          "why": "That is not a messaging question."
+        },
+        {
+          "id": "d",
+          "text": "When messages can be dropped when nobody listens.",
+          "why": "That favours Pub/Sub."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Redis streams fit background jobs, notification fan-out and work distribution at modest scale."
+    },
+    {
+      "id": "pubsub-basics",
+      "concept": "Delivery guarantees",
+      "type": "single",
+      "difficulty": 1,
+      "prompt": "What does Redis Pub/Sub guarantee?",
+      "options": [
+        {
+          "id": "a",
+          "text": "At-most-once delivery to subscribers connected right now.",
+          "why": "Right: messages are not persisted."
+        },
+        {
+          "id": "b",
+          "text": "At-least-once delivery, replayed to anyone who was offline.",
+          "why": "Offline subscribers miss messages."
+        },
+        {
+          "id": "c",
+          "text": "Exactly-once delivery with ordering across channels.",
+          "why": "It makes no such promise."
+        },
+        {
+          "id": "d",
+          "text": "Durable storage of every message for later replay.",
+          "why": "That is what streams are for."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "It is great for ephemeral real-time notifications like chat presence or live updates."
+    },
+    {
+      "id": "sharded",
+      "concept": "Sharded Pub/Sub",
+      "type": "single",
+      "difficulty": 3,
+      "prompt": "What problem does sharded Pub/Sub (SPUBLISH, SSUBSCRIBE) fix in a cluster?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Classic Pub/Sub broadcast every message to every node; sharded routes a channel to the shard that owns its slot.",
+          "why": "Right: capacity now scales with the cluster."
+        },
+        {
+          "id": "b",
+          "text": "It makes messages durable across restarts under normal operating conditions as a general rule of thumb in the majority of deployments.",
+          "why": "Durability is unchanged."
+        },
+        {
+          "id": "c",
+          "text": "It gives exactly-once delivery.",
+          "why": "Delivery is still at most once."
+        },
+        {
+          "id": "d",
+          "text": "It removes the need for subscriber connections without any extra configuration in a typical production setup for most everyday workloads.",
+          "why": "Subscribers still hold connections."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Since Redis 7, adding nodes adds Pub/Sub capacity."
+    },
+    {
+      "id": "conn-per-channel",
+      "concept": "Pub/Sub",
+      "type": "truefalse",
+      "difficulty": 2,
+      "prompt": "True or false: a subscriber needs one connection per channel, so millions of channels mean millions of connections.",
+      "options": [
+        {
+          "id": "a",
+          "text": "True",
+          "why": "It is not per channel."
+        },
+        {
+          "id": "b",
+          "text": "False",
+          "why": "Correct: one connection per node."
+        }
+      ],
+      "correct": [
+        "b"
+      ],
+      "explanation": "Connection overhead is per node: one connection carries all subscribed channels from that node."
+    },
+    {
+      "id": "roll-your-own",
+      "concept": "Custom pub/sub",
+      "type": "single",
+      "difficulty": 3,
+      "prompt": "Why is building your own pub/sub on Redis keys (topic to subscriber addresses) usually worse than native Pub/Sub?",
+      "options": [
+        {
+          "id": "a",
+          "text": "It adds a network hop, new connections per publish and heartbeat logic to clean up dead subscribers.",
+          "why": "Right: more latency and complexity."
+        },
+        {
+          "id": "b",
+          "text": "Native Pub/Sub stores every message forever for most everyday workloads under normal operating conditions.",
+          "why": "It stores nothing."
+        },
+        {
+          "id": "c",
+          "text": "Homemade versions cannot read Redis keys.",
+          "why": "They can; they are just slower."
+        },
+        {
+          "id": "d",
+          "text": "Native Pub/Sub uses one connection per channel, which scales better without any extra configuration in a typical production setup.",
+          "why": "It does not use one per channel."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "If a use case looks like Pub/Sub, use Pub/Sub."
+    },
+    {
+      "id": "offline",
+      "concept": "Pub/Sub",
+      "type": "single",
+      "difficulty": 2,
+      "prompt": "Subscribers must catch up on messages they missed while offline. What should you use?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Redis Streams, or pair Pub/Sub with a queue or an outbox so consumers can catch up.",
+          "why": "Right: add durability."
+        },
+        {
+          "id": "b",
+          "text": "Plain Pub/Sub, since it replays missed messages as a general rule of thumb in the majority of deployments.",
+          "why": "It does not replay."
+        },
+        {
+          "id": "c",
+          "text": "A longer TTL on the channel without any extra configuration in a typical production setup.",
+          "why": "Channels have no TTL."
+        },
+        {
+          "id": "d",
+          "text": "More Pub/Sub shards.",
+          "why": "Sharding does not add persistence."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Streams give replay; SNS to SQS or Kafka give stronger guarantees."
+    }
+  ]
+}

@@ -1,0 +1,270 @@
+{
+  "id": "redis-cluster",
+  "title": "Redis: clustering, slots & hot keys",
+  "topic": "Redis",
+  "series": "redis-system-design",
+  "seriesTitle": "Redis for system design interviews",
+  "seriesOrder": 3,
+  "seriesDescription": "How to use Redis in system design interviews: the data model, durability limits, clustering, caching, distributed locks, leaderboards, rate limiting, geo search, streams and pub/sub, with the trade-offs interviewers probe.",
+  "description": "Hash slots, MOVED redirects, hash tags and why Redis clusters have no query router, plus the hot key problem and its remedies.",
+  "source": "Study notes: how to use Redis in system design interviews",
+  "estimatedMinutes": 7,
+  "questions": [
+    {
+      "id": "hash-slots",
+      "concept": "Hash slots",
+      "type": "single",
+      "difficulty": 1,
+      "prompt": "How does a Redis cluster decide which node stores a key?",
+      "options": [
+        {
+          "id": "a",
+          "text": "The key hashes to one of 16,384 slots, and each slot is assigned to a node.",
+          "why": "Right: slot ownership defines placement."
+        },
+        {
+          "id": "b",
+          "text": "A central router looks the key up in a global directory.",
+          "why": "There is no central router."
+        },
+        {
+          "id": "c",
+          "text": "Nodes take turns, storing each new key in round-robin order.",
+          "why": "Placement is deterministic from the key."
+        },
+        {
+          "id": "d",
+          "text": "The client picks any node and the cluster balances it later.",
+          "why": "Clients compute the slot and aim for the right node."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Choosing keys is how you scale Redis, because the key decides the slot and therefore the node."
+    },
+    {
+      "id": "moved",
+      "concept": "Cluster routing",
+      "type": "single",
+      "difficulty": 2,
+      "prompt": "A client asks the wrong node for a key. What happens?",
+      "options": [
+        {
+          "id": "a",
+          "text": "The node replies MOVED, and the client updates its slot map and retries.",
+          "why": "Right: clients cache the map; nodes do not forward requests."
+        },
+        {
+          "id": "b",
+          "text": "The node forwards the request to the right node transparently.",
+          "why": "Redis nodes do not proxy requests."
+        },
+        {
+          "id": "c",
+          "text": "The cluster returns an empty value for the key.",
+          "why": "You get a redirect, not a silent miss."
+        },
+        {
+          "id": "d",
+          "text": "The cluster restarts so slots are reassigned.",
+          "why": "Nothing restarts; the client just updates its map."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Clients cache the slot-to-node map so they can hit the correct node on the first try."
+    },
+    {
+      "id": "no-router",
+      "concept": "Cluster limits",
+      "type": "single",
+      "difficulty": 3,
+      "prompt": "You issue a multi-key command whose keys live on different nodes. What does Redis do?",
+      "options": [
+        {
+          "id": "a",
+          "text": "It returns an error, because there is no router that splits and merges across nodes.",
+          "why": "Right: all the data for a command must live on one node."
+        },
+        {
+          "id": "b",
+          "text": "It splits the command, runs the pieces and merges the results without any extra configuration.",
+          "why": "There is no such query router."
+        },
+        {
+          "id": "c",
+          "text": "It runs slowly but correctly by scatter-gather in a typical production setup.",
+          "why": "It fails fast instead of running slowly."
+        },
+        {
+          "id": "d",
+          "text": "It silently drops the keys on other nodes.",
+          "why": "You get an explicit error."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Structure keys so related data shares a slot. Redis fails rather than running a slow cross-node query."
+    },
+    {
+      "id": "hash-tags",
+      "concept": "Hash tags",
+      "type": "single",
+      "difficulty": 3,
+      "prompt": "How do you make {user:123}:posts and {user:123}:likes land on the same node?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Hash tags: only the part inside braces is hashed, so both keys share a slot.",
+          "why": "Right: ready for a MULTI transaction across both."
+        },
+        {
+          "id": "b",
+          "text": "Give both keys the same TTL so they are co-located for most everyday workloads under normal operating conditions.",
+          "why": "TTL has no effect on placement."
+        },
+        {
+          "id": "c",
+          "text": "Store them in one list under a third key as a general rule of thumb.",
+          "why": "That changes the data model, not the placement rule."
+        },
+        {
+          "id": "d",
+          "text": "Run both on a single-node setup only.",
+          "why": "Hash tags work inside a cluster."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Use hash tags deliberately: they enable multi-key operations but can concentrate load on one slot."
+    },
+    {
+      "id": "hot-key",
+      "concept": "Hot keys",
+      "type": "single",
+      "difficulty": 2,
+      "prompt": "One product suddenly receives as much traffic as every other product combined. What is this called?",
+      "options": [
+        {
+          "id": "a",
+          "text": "A hot key: one key absorbing a disproportionate share of traffic, overloading its node.",
+          "why": "Right: even spreading cannot help a single key."
+        },
+        {
+          "id": "b",
+          "text": "A cache stampede on the whole cluster in the majority of deployments without any extra configuration.",
+          "why": "A stampede is many requests on an expired key, a different issue."
+        },
+        {
+          "id": "c",
+          "text": "A split brain between replicas in a typical production setup for most everyday workloads.",
+          "why": "Split brain is a partition problem, not a traffic one."
+        },
+        {
+          "id": "d",
+          "text": "A hash slot migration.",
+          "why": "Migration moves slots; it is not a traffic surge."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Recognise hot keys proactively. Then design remediations and show the trade-offs."
+    },
+    {
+      "id": "hot-fixes",
+      "concept": "Hot key remedies",
+      "type": "multi",
+      "difficulty": 3,
+      "prompt": "Select all valid remediations for a read-hot key.",
+      "options": [
+        {
+          "id": "a",
+          "text": "Keep a small in-memory cache of the hottest items in each app server.",
+          "why": "Yes: most reads never reach Redis, at the cost of staleness."
+        },
+        {
+          "id": "b",
+          "text": "Store copies under several keys such as product:123:1 to :10 and read a random one.",
+          "why": "Yes: copies spread across slots and nodes."
+        },
+        {
+          "id": "c",
+          "text": "Add read replicas and configure clients to read from them.",
+          "why": "Yes: it multiplies read capacity for that slot."
+        },
+        {
+          "id": "d",
+          "text": "Add more primary nodes, since the key will rebalance across them.",
+          "why": "No: one key lives on one slot, however many nodes exist."
+        }
+      ],
+      "correct": [
+        "a",
+        "b",
+        "c"
+      ],
+      "explanation": "Every fix has a cost: staleness, write fan-out to copies, or replica lag."
+    },
+    {
+      "id": "write-hot",
+      "concept": "Hot key remedies",
+      "type": "single",
+      "difficulty": 3,
+      "prompt": "Why do read replicas not fix a write-hot key?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Every write still lands on the one primary that owns the slot.",
+          "why": "Right: replicas only absorb reads."
+        },
+        {
+          "id": "b",
+          "text": "Replicas refuse writes to hot keys by design as a general rule of thumb.",
+          "why": "They simply cannot accept writes."
+        },
+        {
+          "id": "c",
+          "text": "Replicas copy only keys that are not hot.",
+          "why": "Replication copies everything."
+        },
+        {
+          "id": "d",
+          "text": "Replication cannot be enabled in cluster mode under normal operating conditions.",
+          "why": "Clusters commonly run replicas."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "For write-hot keys, shard the key (for example per-shard counters) and combine reads."
+    },
+    {
+      "id": "replica-default",
+      "concept": "Cluster routing",
+      "type": "truefalse",
+      "difficulty": 3,
+      "prompt": "True or false: cluster clients read from replicas by default, so replicas automatically absorb read load.",
+      "options": [
+        {
+          "id": "a",
+          "text": "True",
+          "why": "They do not by default."
+        },
+        {
+          "id": "b",
+          "text": "False",
+          "why": "Correct: you must configure replica reads."
+        }
+      ],
+      "correct": [
+        "b"
+      ],
+      "explanation": "Clients read from the primary unless configured for replica reads (READONLY), which interviewers like to probe."
+    }
+  ]
+}
