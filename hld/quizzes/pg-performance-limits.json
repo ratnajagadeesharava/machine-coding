@@ -197,5 +197,6 @@
       ],
       "explanation": "Memory access is orders of magnitude faster than disk, so performance drops sharply when the working set exceeds RAM."
     }
-  ]
+  ],
+  "seriesDescription": "Everything to know about PostgreSQL for system design interviews: when to pick it, SQL and ACID basics, indexing, scaling writes, replication and concurrency control, in eight short quizzes."
 }

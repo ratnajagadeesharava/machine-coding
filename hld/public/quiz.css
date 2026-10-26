@@ -282,3 +282,19 @@ html { scroll-behavior: auto; }
 :root[data-theme="dark"] .badge.ai { background: #123a35; color: #7fe0d0; }
 :root[data-theme="dark"] #btn-flag.on { background: #14284d; color: #9ec0ff; }
 :root[data-theme="dark"] .status.done { color: #6fdc9a; } :root[data-theme="dark"] .status.prog { background: #14284d; color: #9ec0ff; }
+
+/* ---- topics index ---- */
+.topic-card .topic-progress, .topic-head .topic-progress { display: flex; align-items: center; gap: 12px; font-size: 14px; }
+.topic-progress .progress { flex: 1; max-width: 320px; height: 8px; }
+.topic-head { display: grid; gap: 8px; margin-bottom: 18px; }
+.topic-head h2 { font-family: var(--qdisplay); font-size: 30px; letter-spacing: -0.02em; }
+.topic-head .back, .toc-back { color: var(--accent-strong); font-weight: 650; font-size: 14px; text-decoration: none; width: fit-content; }
+.toc-back { display: block; padding: 4px 10px 12px; }
+.topic-head .back:hover, .toc-back:hover { text-decoration: underline; }
+.toc-topic { display: grid; grid-template-columns: 26px minmax(0, 1fr) auto; align-items: center; gap: 8px; padding: 8px 10px; border-radius: 10px; color: var(--ink); text-decoration: none; font-size: 14px; font-weight: 600; line-height: 1.35; }
+.toc-topic:hover { background: var(--accent-soft); }
+.toc-topic .toc-mark { background: var(--accent-soft); color: var(--accent-strong); }
+.toc-topic.done .toc-mark { background: #22a55b; color: #fff; }
+.result-item { display: grid; gap: 4px; }
+.result-item .crumb { font-size: 13px; font-weight: 650; color: var(--accent-strong); text-decoration: none; padding-left: 4px; }
+.result-item .crumb:hover { text-decoration: underline; }

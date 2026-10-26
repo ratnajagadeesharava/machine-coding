@@ -308,5 +308,6 @@
       ],
       "explanation": "Index only the subset you query. Smaller indexes fit in memory and speed both reads and writes."
     }
-  ]
+  ],
+  "seriesDescription": "Everything to know about PostgreSQL for system design interviews: when to pick it, SQL and ACID basics, indexing, scaling writes, replication and concurrency control, in eight short quizzes."
 }

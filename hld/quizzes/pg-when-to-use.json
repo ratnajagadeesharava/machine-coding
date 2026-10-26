@@ -265,5 +265,6 @@
       ],
       "explanation": "Be a decision-maker, not a DBA: relationships, consistency, query patterns and scale, with internals only when they change the decision."
     }
-  ]
+  ],
+  "seriesDescription": "Everything to know about PostgreSQL for system design interviews: when to pick it, SQL and ACID basics, indexing, scaling writes, replication and concurrency control, in eight short quizzes."
 }

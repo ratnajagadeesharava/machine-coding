@@ -265,5 +265,6 @@
       ],
       "explanation": "You rarely write SQL; expect questions like which indexes you would create. Junior roles may ask for a basic query."
     }
-  ]
+  ],
+  "seriesDescription": "Everything to know about PostgreSQL for system design interviews: when to pick it, SQL and ACID basics, indexing, scaling writes, replication and concurrency control, in eight short quizzes."
 }

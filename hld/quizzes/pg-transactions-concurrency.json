@@ -286,5 +286,6 @@
       ],
       "explanation": "Push the arithmetic into the statement, or lock the row first, so the read and write are one step."
     }
-  ]
+  ],
+  "seriesDescription": "Everything to know about PostgreSQL for system design interviews: when to pick it, SQL and ACID basics, indexing, scaling writes, replication and concurrency control, in eight short quizzes."
 }

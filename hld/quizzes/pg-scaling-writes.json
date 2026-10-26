@@ -263,5 +263,6 @@
       ],
       "explanation": "Start simple, measure, and say what trigger would make you shard."
     }
-  ]
+  ],
+  "seriesDescription": "Everything to know about PostgreSQL for system design interviews: when to pick it, SQL and ACID basics, indexing, scaling writes, replication and concurrency control, in eight short quizzes."
 }
