@@ -157,6 +157,9 @@ test('friendlyError maps SDK errors to safe messages and never echoes secrets', 
   assert.equal(friendlyError(mk(401)).status, 401);
   assert.match(friendlyError(mk(401)).message, /API key was rejected/);
   assert.equal(friendlyError(mk(429)).status, 429);
+  const broke = friendlyError(Object.assign(mk(400), { message: '400 Your credit balance is too low to access the Anthropic API.' }));
+  assert.equal(broke.status, 402);
+  assert.match(broke.message, /out of credit/);
   assert.equal(friendlyError(mk(403)).status, 403);
   assert.match(friendlyError(mk(404)).message, /model was not found/);
   assert.equal(friendlyError(mk(500)).status, 502);
