@@ -1,0 +1,237 @@
+{
+  "id": "sw-challenge",
+  "title": "Scaling writes: the challenge and the toolbox",
+  "topic": "Scaling writes",
+  "series": "scaling-writes-pattern",
+  "seriesTitle": "Scaling writes for system design",
+  "seriesOrder": 1,
+  "seriesDescription": "How to scale write-heavy systems in an interview: vertical scaling and database choice, sharding and partition keys, vertical partitioning, queues and load shedding, batching, hierarchical aggregation, and the resharding and hot-key deep dives.",
+  "description": "Why writes are harder to scale than reads, the four strategies that work together, and when not to reach for them.",
+  "source": "Study notes: the scaling writes pattern",
+  "estimatedMinutes": 6,
+  "questions": [
+    {
+      "id": "writes-harder",
+      "concept": "Why writes are hard",
+      "type": "single",
+      "difficulty": 1,
+      "prompt": "Why are writes usually a bigger scaling challenge than reads?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Read-side tools like replicas and caches do not help with writes, which also contend and burst.",
+          "why": "Right: writes must reach the source of truth."
+        },
+        {
+          "id": "b",
+          "text": "Writes are always larger than reads, so they cost more bandwidth.",
+          "why": "Size is not the main reason."
+        },
+        {
+          "id": "c",
+          "text": "Databases cannot index data that has just been written.",
+          "why": "Indexes are updated on write; the cost is the issue."
+        },
+        {
+          "id": "d",
+          "text": "Reads cannot be spread across servers, but writes can as a general rule of thumb.",
+          "why": "It is the other way round: reads scale out more easily."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Bursty, contended, high-throughput writes are the hard part, and interviewers love to probe them."
+    },
+    {
+      "id": "four-strategies",
+      "concept": "The toolbox",
+      "type": "multi",
+      "difficulty": 1,
+      "prompt": "Select all of the four write-scaling strategies in this pattern.",
+      "options": [
+        {
+          "id": "a",
+          "text": "Vertical scaling and database choices.",
+          "why": "Yes: exhaust the hardware and pick a write-friendly store first."
+        },
+        {
+          "id": "b",
+          "text": "Sharding and partitioning.",
+          "why": "Yes: spread the writes across servers."
+        },
+        {
+          "id": "c",
+          "text": "Handling bursts with queues and load shedding.",
+          "why": "Yes: smooth or drop spikes."
+        },
+        {
+          "id": "d",
+          "text": "Adding more read replicas.",
+          "why": "No: replicas scale reads, not writes."
+        }
+      ],
+      "correct": [
+        "a",
+        "b",
+        "c"
+      ],
+      "explanation": "The fourth is batching and hierarchical aggregation. Combine them rather than reaching for one."
+    },
+    {
+      "id": "first-step",
+      "concept": "Approach",
+      "type": "single",
+      "difficulty": 2,
+      "prompt": "You are told the system must scale writes. What should you do first?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Estimate the real write rate and check whether one server could already handle it.",
+          "why": "Right: do the back-of-the-envelope math before adding complexity."
+        },
+        {
+          "id": "b",
+          "text": "Shard the database immediately across many nodes under normal operating conditions.",
+          "why": "That may be premature and add complexity."
+        },
+        {
+          "id": "c",
+          "text": "Add a queue in front of every service.",
+          "why": "A queue can hide a steady-state problem."
+        },
+        {
+          "id": "d",
+          "text": "Switch to a NoSQL database before measuring anything in a typical production setup for most everyday workloads.",
+          "why": "Choose a store because of a measured need."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Show you validate the bottleneck before proposing a fix."
+    },
+    {
+      "id": "no-scaling-needed",
+      "concept": "Approach",
+      "type": "truefalse",
+      "difficulty": 1,
+      "prompt": "True or false: applying write-scaling strategies is always a good idea in an interview, even if the numbers do not call for it.",
+      "options": [
+        {
+          "id": "a",
+          "text": "True",
+          "why": "It is not always good."
+        },
+        {
+          "id": "b",
+          "text": "False",
+          "why": "Correct: do not add complexity you do not need."
+        }
+      ],
+      "correct": [
+        "b"
+      ],
+      "explanation": "The worst case is creating a problem where none exists. Use quick math to see whether a bottleneck is real."
+    },
+    {
+      "id": "tension",
+      "concept": "Write vs read tension",
+      "type": "single",
+      "difficulty": 3,
+      "prompt": "What is the \"write versus read tension\" in storage design?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Making a store faster for writes often makes reads slower, and the reverse.",
+          "why": "Right: identify which side is your bottleneck."
+        },
+        {
+          "id": "b",
+          "text": "Reads and writes always scale together at the same rate as a general rule of thumb.",
+          "why": "They often pull in opposite directions."
+        },
+        {
+          "id": "c",
+          "text": "Reads must be written to disk before writes can start in the majority of deployments.",
+          "why": "That is not a rule; it does not answer the question asked."
+        },
+        {
+          "id": "d",
+          "text": "Writes cannot be indexed, so reads must scan.",
+          "why": "Indexes serve reads; they cost writes."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Different parts of one system may deserve different stores."
+    },
+    {
+      "id": "proactive",
+      "concept": "Interview approach",
+      "type": "single",
+      "difficulty": 2,
+      "prompt": "How do strong candidates handle write scaling in an interview?",
+      "options": [
+        {
+          "id": "a",
+          "text": "They proactively find the bottleneck, validate it with numbers, and propose a fix as a deep dive.",
+          "why": "Right: do not wait to be asked."
+        },
+        {
+          "id": "b",
+          "text": "They wait until the interviewer asks \"how does it scale?\" before thinking about it without any extra configuration.",
+          "why": "Proactivity scores better."
+        },
+        {
+          "id": "c",
+          "text": "They avoid numbers and describe technologies only in a typical production setup for most everyday workloads.",
+          "why": "Numbers show the problem is real."
+        },
+        {
+          "id": "d",
+          "text": "They propose every strategy at once to be safe.",
+          "why": "Over-engineering is a common mistake."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Example: \"partition by user id, and handle a single heavy user with a queue and rate limits\"."
+    },
+    {
+      "id": "common-scenarios",
+      "concept": "Where it shows up",
+      "type": "single",
+      "difficulty": 1,
+      "prompt": "Which system is a classic fit for hierarchical aggregation?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Live comments, where millions of viewers need a shared view of millions of peers.",
+          "why": "Right: avoids an all-to-all problem."
+        },
+        {
+          "id": "b",
+          "text": "A static personal blog with a handful of posts under normal operating conditions as a general rule of thumb.",
+          "why": "No scaling pressure there."
+        },
+        {
+          "id": "c",
+          "text": "A read-only reference dataset in the majority of deployments without any extra configuration.",
+          "why": "There are no writes to scale."
+        },
+        {
+          "id": "d",
+          "text": "A single-user note-taking app.",
+          "why": "It never reaches the volumes that need it."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "News feeds and search are other write-heavy scenarios, with their own trade-offs."
+    }
+  ]
+}

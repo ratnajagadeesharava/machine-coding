@@ -1,0 +1,235 @@
+{
+  "id": "sw-batching",
+  "title": "Scaling writes: batching",
+  "topic": "Scaling writes",
+  "series": "scaling-writes-pattern",
+  "seriesTitle": "Scaling writes for system design",
+  "seriesOrder": 6,
+  "seriesDescription": "How to scale write-heavy systems in an interview: vertical scaling and database choice, sharding and partition keys, vertical partitioning, queues and load shedding, batching, hierarchical aggregation, and the resharding and hot-key deep dives.",
+  "description": "Amortising per-write overhead at the application, in an intermediate process, or in the database, and when batching helps or backfires.",
+  "source": "Study notes: the scaling writes pattern",
+  "estimatedMinutes": 7,
+  "questions": [
+    {
+      "id": "why-batch",
+      "concept": "Why batch",
+      "type": "single",
+      "difficulty": 1,
+      "prompt": "Why does batching writes improve throughput?",
+      "options": [
+        {
+          "id": "a",
+          "text": "It amortises network round trips, transaction setup and index overhead across many writes.",
+          "why": "Right: fixed costs are paid once."
+        },
+        {
+          "id": "b",
+          "text": "It removes the need for the database to store data.",
+          "why": "The data is still stored."
+        },
+        {
+          "id": "c",
+          "text": "It makes every write instantaneous under normal operating conditions.",
+          "why": "Latency can go up; it does not answer the question asked."
+        },
+        {
+          "id": "d",
+          "text": "It guarantees no data is ever lost as a general rule of thumb.",
+          "why": "It can raise the risk of loss."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Databases usually handle batches more efficiently than individual writes."
+    },
+    {
+      "id": "app-batch",
+      "concept": "App-layer batching",
+      "type": "single",
+      "difficulty": 2,
+      "prompt": "A service reads from a Kafka topic, processes, then writes to a database. Why is batching in the application safe here?",
+      "options": [
+        {
+          "id": "a",
+          "text": "If it crashes it can re-read the topic, so nothing is lost.",
+          "why": "Right: Kafka is the durable source."
+        },
+        {
+          "id": "b",
+          "text": "Kafka deletes messages as soon as they are read.",
+          "why": "It retains them; it does not answer the question asked."
+        },
+        {
+          "id": "c",
+          "text": "Databases cannot accept batches from Kafka consumers.",
+          "why": "They can; it does not answer the question asked."
+        },
+        {
+          "id": "d",
+          "text": "The application is the only copy of the data.",
+          "why": "That is the unsafe case."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "When the app is the source of truth, a crash can lose confirmed writes held in a batch."
+    },
+    {
+      "id": "risk",
+      "concept": "Durability risk",
+      "type": "single",
+      "difficulty": 3,
+      "prompt": "What is the risk of batching writes in an app that is the source of truth?",
+      "options": [
+        {
+          "id": "a",
+          "text": "A crash after confirming requests but before committing the batch loses those writes.",
+          "why": "Right: acknowledged data vanishes."
+        },
+        {
+          "id": "b",
+          "text": "Batches are always rejected by the database under normal operating conditions.",
+          "why": "They are accepted; it does not answer the question asked."
+        },
+        {
+          "id": "c",
+          "text": "Batching makes writes slower for every client in a typical production setup for most everyday workloads.",
+          "why": "It usually speeds the database."
+        },
+        {
+          "id": "d",
+          "text": "There is no risk if batches are small.",
+          "why": "Any batch has some exposure."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Not all applications can tolerate that."
+    },
+    {
+      "id": "like-batcher",
+      "concept": "Intermediate batchers",
+      "type": "single",
+      "difficulty": 2,
+      "prompt": "A Like Batcher reads like events, counts per post per minute, and writes the totals. What does it achieve?",
+      "options": [
+        {
+          "id": "a",
+          "text": "100 likes on a post in a minute become one write.",
+          "why": "Right: far fewer database operations."
+        },
+        {
+          "id": "b",
+          "text": "It stops users from liking posts twice in the majority of deployments.",
+          "why": "Deduplication is another concern."
+        },
+        {
+          "id": "c",
+          "text": "It moves the likes to the user's device as a general rule of thumb.",
+          "why": "It stays server-side; it does not answer the question asked."
+        },
+        {
+          "id": "d",
+          "text": "It makes every like visible instantly.",
+          "why": "Visibility is delayed by the window."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "It adds a little latency and another moving part."
+    },
+    {
+      "id": "batch-value",
+      "concept": "Batching efficacy",
+      "type": "single",
+      "difficulty": 3,
+      "prompt": "Most posts get one like an hour. Does a one-minute batching window help?",
+      "options": [
+        {
+          "id": "a",
+          "text": "No: with so few events per window, there is almost nothing to combine.",
+          "why": "Right: check batching efficacy."
+        },
+        {
+          "id": "b",
+          "text": "Yes, always, because smaller windows are better without any extra configuration.",
+          "why": "It only helps if events collide."
+        },
+        {
+          "id": "c",
+          "text": "Yes, because it cuts the number of posts.",
+          "why": "It does not change post count."
+        },
+        {
+          "id": "d",
+          "text": "Only if the window is shorter than a second in a typical production setup.",
+          "why": "A shorter window helps even less."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Staff-level answers consider whether batching actually reduces writes."
+    },
+    {
+      "id": "db-layer",
+      "concept": "Database-layer batching",
+      "type": "single",
+      "difficulty": 3,
+      "prompt": "How does flushing every 100 ms instead of every write help a store like Redis?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Many writes share one disk flush, since disk is the usual bottleneck.",
+          "why": "Right: the big hammer, for extreme cases."
+        },
+        {
+          "id": "b",
+          "text": "It stores each write twice for safety for most everyday workloads under normal operating conditions.",
+          "why": "It reduces flushes, not duplicates."
+        },
+        {
+          "id": "c",
+          "text": "It removes the need for memory.",
+          "why": "Data still lives in memory."
+        },
+        {
+          "id": "d",
+          "text": "It makes data durable instantly as a general rule of thumb in the majority of deployments.",
+          "why": "It widens the window of possible loss."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Reserve database-level batching for extreme cases."
+    },
+    {
+      "id": "batch-latency",
+      "concept": "Trade-offs",
+      "type": "truefalse",
+      "difficulty": 2,
+      "prompt": "True or false: batching trades a little latency and extra moving parts for far fewer, cheaper writes.",
+      "options": [
+        {
+          "id": "a",
+          "text": "True",
+          "why": "Correct: that is the trade."
+        },
+        {
+          "id": "b",
+          "text": "False",
+          "why": "It does cost some latency and complexity."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "It is a trade-off, and you should name both sides."
+    }
+  ]
+}

@@ -91,3 +91,10 @@ test('the Redis series is split into small sub-topic quizzes', () => {
     assert.ok(q.seriesDescription && q.seriesTitle);
   }
 });
+
+test('the Scaling Writes series is split into small sub-topic quizzes', () => {
+  const sw = quizzes.filter((q) => q.series === 'scaling-writes-pattern').sort((a, b) => a.seriesOrder - b.seriesOrder);
+  assert.equal(sw.length, 8);
+  assert.deepEqual(sw.map((q) => q.seriesOrder), [1, 2, 3, 4, 5, 6, 7, 8]);
+  for (const q of sw) assert.ok(q.questions.length >= 5 && q.questions.length <= 10, `${q.id} should stay small`);
+});

@@ -1,0 +1,268 @@
+{
+  "id": "sw-sharding-keys",
+  "title": "Scaling writes: sharding and partition keys",
+  "topic": "Scaling writes",
+  "series": "scaling-writes-pattern",
+  "seriesTitle": "Scaling writes for system design",
+  "seriesOrder": 3,
+  "seriesDescription": "How to scale write-heavy systems in an interview: vertical scaling and database choice, sharding and partition keys, vertical partitioning, queues and load shedding, batching, hierarchical aggregation, and the resharding and hot-key deep dives.",
+  "description": "Spreading writes over servers, how Redis Cluster maps keys, and why the choice of partition key makes or breaks the design.",
+  "source": "Study notes: the scaling writes pattern",
+  "estimatedMinutes": 8,
+  "questions": [
+    {
+      "id": "why-shard",
+      "concept": "Why shard",
+      "type": "single",
+      "difficulty": 1,
+      "prompt": "What does sharding give you for write throughput?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Writes are spread over several servers, so ten servers can handle roughly ten times the volume.",
+          "why": "Right: if the load spreads evenly."
+        },
+        {
+          "id": "b",
+          "text": "Every write is copied to every shard to be safe under normal operating conditions.",
+          "why": "That is replication, not sharding."
+        },
+        {
+          "id": "c",
+          "text": "Writes are delayed until a replica confirms them.",
+          "why": "Unrelated to sharding."
+        },
+        {
+          "id": "d",
+          "text": "Reads become impossible without a full scan for most everyday workloads.",
+          "why": "Reads still find the shard from the key."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Hide the shards behind one logical database where possible."
+    },
+    {
+      "id": "slot-mapping",
+      "concept": "Slot mapping",
+      "type": "single",
+      "difficulty": 2,
+      "prompt": "In Redis Cluster, how does a client know where to send a write?",
+      "options": [
+        {
+          "id": "a",
+          "text": "It hashes the key to a slot number and looks up which node owns that slot.",
+          "why": "Right: clients cache the slot map."
+        },
+        {
+          "id": "b",
+          "text": "It broadcasts the write to every node and keeps the first reply.",
+          "why": "That would waste capacity."
+        },
+        {
+          "id": "c",
+          "text": "It asks a load balancer to guess a node.",
+          "why": "The slot decides the node."
+        },
+        {
+          "id": "d",
+          "text": "It writes to the node with the lowest id.",
+          "why": "Placement is by key; it does not answer the question asked."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Consistent hashing is another common scheme to choose the server."
+    },
+    {
+      "id": "good-key",
+      "concept": "Good keys",
+      "type": "single",
+      "difficulty": 2,
+      "prompt": "What makes a good partition key?",
+      "options": [
+        {
+          "id": "a",
+          "text": "One that spreads writes evenly, such as a hash of a primary identifier like the user id.",
+          "why": "Right: flat load across shards."
+        },
+        {
+          "id": "b",
+          "text": "One with only a few possible values, like country for most everyday workloads under normal operating conditions.",
+          "why": "A few values create hot shards."
+        },
+        {
+          "id": "c",
+          "text": "One that is the same for every record.",
+          "why": "All data would land on one shard."
+        },
+        {
+          "id": "d",
+          "text": "One chosen only for how easy it is to type as a general rule of thumb in the majority of deployments.",
+          "why": "Distribution matters, not typing."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Aim to minimise the variance of writes per shard."
+    },
+    {
+      "id": "bad-key",
+      "concept": "Bad keys",
+      "type": "single",
+      "difficulty": 2,
+      "prompt": "Why is country a poor shard key for a global user base?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Heavily populated countries overload their shard while small ones sit idle.",
+          "why": "Right: uneven distribution."
+        },
+        {
+          "id": "b",
+          "text": "Country names are too long to hash.",
+          "why": "Length is irrelevant; it does not answer the question asked."
+        },
+        {
+          "id": "c",
+          "text": "Countries change every day, so keys are unstable in a typical production setup.",
+          "why": "They do not; it does not answer the question asked."
+        },
+        {
+          "id": "d",
+          "text": "It requires a different database type for each country without any extra configuration.",
+          "why": "It does not; it does not answer the question asked."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "The graph of writes per shard should be flat."
+    },
+    {
+      "id": "read-path",
+      "concept": "Read path",
+      "type": "single",
+      "difficulty": 3,
+      "prompt": "Which question should you ask about a candidate partition key besides write balance?",
+      "options": [
+        {
+          "id": "a",
+          "text": "How many shards does a typical request hit, and how often does it happen?",
+          "why": "Right: avoid scatter-gather on hot paths."
+        },
+        {
+          "id": "b",
+          "text": "How long is the key in bytes? as a general rule of thumb in the majority of deployments.",
+          "why": "Not the main concern; it does not answer the question asked."
+        },
+        {
+          "id": "c",
+          "text": "Which team named the column?",
+          "why": "Irrelevant; it does not answer the question asked."
+        },
+        {
+          "id": "d",
+          "text": "How many tables exist in the schema? for most everyday workloads under normal operating conditions.",
+          "why": "Not related to the key choice."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Spreading writes evenly is no good if every read must visit every shard."
+    },
+    {
+      "id": "hash-id",
+      "concept": "Hashing ids",
+      "type": "truefalse",
+      "difficulty": 1,
+      "prompt": "True or false: hashing a primary identifier such as userId or postId is a common way to get an even spread across shards.",
+      "options": [
+        {
+          "id": "a",
+          "text": "True",
+          "why": "Correct: it is the usual approach."
+        },
+        {
+          "id": "b",
+          "text": "False",
+          "why": "It is in fact the usual way to spread load."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "A hash of a high-cardinality id spreads records evenly and gives a simple lookup."
+    },
+    {
+      "id": "interviewer-probe",
+      "concept": "Finding the shard",
+      "type": "single",
+      "difficulty": 3,
+      "prompt": "An interviewer says \"you said sharding, how does a client find the right shard?\" What is a good answer?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Hash the partition key to a slot or ring position, and look up the owning server, caching the map.",
+          "why": "Right: slots, consistent hashing or virtual nodes."
+        },
+        {
+          "id": "b",
+          "text": "The application tries every shard until one answers for most everyday workloads under normal operating conditions.",
+          "why": "That is a scatter on every request."
+        },
+        {
+          "id": "c",
+          "text": "The database figures it out and never tells the client without any extra configuration in a typical production setup.",
+          "why": "Clients or a router need the mapping."
+        },
+        {
+          "id": "d",
+          "text": "Use a random shard and retry on failure.",
+          "why": "Placement must be deterministic."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Be ready to discuss consistent hashing, virtual nodes and slot assignment."
+    },
+    {
+      "id": "fastest-data",
+      "concept": "Hot data layout",
+      "type": "single",
+      "difficulty": 3,
+      "prompt": "How should you arrange your \"fastest\" data, the most read and written?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Spread reads and writes evenly while grouping commonly accessed data together.",
+          "why": "Right: balance load and locality."
+        },
+        {
+          "id": "b",
+          "text": "Put all of it on a single shard for simplicity without any extra configuration.",
+          "why": "That creates a bottleneck."
+        },
+        {
+          "id": "c",
+          "text": "Scatter related items across all shards on purpose as a general rule of thumb in the majority of deployments.",
+          "why": "That multiplies cross-shard reads."
+        },
+        {
+          "id": "d",
+          "text": "Keep it only in client memory.",
+          "why": "That is not durable or shared."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Expect a discussion with the interviewer on physical layout."
+    }
+  ]
+}

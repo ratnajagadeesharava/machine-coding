@@ -1,0 +1,202 @@
+{
+  "id": "sw-aggregation",
+  "title": "Scaling writes: hierarchical aggregation",
+  "topic": "Scaling writes",
+  "series": "scaling-writes-pattern",
+  "seriesTitle": "Scaling writes for system design",
+  "seriesOrder": 7,
+  "seriesDescription": "How to scale write-heavy systems in an interview: vertical scaling and database choice, sharding and partition keys, vertical partitioning, queues and load shedding, batching, hierarchical aggregation, and the resharding and hot-key deep dives.",
+  "description": "Reducing volume in stages for high-volume counters and live feeds, using the live comments example.",
+  "source": "Study notes: the scaling writes pattern",
+  "estimatedMinutes": 6,
+  "questions": [
+    {
+      "id": "idea",
+      "concept": "Core idea",
+      "type": "single",
+      "difficulty": 1,
+      "prompt": "What is the core idea of hierarchical aggregation?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Process data in stages, reducing the volume at each step by combining events.",
+          "why": "Right: build aggregated views incrementally."
+        },
+        {
+          "id": "b",
+          "text": "Store every event individually forever.",
+          "why": "It avoids that for extreme volume."
+        },
+        {
+          "id": "c",
+          "text": "Send every write straight to the root without any extra configuration.",
+          "why": "That recreates the bottleneck."
+        },
+        {
+          "id": "d",
+          "text": "Delete all data older than a second in the majority of deployments.",
+          "why": "Unrelated; it does not answer the question asked."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "It suits analytics and stream processing where aggregated views are enough."
+    },
+    {
+      "id": "fan-out",
+      "concept": "Broadcast fan-out",
+      "type": "single",
+      "difficulty": 2,
+      "prompt": "In live comments with millions of viewers, why write to broadcast nodes rather than directly to every viewer?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Writing to M broadcast nodes instead of N viewers reduces the number of writes any system handles.",
+          "why": "Right: broadcast nodes forward to their viewers."
+        },
+        {
+          "id": "b",
+          "text": "Viewers cannot receive messages directly without any extra configuration in a typical production setup.",
+          "why": "The point is volume, not capability."
+        },
+        {
+          "id": "c",
+          "text": "It makes all viewers see different data for most everyday workloads under normal operating conditions.",
+          "why": "They want the same eventually consistent view."
+        },
+        {
+          "id": "d",
+          "text": "It removes the need for any servers.",
+          "why": "Servers are still needed."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Assign viewers to broadcast nodes with consistent hashing."
+    },
+    {
+      "id": "fan-in",
+      "concept": "Write processors",
+      "type": "single",
+      "difficulty": 3,
+      "prompt": "What problem remains after adding broadcast nodes, and how is it solved?",
+      "options": [
+        {
+          "id": "a",
+          "text": "The root receives events from all viewers; write processors aggregate over a window and forward batches.",
+          "why": "Right: aggregate on the way in, disaggregate on the way out."
+        },
+        {
+          "id": "b",
+          "text": "The viewers need bigger screens, so use larger fonts as a general rule of thumb in the majority of deployments.",
+          "why": "Not a technical solution."
+        },
+        {
+          "id": "c",
+          "text": "The broadcast nodes need to be removed without any extra configuration in a typical production setup.",
+          "why": "They are part of the solution."
+        },
+        {
+          "id": "d",
+          "text": "Comments must be dropped entirely.",
+          "why": "Aggregation avoids that."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Write processors are chosen by comment id, so each owns the counts for its comments."
+    },
+    {
+      "id": "partition-by",
+      "concept": "Choosing the owner",
+      "type": "single",
+      "difficulty": 3,
+      "prompt": "How are write processors chosen for likes on comments?",
+      "options": [
+        {
+          "id": "a",
+          "text": "By the id of the comment being liked, so one processor owns each comment's count.",
+          "why": "Right: all likes for a comment meet in one place."
+        },
+        {
+          "id": "b",
+          "text": "By the id of the viewer, so likes are scattered for most everyday workloads under normal operating conditions.",
+          "why": "Counts would be split across processors."
+        },
+        {
+          "id": "c",
+          "text": "At random for each like as a general rule of thumb in the majority of deployments.",
+          "why": "The root would have to merge huge duplicates."
+        },
+        {
+          "id": "d",
+          "text": "By the time of day.",
+          "why": "That would not group likes by comment."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "The root then only merges small batches of totals."
+    },
+    {
+      "id": "agg-tradeoff",
+      "concept": "Latency trade-off",
+      "type": "truefalse",
+      "difficulty": 2,
+      "prompt": "True or false: hierarchical aggregation reduces the writes any one component handles at the cost of added latency from the extra steps.",
+      "options": [
+        {
+          "id": "a",
+          "text": "True",
+          "why": "Correct: that is the trade-off."
+        },
+        {
+          "id": "b",
+          "text": "False",
+          "why": "It does add latency; it does not answer the question asked."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Each stage waits for a window, so results are slightly delayed."
+    },
+    {
+      "id": "when-agg",
+      "concept": "When to use it",
+      "type": "single",
+      "difficulty": 2,
+      "prompt": "Which workload benefits most from batching and hierarchical aggregation?",
+      "options": [
+        {
+          "id": "a",
+          "text": "High-volume analytics or numeric data like counts, views and likes.",
+          "why": "Right: often 5-10x improvements."
+        },
+        {
+          "id": "b",
+          "text": "Low-volume configuration changes for most everyday workloads.",
+          "why": "No pressure there; it does not answer the question asked."
+        },
+        {
+          "id": "c",
+          "text": "Large binary uploads like videos.",
+          "why": "They are not aggregated."
+        },
+        {
+          "id": "d",
+          "text": "A single record updated once a day without any extra configuration in a typical production setup.",
+          "why": "Nothing to combine; it does not answer the question asked."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Look for data that can be summed or merged."
+    }
+  ]
+}
