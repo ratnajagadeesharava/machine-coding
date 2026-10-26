@@ -40,10 +40,10 @@ const chatArgs = (extra = {}) => ({
 
 test('chat streams text deltas and sends a well-formed request', async () => {
   const client = fakeClient();
-  const ai = createAi({ client, model: 'claude-opus-5-5' });
+  const ai = createAi({ client, model: 'claude-sonnet-5-5' });
   assert.equal(await run(ai.chat(chatArgs())), 'Hello there');
   const { params } = client.calls.stream[0];
-  assert.equal(params.model, 'claude-opus-5-5');
+  assert.equal(params.model, 'claude-sonnet-5-5');
   assert.ok(params.max_tokens >= 1000);
   assert.equal(params.system[0].type, 'text');
   assert.deepEqual(params.system[0].cache_control, { type: 'ephemeral' });
