@@ -1,0 +1,267 @@
+{
+  "id": "pg-acid-isolation",
+  "title": "PostgreSQL: ACID & isolation levels",
+  "topic": "PostgreSQL",
+  "series": "postgres-system-design",
+  "seriesTitle": "PostgreSQL for system design interviews",
+  "seriesOrder": 3,
+  "description": "Atomicity, consistency, isolation and durability in practice, plus the three isolation levels PostgreSQL really implements.",
+  "source": "Study notes: when and how to use PostgreSQL in system design interviews",
+  "estimatedMinutes": 7,
+  "questions": [
+    {
+      "id": "atomicity",
+      "concept": "Atomicity",
+      "type": "single",
+      "difficulty": 1,
+      "prompt": "A transfer debits one account and credits another inside a transaction, and the server crashes between the two statements. What happens?",
+      "options": [
+        {
+          "id": "a",
+          "text": "The whole transaction is rolled back; neither account changes.",
+          "why": "Right: atomicity is all or nothing."
+        },
+        {
+          "id": "b",
+          "text": "The debit stays and the credit is retried later automatically.",
+          "why": "Partial results are exactly what atomicity prevents."
+        },
+        {
+          "id": "c",
+          "text": "The credit is applied and the debit is skipped.",
+          "why": "Neither half is applied on its own."
+        },
+        {
+          "id": "d",
+          "text": "The database keeps both accounts locked until an admin intervenes.",
+          "why": "Crash recovery rolls back the incomplete transaction automatically."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Atomicity prevents partial failures, which are hard to repair in distributed systems."
+    },
+    {
+      "id": "consistency",
+      "concept": "Consistency",
+      "type": "single",
+      "difficulty": 2,
+      "prompt": "A CHECK (balance >= 0) constraint exists and a transaction would make a balance negative. What does PostgreSQL do?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Rejects the statement and the transaction cannot commit as is.",
+          "why": "Right: constraints keep the database in a valid state."
+        },
+        {
+          "id": "b",
+          "text": "Commits the change and records a warning in the log.",
+          "why": "Constraint violations are errors, not warnings."
+        },
+        {
+          "id": "c",
+          "text": "Clamps the balance to zero silently and commits.",
+          "why": "The database never rewrites your values to satisfy a constraint."
+        },
+        {
+          "id": "d",
+          "text": "Asks the application to confirm before committing.",
+          "why": "There is no confirmation step; the violation is an error."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "In ACID, consistency means rules and constraints always hold. Many NoSQL stores leave this to application code."
+    },
+    {
+      "id": "acid-vs-cap",
+      "concept": "ACID vs CAP",
+      "type": "truefalse",
+      "difficulty": 3,
+      "prompt": "True or false: \"consistency\" in ACID and \"consistency\" in the CAP theorem mean the same thing.",
+      "options": [
+        {
+          "id": "a",
+          "text": "True",
+          "why": "They are easy to confuse but differ."
+        },
+        {
+          "id": "b",
+          "text": "False",
+          "why": "Correct: they are different ideas that share a name."
+        }
+      ],
+      "correct": [
+        "b"
+      ],
+      "explanation": "ACID consistency means the data follows all constraints and rules; CAP consistency means every read sees the most recent write across nodes."
+    },
+    {
+      "id": "default-isolation",
+      "concept": "Isolation levels",
+      "type": "single",
+      "difficulty": 1,
+      "prompt": "What is PostgreSQL's default isolation level?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Read Committed, which sees only data committed before each query began.",
+          "why": "Right: that is the default."
+        },
+        {
+          "id": "b",
+          "text": "Serializable, which runs every transaction as if one at a time.",
+          "why": "That is the strictest level and must be requested."
+        },
+        {
+          "id": "c",
+          "text": "Read Uncommitted, which can see other transactions' unfinished work.",
+          "why": "PostgreSQL never allows dirty reads; it treats this as Read Committed."
+        },
+        {
+          "id": "d",
+          "text": "Repeatable Read, which freezes a snapshot per transaction.",
+          "why": "That is available but not the default."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Each query in a Read Committed transaction can see newly committed data, so repeated reads may differ."
+    },
+    {
+      "id": "repeatable-read",
+      "concept": "Isolation levels",
+      "type": "single",
+      "difficulty": 3,
+      "prompt": "How is PostgreSQL's Repeatable Read stronger than the SQL standard requires?",
+      "options": [
+        {
+          "id": "a",
+          "text": "It also prevents phantom reads, not just non-repeatable reads.",
+          "why": "Right: the snapshot hides rows that others commit meanwhile."
+        },
+        {
+          "id": "b",
+          "text": "It prevents every possible concurrency anomaly, including serialization anomalies.",
+          "why": "Only Serializable does that; write skew can still occur."
+        },
+        {
+          "id": "c",
+          "text": "It lets transactions see uncommitted changes for speed.",
+          "why": "Dirty reads are never possible in PostgreSQL."
+        },
+        {
+          "id": "d",
+          "text": "It automatically retries any transaction that conflicts.",
+          "why": "Retries are the application's job, mostly at Serializable."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Because of snapshots, you may not need Serializable where other databases would require it."
+    },
+    {
+      "id": "serializable",
+      "concept": "Isolation levels",
+      "type": "single",
+      "difficulty": 2,
+      "prompt": "What must your application be ready to do when using SERIALIZABLE isolation?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Retry transactions that the database aborts because of conflicts.",
+          "why": "Right: serialization failures are expected under contention."
+        },
+        {
+          "id": "b",
+          "text": "Manually lock every table before each transaction in a typical production setup.",
+          "why": "Serializable exists so you need not reason about locks."
+        },
+        {
+          "id": "c",
+          "text": "Disable replication so that snapshots stay consistent without any extra configuration.",
+          "why": "Replication is unrelated to the isolation level."
+        },
+        {
+          "id": "d",
+          "text": "Split every transaction into one statement each.",
+          "why": "Multi-statement transactions are exactly its use case."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Serializable trades concurrency for simplicity: correct results, but occasional aborts that need retry logic."
+    },
+    {
+      "id": "read-uncommitted",
+      "concept": "MVCC behavior",
+      "type": "single",
+      "difficulty": 3,
+      "prompt": "In PostgreSQL, what happens if you ask for READ UNCOMMITTED?",
+      "options": [
+        {
+          "id": "a",
+          "text": "You get Read Committed behavior, so dirty reads cannot happen.",
+          "why": "Right: MVCC makes dirty reads impossible at every level."
+        },
+        {
+          "id": "b",
+          "text": "You can read other transactions' uncommitted changes for most everyday workloads.",
+          "why": "That is true in some databases, not PostgreSQL."
+        },
+        {
+          "id": "c",
+          "text": "The statement fails because the level is unsupported under normal operating conditions.",
+          "why": "It is accepted but mapped to Read Committed."
+        },
+        {
+          "id": "d",
+          "text": "You get Serializable behavior to be safe.",
+          "why": "It maps to the weaker Read Committed, not Serializable."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "PostgreSQL implements three distinct behaviors although the standard names four levels."
+    },
+    {
+      "id": "durability",
+      "concept": "Durability",
+      "type": "single",
+      "difficulty": 2,
+      "prompt": "What makes a committed PostgreSQL transaction durable across a crash?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Its WAL records are flushed to disk at commit and can be replayed.",
+          "why": "Right: the log is durable even if data pages are not yet."
+        },
+        {
+          "id": "b",
+          "text": "Every changed data page is written to disk before the commit returns.",
+          "why": "Data pages are written later in the background."
+        },
+        {
+          "id": "c",
+          "text": "The replica always holds a second copy before commit returns.",
+          "why": "Only with synchronous replication, and that is a separate setting."
+        },
+        {
+          "id": "d",
+          "text": "The operating system cache is never used for database files.",
+          "why": "The cache is used; durability comes from flushing the WAL."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Write-ahead logging is why commits are durable yet cheap. Setting synchronous_commit = off relaxes it for speed and risks losing recent commits."
+    }
+  ]
+}

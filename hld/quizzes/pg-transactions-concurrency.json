@@ -1,0 +1,290 @@
+{
+  "id": "pg-transactions-concurrency",
+  "title": "PostgreSQL: transactions & concurrency control",
+  "topic": "PostgreSQL",
+  "series": "postgres-system-design",
+  "seriesTitle": "PostgreSQL for system design interviews",
+  "seriesOrder": 8,
+  "description": "Why a transaction alone is not enough, and how row-level locking, serializable isolation and optimistic concurrency solve the auction-bid race.",
+  "source": "Study notes: when and how to use PostgreSQL in system design interviews",
+  "estimatedMinutes": 8,
+  "questions": [
+    {
+      "id": "tx-not-enough",
+      "concept": "Concurrent transactions",
+      "type": "single",
+      "difficulty": 2,
+      "prompt": "Two users bid on the same auction at the same time, each in its own Read Committed transaction that reads max bid then inserts. What can go wrong?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Both read the same old max, so a losing bid can still be inserted.",
+          "why": "Right: the check and the write are not atomic across transactions."
+        },
+        {
+          "id": "b",
+          "text": "PostgreSQL always blocks the second transaction until the first ends.",
+          "why": "Plain reads do not block each other."
+        },
+        {
+          "id": "c",
+          "text": "Both bids are rejected, which is the safest outcome.",
+          "why": "Neither is rejected automatically."
+        },
+        {
+          "id": "d",
+          "text": "The database merges the two bids into a single row.",
+          "why": "No merging happens."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Saying \"we use transactions\" is not enough. Explain how the check and the write become one atomic decision."
+    },
+    {
+      "id": "for-update",
+      "concept": "Row-level locking",
+      "type": "single",
+      "difficulty": 2,
+      "prompt": "What does SELECT ... FOR UPDATE do in the bidding transaction?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Locks the auction row so other writers wait until this transaction ends.",
+          "why": "Right: serialises bidders on that row."
+        },
+        {
+          "id": "b",
+          "text": "Makes the row read-only for everyone permanently.",
+          "why": "The lock lasts only until commit or rollback."
+        },
+        {
+          "id": "c",
+          "text": "Copies the row into a backup table.",
+          "why": "No copy is made."
+        },
+        {
+          "id": "d",
+          "text": "Raises the isolation level for the whole database.",
+          "why": "It affects specific rows in this transaction only."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Lock the row you are making a decision about. Mention it explicitly instead of only saying \"transaction\"."
+    },
+    {
+      "id": "locking-vs-serializable",
+      "concept": "Choosing a mechanism",
+      "type": "single",
+      "difficulty": 3,
+      "prompt": "When is row-level locking preferable to SERIALIZABLE isolation?",
+      "options": [
+        {
+          "id": "a",
+          "text": "When you know exactly which rows need atomic updates and conflicts are limited to them.",
+          "why": "Right: lower overhead and no retries needed."
+        },
+        {
+          "id": "b",
+          "text": "When the logic spans many tables and it is unclear what to lock.",
+          "why": "That favours Serializable."
+        },
+        {
+          "id": "c",
+          "text": "When you want the database to retry conflicting work for you.",
+          "why": "Neither retries automatically; Serializable needs app retries."
+        },
+        {
+          "id": "d",
+          "text": "When you want to avoid thinking about concurrency at all.",
+          "why": "Locking requires you to think; Serializable is the easier-to-write option."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Use locks for targeted cases like bids or inventory; Serializable for complex multi-table logic."
+    },
+    {
+      "id": "serializable-cost",
+      "concept": "Choosing a mechanism",
+      "type": "single",
+      "difficulty": 3,
+      "prompt": "What is the cost of using Serializable instead of row locks?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Lower concurrency, more tracking overhead and transactions that must retry on conflict.",
+          "why": "Right: simple to write, costly under contention."
+        },
+        {
+          "id": "b",
+          "text": "It silently produces wrong results under load in a typical production setup for most everyday workloads.",
+          "why": "It is the safest level; the cost is aborts, not anomalies."
+        },
+        {
+          "id": "c",
+          "text": "It stops working when replicas are present under normal operating conditions as a general rule of thumb.",
+          "why": "Replication does not disable it."
+        },
+        {
+          "id": "d",
+          "text": "It permanently locks entire tables.",
+          "why": "It uses predicate tracking, not whole-table locks."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "The trade-off table: Serializable is easy to reason about but scales less well when conflicts are frequent."
+    },
+    {
+      "id": "deadlocks",
+      "concept": "Row-level locking",
+      "type": "single",
+      "difficulty": 3,
+      "prompt": "What failure mode must code that uses explicit row locks handle?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Deadlocks, where two transactions wait on each other's locks.",
+          "why": "Right: PostgreSQL aborts one so the other can proceed."
+        },
+        {
+          "id": "b",
+          "text": "Serialization failures that require full retries in the majority of deployments.",
+          "why": "That is the Serializable cost, not the locking cost."
+        },
+        {
+          "id": "c",
+          "text": "Phantom writes created by replicas.",
+          "why": "Replicas do not take part in locking."
+        },
+        {
+          "id": "d",
+          "text": "Index corruption caused by waiting transactions without any extra configuration.",
+          "why": "Waiting does not corrupt indexes."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Lock rows in a consistent order and be ready to retry if the database picks your transaction as the deadlock victim."
+    },
+    {
+      "id": "occ",
+      "concept": "Optimistic concurrency",
+      "type": "single",
+      "difficulty": 3,
+      "prompt": "You add a version column and run UPDATE ... WHERE id = ? AND version = 5. Zero rows are updated. What does it mean?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Someone else changed the row first, so re-read and retry.",
+          "why": "Right: that is optimistic concurrency control."
+        },
+        {
+          "id": "b",
+          "text": "The row does not exist anymore and the table is corrupt in a typical production setup.",
+          "why": "It only means the version no longer matched."
+        },
+        {
+          "id": "c",
+          "text": "The database is out of memory and rejected the update.",
+          "why": "That would raise an error, not update zero rows."
+        },
+        {
+          "id": "d",
+          "text": "The update succeeded but a replica will apply it later.",
+          "why": "Zero rows means nothing was changed."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "OCC avoids holding locks and works best when conflicts are rare."
+    },
+    {
+      "id": "occ-contention",
+      "concept": "Optimistic concurrency",
+      "type": "truefalse",
+      "difficulty": 3,
+      "prompt": "True or false: optimistic concurrency control works best when conflicts are rare, and badly when many transactions constantly collide on the same rows.",
+      "options": [
+        {
+          "id": "a",
+          "text": "True",
+          "why": "Correct: rare conflicts keep retries cheap."
+        },
+        {
+          "id": "b",
+          "text": "False",
+          "why": "It is the opposite; heavy contention wastes work on retries."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Frequent conflicts mean many retries and wasted work, so pessimistic locking or a different design fits better there."
+    },
+    {
+      "id": "acid-sentence",
+      "concept": "Interview communication",
+      "type": "truefalse",
+      "difficulty": 1,
+      "prompt": "True or false: saying \"we use PostgreSQL because it is ACID\" is enough, without explaining how you will use transactions and locks.",
+      "options": [
+        {
+          "id": "a",
+          "text": "True",
+          "why": "It is too vague for most interviewers."
+        },
+        {
+          "id": "b",
+          "text": "False",
+          "why": "Correct: show how you will achieve the consistency."
+        }
+      ],
+      "correct": [
+        "b"
+      ],
+      "explanation": "Explain the mechanism: which transaction, which locks or isolation level, and what retry behavior."
+    },
+    {
+      "id": "lost-update",
+      "concept": "Concurrent transactions",
+      "type": "single",
+      "difficulty": 2,
+      "prompt": "Which approach avoids lost updates on a counter such as stock = stock - 1?",
+      "options": [
+        {
+          "id": "a",
+          "text": "A single atomic UPDATE using the current value in the statement itself.",
+          "why": "Right: the database applies it atomically per row."
+        },
+        {
+          "id": "b",
+          "text": "Read the value in the app, subtract one and write it back for most everyday workloads.",
+          "why": "Two instances can read the same value and overwrite each other."
+        },
+        {
+          "id": "c",
+          "text": "Cache the value in the app and write it hourly.",
+          "why": "Stale caches break correctness."
+        },
+        {
+          "id": "d",
+          "text": "Use two separate transactions to read then write under normal operating conditions.",
+          "why": "The gap between them is where the race happens."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Push the arithmetic into the statement, or lock the row first, so the read and write are one step."
+    }
+  ]
+}

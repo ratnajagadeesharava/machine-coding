@@ -32,6 +32,7 @@ told to follow the same rules.
 }
 ```
 
+- Optional grouping: give several small quizzes the same `series` id plus `seriesTitle` and `seriesOrder` (1, 2, ...) and the quiz page shows them together as sub-topics with a progress bar. Keep each quiz to about 5-10 questions.
 - `type`: `single` (one correct), `multi` (2+ correct, at least one wrong; say "Select all that apply" in the prompt),
   `truefalse` (options exactly `True` then `False`).
 - `difficulty`: 1 recall, 2 application, 3 trade-off or edge case. Use all three.

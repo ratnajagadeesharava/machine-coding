@@ -1,0 +1,312 @@
+{
+  "id": "pg-indexing",
+  "title": "PostgreSQL: indexing & read performance",
+  "topic": "PostgreSQL",
+  "series": "postgres-system-design",
+  "seriesTitle": "PostgreSQL for system design interviews",
+  "seriesOrder": 4,
+  "description": "B-tree basics, composite, covering and partial indexes, plus GIN, JSONB, full-text search and PostGIS for the cases that replace extra systems.",
+  "source": "Study notes: when and how to use PostgreSQL in system design interviews",
+  "estimatedMinutes": 8,
+  "questions": [
+    {
+      "id": "btree-use",
+      "concept": "B-tree indexes",
+      "type": "single",
+      "difficulty": 1,
+      "prompt": "Which query shapes does the default B-tree index handle well?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Exact matches, range queries and sorting on the indexed column.",
+          "why": "Right: these are B-tree strengths."
+        },
+        {
+          "id": "b",
+          "text": "Only exact matches; ranges and ordering need another type.",
+          "why": "B-trees keep keys ordered, so ranges and ORDER BY work."
+        },
+        {
+          "id": "c",
+          "text": "Only full-text searches over very long documents.",
+          "why": "Text search needs a GIN index over a tsvector."
+        },
+        {
+          "id": "d",
+          "text": "Only queries that join more than three tables.",
+          "why": "Joins are helped by indexes on join keys but are not the definition."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "B-tree is the default and your bread-and-butter index for equality, range and ordered reads."
+    },
+    {
+      "id": "index-everything",
+      "concept": "Index trade-offs",
+      "type": "single",
+      "difficulty": 2,
+      "prompt": "A candidate proposes an index on every column \"to be safe\". What is the best response?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Each index slows writes and uses disk, so index only for real query patterns.",
+          "why": "Right: every index has a maintenance cost."
+        },
+        {
+          "id": "b",
+          "text": "Agree, because extra indexes never affect performance negatively.",
+          "why": "They slow inserts and updates because each must be maintained."
+        },
+        {
+          "id": "c",
+          "text": "Agree, because the planner always uses every available index.",
+          "why": "The planner may choose a sequential scan instead."
+        },
+        {
+          "id": "d",
+          "text": "Reject indexes entirely, because the primary key is enough.",
+          "why": "Other query patterns still need their own indexes."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Indexes cost write speed, space and WAL volume, and may go unused. Add them for known access patterns."
+    },
+    {
+      "id": "composite",
+      "concept": "Composite indexes",
+      "type": "single",
+      "difficulty": 2,
+      "prompt": "A profile page runs WHERE user_id = ? ORDER BY created_at DESC. Which index fits best?",
+      "options": [
+        {
+          "id": "a",
+          "text": "One index on (user_id, created_at).",
+          "why": "Right: it finds the user rows and returns them already ordered."
+        },
+        {
+          "id": "b",
+          "text": "Two separate single-column indexes on user_id and created_at.",
+          "why": "The planner has to combine them and may still sort."
+        },
+        {
+          "id": "c",
+          "text": "An index on created_at only.",
+          "why": "It would scan all dates instead of jumping to one user."
+        },
+        {
+          "id": "d",
+          "text": "No index, relying on the table's primary key.",
+          "why": "The key is on id, which this query does not filter by."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Put the equality column first and the sort column second so one index scan serves the whole query."
+    },
+    {
+      "id": "gin-search",
+      "concept": "Full-text search",
+      "type": "single",
+      "difficulty": 2,
+      "prompt": "Which feature lets PostgreSQL run full-text search on posts without Elasticsearch?",
+      "options": [
+        {
+          "id": "a",
+          "text": "A tsvector column with a GIN index, queried with @@ to_tsquery.",
+          "why": "Right: GIN maps words to the rows containing them."
+        },
+        {
+          "id": "b",
+          "text": "A B-tree index on the content column with LIKE '%word%' as a general rule of thumb.",
+          "why": "A leading wildcard cannot use a B-tree index."
+        },
+        {
+          "id": "c",
+          "text": "A foreign key from posts to a separate words table in the majority of deployments.",
+          "why": "Foreign keys enforce integrity; they do not search text."
+        },
+        {
+          "id": "d",
+          "text": "A partial index that only covers deleted posts.",
+          "why": "That helps a different problem and does not provide text search."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "GIN works like a book index. PostgreSQL search supports stemming, ranking, multiple languages and boolean queries."
+    },
+    {
+      "id": "es-needs",
+      "concept": "Full-text search",
+      "type": "multi",
+      "difficulty": 3,
+      "prompt": "Select all requirements that suggest adding Elasticsearch instead of PostgreSQL search.",
+      "options": [
+        {
+          "id": "a",
+          "text": "Faceted search and advanced relevancy scoring.",
+          "why": "Yes: these are search-engine strengths."
+        },
+        {
+          "id": "b",
+          "text": "Fuzzy matching and search-as-you-type experiences.",
+          "why": "Yes: beyond what built-in search does comfortably."
+        },
+        {
+          "id": "c",
+          "text": "Distributed search over a very large corpus.",
+          "why": "Yes: that is where a dedicated cluster pays off."
+        },
+        {
+          "id": "d",
+          "text": "Finding posts that contain two specific words.",
+          "why": "Basic boolean text search is easily handled in PostgreSQL."
+        }
+      ],
+      "correct": [
+        "a",
+        "b",
+        "c"
+      ],
+      "explanation": "Start with built-in search for simple needs; add Elasticsearch only when a requirement outgrows it."
+    },
+    {
+      "id": "jsonb",
+      "concept": "JSONB",
+      "type": "single",
+      "difficulty": 2,
+      "prompt": "Posts carry varying attributes such as hashtags, mentions and media. How can PostgreSQL store and query them flexibly?",
+      "options": [
+        {
+          "id": "a",
+          "text": "A JSONB column with a GIN index, queried using the @> operator.",
+          "why": "Right: flexible shape plus indexed containment queries."
+        },
+        {
+          "id": "b",
+          "text": "A new column added to the table for every possible attribute without any extra configuration.",
+          "why": "That makes the schema sprawl and needs migrations."
+        },
+        {
+          "id": "c",
+          "text": "A plain text column parsed by the application on each read.",
+          "why": "The database cannot index or filter that efficiently."
+        },
+        {
+          "id": "d",
+          "text": "A separate MongoDB cluster for the metadata only.",
+          "why": "It adds a system the JSONB feature makes unnecessary."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "JSONB gives NoSQL-style flexibility inside PostgreSQL while keeping transactions and joins."
+    },
+    {
+      "id": "postgis",
+      "concept": "Geospatial",
+      "type": "single",
+      "difficulty": 2,
+      "prompt": "You need posts within 5 km of a user. What is the PostgreSQL way?",
+      "options": [
+        {
+          "id": "a",
+          "text": "The PostGIS extension with a GiST index and ST_DWithin.",
+          "why": "Right: spatial types and indexed distance queries."
+        },
+        {
+          "id": "b",
+          "text": "Two B-tree indexes on latitude and longitude with a LIKE filter.",
+          "why": "That cannot efficiently express a distance radius."
+        },
+        {
+          "id": "c",
+          "text": "A GIN index on a tsvector holding the place names.",
+          "why": "Text search does not compute distances."
+        },
+        {
+          "id": "d",
+          "text": "A trigger that copies each post to every nearby user.",
+          "why": "That is fan-out, not a spatial query."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "PostGIS can serve many geo needs before a specialised database is needed. Uber once ran ride matching on it."
+    },
+    {
+      "id": "covering",
+      "concept": "Covering indexes",
+      "type": "single",
+      "difficulty": 3,
+      "prompt": "What does INCLUDE (title, created_at) add to an index on user_id?",
+      "options": [
+        {
+          "id": "a",
+          "text": "The query can be answered from the index alone, without fetching table rows.",
+          "why": "Right: an index-only scan."
+        },
+        {
+          "id": "b",
+          "text": "The index also enforces uniqueness for title and created_at in a typical production setup.",
+          "why": "INCLUDE columns are payload, not part of the key."
+        },
+        {
+          "id": "c",
+          "text": "The index becomes smaller and faster to update for most everyday workloads.",
+          "why": "It becomes larger and costs slightly more on writes."
+        },
+        {
+          "id": "d",
+          "text": "The table no longer needs a primary key.",
+          "why": "The primary key requirement is unrelated."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Covering indexes trade space and write cost for fewer heap lookups on hot read queries."
+    },
+    {
+      "id": "partial",
+      "concept": "Partial indexes",
+      "type": "single",
+      "difficulty": 3,
+      "prompt": "Most queries target active users but many rows are soft-deleted. Which index idea helps?",
+      "options": [
+        {
+          "id": "a",
+          "text": "A partial index with WHERE status = 'active'.",
+          "why": "Right: smaller and cheaper to maintain."
+        },
+        {
+          "id": "b",
+          "text": "A full index on status alone.",
+          "why": "It indexes everything including the rows you never query."
+        },
+        {
+          "id": "c",
+          "text": "A unique index that includes the deleted rows.",
+          "why": "That grows the index and does not target the hot subset."
+        },
+        {
+          "id": "d",
+          "text": "Deleting the index whenever a row is soft-deleted.",
+          "why": "Rebuilding indexes per row would be wildly expensive."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Index only the subset you query. Smaller indexes fit in memory and speed both reads and writes."
+    }
+  ]
+}

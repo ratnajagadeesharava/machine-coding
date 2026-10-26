@@ -1,0 +1,269 @@
+{
+  "id": "pg-relational-basics",
+  "title": "PostgreSQL: relational & SQL basics",
+  "topic": "PostgreSQL",
+  "series": "postgres-system-design",
+  "seriesTitle": "PostgreSQL for system design interviews",
+  "seriesOrder": 2,
+  "description": "Tables, keys, relationships, normalization and the four kinds of SQL commands, the vocabulary every PostgreSQL answer builds on.",
+  "source": "Study notes: when and how to use PostgreSQL in system design interviews",
+  "estimatedMinutes": 6,
+  "questions": [
+    {
+      "id": "foreign-key",
+      "concept": "Foreign keys",
+      "type": "single",
+      "difficulty": 1,
+      "prompt": "What does a foreign key such as REFERENCES users(id) on posts.user_id give you?",
+      "options": [
+        {
+          "id": "a",
+          "text": "The database rejects a post whose user does not exist.",
+          "why": "Right: referential integrity is enforced by the database."
+        },
+        {
+          "id": "b",
+          "text": "A faster full-text search over the contents of every post.",
+          "why": "Foreign keys are about integrity, not search speed."
+        },
+        {
+          "id": "c",
+          "text": "Automatic copies of each user row inside every post row.",
+          "why": "It references the user; it does not copy data."
+        },
+        {
+          "id": "d",
+          "text": "Permission for any user to edit any other user's posts.",
+          "why": "Access control is a separate concern (GRANT and REVOKE)."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Foreign keys make invalid references impossible, one of the main advantages over schemaless stores."
+    },
+    {
+      "id": "relationship-types",
+      "concept": "Relationship types",
+      "type": "single",
+      "difficulty": 1,
+      "prompt": "Users and the posts they write are an example of which relationship?",
+      "options": [
+        {
+          "id": "a",
+          "text": "One-to-many: one user can have many posts.",
+          "why": "Right: each post has one author, each user many posts."
+        },
+        {
+          "id": "b",
+          "text": "One-to-one: each user has exactly one post.",
+          "why": "That would limit users to a single post."
+        },
+        {
+          "id": "c",
+          "text": "Many-to-many: every post belongs to many authors.",
+          "why": "Many-to-many needs a join table and fits likes, not authorship here."
+        },
+        {
+          "id": "d",
+          "text": "No relationship, because they live in different tables.",
+          "why": "Separate tables joined by a key are exactly how relationships are modelled."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Name the cardinality when you draw the schema: one-to-one, one-to-many, or many-to-many."
+    },
+    {
+      "id": "join-table",
+      "concept": "Join tables",
+      "type": "single",
+      "difficulty": 2,
+      "prompt": "Users can like many posts and a post can be liked by many users. How do you model this?",
+      "options": [
+        {
+          "id": "a",
+          "text": "A likes table with user_id and post_id, keyed on the pair.",
+          "why": "Right: a join table with a composite primary key."
+        },
+        {
+          "id": "b",
+          "text": "A comma-separated list of post ids in each user row.",
+          "why": "It breaks integrity, indexing and querying by post."
+        },
+        {
+          "id": "c",
+          "text": "A single likes column on the posts table holding one user id.",
+          "why": "That allows only one liker per post."
+        },
+        {
+          "id": "d",
+          "text": "One new table per post, each listing the users who liked it.",
+          "why": "Tables per post do not scale and cannot be queried uniformly."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Many-to-many relationships become a join table. The composite key also stops a user liking the same post twice."
+    },
+    {
+      "id": "normalization",
+      "concept": "Normalization",
+      "type": "single",
+      "difficulty": 2,
+      "prompt": "What is the main benefit of normalizing data into separate related tables?",
+      "options": [
+        {
+          "id": "a",
+          "text": "No duplicated data, so an update to one fact happens in one place.",
+          "why": "Right: single source of truth and fewer anomalies."
+        },
+        {
+          "id": "b",
+          "text": "Every query becomes faster because there are fewer rows per table.",
+          "why": "Normalization often adds joins; it is not always faster."
+        },
+        {
+          "id": "c",
+          "text": "The database no longer needs indexes of any kind.",
+          "why": "Indexes are still required for efficient lookups."
+        },
+        {
+          "id": "d",
+          "text": "Transactions are no longer required to keep data consistent.",
+          "why": "Related updates across tables still benefit from transactions."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Normalize for integrity and flexibility, then denormalize deliberately where reads need it."
+    },
+    {
+      "id": "denormalize",
+      "concept": "Denormalization",
+      "type": "single",
+      "difficulty": 3,
+      "prompt": "A feed page shows a like count for every post. When is storing like_count on the posts row a sensible denormalization?",
+      "options": [
+        {
+          "id": "a",
+          "text": "When counting likes per request is too costly and slight staleness is acceptable.",
+          "why": "Right: trade strict consistency for cheaper reads, knowingly."
+        },
+        {
+          "id": "b",
+          "text": "Never, because duplicated data is always a design error.",
+          "why": "Deliberate denormalization is a standard performance technique."
+        },
+        {
+          "id": "c",
+          "text": "Only when the likes table has been dropped entirely.",
+          "why": "You normally keep the likes table as the source of truth."
+        },
+        {
+          "id": "d",
+          "text": "Only when the database runs on a single machine.",
+          "why": "The trade-off exists on any deployment."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Say the trade-off out loud: the counter can drift, so keep the likes table as truth and update the count transactionally or asynchronously."
+    },
+    {
+      "id": "sql-categories",
+      "concept": "SQL command types",
+      "type": "multi",
+      "difficulty": 1,
+      "prompt": "Select all statements that belong to DML (data manipulation) rather than DDL.",
+      "options": [
+        {
+          "id": "a",
+          "text": "SELECT",
+          "why": "Yes: reading data is DML."
+        },
+        {
+          "id": "b",
+          "text": "INSERT",
+          "why": "Yes: adding rows is DML."
+        },
+        {
+          "id": "c",
+          "text": "UPDATE",
+          "why": "Yes: changing rows is DML."
+        },
+        {
+          "id": "d",
+          "text": "CREATE TABLE",
+          "why": "That is DDL: it defines structure, not row data."
+        }
+      ],
+      "correct": [
+        "a",
+        "b",
+        "c"
+      ],
+      "explanation": "DDL defines structure (CREATE, ALTER, DROP), DML works with rows, DCL grants access, TCL controls transactions."
+    },
+    {
+      "id": "tcl",
+      "concept": "SQL command types",
+      "type": "single",
+      "difficulty": 1,
+      "prompt": "Which category do BEGIN, COMMIT and ROLLBACK belong to?",
+      "options": [
+        {
+          "id": "a",
+          "text": "TCL, transaction control language.",
+          "why": "Right: they delimit and end transactions."
+        },
+        {
+          "id": "b",
+          "text": "DCL, data control language.",
+          "why": "DCL is GRANT and REVOKE for permissions."
+        },
+        {
+          "id": "c",
+          "text": "DDL, data definition language.",
+          "why": "DDL changes schema objects, not transaction boundaries."
+        },
+        {
+          "id": "d",
+          "text": "DQL, the language that only reads data.",
+          "why": "These statements change the transaction state, not query data."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "DDL defines, DML manipulates, DCL controls access, TCL controls transactions."
+    },
+    {
+      "id": "sql-in-interview",
+      "concept": "Interview focus",
+      "type": "truefalse",
+      "difficulty": 1,
+      "prompt": "True or false: system design interviews usually test whether you can recall exact SQL syntax rather than choose indexes and access patterns.",
+      "options": [
+        {
+          "id": "a",
+          "text": "True",
+          "why": "Syntax recall is rarely the point."
+        },
+        {
+          "id": "b",
+          "text": "False",
+          "why": "Correct: access patterns and indexes matter more than syntax."
+        }
+      ],
+      "correct": [
+        "b"
+      ],
+      "explanation": "You rarely write SQL; expect questions like which indexes you would create. Junior roles may ask for a basic query."
+    }
+  ]
+}

@@ -1,0 +1,201 @@
+{
+  "id": "pg-performance-limits",
+  "title": "PostgreSQL: performance numbers & the write path",
+  "topic": "PostgreSQL",
+  "series": "postgres-system-design",
+  "seriesTitle": "PostgreSQL for system design interviews",
+  "seriesOrder": 5,
+  "description": "Rough throughput and scale limits to quote in an interview, why memory matters, and how a write flows through the buffer cache, WAL and indexes.",
+  "source": "Study notes: when and how to use PostgreSQL in system design interviews",
+  "estimatedMinutes": 6,
+  "questions": [
+    {
+      "id": "write-path-gate",
+      "concept": "Write path",
+      "type": "single",
+      "difficulty": 3,
+      "prompt": "Which step mainly gates how fast a transaction can commit?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Flushing the WAL records to disk at commit.",
+          "why": "Right: the synchronous step before the commit is acknowledged."
+        },
+        {
+          "id": "b",
+          "text": "Writing every dirty data page to its data file.",
+          "why": "That happens later and asynchronously."
+        },
+        {
+          "id": "c",
+          "text": "Rebuilding all indexes from scratch.",
+          "why": "Indexes are updated incrementally, not rebuilt per write."
+        },
+        {
+          "id": "d",
+          "text": "Compressing the table before the next query.",
+          "why": "No such step exists in the commit path."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Writes mutate memory first; the sequential WAL flush is the durability gate, so disk speed bounds commit latency."
+    },
+    {
+      "id": "index-write-cost",
+      "concept": "Index cost",
+      "type": "single",
+      "difficulty": 2,
+      "prompt": "Why does adding more indexes lower write throughput?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Each index must be updated and generates its own WAL entries.",
+          "why": "Right: more indexes, more work per write."
+        },
+        {
+          "id": "b",
+          "text": "Indexes lock the whole table for the duration of a query.",
+          "why": "Ordinary reads do not lock the table against writes."
+        },
+        {
+          "id": "c",
+          "text": "Indexes force the data pages to be rewritten every night.",
+          "why": "No scheduled rewriting is involved."
+        },
+        {
+          "id": "d",
+          "text": "Indexes make rows larger so fewer fit in each row.",
+          "why": "Index entries live in separate structures, not inside rows."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Index maintenance is part of every insert and update. Keep only the indexes your queries justify."
+    },
+    {
+      "id": "write-numbers",
+      "concept": "Rough numbers",
+      "type": "single",
+      "difficulty": 2,
+      "prompt": "As a rough starting estimate, how many simple inserts can a single well-tuned core sustain?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Around 5,000 per second.",
+          "why": "Right: a handy interview-level figure."
+        },
+        {
+          "id": "b",
+          "text": "Around 5 per second.",
+          "why": "That is far too low for a tuned node."
+        },
+        {
+          "id": "c",
+          "text": "Around 5 million per second.",
+          "why": "That is orders of magnitude too high for one core."
+        },
+        {
+          "id": "d",
+          "text": "It has no relationship to the hardware used.",
+          "why": "Hardware, especially WAL disk speed, matters a great deal."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Updates with index changes run slower, around 1,000 to 2,000 per second per core. Treat all of these as rough."
+    },
+    {
+      "id": "read-vs-write",
+      "concept": "Rough numbers",
+      "type": "single",
+      "difficulty": 1,
+      "prompt": "How do read and write throughput of a single node usually compare?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Simple indexed reads are much faster than writes.",
+          "why": "Right: reads skip WAL and index maintenance."
+        },
+        {
+          "id": "b",
+          "text": "Writes are roughly ten times faster than reads.",
+          "why": "Writes carry extra durability and index work."
+        },
+        {
+          "id": "c",
+          "text": "They are always exactly equal.",
+          "why": "They differ because writes do more work."
+        },
+        {
+          "id": "d",
+          "text": "Reads cannot be indexed, so they are always the slowest.",
+          "why": "Indexes exist precisely to speed reads."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Indexed lookups can reach tens of thousands per second per core, well above write rates."
+    },
+    {
+      "id": "scale-limits",
+      "concept": "Scale limits",
+      "type": "single",
+      "difficulty": 2,
+      "prompt": "Roughly when do tables start to feel unwieldy and make you consider partitioning or sharding?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Past roughly 100 million rows, depending on workload.",
+          "why": "Right: a rule of thumb, not a hard limit."
+        },
+        {
+          "id": "b",
+          "text": "After about 10 thousand rows.",
+          "why": "PostgreSQL handles that trivially."
+        },
+        {
+          "id": "c",
+          "text": "Never, because size has no effect on performance.",
+          "why": "Large tables and working sets beyond RAM clearly hurt."
+        },
+        {
+          "id": "d",
+          "text": "Exactly at 2 billion rows, where the engine stops under normal operating conditions.",
+          "why": "There is no such cliff."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "These are guides rather than limits. They tell you when to talk about partitioning, sharding and caching."
+    },
+    {
+      "id": "memory-king",
+      "concept": "Memory",
+      "type": "truefalse",
+      "difficulty": 2,
+      "prompt": "True or false: keeping the frequently accessed working set in RAM is one of the biggest performance levers.",
+      "options": [
+        {
+          "id": "a",
+          "text": "True",
+          "why": "Correct: this is why RAM and caching matter."
+        },
+        {
+          "id": "b",
+          "text": "False",
+          "why": "It is the reverse; memory hits are far cheaper than disk reads."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Memory access is orders of magnitude faster than disk, so performance drops sharply when the working set exceeds RAM."
+    }
+  ]
+}
