@@ -58,6 +58,7 @@ export function friendlyError(err) {
   if (err instanceof Anthropic.PermissionDeniedError) return { status: 403, message: 'This API key is not allowed to use the configured model.' };
   if (err instanceof Anthropic.NotFoundError) return { status: 502, message: 'The configured model was not found. Check HLD_MODEL.' };
   if (err instanceof Anthropic.RateLimitError) return { status: 429, message: 'Anthropic rate limit reached. Wait a few seconds and try again.' };
+  if (err instanceof Anthropic.BadRequestError && /credit balance/i.test(String(err.message))) return { status: 402, message: 'Your Anthropic account is out of credit, so the API refused the request. Add credit under Plans & Billing at console.anthropic.com (an API key and a Claude chat subscription are billed separately), then try again. Demo mode (npm run demo) works without credit.' };
   if (err instanceof Anthropic.BadRequestError) return { status: 502, message: 'The request was rejected by the API (' + String(err.message).slice(0, 160) + ').' };
   if (err instanceof Anthropic.APIConnectionError) return { status: 502, message: 'Could not reach the Anthropic API. Check your network connection.' };
   if (err instanceof Anthropic.APIError) return { status: 502, message: 'The Anthropic API returned an error (' + (err.status ?? 'unknown') + ').' };
