@@ -1,0 +1,268 @@
+{
+  "id": "kafka-scalability",
+  "title": "Kafka: scalability and sizing",
+  "topic": "Kafka",
+  "series": "kafka-system-design",
+  "seriesTitle": "Kafka for system design interviews",
+  "seriesOrder": 6,
+  "seriesDescription": "A Kafka deep dive for system design interviews: why Kafka exists, terminology, messages and keys, offsets and replication, when to use it, scalability, hot partitions, fault tolerance, retries, performance and retention.",
+  "description": "What one broker can handle, why not to store blobs, how to scale with brokers and partitions, and the partition formula.",
+  "source": "Study notes: Kafka deep dive for system design interviews",
+  "estimatedMinutes": 7,
+  "questions": [
+    {
+      "id": "numbers",
+      "concept": "Rough numbers",
+      "type": "single",
+      "difficulty": 2,
+      "prompt": "Roughly what can one well-equipped Kafka broker handle?",
+      "options": [
+        {
+          "id": "a",
+          "text": "About 1 TB of data and about 1 million messages per second.",
+          "why": "Right: hand-wavy but useful."
+        },
+        {
+          "id": "b",
+          "text": "About 1 GB and 100 messages per second.",
+          "why": "Far too low; it does not answer the question asked."
+        },
+        {
+          "id": "c",
+          "text": "About 1 PB and a billion messages per second.",
+          "why": "Far too high for one broker."
+        },
+        {
+          "id": "d",
+          "text": "It depends only on the topic name.",
+          "why": "It depends on size and hardware."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Estimate your numbers first; if the design fits one broker, scaling is not the conversation."
+    },
+    {
+      "id": "message-size",
+      "concept": "Message size",
+      "type": "single",
+      "difficulty": 2,
+      "prompt": "What message size is recommended for Kafka?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Under 1 MB; the hard limit is message.max.bytes.",
+          "why": "Right: small messages are processed quickly."
+        },
+        {
+          "id": "b",
+          "text": "Several gigabytes per message.",
+          "why": "Kafka is not a file store."
+        },
+        {
+          "id": "c",
+          "text": "Exactly one byte under normal operating conditions.",
+          "why": "No such rule; it does not answer the question asked."
+        },
+        {
+          "id": "d",
+          "text": "Any size, with no impact on memory.",
+          "why": "Large messages add memory pressure."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Keeping messages small uses the network better."
+    },
+    {
+      "id": "claim-check",
+      "concept": "Big files",
+      "type": "single",
+      "difficulty": 3,
+      "prompt": "A video must be transcoded by workers. How should it travel through Kafka?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Upload it to S3 and send a small Kafka message with its link.",
+          "why": "Right: keep the file out of Kafka."
+        },
+        {
+          "id": "b",
+          "text": "Put the whole video in one Kafka message without any extra configuration.",
+          "why": "That breaks the small-message design."
+        },
+        {
+          "id": "c",
+          "text": "Split it into thousands of messages without a key in the majority of deployments.",
+          "why": "Order and reassembly would suffer."
+        },
+        {
+          "id": "d",
+          "text": "Email it to each worker.",
+          "why": "Not a design; it does not answer the question asked."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "This is the claim-check pattern: send the address, not the blob."
+    },
+    {
+      "id": "two-ways",
+      "concept": "Scaling options",
+      "type": "single",
+      "difficulty": 2,
+      "prompt": "What are the two ways to scale Kafka?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Add more brokers and choose a good partitioning strategy through the key.",
+          "why": "Right: the key is the main interview focus."
+        },
+        {
+          "id": "b",
+          "text": "Increase message size and reduce partitions under normal operating conditions.",
+          "why": "That works against scaling."
+        },
+        {
+          "id": "c",
+          "text": "Add more consumers than partitions in a group in a typical production setup for most everyday workloads.",
+          "why": "Extra consumers sit idle."
+        },
+        {
+          "id": "d",
+          "text": "Turn off replication to save capacity.",
+          "why": "That harms durability."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Managed Kafka often scales brokers for you, so the key remains the decision."
+    },
+    {
+      "id": "under-partitioned",
+      "concept": "Scaling options",
+      "type": "single",
+      "difficulty": 3,
+      "prompt": "You add brokers but the topic has too few partitions. What happens?",
+      "options": [
+        {
+          "id": "a",
+          "text": "The extra brokers sit idle because partitions cannot use them.",
+          "why": "Right: partitions are the unit of spread."
+        },
+        {
+          "id": "b",
+          "text": "Messages are automatically re-split across new brokers as a general rule of thumb.",
+          "why": "Partitions must exist first."
+        },
+        {
+          "id": "c",
+          "text": "The new brokers store copies of old messages only in the majority of deployments.",
+          "why": "Replication is separate."
+        },
+        {
+          "id": "d",
+          "text": "The topic is deleted.",
+          "why": "Not a real effect; it does not answer the question asked."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Topics need enough partitions to use the new brokers."
+    },
+    {
+      "id": "formula",
+      "concept": "Partition formula",
+      "type": "single",
+      "difficulty": 3,
+      "prompt": "Using partition = hash(key) % num_partitions, a key hashes to 17 and there are 3 partitions. Which partition?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Partition 2, since 17 mod 3 is 2.",
+          "why": "Right; it does not answer the question asked."
+        },
+        {
+          "id": "b",
+          "text": "Partition 0 without any extra configuration.",
+          "why": "17 mod 3 is not 0; it does not answer the question asked."
+        },
+        {
+          "id": "c",
+          "text": "Partition 1 in a typical production setup.",
+          "why": "17 mod 3 is 2, not 1; it does not answer the question asked."
+        },
+        {
+          "id": "d",
+          "text": "Partition 5.",
+          "why": "Only 0 to 2 exist; it does not answer the question asked."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "The default hash function is murmur2."
+    },
+    {
+      "id": "fits-one-broker",
+      "concept": "Do the maths",
+      "type": "truefalse",
+      "difficulty": 1,
+      "prompt": "True or false: if your estimated load fits inside one broker, scaling Kafka is not a relevant conversation.",
+      "options": [
+        {
+          "id": "a",
+          "text": "True",
+          "why": "Correct: do the maths before you scale."
+        },
+        {
+          "id": "b",
+          "text": "False",
+          "why": "It is not relevant if the numbers fit one broker."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Estimate throughput and storage first; roughly 1 TB and 1 million messages per second per broker is the yardstick."
+    },
+    {
+      "id": "per-topic",
+      "concept": "Scaling options",
+      "type": "single",
+      "difficulty": 2,
+      "prompt": "Why do you usually think about scaling one topic at a time?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Different topics have different needs, so busy topics get more partitions and quiet ones stay small.",
+          "why": "Right: a per-topic decision."
+        },
+        {
+          "id": "b",
+          "text": "Topics all share exactly the same traffic for most everyday workloads under normal operating conditions.",
+          "why": "They differ; it does not answer the question asked."
+        },
+        {
+          "id": "c",
+          "text": "A cluster can only have one topic.",
+          "why": "It can have many; it does not answer the question asked."
+        },
+        {
+          "id": "d",
+          "text": "Partitions cannot be added to a topic as a general rule of thumb in the majority of deployments.",
+          "why": "They can; it does not answer the question asked."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Confluent Cloud and AWS MSK handle much of the scaling for you."
+    }
+  ]
+}

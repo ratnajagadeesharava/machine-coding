@@ -1,0 +1,268 @@
+{
+  "id": "kafka-fault-tolerance",
+  "title": "Kafka: durability and failure handling",
+  "topic": "Kafka",
+  "series": "kafka-system-design",
+  "seriesTitle": "Kafka for system design interviews",
+  "seriesOrder": 8,
+  "seriesDescription": "A Kafka deep dive for system design interviews: why Kafka exists, terminology, messages and keys, offsets and replication, when to use it, scalability, hot partitions, fault tolerance, retries, performance and retention.",
+  "description": "Replication factor, acks, in-sync replicas, consumer failures, rebalancing and when to commit offsets.",
+  "source": "Study notes: Kafka deep dive for system design interviews",
+  "estimatedMinutes": 8,
+  "questions": [
+    {
+      "id": "rf",
+      "concept": "Replication factor",
+      "type": "single",
+      "difficulty": 1,
+      "prompt": "What does a replication factor of 3 mean?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Each partition has three copies: one leader and two followers on different brokers.",
+          "why": "Right: one failure does not lose data."
+        },
+        {
+          "id": "b",
+          "text": "The topic has three partitions in a typical production setup.",
+          "why": "That is a partition count."
+        },
+        {
+          "id": "c",
+          "text": "Messages are sent three times by the producer.",
+          "why": "Replication is broker-side."
+        },
+        {
+          "id": "d",
+          "text": "There are three producers per topic for most everyday workloads.",
+          "why": "Unrelated; it does not answer the question asked."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "If one broker fails, the data is still on the other two."
+    },
+    {
+      "id": "acks-all",
+      "concept": "Producer acks",
+      "type": "single",
+      "difficulty": 2,
+      "prompt": "What does acks=all guarantee?",
+      "options": [
+        {
+          "id": "a",
+          "text": "A message is acknowledged only when all in-sync replicas have received it.",
+          "why": "Right: the strongest durability guarantee."
+        },
+        {
+          "id": "b",
+          "text": "The message is stored only on the leader before the reply.",
+          "why": "That is weaker; it does not answer the question asked."
+        },
+        {
+          "id": "c",
+          "text": "The message is delivered to every consumer first.",
+          "why": "Consumers are not involved."
+        },
+        {
+          "id": "d",
+          "text": "The producer never retries under normal operating conditions.",
+          "why": "Unrelated; it does not answer the question asked."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Replication factor 3 plus acks=all: the message lives on several brokers before the producer hears done."
+    },
+    {
+      "id": "always-available",
+      "concept": "Failure realism",
+      "type": "single",
+      "difficulty": 2,
+      "prompt": "An interviewer asks \"what if Kafka goes down?\" How can you respond?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Gently push back: Kafka is built to be always available, and a consumer failing is far more likely.",
+          "why": "Right: design for the realistic failure."
+        },
+        {
+          "id": "b",
+          "text": "Say Kafka never loses messages under any configuration for most everyday workloads under normal operating conditions.",
+          "why": "Over-claiming; it does not answer the question asked."
+        },
+        {
+          "id": "c",
+          "text": "Say you will not use Kafka at all as a general rule of thumb in the majority of deployments.",
+          "why": "Avoids the question; it does not answer the question asked."
+        },
+        {
+          "id": "d",
+          "text": "Refuse to discuss failures.",
+          "why": "Not helpful; it does not answer the question asked."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Kafka is always available, sometimes consistent."
+    },
+    {
+      "id": "offset-resume",
+      "concept": "Consumer failure",
+      "type": "single",
+      "difficulty": 2,
+      "prompt": "How does a restarted consumer know where to continue?",
+      "options": [
+        {
+          "id": "a",
+          "text": "It resumes from its last committed offset.",
+          "why": "Right: nothing is missed, a few messages may repeat."
+        },
+        {
+          "id": "b",
+          "text": "It starts again from the very first message ever written.",
+          "why": "Not the default; it does not answer the question asked."
+        },
+        {
+          "id": "c",
+          "text": "It reads only the newest message.",
+          "why": "It would skip messages."
+        },
+        {
+          "id": "d",
+          "text": "It asks the producer to resend everything.",
+          "why": "Producers are not involved."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Repeats are possible if it crashed before committing."
+    },
+    {
+      "id": "rebalance",
+      "concept": "Consumer failure",
+      "type": "single",
+      "difficulty": 2,
+      "prompt": "A consumer in a group dies. What does Kafka do with its partitions?",
+      "options": [
+        {
+          "id": "a",
+          "text": "It hands them to the remaining consumers, so every partition is still processed.",
+          "why": "Right: rebalancing; it does not answer the question asked."
+        },
+        {
+          "id": "b",
+          "text": "It stops reading those partitions until the consumer returns without any extra configuration.",
+          "why": "Work would stall; it does not answer the question asked."
+        },
+        {
+          "id": "c",
+          "text": "It deletes those partitions.",
+          "why": "Data stays; it does not answer the question asked."
+        },
+        {
+          "id": "d",
+          "text": "It duplicates the partitions onto every consumer in a typical production setup.",
+          "why": "Each is owned by one consumer."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "In a real group, Kafka decides which survivor gets which partition."
+    },
+    {
+      "id": "commit-early",
+      "concept": "Commit timing",
+      "type": "single",
+      "difficulty": 3,
+      "prompt": "A crawler commits the offset before storing the downloaded HTML, then crashes. What is the result?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Kafka thinks the page is done, so it is never crawled.",
+          "why": "Right: committing too early loses work."
+        },
+        {
+          "id": "b",
+          "text": "The page is crawled twice.",
+          "why": "That happens if you commit after and crash."
+        },
+        {
+          "id": "c",
+          "text": "Kafka re-downloads it automatically for most everyday workloads.",
+          "why": "It will not know to; it does not answer the question asked."
+        },
+        {
+          "id": "d",
+          "text": "Nothing; commits do not matter under normal operating conditions.",
+          "why": "They decide what is skipped."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Finish the work first, commit second, and keep each piece of work small."
+    },
+    {
+      "id": "commit-late",
+      "concept": "Commit timing",
+      "type": "single",
+      "difficulty": 3,
+      "prompt": "What is the cost of committing after the work is done and then crashing?",
+      "options": [
+        {
+          "id": "a",
+          "text": "The message is read again and some work is repeated, but nothing is lost.",
+          "why": "Right: at-least-once; it does not answer the question asked."
+        },
+        {
+          "id": "b",
+          "text": "The message is lost permanently without any extra configuration in a typical production setup.",
+          "why": "That is the early-commit risk."
+        },
+        {
+          "id": "c",
+          "text": "The topic is deleted.",
+          "why": "Not real; it does not answer the question asked."
+        },
+        {
+          "id": "d",
+          "text": "The consumer group is disbanded forever as a general rule of thumb in the majority of deployments.",
+          "why": "It rebalances; it does not answer the question asked."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Keep per-message work small so less is repeated."
+    },
+    {
+      "id": "isr-promote",
+      "concept": "Replication",
+      "type": "truefalse",
+      "difficulty": 3,
+      "prompt": "True or false: only a follower that is fully in sync can be promoted to leader.",
+      "options": [
+        {
+          "id": "a",
+          "text": "True",
+          "why": "Correct: an out-of-sync follower could lose messages."
+        },
+        {
+          "id": "b",
+          "text": "False",
+          "why": "Promoting an out-of-sync follower could lose data."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "That is why the in-sync replica set matters for durability."
+    }
+  ]
+}

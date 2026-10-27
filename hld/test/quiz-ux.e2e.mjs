@@ -24,15 +24,15 @@ try {
   await page.goto(url);
   await page.waitForSelector('.card');
   await step('home is a topic index; search finds quizzes across topics; a topic opens its own page', async () => {
-    assert.equal(await page.locator('.topic-card').count(), 3);
+    assert.equal(await page.locator('.topic-card').count(), 4);
     assert.equal(await page.locator('.card:has-text("PostgreSQL: replication")').count(), 0, 'sub-quizzes are not listed on the index');
     await page.fill('#quiz-search', 'replication');
     assert.ok(await page.locator('.result-item .card:visible').count() >= 1);
-    assert.match(await page.textContent('.result-item .crumb'), /PostgreSQL/);
+    assert.match(await page.textContent('.result-item .crumb:has-text("PostgreSQL")'), /PostgreSQL/);
     await page.fill('#quiz-search', 'zzzz');
     assert.equal(await page.isVisible('#no-match'), true);
     await page.fill('#quiz-search', '');
-    await page.click('.topic-card .btn');
+    await page.click('.topic-card:has-text("PostgreSQL") .btn');
     await page.waitForSelector('.topic-head');
     assert.equal(await page.locator('.series-item .card').count(), 8);
     assert.equal(await page.locator('.toc-item').count(), 8);
@@ -82,8 +82,8 @@ try {
   await step('cards show Completed / In progress / Not started', async () => {
     await page.click('#btn-quit'); await page.click('#confirm-yes');
     await page.waitForSelector('.topic-card');
-    assert.match(await page.textContent('.topic-card .status'), /done/);
-    await page.click('.topic-card .btn');
+    assert.match(await page.textContent('.topic-card:has-text("PostgreSQL") .status'), /done/);
+    await page.click('.topic-card:has-text("PostgreSQL") .btn');
     await page.waitForSelector('[data-quiz="pg-replication"]');
     assert.match(await page.textContent('[data-quiz="pg-replication"] .status'), /Completed/);
     assert.match(await page.textContent('[data-quiz="pg-when-to-use"] .status'), /Not started/);

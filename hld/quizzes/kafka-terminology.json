@@ -1,0 +1,237 @@
+{
+  "id": "kafka-terminology",
+  "title": "Kafka: terminology",
+  "topic": "Kafka",
+  "series": "kafka-system-design",
+  "seriesTitle": "Kafka for system design interviews",
+  "seriesOrder": 2,
+  "seriesDescription": "A Kafka deep dive for system design interviews: why Kafka exists, terminology, messages and keys, offsets and replication, when to use it, scalability, hot partitions, fault tolerance, retries, performance and retention.",
+  "description": "Brokers, clusters, partitions, topics, producers and consumers, and the small difference between using Kafka as a queue or as a stream.",
+  "source": "Study notes: Kafka deep dive for system design interviews",
+  "estimatedMinutes": 6,
+  "questions": [
+    {
+      "id": "broker",
+      "concept": "Cluster and brokers",
+      "type": "single",
+      "difficulty": 1,
+      "prompt": "What is a Kafka broker?",
+      "options": [
+        {
+          "id": "a",
+          "text": "An individual server, physical or virtual, that stores data and serves clients.",
+          "why": "Right: a cluster is many brokers."
+        },
+        {
+          "id": "b",
+          "text": "A client library that publishes messages.",
+          "why": "That is a producer; it does not answer the question asked."
+        },
+        {
+          "id": "c",
+          "text": "A single message in a partition as a general rule of thumb.",
+          "why": "Messages live in partitions on brokers."
+        },
+        {
+          "id": "d",
+          "text": "A configuration file for topics in the majority of deployments.",
+          "why": "It is a server, not a file."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "More brokers mean more data stored and more clients served."
+    },
+    {
+      "id": "partition-def",
+      "concept": "Partitions",
+      "type": "single",
+      "difficulty": 1,
+      "prompt": "Which description fits a partition?",
+      "options": [
+        {
+          "id": "a",
+          "text": "An ordered, immutable sequence of messages that keeps being appended to, like a log file.",
+          "why": "Right: append-only and ordered."
+        },
+        {
+          "id": "b",
+          "text": "A table of rows that can be updated in place without any extra configuration in a typical production setup.",
+          "why": "Messages are never edited."
+        },
+        {
+          "id": "c",
+          "text": "A group of consumers that share work.",
+          "why": "That is a consumer group."
+        },
+        {
+          "id": "d",
+          "text": "A logical name that producers publish to for most everyday workloads under normal operating conditions.",
+          "why": "That is a topic; it does not answer the question asked."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Partitions are how Kafka scales, since they can be consumed in parallel."
+    },
+    {
+      "id": "topic-vs-partition",
+      "concept": "Topic vs partition",
+      "type": "single",
+      "difficulty": 2,
+      "prompt": "How do a topic and a partition differ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "A topic is a logical grouping made of partitions; a partition is a physical grouping that can live on its own broker.",
+          "why": "Right: logical versus physical."
+        },
+        {
+          "id": "b",
+          "text": "A topic is physical and a partition is logical as a general rule of thumb in the majority of deployments without any extra configuration.",
+          "why": "It is the other way round."
+        },
+        {
+          "id": "c",
+          "text": "They are the same thing under two names in a typical production setup for most everyday workloads under normal operating conditions.",
+          "why": "They differ; it does not answer the question asked."
+        },
+        {
+          "id": "d",
+          "text": "A topic has exactly one partition.",
+          "why": "A topic can have many."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Topics are multi-producer: zero, one or many producers can write to a topic."
+    },
+    {
+      "id": "data-agnostic",
+      "concept": "Producers and consumers",
+      "type": "single",
+      "difficulty": 2,
+      "prompt": "Who is responsible for creating and processing the messages?",
+      "options": [
+        {
+          "id": "a",
+          "text": "You, the developer; Kafka is data agnostic and only stores and serves bytes.",
+          "why": "Right: Kafka is the pipe."
+        },
+        {
+          "id": "b",
+          "text": "Kafka parses each message and applies your business logic in the majority of deployments.",
+          "why": "It does not look inside values."
+        },
+        {
+          "id": "c",
+          "text": "The broker transforms the data to a standard format.",
+          "why": "It does not; it does not answer the question asked."
+        },
+        {
+          "id": "d",
+          "text": "The topic validates every message against a schema automatically as a general rule of thumb.",
+          "why": "Not by default; it does not answer the question asked."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "That is why producers and consumers carry the business logic."
+    },
+    {
+      "id": "queue-or-stream",
+      "concept": "Queue or stream",
+      "type": "multi",
+      "difficulty": 2,
+      "prompt": "Select all true statements about using Kafka as a stream rather than a message queue.",
+      "options": [
+        {
+          "id": "a",
+          "text": "Many independent consumer groups can read the same data.",
+          "why": "Yes: each group has its own offsets."
+        },
+        {
+          "id": "b",
+          "text": "The log is retained and can be replayed from any point.",
+          "why": "Yes: reading does not delete it."
+        },
+        {
+          "id": "c",
+          "text": "Data is processed continuously as it arrives.",
+          "why": "Yes: real-time flow; it does not answer the question asked."
+        },
+        {
+          "id": "d",
+          "text": "It requires a completely different product from the queue use.",
+          "why": "No: it is the same Kafka log."
+        }
+      ],
+      "correct": [
+        "a",
+        "b",
+        "c"
+      ],
+      "explanation": "The only difference is how you consume; both modes track progress with offset commits."
+    },
+    {
+      "id": "queue-deletes",
+      "concept": "Queue or stream",
+      "type": "truefalse",
+      "difficulty": 3,
+      "prompt": "True or false: when Kafka is used as a message queue, a message is deleted as soon as a consumer reads it.",
+      "options": [
+        {
+          "id": "a",
+          "text": "True",
+          "why": "It does not delete on read."
+        },
+        {
+          "id": "b",
+          "text": "False",
+          "why": "Correct: retention controls removal."
+        }
+      ],
+      "correct": [
+        "b"
+      ],
+      "explanation": "Kafka keeps the messages until the retention policy removes them; the consumer just advances its offset."
+    },
+    {
+      "id": "which-to-say",
+      "concept": "Queue or stream",
+      "type": "single",
+      "difficulty": 3,
+      "prompt": "In an interview, how do you decide whether to call Kafka a queue or a stream?",
+      "options": [
+        {
+          "id": "a",
+          "text": "One worker per job suggests a queue; many readers or replay suggests a stream.",
+          "why": "Right: say which one you mean."
+        },
+        {
+          "id": "b",
+          "text": "Always call it a stream; queues are a different product without any extra configuration.",
+          "why": "Both uses are valid; it does not answer the question asked."
+        },
+        {
+          "id": "c",
+          "text": "Always call it a queue because streams are slower in a typical production setup.",
+          "why": "Neither is slower inherently."
+        },
+        {
+          "id": "d",
+          "text": "It depends on the cloud provider.",
+          "why": "It depends on the use."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "The distinction is small: it is only how you consume."
+    }
+  ]
+}

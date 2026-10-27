@@ -1,0 +1,268 @@
+{
+  "id": "kafka-offsets-and-replication",
+  "title": "Kafka: offsets, replication and the pull model",
+  "topic": "Kafka",
+  "series": "kafka-system-design",
+  "seriesTitle": "Kafka for system design interviews",
+  "seriesOrder": 4,
+  "seriesDescription": "A Kafka deep dive for system design interviews: why Kafka exists, terminology, messages and keys, offsets and replication, when to use it, scalability, hot partitions, fault tolerance, retries, performance and retention.",
+  "description": "Consumer offsets and delivery guarantees, leaders and followers, the controller, and why consumers pull.",
+  "source": "Study notes: Kafka deep dive for system design interviews",
+  "estimatedMinutes": 7,
+  "questions": [
+    {
+      "id": "offset",
+      "concept": "Offsets",
+      "type": "single",
+      "difficulty": 1,
+      "prompt": "What is a consumer's offset?",
+      "options": [
+        {
+          "id": "a",
+          "text": "A bookmark: the position of the next message to read in a partition, committed back to Kafka.",
+          "why": "Right: used to resume after restart."
+        },
+        {
+          "id": "b",
+          "text": "The number of bytes the message occupies without any extra configuration.",
+          "why": "It is a position, not a size."
+        },
+        {
+          "id": "c",
+          "text": "The time since the message was created in the majority of deployments.",
+          "why": "That is a timestamp; it does not answer the question asked."
+        },
+        {
+          "id": "d",
+          "text": "The id of the broker holding the partition.",
+          "why": "It is not a broker id."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Each consumer group has its own bookmark."
+    },
+    {
+      "id": "at-least-once",
+      "concept": "Delivery semantics",
+      "type": "single",
+      "difficulty": 2,
+      "prompt": "A consumer crashes after processing a message but before committing its offset. What happens after restart?",
+      "options": [
+        {
+          "id": "a",
+          "text": "The message is processed again, which is at-least-once delivery.",
+          "why": "Right: the committed offset is older."
+        },
+        {
+          "id": "b",
+          "text": "The message is skipped forever in a typical production setup.",
+          "why": "That would be commit-too-early."
+        },
+        {
+          "id": "c",
+          "text": "The broker deletes the message.",
+          "why": "Retention decides deletion."
+        },
+        {
+          "id": "d",
+          "text": "The group stops until an admin intervenes.",
+          "why": "It rebalances and carries on."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Make processing safe to repeat."
+    },
+    {
+      "id": "exactly-once",
+      "concept": "Delivery semantics",
+      "type": "single",
+      "difficulty": 3,
+      "prompt": "What does exactly-once delivery need in Kafka?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Extra configuration: idempotent producers plus the transactional APIs.",
+          "why": "Right: not the default."
+        },
+        {
+          "id": "b",
+          "text": "Nothing; it is the default under normal operating conditions as a general rule of thumb.",
+          "why": "At-least-once is the default."
+        },
+        {
+          "id": "c",
+          "text": "A single partition and a single consumer only for most everyday workloads.",
+          "why": "Not required; it does not answer the question asked."
+        },
+        {
+          "id": "d",
+          "text": "Disabling replication.",
+          "why": "Unrelated; it does not answer the question asked."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "It is possible, but you must set it up."
+    },
+    {
+      "id": "leader-follower",
+      "concept": "Replication",
+      "type": "single",
+      "difficulty": 2,
+      "prompt": "What do leader and follower replicas do?",
+      "options": [
+        {
+          "id": "a",
+          "text": "The leader handles writes (and reads by default); followers on other brokers copy it as backups.",
+          "why": "Right: a broker failure does not lose data."
+        },
+        {
+          "id": "b",
+          "text": "Followers accept all writes and the leader only reads.",
+          "why": "The leader takes the writes."
+        },
+        {
+          "id": "c",
+          "text": "Every replica independently accepts writes from producers in the majority of deployments without any extra configuration.",
+          "why": "There is one leader per partition."
+        },
+        {
+          "id": "d",
+          "text": "Followers serve clients directly while the leader sleeps in a typical production setup for most everyday workloads.",
+          "why": "They passively copy; it does not answer the question asked."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "From Kafka 2.4 consumers can read from followers to cut latency."
+    },
+    {
+      "id": "controller",
+      "concept": "Replication",
+      "type": "single",
+      "difficulty": 3,
+      "prompt": "What does the controller do when a leader broker fails?",
+      "options": [
+        {
+          "id": "a",
+          "text": "It notices and promotes an in-sync follower to be the new leader.",
+          "why": "Right: the partition stays available."
+        },
+        {
+          "id": "b",
+          "text": "It deletes the partition and recreates it empty under normal operating conditions.",
+          "why": "Data would be lost; it does not answer the question asked."
+        },
+        {
+          "id": "c",
+          "text": "It pauses all producers permanently as a general rule of thumb.",
+          "why": "It restores service; it does not answer the question asked."
+        },
+        {
+          "id": "d",
+          "text": "It asks consumers to elect a leader.",
+          "why": "The controller manages leadership."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Only a fully in-sync follower can be promoted."
+    },
+    {
+      "id": "pull",
+      "concept": "Pull model",
+      "type": "single",
+      "difficulty": 2,
+      "prompt": "Why does Kafka have consumers pull instead of pushing messages to them?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Consumers control their rate, so slow consumers are never overwhelmed and batching is efficient.",
+          "why": "Right: a deliberate design choice."
+        },
+        {
+          "id": "b",
+          "text": "Push is impossible on the network in a typical production setup for most everyday workloads.",
+          "why": "Other systems push; it does not answer the question asked."
+        },
+        {
+          "id": "c",
+          "text": "Pull makes messages arrive faster than the producer sends them in the majority of deployments without any extra configuration.",
+          "why": "Pull does not speed the producer."
+        },
+        {
+          "id": "d",
+          "text": "Pull removes the need for offsets.",
+          "why": "Offsets are still needed."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "The consumer sets the pace, so Kafka never drowns it."
+    },
+    {
+      "id": "one-consumer",
+      "concept": "Consumer groups",
+      "type": "truefalse",
+      "difficulty": 2,
+      "prompt": "True or false: within one consumer group a partition is read by several consumers at the same time to speed it up.",
+      "options": [
+        {
+          "id": "a",
+          "text": "True",
+          "why": "It is exactly one consumer per partition."
+        },
+        {
+          "id": "b",
+          "text": "False",
+          "why": "Correct: one consumer per partition within a group."
+        }
+      ],
+      "correct": [
+        "b"
+      ],
+      "explanation": "A partition goes to exactly one consumer in the group; parallelism comes from having more partitions."
+    },
+    {
+      "id": "group-id",
+      "concept": "Consumer groups",
+      "type": "single",
+      "difficulty": 3,
+      "prompt": "Two consumers use the same groupId and two others use different groupIds. What happens?",
+      "options": [
+        {
+          "id": "a",
+          "text": "The same-group consumers split the partitions; consumers in different groups each get every message.",
+          "why": "Right: the group id defines sharing."
+        },
+        {
+          "id": "b",
+          "text": "All four split the partitions.",
+          "why": "Different groups do not share."
+        },
+        {
+          "id": "c",
+          "text": "The consumers with different ids are rejected in the majority of deployments without any extra configuration.",
+          "why": "They are allowed; it does not answer the question asked."
+        },
+        {
+          "id": "d",
+          "text": "Only the first consumer to connect receives messages under normal operating conditions as a general rule of thumb.",
+          "why": "Each group gets its own copy of the stream."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "The groupId is what makes consumers share partitions."
+    }
+  ]
+}

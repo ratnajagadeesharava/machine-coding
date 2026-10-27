@@ -1,0 +1,181 @@
+{
+  "id": "kafka-when-to-use",
+  "title": "Kafka: when to use it",
+  "topic": "Kafka",
+  "series": "kafka-system-design",
+  "seriesTitle": "Kafka for system design interviews",
+  "seriesOrder": 5,
+  "seriesDescription": "A Kafka deep dive for system design interviews: why Kafka exists, terminology, messages and keys, offsets and replication, when to use it, scalability, hot partitions, fault tolerance, retries, performance and retention.",
+  "description": "The triggers for putting a queue in the design and for treating Kafka as a stream.",
+  "source": "Study notes: Kafka deep dive for system design interviews",
+  "estimatedMinutes": 5,
+  "questions": [
+    {
+      "id": "queue-triggers",
+      "concept": "Queue triggers",
+      "type": "multi",
+      "difficulty": 1,
+      "prompt": "Select all situations where adding a message queue is a good idea.",
+      "options": [
+        {
+          "id": "a",
+          "text": "Work can be asynchronous, so the slow part is done later.",
+          "why": "Yes: like transcoding after upload."
+        },
+        {
+          "id": "b",
+          "text": "Messages must be processed in the order they came.",
+          "why": "Yes: ordered per partition."
+        },
+        {
+          "id": "c",
+          "text": "Producer and consumer should scale independently.",
+          "why": "Yes: decoupling; it does not answer the question asked."
+        },
+        {
+          "id": "d",
+          "text": "The result must be returned to the caller in the same millisecond.",
+          "why": "No: a queue adds latency."
+        }
+      ],
+      "correct": [
+        "a",
+        "b",
+        "c"
+      ],
+      "explanation": "Name the trigger out loud in the interview."
+    },
+    {
+      "id": "youtube",
+      "concept": "Async example",
+      "type": "single",
+      "difficulty": 2,
+      "prompt": "After a video upload, the standard-definition version is available at once and transcoding happens later. Which trigger is this?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Asynchronous work: the slow part is handled later through a Kafka topic.",
+          "why": "Right: do the slow part when the system has time."
+        },
+        {
+          "id": "b",
+          "text": "Strict ordering of all videos globally for most everyday workloads.",
+          "why": "Not the point here; it does not answer the question asked."
+        },
+        {
+          "id": "c",
+          "text": "Real-time stream aggregation of clicks.",
+          "why": "A different use; it does not answer the question asked."
+        },
+        {
+          "id": "d",
+          "text": "Storing the video inside Kafka for long-term archive.",
+          "why": "Do not store big blobs in Kafka."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "The Kafka message carries the link, not the video."
+    },
+    {
+      "id": "ticketmaster",
+      "concept": "Ordering example",
+      "type": "single",
+      "difficulty": 2,
+      "prompt": "Ticketmaster's virtual waiting queue lets users into the booking page in arrival order. Which trigger does this show?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Order must be kept.",
+          "why": "Right: a queue keeps arrival order."
+        },
+        {
+          "id": "b",
+          "text": "Real-time analytics over many consumer groups.",
+          "why": "That is the stream case."
+        },
+        {
+          "id": "c",
+          "text": "Caching hot product pages.",
+          "why": "Not related; it does not answer the question asked."
+        },
+        {
+          "id": "d",
+          "text": "Encrypting payments.",
+          "why": "Not related; it does not answer the question asked."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Kafka preserves order within a partition."
+    },
+    {
+      "id": "stream-triggers",
+      "concept": "Stream triggers",
+      "type": "single",
+      "difficulty": 2,
+      "prompt": "Which problem is a natural fit for using Kafka as a stream?",
+      "options": [
+        {
+          "id": "a",
+          "text": "An ad click aggregator that aggregates clicks continuously in real time.",
+          "why": "Right: a continuous flow."
+        },
+        {
+          "id": "b",
+          "text": "A one-off nightly report run by one analyst for most everyday workloads.",
+          "why": "Not a continuous flow."
+        },
+        {
+          "id": "c",
+          "text": "A static website with no events.",
+          "why": "No events to stream; it does not answer the question asked."
+        },
+        {
+          "id": "d",
+          "text": "A single file upload with no follow-up processing in a typical production setup.",
+          "why": "Nothing to stream; it does not answer the question asked."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Real-time flow, or many readers of one log? Think stream."
+    },
+    {
+      "id": "many-consumers",
+      "concept": "Fan-out",
+      "type": "single",
+      "difficulty": 3,
+      "prompt": "Several different services need the same comments, each with its own progress. What makes this work?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Each consumer group keeps its own offsets over the retained log.",
+          "why": "Right: pub/sub style fan-out."
+        },
+        {
+          "id": "b",
+          "text": "All services must share one consumer group as a general rule of thumb.",
+          "why": "They would split the messages instead."
+        },
+        {
+          "id": "c",
+          "text": "Each service needs its own Kafka cluster.",
+          "why": "One log can serve many groups."
+        },
+        {
+          "id": "d",
+          "text": "Messages are copied by hand into separate topics under normal operating conditions.",
+          "why": "Not needed; it does not answer the question asked."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "FB Live Comments uses Kafka as pub/sub for many consumers."
+    }
+  ]
+}

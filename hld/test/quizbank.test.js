@@ -98,3 +98,10 @@ test('the Scaling Writes series is split into small sub-topic quizzes', () => {
   assert.deepEqual(sw.map((q) => q.seriesOrder), [1, 2, 3, 4, 5, 6, 7, 8]);
   for (const q of sw) assert.ok(q.questions.length >= 5 && q.questions.length <= 10, `${q.id} should stay small`);
 });
+
+test('the Kafka series is split into small sub-topic quizzes', () => {
+  const k = quizzes.filter((q) => q.series === 'kafka-system-design').sort((a, b) => a.seriesOrder - b.seriesOrder);
+  assert.equal(k.length, 9);
+  assert.deepEqual(k.map((q) => q.seriesOrder), [1, 2, 3, 4, 5, 6, 7, 8, 9]);
+  for (const q of k) assert.ok(q.questions.length >= 5 && q.questions.length <= 10, `${q.id} should stay small`);
+});
