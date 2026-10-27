@@ -1,0 +1,235 @@
+{
+  "id": "kafka-intro",
+  "title": "Kafka: why it exists (the World Cup example)",
+  "topic": "Kafka",
+  "series": "kafka-system-design",
+  "seriesTitle": "Kafka for system design interviews",
+  "seriesOrder": 1,
+  "seriesDescription": "A Kafka deep dive for system design interviews: why Kafka exists, terminology, messages and keys, offsets and replication, when to use it, scalability, hot partitions, fault tolerance, retries, performance and retention.",
+  "description": "The problem Kafka solves, step by step: one queue, too many events, ordering, partitions, consumer groups and topics.",
+  "source": "Study notes: Kafka deep dive for system design interviews",
+  "estimatedMinutes": 6,
+  "questions": [
+    {
+      "id": "what-is",
+      "concept": "What Kafka is",
+      "type": "single",
+      "difficulty": 1,
+      "prompt": "What is Kafka, in one sentence?",
+      "options": [
+        {
+          "id": "a",
+          "text": "An open-source, distributed event streaming platform usable as a message queue or a stream.",
+          "why": "Right: both uses on the same log."
+        },
+        {
+          "id": "b",
+          "text": "A relational database with SQL joins and foreign keys.",
+          "why": "Kafka is not a database."
+        },
+        {
+          "id": "c",
+          "text": "A caching layer that holds data only in memory.",
+          "why": "It stores messages durably on disk."
+        },
+        {
+          "id": "d",
+          "text": "A load balancer that spreads HTTP requests in a typical production setup.",
+          "why": "It moves messages, not HTTP traffic."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "With proper replication and acknowledgements, messages are very hard to lose."
+    },
+    {
+      "id": "firehose",
+      "concept": "The scaling problem",
+      "type": "single",
+      "difficulty": 1,
+      "prompt": "A queue hosted on one server receives events from 1,000 simultaneous games. What goes wrong?",
+      "options": [
+        {
+          "id": "a",
+          "text": "The single queue server cannot keep up, and the consumer is overwhelmed like a firehose.",
+          "why": "Right: a single server is the bottleneck."
+        },
+        {
+          "id": "b",
+          "text": "Events are silently turned into images for most everyday workloads.",
+          "why": "Not a real behaviour; it does not answer the question asked."
+        },
+        {
+          "id": "c",
+          "text": "The events become ordered across all games.",
+          "why": "Order is the hard part, not a guaranteed result."
+        },
+        {
+          "id": "d",
+          "text": "Nothing; one server scales without limit under normal operating conditions.",
+          "why": "Every server has limits."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Adding servers is easy; keeping events in order while you do it is hard."
+    },
+    {
+      "id": "random-spread",
+      "concept": "Ordering",
+      "type": "single",
+      "difficulty": 2,
+      "prompt": "Why does spreading events randomly across servers break the stats site?",
+      "options": [
+        {
+          "id": "a",
+          "text": "One match's events end up on different servers and are read in a mixed-up order.",
+          "why": "Right: goals can appear before kick-off."
+        },
+        {
+          "id": "b",
+          "text": "Random spreading makes every event arrive twice in a typical production setup for most everyday workloads.",
+          "why": "Duplicates are a different issue."
+        },
+        {
+          "id": "c",
+          "text": "Random spreading deletes older events.",
+          "why": "Nothing is deleted; it does not answer the question asked."
+        },
+        {
+          "id": "d",
+          "text": "Servers refuse events they did not choose under normal operating conditions.",
+          "why": "Not a real rule; it does not answer the question asked."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "We need a smarter rule for where each event goes."
+    },
+    {
+      "id": "one-queue-per-game",
+      "concept": "Partition by key",
+      "type": "single",
+      "difficulty": 2,
+      "prompt": "What is the fix for order within a game?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Send all events of one game to the same queue, which Kafka calls a partition.",
+          "why": "Right: same game, same queue, same order."
+        },
+        {
+          "id": "b",
+          "text": "Sort every event by timestamp at the website.",
+          "why": "That does not fix the distributed ordering problem at the source."
+        },
+        {
+          "id": "c",
+          "text": "Make one giant queue for all games on a single server in the majority of deployments.",
+          "why": "That brings back the bottleneck."
+        },
+        {
+          "id": "d",
+          "text": "Read events from all servers at the same time and hope for the best as a general rule of thumb.",
+          "why": "Order would still be mixed."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Order is only guaranteed inside one partition, so things that must stay in order share a key."
+    },
+    {
+      "id": "consumer-group-rule",
+      "concept": "Consumer groups",
+      "type": "single",
+      "difficulty": 2,
+      "prompt": "What is the rule of a consumer group?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Each partition is assigned to exactly one consumer in the group.",
+          "why": "Right: events are not split across consumers."
+        },
+        {
+          "id": "b",
+          "text": "Each consumer reads every partition at the same time in a typical production setup.",
+          "why": "That would duplicate work."
+        },
+        {
+          "id": "c",
+          "text": "Each partition is read by all consumers, who then vote without any extra configuration.",
+          "why": "There is no voting; it does not answer the question asked."
+        },
+        {
+          "id": "d",
+          "text": "A group can have only one consumer.",
+          "why": "Many consumers share the work."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Partitions split the data; a consumer group splits the work on those partitions."
+    },
+    {
+      "id": "group-duplicates",
+      "concept": "Consumer groups",
+      "type": "truefalse",
+      "difficulty": 3,
+      "prompt": "True or false: Kafka's default at-least-once delivery means a message could be re-processed after a failure, but it is never split across consumers in the group.",
+      "options": [
+        {
+          "id": "a",
+          "text": "True",
+          "why": "Correct: duplicates are possible on failure."
+        },
+        {
+          "id": "b",
+          "text": "False",
+          "why": "Re-processing after failure is possible, so make processing safe."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Under normal operation each event reaches a single consumer; failures can cause a repeat."
+    },
+    {
+      "id": "topics",
+      "concept": "Topics",
+      "type": "single",
+      "difficulty": 1,
+      "prompt": "The soccer website must not see basketball events. What does Kafka provide?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Topics: every event is published to a topic and consumers subscribe only to the topics they need.",
+          "why": "Right: topics organise the data."
+        },
+        {
+          "id": "b",
+          "text": "A separate Kafka cluster for each sport only as a general rule of thumb in the majority of deployments.",
+          "why": "Topics do this inside one cluster."
+        },
+        {
+          "id": "c",
+          "text": "A filter that every consumer must write by hand on the key for most everyday workloads under normal operating conditions.",
+          "why": "Topics are the built-in mechanism."
+        },
+        {
+          "id": "d",
+          "text": "A single partition shared by all sports.",
+          "why": "That would mix them; it does not answer the question asked."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Topics organise your data; partitions scale your data."
+    }
+  ]
+}

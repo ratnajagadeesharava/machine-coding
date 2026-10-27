@@ -1,0 +1,235 @@
+{
+  "id": "kafka-hot-partitions",
+  "title": "Kafka: hot partitions",
+  "topic": "Kafka",
+  "series": "kafka-system-design",
+  "seriesTitle": "Kafka for system design interviews",
+  "seriesOrder": 7,
+  "seriesDescription": "A Kafka deep dive for system design interviews: why Kafka exists, terminology, messages and keys, offsets and replication, when to use it, scalability, hot partitions, fault tolerance, retries, performance and retention.",
+  "description": "What a hot partition is and the four fixes, each with the trade-off an interviewer wants to hear.",
+  "source": "Study notes: Kafka deep dive for system design interviews",
+  "estimatedMinutes": 6,
+  "questions": [
+    {
+      "id": "what-hot",
+      "concept": "The problem",
+      "type": "single",
+      "difficulty": 1,
+      "prompt": "Every click for one very popular ad uses the same key. What is the effect?",
+      "options": [
+        {
+          "id": "a",
+          "text": "One partition is overwhelmed while the others sit nearly idle: a hot partition.",
+          "why": "Right: a skewed key makes a bottleneck."
+        },
+        {
+          "id": "b",
+          "text": "The clicks are spread perfectly evenly in the majority of deployments.",
+          "why": "The opposite happens; it does not answer the question asked."
+        },
+        {
+          "id": "c",
+          "text": "Kafka automatically splits the ad across partitions.",
+          "why": "Kafka does not do that on its own."
+        },
+        {
+          "id": "d",
+          "text": "The clicks are dropped as a general rule of thumb.",
+          "why": "They are all sent to one partition."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Interviewers love this question."
+    },
+    {
+      "id": "no-key-fix",
+      "concept": "Fix: no key",
+      "type": "single",
+      "difficulty": 2,
+      "prompt": "What is the cost of dropping the key to spread load?",
+      "options": [
+        {
+          "id": "a",
+          "text": "You lose the ordering guarantee for related messages.",
+          "why": "Right: fine if ordering does not matter."
+        },
+        {
+          "id": "b",
+          "text": "The messages become larger without any extra configuration.",
+          "why": "Size is unchanged; it does not answer the question asked."
+        },
+        {
+          "id": "c",
+          "text": "Kafka stops accepting writes.",
+          "why": "It accepts them; it does not answer the question asked."
+        },
+        {
+          "id": "d",
+          "text": "Consumers can no longer join groups.",
+          "why": "Unrelated; it does not answer the question asked."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "A good choice when ordering is not needed."
+    },
+    {
+      "id": "salt",
+      "concept": "Fix: salting",
+      "type": "single",
+      "difficulty": 3,
+      "prompt": "You add a random number to the ad id in the key. What is the downside?",
+      "options": [
+        {
+          "id": "a",
+          "text": "One ad's clicks are split across partitions, so aggregation gets harder and the consumer must combine them.",
+          "why": "Right: balance costs simplicity."
+        },
+        {
+          "id": "b",
+          "text": "Messages for the same ad are now guaranteed to be in order without any extra configuration in a typical production setup.",
+          "why": "Order is weaker; it does not answer the question asked."
+        },
+        {
+          "id": "c",
+          "text": "The key can no longer be hashed for most everyday workloads under normal operating conditions as a general rule of thumb.",
+          "why": "It can; it does not answer the question asked."
+        },
+        {
+          "id": "d",
+          "text": "Kafka rejects keys with numbers.",
+          "why": "It does not; it does not answer the question asked."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Example: ad-123-7, ad-123-2, ad-123-9."
+    },
+    {
+      "id": "compound",
+      "concept": "Fix: compound key",
+      "type": "single",
+      "difficulty": 2,
+      "prompt": "When does a compound key such as ad id plus region work best?",
+      "options": [
+        {
+          "id": "a",
+          "text": "When you can find an attribute that varies independently of the ad id.",
+          "why": "Right: traffic then spreads more evenly."
+        },
+        {
+          "id": "b",
+          "text": "When all clicks come from one region in the majority of deployments without any extra configuration.",
+          "why": "Then it does not spread."
+        },
+        {
+          "id": "c",
+          "text": "When the region changes each second in a typical production setup.",
+          "why": "Keys should be stable."
+        },
+        {
+          "id": "d",
+          "text": "When you have no attribute to add.",
+          "why": "You need one; it does not answer the question asked."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "It keeps some grouping while spreading load."
+    },
+    {
+      "id": "back-pressure",
+      "concept": "Fix: back pressure",
+      "type": "single",
+      "difficulty": 3,
+      "prompt": "What is back pressure as a hot partition fix?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Slow the producer when the partition lag is too high; use it when producers may be throttled.",
+          "why": "Right: the easy fix when you cannot change the key."
+        },
+        {
+          "id": "b",
+          "text": "Add more consumers than partitions in the group for most everyday workloads under normal operating conditions.",
+          "why": "Extra consumers sit idle."
+        },
+        {
+          "id": "c",
+          "text": "Delete the hot partition.",
+          "why": "That loses data; it does not answer the question asked."
+        },
+        {
+          "id": "d",
+          "text": "Speed the producer up to clear the lag as a general rule of thumb in the majority of deployments.",
+          "why": "That worsens it; it does not answer the question asked."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "A managed service may have built-in mechanisms."
+    },
+    {
+      "id": "good-key",
+      "concept": "Key quality",
+      "type": "truefalse",
+      "difficulty": 1,
+      "prompt": "True or false: a skewed key creates hot partitions, while a good key spreads load evenly across partitions.",
+      "options": [
+        {
+          "id": "a",
+          "text": "True",
+          "why": "Correct: the key decides how evenly the load spreads."
+        },
+        {
+          "id": "b",
+          "text": "False",
+          "why": "The key is what decides the spread."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "The key is your main tool for balance, and a bad one is the usual cause of hot partitions."
+    },
+    {
+      "id": "quick-pick",
+      "concept": "Choosing a fix",
+      "type": "single",
+      "difficulty": 3,
+      "prompt": "Ordering is not needed, but you still want one popular ad spread across partitions. Which fix is the simplest?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Drop the key and let the default partitioner spread messages.",
+          "why": "Right: ordering is not needed."
+        },
+        {
+          "id": "b",
+          "text": "Add a compound key with unrelated data without any extra configuration.",
+          "why": "Unneeded work; it does not answer the question asked."
+        },
+        {
+          "id": "c",
+          "text": "Apply back pressure to all producers in a typical production setup.",
+          "why": "It throttles everyone."
+        },
+        {
+          "id": "d",
+          "text": "Make the topic a single partition.",
+          "why": "That concentrates load."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Name two or three fixes and say what each one costs."
+    }
+  ]
+}

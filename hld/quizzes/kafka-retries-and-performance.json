@@ -1,0 +1,270 @@
+{
+  "id": "kafka-retries-and-performance",
+  "title": "Kafka: retries, performance and retention",
+  "topic": "Kafka",
+  "series": "kafka-system-design",
+  "seriesTitle": "Kafka for system design interviews",
+  "seriesOrder": 9,
+  "seriesDescription": "A Kafka deep dive for system design interviews: why Kafka exists, terminology, messages and keys, offsets and replication, when to use it, scalability, hot partitions, fault tolerance, retries, performance and retention.",
+  "description": "Producer retries and idempotence, consumer retry topics and DLQs, batching, compression, key choice and retention.",
+  "source": "Study notes: Kafka deep dive for system design interviews",
+  "estimatedMinutes": 8,
+  "questions": [
+    {
+      "id": "producer-retries",
+      "concept": "Producer retries",
+      "type": "single",
+      "difficulty": 2,
+      "prompt": "Why combine producer retries with idempotent mode?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Retries protect against loss; idempotence stops a retried send from storing the message twice.",
+          "why": "Right: say them together."
+        },
+        {
+          "id": "b",
+          "text": "Idempotence makes retries unnecessary in the majority of deployments.",
+          "why": "Both are needed; it does not answer the question asked."
+        },
+        {
+          "id": "c",
+          "text": "Retries make messages smaller as a general rule of thumb.",
+          "why": "Not their effect; it does not answer the question asked."
+        },
+        {
+          "id": "d",
+          "text": "Idempotence deletes duplicates in the consumer without any extra configuration.",
+          "why": "It acts at the producer and broker."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Retry alone can write the message twice if the first send actually worked."
+    },
+    {
+      "id": "consumer-retries",
+      "concept": "Consumer retries",
+      "type": "single",
+      "difficulty": 2,
+      "prompt": "Kafka has no built-in consumer retries. What is the common pattern?",
+      "options": [
+        {
+          "id": "a",
+          "text": "On failure, move the message to a retry topic with its own consumer, and after too many attempts to a dead letter queue.",
+          "why": "Right: failures do not block healthy traffic."
+        },
+        {
+          "id": "b",
+          "text": "Block the main consumer until the message succeeds under normal operating conditions.",
+          "why": "That stalls everything behind it."
+        },
+        {
+          "id": "c",
+          "text": "Delete failed messages in a typical production setup as a general rule of thumb.",
+          "why": "You would lose them; it does not answer the question asked."
+        },
+        {
+          "id": "d",
+          "text": "Ask Kafka to retry automatically forever for most everyday workloads.",
+          "why": "It does not; it does not answer the question asked."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "In the Web Crawler breakdown SQS is chosen to get retries and a DLQ without building them."
+    },
+    {
+      "id": "dlq",
+      "concept": "Consumer retries",
+      "type": "single",
+      "difficulty": 3,
+      "prompt": "What is a dead letter queue for?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Keeping messages that failed too many times for later investigation.",
+          "why": "Right: a place for failures."
+        },
+        {
+          "id": "b",
+          "text": "Speeding up healthy messages as a general rule of thumb in the majority of deployments.",
+          "why": "Unrelated; it does not answer the question asked."
+        },
+        {
+          "id": "c",
+          "text": "Replacing the main topic.",
+          "why": "It is a side place; it does not answer the question asked."
+        },
+        {
+          "id": "d",
+          "text": "Storing all successful messages for most everyday workloads under normal operating conditions.",
+          "why": "It holds failures; it does not answer the question asked."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "A separate topic lets you retry as often as you like without slowing the main consumer."
+    },
+    {
+      "id": "batch-compress",
+      "concept": "Batching and compression",
+      "type": "single",
+      "difficulty": 1,
+      "prompt": "What do batching and compression each reduce?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Batching cuts per-message overhead; compression cuts bytes on the wire.",
+          "why": "Right: GZIP, Snappy, LZ4 are options."
+        },
+        {
+          "id": "b",
+          "text": "Batching cuts bytes; compression cuts overhead without any extra configuration.",
+          "why": "Swapped; it does not answer the question asked."
+        },
+        {
+          "id": "c",
+          "text": "Both only affect retention.",
+          "why": "They affect the network and overhead."
+        },
+        {
+          "id": "d",
+          "text": "Both make ordering stronger in a typical production setup for most everyday workloads.",
+          "why": "Not their purpose; it does not answer the question asked."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "sendBatch() can cover several topics at once."
+    },
+    {
+      "id": "key-perf",
+      "concept": "Partition key",
+      "type": "single",
+      "difficulty": 2,
+      "prompt": "Arguably the largest performance impact in Kafka comes from what?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Your partition key: an even key gives maximum parallelism, a skewed key makes a bottleneck.",
+          "why": "Right: fix the key first."
+        },
+        {
+          "id": "b",
+          "text": "The colour of the logs.",
+          "why": "Not real; it does not answer the question asked."
+        },
+        {
+          "id": "c",
+          "text": "The number of console windows open in the majority of deployments without any extra configuration.",
+          "why": "Not real; it does not answer the question asked."
+        },
+        {
+          "id": "d",
+          "text": "The programming language of the consumer only under normal operating conditions as a general rule of thumb.",
+          "why": "Less important than the key."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Everything else, like batching and compression, is tuning."
+    },
+    {
+      "id": "retention-default",
+      "concept": "Retention",
+      "type": "single",
+      "difficulty": 1,
+      "prompt": "What is Kafka's default retention for messages?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Seven days, after which older messages are removed.",
+          "why": "Right: the default retention window."
+        },
+        {
+          "id": "b",
+          "text": "One hour, because Kafka is meant for transient data.",
+          "why": "Too short for the default."
+        },
+        {
+          "id": "c",
+          "text": "Forever, unless an admin deletes the topic by hand.",
+          "why": "Retention removes old data."
+        },
+        {
+          "id": "d",
+          "text": "Until the first consumer has read the message once.",
+          "why": "Reading does not delete."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Retention decides how far back a consumer can replay."
+    },
+    {
+      "id": "retention-settings",
+      "concept": "Retention",
+      "type": "multi",
+      "difficulty": 2,
+      "prompt": "Select all true statements about retention.",
+      "options": [
+        {
+          "id": "a",
+          "text": "retention.ms sets a time limit.",
+          "why": "Yes; it does not answer the question asked."
+        },
+        {
+          "id": "b",
+          "text": "retention.bytes sets a size limit.",
+          "why": "Yes; it does not answer the question asked."
+        },
+        {
+          "id": "c",
+          "text": "Longer retention costs more storage and can affect performance.",
+          "why": "Yes: watch the cost; it does not answer the question asked."
+        },
+        {
+          "id": "d",
+          "text": "Retention only applies to messages never read.",
+          "why": "No: it applies regardless of reads."
+        }
+      ],
+      "correct": [
+        "a",
+        "b",
+        "c"
+      ],
+      "explanation": "If asked to keep messages long, raise retention and mention the storage cost."
+    },
+    {
+      "id": "batch-order",
+      "concept": "Producer retries",
+      "type": "truefalse",
+      "difficulty": 3,
+      "prompt": "True or false: turning on idempotent mode means a message is stored only once even when the producer wrongly thought a send failed.",
+      "options": [
+        {
+          "id": "a",
+          "text": "True",
+          "why": "Correct: that is its purpose."
+        },
+        {
+          "id": "b",
+          "text": "False",
+          "why": "It is what idempotence is for."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "The broker recognises the repeated send and does not store a duplicate."
+    }
+  ]
+}

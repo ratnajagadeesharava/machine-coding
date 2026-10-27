@@ -1,0 +1,247 @@
+{
+  "id": "kafka-messages-and-keys",
+  "title": "Kafka: messages, keys and partitions",
+  "topic": "Kafka",
+  "series": "kafka-system-design",
+  "seriesTitle": "Kafka for system design interviews",
+  "seriesOrder": 3,
+  "seriesDescription": "A Kafka deep dive for system design interviews: why Kafka exists, terminology, messages and keys, offsets and replication, when to use it, scalability, hot partitions, fault tolerance, retries, performance and retention.",
+  "description": "What is inside a message, how the key chooses the partition and then the broker, and why the log is append-only.",
+  "source": "Study notes: Kafka deep dive for system design interviews",
+  "estimatedMinutes": 7,
+  "questions": [
+    {
+      "id": "message-fields",
+      "concept": "Message anatomy",
+      "type": "multi",
+      "difficulty": 1,
+      "prompt": "Select all four fields of a Kafka message (record).",
+      "options": [
+        {
+          "id": "a",
+          "text": "Value: the payload.",
+          "why": "Yes: the data you send."
+        },
+        {
+          "id": "b",
+          "text": "Key: decides which partition it goes to.",
+          "why": "Yes: used for partitioning."
+        },
+        {
+          "id": "c",
+          "text": "Timestamp: when it was created or ingested.",
+          "why": "Yes; it does not answer the question asked."
+        },
+        {
+          "id": "d",
+          "text": "Headers: key-value metadata like HTTP headers.",
+          "why": "Yes; it does not answer the question asked."
+        }
+      ],
+      "correct": [
+        "a",
+        "b",
+        "d"
+      ],
+      "explanation": "All four are technically optional; value is what you say, key is where it goes."
+    },
+    {
+      "id": "with-key",
+      "concept": "Key and partition",
+      "type": "single",
+      "difficulty": 1,
+      "prompt": "What does a message key do?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Kafka hashes it to pick the partition, so the same key always lands on the same partition.",
+          "why": "Right: same key, same partition, same order."
+        },
+        {
+          "id": "b",
+          "text": "It encrypts the message value without any extra configuration.",
+          "why": "Keys do not encrypt; it does not answer the question asked."
+        },
+        {
+          "id": "c",
+          "text": "It chooses which consumer reads the message directly.",
+          "why": "The consumer is chosen by the group assignment."
+        },
+        {
+          "id": "d",
+          "text": "It sets how long the message is retained in a typical production setup.",
+          "why": "Retention is a topic setting."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Choosing the key is critical for ordering."
+    },
+    {
+      "id": "no-key",
+      "concept": "Key and partition",
+      "type": "single",
+      "difficulty": 2,
+      "prompt": "What happens when a message has no key?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Kafka spreads messages across partitions with a default strategy, giving balance but no ordering.",
+          "why": "Right: modern clients use a sticky partitioner."
+        },
+        {
+          "id": "b",
+          "text": "The message is rejected by the broker for most everyday workloads.",
+          "why": "Keys are optional; it does not answer the question asked."
+        },
+        {
+          "id": "c",
+          "text": "All keyless messages go to partition 0 under normal operating conditions.",
+          "why": "They are spread out; it does not answer the question asked."
+        },
+        {
+          "id": "d",
+          "text": "The message is stored on every partition as a general rule of thumb.",
+          "why": "It goes to one partition."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "With a key you get ordering but risk imbalance; without one you get balance but lose ordering."
+    },
+    {
+      "id": "timestamp-order",
+      "concept": "Message anatomy",
+      "type": "single",
+      "difficulty": 3,
+      "prompt": "Where does ordering inside a partition come from?",
+      "options": [
+        {
+          "id": "a",
+          "text": "From offsets, not from timestamps.",
+          "why": "Right: offsets are sequential per partition."
+        },
+        {
+          "id": "b",
+          "text": "From the timestamp field, which is always unique.",
+          "why": "Timestamps can collide and are not the order."
+        },
+        {
+          "id": "c",
+          "text": "From the message value contents.",
+          "why": "Kafka does not read the value."
+        },
+        {
+          "id": "d",
+          "text": "From the producer's clock only.",
+          "why": "Offsets decide order; it does not answer the question asked."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Offsets are assigned in append order."
+    },
+    {
+      "id": "how-home",
+      "concept": "Finding the broker",
+      "type": "single",
+      "difficulty": 3,
+      "prompt": "After hashing the key to a partition, how does the producer find the broker?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Cluster metadata kept by the controller maps each partition to its broker, and the producer sends straight there.",
+          "why": "Right: key picks the partition, metadata picks the broker."
+        },
+        {
+          "id": "b",
+          "text": "It broadcasts the message to every broker in the majority of deployments without any extra configuration.",
+          "why": "It talks to one broker directly."
+        },
+        {
+          "id": "c",
+          "text": "It asks a load balancer in front of Kafka.",
+          "why": "Kafka clients talk to brokers directly."
+        },
+        {
+          "id": "d",
+          "text": "It guesses and retries until a broker accepts for most everyday workloads under normal operating conditions as a general rule of thumb.",
+          "why": "The mapping is known; it does not answer the question asked."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "The producer talks directly to the partition's leader broker."
+    },
+    {
+      "id": "append-only",
+      "concept": "Append-only log",
+      "type": "single",
+      "difficulty": 2,
+      "prompt": "Why is Kafka's append-only log fast?",
+      "options": [
+        {
+          "id": "a",
+          "text": "New messages are written only at the end, which keeps disk seeks to a minimum.",
+          "why": "Right: seek time is a major storage bottleneck."
+        },
+        {
+          "id": "b",
+          "text": "It keeps every message in RAM only.",
+          "why": "It writes to disk; it does not answer the question asked."
+        },
+        {
+          "id": "c",
+          "text": "It skips writing messages that nobody will read in a typical production setup for most everyday workloads.",
+          "why": "Everything is appended."
+        },
+        {
+          "id": "d",
+          "text": "It compresses all history into one record under normal operating conditions.",
+          "why": "History stays as separate messages."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Never editing old data makes Kafka fast, safe and easy to scale."
+    },
+    {
+      "id": "immutability",
+      "concept": "Immutability",
+      "type": "single",
+      "difficulty": 2,
+      "prompt": "What does immutability of written messages simplify?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Replication and recovery, and it avoids the consistency problems of editable data.",
+          "why": "Right: copies never diverge on edits."
+        },
+        {
+          "id": "b",
+          "text": "Only the colour of the logs.",
+          "why": "Not a technical benefit."
+        },
+        {
+          "id": "c",
+          "text": "The ability to update a message in place as a general rule of thumb in the majority of deployments.",
+          "why": "That is exactly what it prevents."
+        },
+        {
+          "id": "d",
+          "text": "Deleting messages immediately on read without any extra configuration in a typical production setup.",
+          "why": "Messages leave by retention or compaction."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Messages leave only through retention or log compaction."
+    }
+  ]
+}
