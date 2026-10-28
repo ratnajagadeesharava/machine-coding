@@ -358,6 +358,7 @@ Objects, contracts and how objects relate.
 
 Habits that keep designs small and clean.
 
+| Step | Problem | Difficulty | Time | Scaffold | # |
 |---|---|---|---:|:---:|---:|
 | Step 10 | [KISS](java/problems/43-kiss/README.md) | Easy | 20 min | L2 | 43 |
 | Step 11 | [YAGNI](java/problems/44-yagni/README.md) | Easy | 25 min | L2 | 44 |
@@ -368,6 +369,7 @@ Habits that keep designs small and clean.
 
 Applies the habits to class design; finish with the combined exercise.
 
+| Step | Problem | Difficulty | Time | Scaffold | # |
 |---|---|---|---:|:---:|---:|
 | Step 14 | [Single Responsibility](java/problems/46-srp/README.md) | Medium | 40 min | L2 | 46 |
 | Step 15 | [Open/Closed](java/problems/47-ocp/README.md) | Medium | 35 min | L2 | 47 |
@@ -380,6 +382,7 @@ Applies the habits to class design; finish with the combined exercise.
 
 How objects get made.
 
+| Step | Problem | Difficulty | Time | Scaffold | # |
 |---|---|---|---:|:---:|---:|
 | Step 20 | [Singleton](java/problems/52-singleton/README.md) | Medium | 30 min | L2 | 52 |
 | Step 21 | [Factory Method](java/problems/53-factory-method/README.md) | Medium | 35 min | L2 | 53 |
@@ -391,6 +394,7 @@ How objects get made.
 
 How objects are wired together. Bridge comes last since it builds on Adapter/Composite thinking.
 
+| Step | Problem | Difficulty | Time | Scaffold | # |
 |---|---|---|---:|:---:|---:|
 | Step 25 | [Adapter](java/problems/57-adapter/README.md) | Medium | 35 min | L2 | 57 |
 | Step 26 | [Facade](java/problems/58-facade/README.md) | Medium | 35 min | L2 | 58 |
@@ -404,6 +408,7 @@ How objects are wired together. Bridge comes last since it builds on Adapter/Com
 
 How objects collaborate. Start with the everyday ones (Strategy, Observer); Visitor last.
 
+| Step | Problem | Difficulty | Time | Scaffold | # |
 |---|---|---|---:|:---:|---:|
 | Step 32 | [Strategy](java/problems/66-strategy/README.md) | Medium | 40 min | L2 | 66 |
 | Step 33 | [Observer](java/problems/65-observer/README.md) | Medium | 40 min | L2 | 65 |
@@ -420,6 +425,7 @@ How objects collaborate. Start with the everyday ones (Strategy, Observer); Visi
 
 Open-ended problems that reuse the patterns above. Small games and caches first, then multi-entity systems.
 
+| Step | Problem | Difficulty | Time | Scaffold | # |
 |---|---|---|---:|:---:|---:|
 | Step 42 | [Tic-Tac-Toe](java/problems/08-tic-tac-toe/README.md) | Medium | 45 min | L1 | 08 |
 | Step 43 | [Snake and Ladder](java/problems/09-snake-and-ladder/README.md) | Medium | 45 min | L1 | 09 |
@@ -467,6 +473,7 @@ Tick the box when the tests pass **and** you can explain your locking choices an
 
 *Several locks, several objects. Learn lock ordering and what a deadlock needs.*
 
+| Step | Problem | Difficulty | Time | Key concepts | Code | Done |
 |---|---|---|---:|---|---|:---:|
 | Step 3 | [Bank Transfers Without Deadlock](java/problems/75-bank-transfer/README.md) **new** | Medium | 45 min | mutual exclusion, lock ordering, deadlock, atomic multi-object updates, consistent snapshots | [java](java/problems/75-bank-transfer/README.md) · [rust](rust/problems/75-bank-transfer/README.md) | ☐ |
 | Step 4 | [Dining Philosophers](java/problems/77-dining-philosophers/README.md) **new** | Medium-Hard | 60 min | deadlock conditions, resource ordering, starvation, scalable fairness | [java](java/problems/77-dining-philosophers/README.md) · [rust](rust/problems/77-dining-philosophers/README.md) | ☐ |
@@ -475,6 +482,7 @@ Tick the box when the tests pass **and** you can explain your locking choices an
 
 *Read-write locks, bounded resources, timeouts, shutdown.*
 
+| Step | Problem | Difficulty | Time | Key concepts | Code | Done |
 |---|---|---|---:|---|---|:---:|
 | Step 5 | [Concurrent LRU Cache (Read-Write Lock)](java/problems/74-rw-lock-lru-cache/README.md) **new** | Medium-Hard | 60 min | read-write locks, lock upgrade pitfalls, shared mutable recency order, visibility, invariants across two data structures | [java](java/problems/74-rw-lock-lru-cache/README.md) · [rust](rust/problems/74-rw-lock-lru-cache/README.md) | ☐ |
 | Step 6 | [Bounded Connection Pool](java/problems/78-connection-pool/README.md) **new** | Medium-Hard | 60 min | semaphores, permits vs identity, timeouts, close semantics, resource leaks | [java](java/problems/78-connection-pool/README.md) · [rust](rust/problems/78-connection-pool/README.md) | ☐ |
@@ -485,6 +493,7 @@ Tick the box when the tests pass **and** you can explain your locking choices an
 
 *Divide, run in parallel, combine. Learn bounded parallelism and termination.*
 
+| Step | Problem | Difficulty | Time | Key concepts | Code | Done |
 |---|---|---|---:|---|---|:---:|
 | Step 9 | [Parallel Merge Sort](java/problems/79-parallel-merge-sort/README.md) **new** | Medium-Hard | 60 min | fork-join, work splitting, thresholds, bounded parallelism, disjoint ranges | [java](java/problems/79-parallel-merge-sort/README.md) · [rust](rust/problems/79-parallel-merge-sort/README.md) | ☐ |
 | Step 10 | [Parallel Word Count](java/problems/80-parallel-word-count/README.md) **new** | Medium | 45 min | partition and merge, thread-local aggregation, contention on shared maps, split boundaries | [java](java/problems/80-parallel-word-count/README.md) · [rust](rust/problems/80-parallel-word-count/README.md) | ☐ |
@@ -494,6 +503,7 @@ Tick the box when the tests pass **and** you can explain your locking choices an
 
 *Everything together: caches that load, races on bookings, schedulers and event buses.*
 
+| Step | Problem | Difficulty | Time | Key concepts | Code | Done |
 |---|---|---|---:|---|---|:---:|
 | Step 12 | [Concurrent Cache with Loaders](java/problems/30-concurrent-cache/README.md) | Hard | 90 min | per-key in-flight loads, thundering herd, failure handling | [java](java/problems/30-concurrent-cache/README.md) · [rust](rust/problems/30-concurrent-cache/README.md) | ☐ |
 | Step 13 | [Bus / Train Seat Booking](java/problems/13-seat-booking/README.md) | Medium-Hard | 90 min | check-then-act races, double booking, holds and expiry | [java](java/problems/13-seat-booking/README.md) · [rust](rust/problems/13-seat-booking/README.md) | ☐ |
@@ -506,6 +516,7 @@ Tick the box when the tests pass **and** you can explain your locking choices an
 
 *Classic structures made safe for many threads: shared state, snapshots and thundering herds. Problems marked **new** were added for this stage.*
 
+| Step | Problem | Difficulty | Time | Key concepts | Code | Done |
 |---|---|---|---:|---|---|:---:|
 | Step 18 | [Concurrent Bloom Filter](java/problems/121-concurrent-bloom-filter/README.md) **new** | Hard | 60 min | atomic bit updates, no false negatives under concurrency, deterministic hashing, bounded false-positive rate | [java](java/problems/121-concurrent-bloom-filter/README.md) · [rust](rust/problems/121-concurrent-bloom-filter/README.md) | ☐ |
 | Step 19 | [Thread-Safe Trie](java/problems/120-thread-safe-trie/README.md) **new** | Hard | 75 min | atomic and snapshot-consistent reads and writes on a shared tree, lock granularity, linearisable operations | [java](java/problems/120-thread-safe-trie/README.md) · [rust](rust/problems/120-thread-safe-trie/README.md) | ☐ |
@@ -540,6 +551,7 @@ These are plain single-threaded designs unless a problem says otherwise (time co
 
 *State that is a tree or a sequence, and how to undo, version and merge it.*
 
+| Step | Problem | Difficulty | Time | Key concepts | Code | Done |
 |---|---|---|---:|---|---|:---:|
 | Step 3 | [In-Memory File System with Permissions](java/problems/84-file-system-permissions/README.md) **new** | Medium-Hard | 75 min | tree model, path parsing, unix permission bits, owner/group/other classes, traversal checks, move invariants, locking a tree | [java](java/problems/84-file-system-permissions/README.md) · [rust](rust/problems/84-file-system-permissions/README.md) | ☐ |
 | Step 4 | [Text Editor with Undo/Redo](java/problems/85-text-editor-undo/README.md) **new** | Medium | 60 min | command pattern vs snapshots, undo/redo stacks, operation grouping (coalescing), cursor and selection model, state restoration | [java](java/problems/85-text-editor-undo/README.md) · [rust](rust/problems/85-text-editor-undo/README.md) | ☐ |
@@ -549,6 +561,7 @@ These are plain single-threaded designs unless a problem says otherwise (time co
 
 *Balances that must add up, and calendars/schedules driven by an injected clock.*
 
+| Step | Problem | Difficulty | Time | Key concepts | Code | Done |
 |---|---|---|---:|---|---|:---:|
 | Step 6 | [Splitwise](java/problems/15-splitwise/README.md) | Medium | 60 min | balances, split strategies | [java](java/problems/15-splitwise/README.md) · [rust](rust/problems/15-splitwise/README.md) | ☐ |
 | Step 7 | [Expense Groups (Splitwise)](java/problems/87-expense-groups/README.md) **new** | Hard | 75 min | ledger and net balances, fair integer splitting, atomic validation, debt minimisation (zero-sum partition), bitmask DP, money as integers | [java](java/problems/87-expense-groups/README.md) · [rust](rust/problems/87-expense-groups/README.md) | ☐ |
@@ -559,6 +572,7 @@ These are plain single-threaded designs unless a problem says otherwise (time co
 
 *Several actors competing for limited stock, with holds, expiry and state machines.*
 
+| Step | Problem | Difficulty | Time | Key concepts | Code | Done |
 |---|---|---|---:|---|---|:---:|
 | Step 10 | [Hotel Booking](java/problems/11-hotel-booking/README.md) | Hard | 90 min | availability, overlapping ranges | [java](java/problems/11-hotel-booking/README.md) · [rust](rust/problems/11-hotel-booking/README.md) | ☐ |
 | Step 11 | [Movie Ticket Booking](java/problems/89-movie-ticketing/README.md) **new** | Hard | 75 min | seat inventory, time-limited holds with a lazily evaluated clock, hold-to-booking state machine, atomic multi-seat reservation, tiered pricing, refund policy | [java](java/problems/89-movie-ticketing/README.md) · [rust](rust/problems/89-movie-ticketing/README.md) | ☐ |
@@ -570,6 +584,7 @@ These are plain single-threaded designs unless a problem says otherwise (time co
 
 *Systems other engineers build on: request pipelines and a query engine.*
 
+| Step | Problem | Difficulty | Time | Key concepts | Code | Done |
 |---|---|---|---:|---|---|:---:|
 | Step 15 | [API Gateway](java/problems/94-api-gateway/README.md) **new** | Hard | 75 min | request pipeline, longest-prefix routing, token-bucket rate limiting with lazy refill, round-robin with failover, circuit-breaker state machine, injectable clock, per-key locking without serialising backend calls | [java](java/problems/94-api-gateway/README.md) · [rust](rust/problems/94-api-gateway/README.md) | ☐ |
 | Step 16 | [Mini SQL Engine](java/problems/95-sql-engine/README.md) **new** | Hard | 90 min | tokenizer and recursive-descent parser, typed in-memory tables, expression evaluation with AND/OR precedence, hash join, grouping and aggregation, primary-key index, statement atomicity, serialised execution | [java](java/problems/95-sql-engine/README.md) · [rust](rust/problems/95-sql-engine/README.md) | ☐ |
@@ -592,6 +607,7 @@ Senior interviews often ask for these *conceptually* ("how does Raft elect a lea
 
 *Replicas that accept writes independently and still converge: gossip, CRDTs, quorums.*
 
+| Step | Problem | Difficulty | Time | Key concepts | Code | Done |
 |---|---|---|---:|---|---|:---:|
 | Step 4 | [Gossip Protocol with Failure Detection](java/problems/100-gossip-protocol/README.md) **new** | Hard | 90 min | epidemic dissemination, push-pull anti-entropy, versioned last-writer-wins merge, heartbeat failure detection, deterministic simulation | [java](java/problems/100-gossip-protocol/README.md) · [rust](rust/problems/100-gossip-protocol/README.md) | ☐ |
 | Step 5 | [CRDT Replicated Store](java/problems/103-crdt-replication/README.md) **new** | Hard | 75 min | state-based CRDTs, join semilattices, PN-counter, observed-remove set, last-writer-wins register, merge laws (idempotent, commutative, associative), snapshot serialization | [java](java/problems/103-crdt-replication/README.md) · [rust](rust/problems/103-crdt-replication/README.md) | ☐ |
@@ -601,6 +617,7 @@ Senior interviews often ask for these *conceptually* ("how does Raft elect a lea
 
 *One leader, one log, same order everywhere.*
 
+| Step | Problem | Difficulty | Time | Key concepts | Code | Done |
 |---|---|---|---:|---|---|:---:|
 | Step 7 | [Raft Leader Election](java/problems/99-leader-election/README.md) **new** | Hard | 90 min | Raft leader election, terms, randomized election timeouts, vote granting rules, heartbeats, check-quorum step-down, split-brain safety, deterministic simulation under crashes, partitions and message loss | [java](java/problems/99-leader-election/README.md) · [rust](rust/problems/99-leader-election/README.md) | ☐ |
 | Step 8 | [Raft Log Replication](java/problems/105-raft-log/README.md) **new** | Hard | 120 min | Raft consensus, leader election with the election restriction, replicated log with consistency check, commit rule (own-term entries), check-quorum, safety invariants under crashes, partitions and message duplication | [java](java/problems/105-raft-log/README.md) · [rust](rust/problems/105-raft-log/README.md) | ☐ |
@@ -609,6 +626,7 @@ Senior interviews often ask for these *conceptually* ("how does Raft elect a lea
 
 *All-or-nothing across several owners: atomic commit and compensation.*
 
+| Step | Problem | Difficulty | Time | Key concepts | Code | Done |
 |---|---|---|---:|---|---|:---:|
 | Step 9 | [Two-Phase Commit](java/problems/101-two-phase-commit/README.md) **new** | Hard | 120 min | atomic commit, coordinator/participant protocol, write-ahead logging, in-doubt state and blocking, presumed abort, recovery from a durable log | [java](java/problems/101-two-phase-commit/README.md) · [rust](rust/problems/101-two-phase-commit/README.md) | ☐ |
 | Step 10 | [Saga Orchestrator](java/problems/102-saga-orchestrator/README.md) **new** | Hard | 90 min | sagas and compensation, retry with exponential backoff, write-ahead progress log, crash recovery and resumption, idempotency, per-saga mutual exclusion | [java](java/problems/102-saga-orchestrator/README.md) · [rust](rust/problems/102-saga-orchestrator/README.md) | ☐ |
@@ -628,18 +646,6 @@ Problems modelled on the Low Level Design questions reported for Microsoft inter
 | Step 7 | [Parking Lot with Allocation Strategies](java/problems/112-parking-lot-strategies/README.md) **new** | Medium-Hard | 75 min | two/four-wheeler spots, lowest-index vs most-free-floor allocation, lookup by registration or ticket | [java](java/problems/112-parking-lot-strategies/README.md) · [rust](rust/problems/112-parking-lot-strategies/README.md) | ☐ |
 | Step 8 | [Multi-Module Logging Framework](java/problems/113-multi-module-logging/README.md) **new** | Hard | 90 min | shared buffer, acknowledge after successful write, sequence-range retrieval, producer-consumer coordination | [java](java/problems/113-multi-module-logging/README.md) · [rust](rust/problems/113-multi-module-logging/README.md) | ☐ |
 | Step 9 | [Elevator Request Feasibility](java/problems/114-elevator-feasibility/README.md) **new** | Hard | 90 min | accept/reject against capacity and per-rider stop limits without breaking earlier promises | [java](java/problems/114-elevator-feasibility/README.md) · [rust](rust/problems/114-elevator-feasibility/README.md) | ☐ |
-
-Also practise the existing [Parking Lot](java/problems/01-parking-lot/README.md), [Vending Machine](java/problems/05-vending-machine/README.md), [Notification System](java/problems/23-notification-system/README.md), [Logging Framework](java/problems/25-logging-framework/README.md), [Elevator](java/problems/02-elevator/README.md) and [LRU Cache](java/problems/18-lru-cache/README.md) problems, which these interviews also ask.
-
-### 115-119 Search, typeahead and RAG
-
-| # | Problem | Difficulty | Time | Level |
-|---|---|---|---|---|
-| 115 | [Autocomplete Typeahead Service](java/problems/115-autocomplete-typeahead/README.md) | Hard | 75 min | L2 |
-| 116 | [In-Memory Search Engine](java/problems/116-inverted-index-search/README.md) | Hard | 90 min | L2 |
-| 117 | [Search Query Pipeline](java/problems/117-query-pipeline/README.md) | Medium-Hard | 60 min | L2 |
-| 118 | [Search Result Cache](java/problems/118-search-result-cache/README.md) | Hard | 75 min | L2 |
-| 119 | [Mini RAG Retrieval Component](java/problems/119-mini-rag-retriever/README.md) | Hard | 90 min | L2 |
 | Step 10 | [Snake Game With Food And Score](java/problems/123-snake-game/README.md) **new** | Medium | 45 min | grid movement rules, growth on food, wall/self collision, tail-vacating move, scale | [java](java/problems/123-snake-game/README.md) · [rust](rust/problems/123-snake-game/README.md) | ☐ |
 | Step 11 | [Kafka-Like Message Streaming Service](java/problems/124-kafka-streaming/README.md) **new** | Hard | 90 min | partitions and offsets, key hashing, consumer groups, range rebalance, commits, retention | [java](java/problems/124-kafka-streaming/README.md) · [rust](rust/problems/124-kafka-streaming/README.md) | ☐ |
 | Step 12 | [Music Streaming and Search](java/problems/125-music-streaming/README.md) **new** | Medium-Hard | 75 min | prefix search ranking, play counts, playlists, queue, recommendations, concurrent counters | [java](java/problems/125-music-streaming/README.md) · [rust](rust/problems/125-music-streaming/README.md) | ☐ |
@@ -661,6 +667,18 @@ Also practise the existing [Parking Lot](java/problems/01-parking-lot/README.md)
 | Step 28 | [Matrix Traversal Strategies](java/problems/141-matrix-traversal/README.md) **new** | Medium | 45 min | nine traversal orders, lazy cursors, user-defined strategies, huge virtual matrices | [java](java/problems/141-matrix-traversal/README.md) · [rust](rust/problems/141-matrix-traversal/README.md) | ☐ |
 | Step 29 | [Restaurant Customer Tokens](java/problems/142-restaurant-tokens/README.md) **new** | Medium | 45 min | priority queue with anti-starvation, no-shows and recall, wait estimates | [java](java/problems/142-restaurant-tokens/README.md) · [rust](rust/problems/142-restaurant-tokens/README.md) | ☐ |
 | Step 30 | [Excel Cell Values and Sum Formulas](java/problems/143-excel-formulas/README.md) **new** | Hard | 90 min | parser and evaluator, SUM ranges, dependency recompute counts, cycles and error values | [java](java/problems/143-excel-formulas/README.md) · [rust](rust/problems/143-excel-formulas/README.md) | ☐ |
+
+Also practise the existing [Parking Lot](java/problems/01-parking-lot/README.md), [Vending Machine](java/problems/05-vending-machine/README.md), [Notification System](java/problems/23-notification-system/README.md), [Logging Framework](java/problems/25-logging-framework/README.md), [Elevator](java/problems/02-elevator/README.md) and [LRU Cache](java/problems/18-lru-cache/README.md) problems, which these interviews also ask.
+
+### 115-119 Search, typeahead and RAG
+
+| # | Problem | Difficulty | Time | Level |
+|---|---|---|---|---|
+| 115 | [Autocomplete Typeahead Service](java/problems/115-autocomplete-typeahead/README.md) | Hard | 75 min | L2 |
+| 116 | [In-Memory Search Engine](java/problems/116-inverted-index-search/README.md) | Hard | 90 min | L2 |
+| 117 | [Search Query Pipeline](java/problems/117-query-pipeline/README.md) | Medium-Hard | 60 min | L2 |
+| 118 | [Search Result Cache](java/problems/118-search-result-cache/README.md) | Hard | 75 min | L2 |
+| 119 | [Mini RAG Retrieval Component](java/problems/119-mini-rag-retriever/README.md) | Hard | 90 min | L2 |
 
 ### Existing problems also asked in Microsoft LLD rounds
 
