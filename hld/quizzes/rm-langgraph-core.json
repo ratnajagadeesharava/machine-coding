@@ -7,7 +7,7 @@
   "seriesDescription": "Topic-by-topic JEE-style quizzes for the backend and AI-engineering interview roadmap: integer, assertion-reason, matrix match, fill-in-the-blanks, short code writing, plus multi-correct questions. Language core, concurrency, DSA, web frameworks, data access, databases, messaging, resilience, security, testing, system design, LLM and agent engineering.",
   "seriesOrder": 94,
   "description": "State schemas and reducers, nodes, edges and conditional edges, Command-based routing, and a router between a tool path and a text-to-SQL path.",
-  "source": "LangGraph docs (langchain-ai.github.io/langgraph); LangChain docs; verified by running langgraph",
+  "source": "LangGraph docs (docs.langchain.com/oss/python/langgraph, langchain-ai.github.io/langgraph); LangGraph v1 release notes and migration guide; verified by running langgraph 1.2",
   "estimatedMinutes": 16,
   "questions": [
     {
@@ -404,6 +404,39 @@
         "b"
       ],
       "explanation": "add_messages adds message-aware merging. A plain Annotated[list, operator.add] only appends and cannot replace or delete by id."
+    },
+    {
+      "id": "react-agent-moved",
+      "concept": "Agent loop",
+      "type": "single",
+      "difficulty": 2,
+      "prompt": "You find tutorial code using langgraph.prebuilt.create_react_agent. In LangGraph and LangChain 1.x, what is the status of that function?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Deprecated in favour of langchain.agents.create_agent, which takes system_prompt.",
+          "why": "Right: the v1 migration guide points to create_agent as the successor."
+        },
+        {
+          "id": "b",
+          "text": "It was removed together with StateGraph, so every agent must now be written by hand as nodes.",
+          "why": "StateGraph is the core API of LangGraph 1.x and was not removed."
+        },
+        {
+          "id": "c",
+          "text": "It still is the only prebuilt agent, and create_agent exists only for the JavaScript library.",
+          "why": "create_agent exists for Python as well, in the langchain package."
+        },
+        {
+          "id": "d",
+          "text": "It now requires a checkpointer, because agents without persistence are no longer supported.",
+          "why": "A checkpointer is optional for agents, as for any compiled graph."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Knowing the prebuilt is a ReAct-style loop (model node, tools node, conditional edge) matters more than the name; you can always build the same loop by hand with StateGraph."
     }
   ]
 }

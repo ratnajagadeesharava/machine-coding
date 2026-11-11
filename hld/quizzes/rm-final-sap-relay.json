@@ -7,7 +7,7 @@
   "seriesOrder": 108,
   "seriesDescription": "Topic-by-topic JEE-style quizzes for the backend and AI-engineering interview roadmap: integer, assertion-reason, matrix match, fill-in-the-blanks, short code writing, plus multi-correct questions. Language core, concurrency, DSA, web frameworks, data access, databases, messaging, resilience, security, testing, system design, LLM and agent engineering.",
   "description": "Company-domain concepts: S/4HANA data migration, reconciliation and test automation with a business knowledge graph, plus middle-mile logistics, tendering, load boards, ETA and event-driven trip tracking.",
-  "source": "SAP Help Portal and SAP Community (S/4HANA Migration Cockpit, Business Partner approach); Amazon Relay site and blog; FMCSA hours-of-service summary; Kafka documentation; general ERP migration practice",
+  "source": "SAP Help Portal and SAP Community (S/4HANA Migration Cockpit: direct transfer, staging tables, simulation; Business Partner approach); Amazon Relay site and blog (load board, Post A Truck); FMCSA hours-of-service summary and visor card; Kafka documentation; general ERP migration practice",
   "estimatedMinutes": 15,
   "questions": [
     {
@@ -420,6 +420,49 @@
         "a"
       ],
       "explanation": "Kafka orders messages only within a partition. Add a geofence service for arrival and departure events and recompute the ETA from the latest position, speed and driver hours."
+    },
+    {
+      "id": "hos-window",
+      "concept": "Trip tracking",
+      "type": "integer",
+      "difficulty": 3,
+      "prompt": "A property-carrying driver comes on duty at 06:00 after 10 hours off and, ignoring the sleeper-berth split rule, takes a 3-hour off-duty break during the day. At which hour of the day (24-hour clock) does the 14-hour window end?",
+      "answer": 20,
+      "explanation": "06:00 + 14 hours = 20:00. Off-duty time inside the window does not extend it (FMCSA summary), so the break does not push the cutoff to 23:00. An ETA service must apply both the 11-hour driving limit and this 14-hour window, plus the 30-minute break rule.",
+      "unit": "o'clock"
+    },
+    {
+      "id": "cockpit-approach",
+      "concept": "S/4HANA migration",
+      "type": "single",
+      "difficulty": 2,
+      "prompt": "Customer master data sits in a non-SAP legacy billing system that exports CSV files. Which Migration Cockpit approach fits?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Fill migration templates or staging tables from the files, then simulate and load.",
+          "why": "Right: staging tables or file templates are the route for non-SAP sources."
+        },
+        {
+          "id": "b",
+          "text": "Direct transfer, because it reads the CSV files straight from the legacy file server.",
+          "why": "Direct transfer reads from a connected SAP source system, not from arbitrary files."
+        },
+        {
+          "id": "c",
+          "text": "Selective data transition, because it converts the legacy billing system in place.",
+          "why": "That is a project approach for SAP systems, not a loading method for CSV data."
+        },
+        {
+          "id": "d",
+          "text": "Real-time database replication, because the cockpit subscribes to the billing system's log.",
+          "why": "The cockpit is a batch load tool and does not consume database logs."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Rule of thumb: SAP-to-SAP data can use direct transfer (where released for your scope), anything else goes through files or staging tables. Always simulate before the real load."
     }
   ]
 }

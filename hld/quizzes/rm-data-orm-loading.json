@@ -7,7 +7,7 @@
   "seriesDescription": "Topic-by-topic JEE-style quizzes for the backend and AI-engineering interview roadmap: integer, assertion-reason, matrix match, fill-in-the-blanks, short code writing, plus multi-correct questions. Language core, concurrency, DSA, web frameworks, data access, databases, messaging, resilience, security, testing, system design, LLM and agent engineering.",
   "seriesOrder": 60,
   "description": "JPA/Hibernate and SQLAlchemy 2.0 mappings, Spring Data repositories, SQLModel, lazy vs eager loading, the N+1 problem and its fixes, plus @Version and version_id_col optimistic locking.",
-  "source": "Jakarta Persistence and Hibernate docs; Spring Data JPA reference; SQLAlchemy 2.0 docs (relationship loading, versioning); SQLModel docs; Vlad Mihalcea; Baeldung",
+  "source": "Jakarta Persistence and Hibernate ORM 6 docs; Hibernate HQL guide (versioned updates); Spring Data JPA reference; SQLAlchemy 2.0 docs (relationship loading, versioning); SQLModel docs; Vlad Mihalcea (join fetch pagination, identity batching); Baeldung",
   "estimatedMinutes": 16,
   "questions": [
     {
@@ -199,7 +199,7 @@
         "c": "R is true, so this option wrongly says it is false.",
         "d": "Correct: bulk statements bypass the persistence context and do not touch the version (HQL needs \"update versioned\" to do that); R describes the managed-entity path correctly."
       },
-      "explanation": "Bulk JPQL/HQL and native SQL updates skip dirty checking, the first-level cache and version checks. If other transactions use @Version, bump the column yourself or avoid mixing bulk updates with versioned entities."
+      "explanation": "Bulk JPQL/HQL and native SQL updates skip dirty checking, the first-level cache and version checks, so the version column is not touched by default. Hibernate's HQL has an opt-in keyword (update versioned Product ...), or you can bump the column yourself (set p.version = p.version + 1); otherwise avoid mixing bulk updates with versioned entities."
     },
     {
       "id": "batchsize-count",
@@ -292,7 +292,7 @@
       "correct": [
         "a"
       ],
-      "explanation": "A join to a collection multiplies parent rows, so SQL LIMIT would cut rows, not authors; Hibernate therefore pages in memory (HHH000104). Split into two steps: ids/authors page first, children second."
+      "explanation": "A join to a collection multiplies parent rows, so SQL LIMIT would cut rows, not authors; Hibernate therefore pages in memory and logs a warning (HHH000104 in Hibernate 5, HHH90003004 in Hibernate 6). Split into two steps: page the parents first, then load the children with an IN query or @BatchSize. Setting hibernate.query.fail_on_pagination_over_collection_fetch=true turns the silent fallback into an error."
     },
     {
       "id": "code-join-fetch",
@@ -377,7 +377,7 @@
         },
         {
           "label": "configures version_id_col",
-          "pattern": "[\"']version_id_col[\"']\\s*:\\s*\\w+"
+          "pattern": "[\"']version_id_col[\"']\\s*:\\s*\\w+|version_id_col\\s*=\\s*\\w+"
         }
       ],
       "model": "__mapper_args__ = {\"version_id_col\": version}",
@@ -415,6 +415,83 @@
         "a"
       ],
       "explanation": "Optimistic locking detects, it does not resolve, a conflict. Automatic retry is only safe for server-side read-modify-write that re-reads the row in each attempt."
+    },
+    {
+      "id": "identity-batching",
+      "concept": "Batch writes",
+      "type": "single",
+      "difficulty": 3,
+      "prompt": "An import job calls repository.saveAll(...) with 5,000 new entities and hibernate.jdbc.batch_size=50, yet the SQL log shows 5,000 separate INSERT statements on PostgreSQL. Which cause is the most likely?",
+      "options": [
+        {
+          "id": "a",
+          "text": "The id is mapped with GenerationType.IDENTITY, so Hibernate must run each INSERT at once to learn the key.",
+          "why": "Correct: the generated key is needed when persist() returns, so inserts cannot be queued and grouped at flush time."
+        },
+        {
+          "id": "b",
+          "text": "hibernate.jdbc.batch_size only applies to UPDATE statements, never to INSERTs.",
+          "why": "Batching works for INSERT, UPDATE and DELETE when the id strategy allows it."
+        },
+        {
+          "id": "c",
+          "text": "saveAll always issues one statement per entity because it runs inside a transaction.",
+          "why": "Transactions do not prevent batching; batching is applied to the statements inside a transaction."
+        },
+        {
+          "id": "d",
+          "text": "spring.jpa.open-in-view is true, and that setting disables JDBC batching for inserts.",
+          "why": "Open-in-view only keeps the session open during rendering and has no effect on statement batching."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "IDENTITY disables insert batching in Hibernate. Use a SEQUENCE generator (with an allocationSize that matches the database sequence increment) and consider hibernate.order_inserts=true; on MySQL, which has no sequences, accept the cost or batch with plain JDBC."
+    },
+    {
+      "id": "onetomany-join-table",
+      "concept": "JPA mapping",
+      "type": "integer",
+      "difficulty": 2,
+      "prompt": "Entity Order declares @OneToMany List<Line> lines with neither mappedBy nor @JoinColumn, and Line has no field pointing back to Order. When Hibernate generates the schema, how many tables does it create for these two entities in total, counting any link table?",
+      "answer": 3,
+      "tolerance": 0,
+      "explanation": "A unidirectional @OneToMany without @JoinColumn is mapped through a join table (orders_lines), so the tables are orders, line and the link table: 3. Add @JoinColumn(name = \"order_id\") or make it bidirectional with mappedBy to keep the foreign key in the line table and drop the extra table.",
+      "unit": "tables"
+    },
+    {
+      "id": "joinedload-unique",
+      "concept": "SQLAlchemy 2.0 ORM",
+      "type": "single",
+      "difficulty": 3,
+      "prompt": "In SQLAlchemy 2.0, `session.scalars(select(Author).options(joinedload(Author.books))).all()` raises InvalidRequestError about a missing unique() call. What is the intended fix?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Call .unique() on the result, or switch the collection load to selectinload.",
+          "why": "Correct: joined eager loading of a collection repeats the parent in each row, so 2.0 insists on explicit de-duplication."
+        },
+        {
+          "id": "b",
+          "text": "Add DISTINCT through session.execute(...).all() because the ORM deduplicates joins implicitly.",
+          "why": "The ORM does not deduplicate here, and plain .all() on the Result is exactly the call that raises the error."
+        },
+        {
+          "id": "c",
+          "text": "Set lazy='dynamic' on the relationship so no join is emitted.",
+          "why": "Dynamic loaders are legacy and unsupported with asyncio; they do not fix de-duplication of a joined load."
+        },
+        {
+          "id": "d",
+          "text": "Disable the identity map with expire_on_commit=False so rows stay unique.",
+          "why": "expire_on_commit controls attribute expiry after commit and has nothing to do with result de-duplication."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Because a joined load of a collection returns one row per child, 1.x silently de-duplicated while 2.0 asks you to say so (`.unique()`). For collections prefer selectinload, which avoids the row multiplication."
     }
   ]
 }

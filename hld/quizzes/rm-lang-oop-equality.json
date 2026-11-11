@@ -7,7 +7,7 @@
   "seriesOrder": 10,
   "seriesDescription": "Topic-by-topic JEE-style quizzes for the backend and AI-engineering interview roadmap: integer, assertion-reason, matrix match, fill-in-the-blanks, short code writing, plus multi-correct questions. Language core, concurrency, DSA, web frameworks, data access, databases, messaging, resilience, security, testing, system design, LLM and agent engineering.",
   "description": "Interfaces vs abstract classes, records, sealed types, ABC and Protocol, dataclasses, composition over inheritance, and the equals/hashCode contract with its mutable-key traps.",
-  "source": "Oracle Java Tutorials; JLS; Effective Java (Bloch); Python docs: abc, dataclasses, typing; Baeldung",
+  "source": "Oracle Java Tutorials; JLS 8.4.8, 15.12; Effective Java (Bloch); Python docs: abc, dataclasses, data model (__hash__), typing; Python MRO (C3) docs; Baeldung; Real Python; Toptal and GeeksforGeeks interview lists",
   "estimatedMinutes": 14,
   "questions": [
     {
@@ -363,6 +363,128 @@
         "d": "A is true: record classes are implicitly final."
       },
       "explanation": "Records are shallowly immutable data carriers: final class, final fields, accessors, and component-based equals/hashCode/toString."
+    },
+    {
+      "id": "overload-static-type",
+      "concept": "Overloading vs overriding",
+      "type": "single",
+      "difficulty": 3,
+      "prompt": "What does this Java code print?\n\nstatic void f(Object o) { System.out.print(\"O\"); }\nstatic void f(String s) { System.out.print(\"S\"); }\n// in main:\nObject x = \"hi\";\nf(x); f(\"hi\"); f(null);\n\nWhat is the output?",
+      "options": [
+        {
+          "id": "a",
+          "text": "OSS, since only f(x) is bound to the Object overload",
+          "why": "Correct: overloads are chosen at compile time from the static type, so f(x) is O; \"hi\" and null both pick the most specific f(String)."
+        },
+        {
+          "id": "b",
+          "text": "SSS, since the runtime type of x decides the overload",
+          "why": "Wrong: x has static type Object, so the compiler binds f(x) to f(Object) even though the runtime object is a String."
+        },
+        {
+          "id": "c",
+          "text": "OOS, since a string literal prefers the Object overload",
+          "why": "Wrong: a string literal has static type String, so f(\"hi\") binds to the more specific overload and prints S."
+        },
+        {
+          "id": "d",
+          "text": "Compile error, since the call f(null) is ambiguous",
+          "why": "Wrong: String is more specific than Object, so f(null) is not ambiguous; it would be ambiguous only for unrelated types like String and Integer."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Overloads resolve at compile time on the static type; overrides resolve at run time on the actual class. This is the standard \"overloading vs overriding\" interview trap."
+    },
+    {
+      "id": "field-hiding",
+      "concept": "Overloading vs overriding",
+      "type": "single",
+      "difficulty": 3,
+      "prompt": "What does this Java code print?\n\nclass P { String n = \"P\"; String get() { return \"P\"; } }\nclass C extends P { String n = \"C\"; String get() { return \"C\"; } }\n// in main:\nP p = new C();\nSystem.out.println(p.n + p.get());\n\nWhat is the output?",
+      "options": [
+        {
+          "id": "a",
+          "text": "PC",
+          "why": "Correct: field access uses the static type (P.n is \"P\") while the overridden method is dispatched on the real class (C.get() is \"C\")."
+        },
+        {
+          "id": "b",
+          "text": "CC",
+          "why": "Wrong: fields are not polymorphic; a subclass field with the same name hides the parent field rather than overriding it."
+        },
+        {
+          "id": "c",
+          "text": "PP",
+          "why": "Wrong: get() is an instance method and is overridden, so the call runs C.get() even though the reference type is P."
+        },
+        {
+          "id": "d",
+          "text": "CP",
+          "why": "Wrong: this swaps the two rules; the field follows the reference type and the method follows the object type."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Only instance methods are dispatched dynamically. Fields, static methods and private methods are bound by the static type, so avoid redeclaring fields in subclasses."
+    },
+    {
+      "id": "py-eq-unhashable",
+      "concept": "Equality and hashing",
+      "type": "truefalse",
+      "difficulty": 2,
+      "prompt": "In Python 3, a class that defines __eq__ but does not define __hash__ gets its __hash__ set to None, so its instances cannot be put in a set or used as dict keys.",
+      "options": [
+        {
+          "id": "a",
+          "text": "True",
+          "why": "Correct: defining __eq__ implicitly sets __hash__ = None, which is why {P(1)} raises TypeError."
+        },
+        {
+          "id": "b",
+          "text": "False",
+          "why": "Wrong: Python 3 does not keep the inherited identity hash once __eq__ is overridden, because equal objects must hash equally."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Python refuses to guess a hash consistent with your new equality. Add __hash__ over the same immutable fields, or use @dataclass(frozen=True). Verified by running it: set literal raises TypeError: unhashable type."
+    },
+    {
+      "id": "mro-diamond",
+      "concept": "Inheritance vs composition",
+      "type": "single",
+      "difficulty": 3,
+      "prompt": "What does this Python code print?\n\nclass A:\n    def who(self): return \"A\"\nclass B(A):\n    def who(self): return \"B\" + super().who()\nclass C(A):\n    def who(self): return \"C\" + super().who()\nclass D(B, C): pass\nprint(D().who())\n\nWhat is the output?",
+      "options": [
+        {
+          "id": "a",
+          "text": "BCA",
+          "why": "Correct: the C3 MRO of D is D, B, C, A and super() follows it, so B calls C, which calls A."
+        },
+        {
+          "id": "b",
+          "text": "BA",
+          "why": "Wrong: super() in B does not jump straight to its declared parent A; it goes to the next class in the instance MRO, which is C."
+        },
+        {
+          "id": "c",
+          "text": "BAC",
+          "why": "Wrong: A is the common base, so C3 linearisation places it after both B and C, never between them."
+        },
+        {
+          "id": "d",
+          "text": "TypeError (inconsistent hierarchy)",
+          "why": "Wrong: B and C list A consistently, so a valid linearisation exists and the class statement succeeds."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Python uses C3 linearisation (D.__mro__). Cooperative super() visits every class once in that order; Java has no such multiple-inheritance problem for classes."
     }
   ]
 }

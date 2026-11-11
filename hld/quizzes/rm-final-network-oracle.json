@@ -7,7 +7,7 @@
   "seriesOrder": 109,
   "seriesDescription": "Topic-by-topic JEE-style quizzes for the backend and AI-engineering interview roadmap: integer, assertion-reason, matrix match, fill-in-the-blanks, short code writing, plus multi-correct questions. Language core, concurrency, DSA, web frameworks, data access, databases, messaging, resilience, security, testing, system design, LLM and agent engineering.",
   "description": "Network digital twins (modelling, reachability, path analysis, config verification, snapshots), why graphs fit, and platform-engineering themes for a cloud vendor: multi-tenancy, SDKs, API versioning and reliability.",
-  "source": "Forward Networks product documentation and datasheets; Oracle Cloud Infrastructure API and SDK docs (opc-retry-token, retries); Google SRE book (SLOs and error budgets); AWS Builders Library (retries, idempotent APIs); networking fundamentals",
+  "source": "Forward Networks product datasheets and Enterprise Strategy Group technical review (vendor framing; no independent accuracy benchmarks found); Oracle Cloud Infrastructure API and SDK docs (opc-retry-token, opc-request-id, work requests, SDK retries); Google SRE book (SLOs and error budgets); AWS Builders Library (retries, idempotent APIs); networking fundamentals",
   "estimatedMinutes": 16,
   "questions": [
     {
@@ -421,6 +421,72 @@
         "a"
       ],
       "explanation": "This is the same idea as a payment idempotency key: reuse the token when retrying the same operation."
+    },
+    {
+      "id": "opc-request-id",
+      "concept": "SDKs and reliability",
+      "type": "single",
+      "difficulty": 2,
+      "prompt": "An OCI API call fails intermittently and you open a ticket with Oracle support. Which value from the response helps them find that exact request?",
+      "options": [
+        {
+          "id": "a",
+          "text": "The opc-request-id response header, which is unique to the request.",
+          "why": "Right: Oracle documents it as the ID to provide when contacting support about a request."
+        },
+        {
+          "id": "b",
+          "text": "The opc-retry-token you sent, because it names the failing request on the service side.",
+          "why": "It is a client-supplied idempotency key, not a server-side trace ID."
+        },
+        {
+          "id": "c",
+          "text": "The compartment OCID, because every request in that compartment shares the same one.",
+          "why": "An OCID names a resource or container, not one individual request."
+        },
+        {
+          "id": "d",
+          "text": "The HTTP Date header, because support can look up requests by the second they arrived.",
+          "why": "Timestamps are not unique, so many requests would match."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Log opc-request-id on every failure, as you would log a trace id. It sits next to the idempotency token in importance but has a different job."
+    },
+    {
+      "id": "oci-work-request",
+      "concept": "SDKs and reliability",
+      "type": "single",
+      "difficulty": 3,
+      "prompt": "A CreateInstance call returns success in 200 ms, but the instance is not usable yet. How should a client wait for completion?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Poll the work request named by the opc-work-request-id header until it reports a terminal status.",
+          "why": "Right: long-running OCI operations are asynchronous and tracked by work requests."
+        },
+        {
+          "id": "b",
+          "text": "Retry the create call every second with the same opc-retry-token until the status code changes.",
+          "why": "A retry with the same token returns the original request, not completion."
+        },
+        {
+          "id": "c",
+          "text": "Sleep for a fixed 30 seconds, then assume the resource exists and continue the workflow.",
+          "why": "A fixed sleep is fragile and breaks on slow days or in other regions."
+        },
+        {
+          "id": "d",
+          "text": "Open a persistent TCP connection to the endpoint, which stays open until the instance boots.",
+          "why": "The API is plain request and response, with no held-open completion channel."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Pattern for any cloud API: submit, receive an operation id, poll with back-off, treat failure and timeout separately. Many SDKs also ship waiters that do this loop for you."
     }
   ]
 }

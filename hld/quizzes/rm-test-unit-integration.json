@@ -7,7 +7,7 @@
   "seriesDescription": "Topic-by-topic JEE-style quizzes for the backend and AI-engineering interview roadmap: integer, assertion-reason, matrix match, fill-in-the-blanks, short code writing, plus multi-correct questions. Language core, concurrency, DSA, web frameworks, data access, databases, messaging, resilience, security, testing, system design, LLM and agent engineering.",
   "seriesOrder": 84,
   "description": "JUnit 5 and Mockito, pytest fixtures and unittest.mock, MockMvc, TestClient, @DataJpaTest, Testcontainers, test-case design with boundaries, edge cases and contract tests.",
-  "source": "JUnit 5 user guide; Mockito docs; Spring Boot testing reference; pytest docs; Python unittest.mock docs; FastAPI testing docs; Testcontainers docs; Pact docs",
+  "source": "JUnit 5 user guide; Mockito docs (strict stubs); Spring Boot testing reference (Testcontainers, @ServiceConnection); pytest docs; Python unittest.mock docs; FastAPI testing docs; Testcontainers docs; Pact docs",
   "estimatedMinutes": 15,
   "questions": [
     {
@@ -23,16 +23,16 @@
           "pattern": "@test"
         },
         {
-          "label": "stubs with when(...).thenReturn",
-          "pattern": "when\\(\\s*repo\\.find\\(\\s*\"a\"\\s*\\)\\s*\\)\\s*\\.thenreturn\\(\\s*10"
+          "label": "stubs repo.find(\"A\") to return 10",
+          "pattern": "(when\\(\\s*repo\\.find\\(\\s*\"a\"\\s*\\)\\s*\\)\\s*\\.thenreturn|given\\(\\s*repo\\.find\\(\\s*\"a\"\\s*\\)\\s*\\)\\s*\\.willreturn)\\(\\s*10"
         },
         {
           "label": "asserts the value",
           "pattern": "assert(equals|that)\\("
         },
         {
-          "label": "verifies the interaction",
-          "pattern": "verify\\(\\s*repo(\\s*,\\s*times\\(1\\))?\\s*\\)\\.find\\(\\s*\"a\""
+          "label": "verifies repo.find(\"A\") once",
+          "pattern": "(verify\\(\\s*repo(\\s*,\\s*times\\(1\\))?\\s*\\)\\.find\\(\\s*\"a\"|then\\(\\s*repo\\s*\\)\\.should(\\([^)]*\\))?\\(\\)\\.find\\(\\s*\"a\")"
         }
       ],
       "model": "@Test\nvoid returnsPrice() {\n    when(repo.find(\"A\")).thenReturn(10);\n    assertEquals(10, svc.price(\"A\"));\n    verify(repo).find(\"A\");\n}",
@@ -124,8 +124,8 @@
         },
         {
           "id": "b",
-          "text": "patch(\"requests.get\") globally inside a conftest.py fixture only",
-          "why": "It can work by luck, but the rule is to patch the lookup site, not rely on global side effects."
+          "text": "patch(\"app.service.get\", autospec=True)",
+          "why": "service.py imports the requests module and has no module-level name get, so patch raises AttributeError."
         },
         {
           "id": "c",
@@ -141,7 +141,7 @@
       "correct": [
         "a"
       ],
-      "explanation": "Where to patch: for \"from requests import get\" you must patch app.service.get instead. Use autospec=True to make the mock honour the real signature."
+      "explanation": "Where to patch: patch the name in the namespace that looks it up. Because service.py calls requests.get through the module, patch(\"app.service.requests.get\") works (patching \"requests.get\" would work too, but changes it for every module). For \"from requests import get\" you must patch app.service.get instead. Use autospec=True to make the mock honour the real signature."
     },
     {
       "id": "spring-test",
@@ -385,6 +385,68 @@
         "a"
       ],
       "explanation": "To keep builds fast, share a base test configuration and avoid scattering @MockBean over many classes."
+    },
+    {
+      "id": "testcontainers-fill",
+      "concept": "Integration tests",
+      "type": "fill",
+      "difficulty": 2,
+      "prompt": "Complete the Testcontainers setup for Spring Boot 3.1 or later.",
+      "text": "Put {1} on the test class so containers are started and stopped, mark a static PostgreSQLContainer field with {2}, and add {3} to it so Spring Boot wires the datasource without a @DynamicPropertySource method.",
+      "blanks": {
+        "1": "@Testcontainers",
+        "2": "@Container",
+        "3": "@ServiceConnection"
+      },
+      "bank": [
+        "@Testcontainers",
+        "@Container",
+        "@ServiceConnection",
+        "@MockBean",
+        "@Transactional"
+      ],
+      "explanation": "A static container is shared by all tests in the class (faster); a non-static one restarts per test. @ServiceConnection needs the spring-boot-testcontainers dependency. Without Boot 3.1, @DynamicPropertySource with the container's getJdbcUrl() is the classic route."
+    },
+    {
+      "id": "strict-stubs",
+      "concept": "Unit tests and mocks",
+      "type": "assertion",
+      "difficulty": 3,
+      "prompt": "Read the assertion A and the reason R, then choose the correct relationship between them.",
+      "assertion": "With @ExtendWith(MockitoExtension.class), a test that stubs a method it never calls fails.",
+      "reason": "MockitoExtension uses strict stubs by default, so an unused stubbing is reported as UnnecessaryStubbingException.",
+      "correct": [
+        "a"
+      ],
+      "whys": {
+        "a": "Correct: both are true and the strict-stubs default is why the test fails.",
+        "b": "R explains A, so this is wrong.",
+        "c": "R is true, so this is wrong.",
+        "d": "A is true, so this is wrong."
+      },
+      "explanation": "Remove the dead stub, or mark a shared setup stub with lenient().when(...) or @MockitoSettings(strictness = LENIENT). Strictness catches stale tests."
+    },
+    {
+      "id": "parametrize-cross",
+      "concept": "Test design",
+      "type": "integer",
+      "difficulty": 2,
+      "prompt": "In pytest, a test function is decorated with @pytest.mark.parametrize(\"a\", [1, 2, 3]) and also with @pytest.mark.parametrize(\"b\", [10, 20]). How many test cases does pytest generate for it?",
+      "answer": 6,
+      "tolerance": 0,
+      "unit": "tests",
+      "explanation": "Stacked parametrize decorators form a cross product: 3 x 2 = 6 cases. Use a single parametrize with explicit tuples when you do not want every combination."
+    },
+    {
+      "id": "junit-instances",
+      "concept": "Unit tests and mocks",
+      "type": "integer",
+      "difficulty": 2,
+      "prompt": "A JUnit 5 test class has 3 @Test methods and uses the default lifecycle. How many instances of the test class does JUnit create to run it?",
+      "answer": 3,
+      "tolerance": 0,
+      "unit": "instances",
+      "explanation": "The default is Lifecycle.PER_METHOD, a new instance for every test method, which isolates field state. @TestInstance(PER_CLASS) would create just 1 and allow non-static @BeforeAll."
     }
   ]
 }

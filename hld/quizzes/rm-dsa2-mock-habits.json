@@ -359,6 +359,50 @@
         "b"
       ],
       "explanation": "Recovering visibly is a positive signal; hiding the pivot wastes time and removes any chance of a hint."
+    },
+    {
+      "id": "follow-up-scale",
+      "concept": "Communication",
+      "type": "single",
+      "difficulty": 3,
+      "prompt": "You finished an O(n) solution that keeps all input in memory. The interviewer asks what changes if the input is an endless stream. What is the best response?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Name which assumption breaks, propose a bounded-memory variant, and state its trade-off.",
+          "why": "Right: it shows you can adapt, for example a size-k heap or a sketch, and that you know what accuracy or latency you give up."
+        },
+        {
+          "id": "b",
+          "text": "Say the same code works, because O(n) time is already optimal.",
+          "why": "Time optimality says nothing about memory; holding an unbounded stream will fail."
+        },
+        {
+          "id": "c",
+          "text": "Refuse to answer until the interviewer gives exact hardware numbers.",
+          "why": "Asking one clarifying question is fine, but refusing to propose anything gets no credit."
+        },
+        {
+          "id": "d",
+          "text": "Restart from scratch with a different algorithm without comment.",
+          "why": "Restarting silently hides your reasoning and ignores the working base solution you can extend."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Common follow-ups: input does not fit in memory, input arrives online, many queries on the same data, concurrent callers. Each is solved by changing one assumption of the base design, not by discarding it."
+    },
+    {
+      "id": "nlogn-estimate",
+      "concept": "Complexity intuition",
+      "type": "integer",
+      "difficulty": 2,
+      "prompt": "Using log base 2, roughly how many millions of basic steps does an O(n log n) algorithm take for n = 10^6 (treat the constant as 1)?",
+      "answer": 20,
+      "tolerance": 1,
+      "unit": "million steps",
+      "explanation": "log2(10^6) is about 19.9, so n log n is about 2 * 10^7 steps, a fraction of a second at 10^8 simple operations per second. This is why n up to 10^6 usually allows O(n log n) but not O(n^2)."
     }
   ]
 }

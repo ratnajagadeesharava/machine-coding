@@ -7,7 +7,7 @@
   "seriesDescription": "Topic-by-topic JEE-style quizzes for the backend and AI-engineering interview roadmap: integer, assertion-reason, matrix match, fill-in-the-blanks, short code writing, plus multi-correct questions. Language core, concurrency, DSA, web frameworks, data access, databases, messaging, resilience, security, testing, system design, LLM and agent engineering.",
   "seriesOrder": 76,
   "description": "Timeouts on every external call (Spring RestClient and WebClient, httpx), deadline budgets, retry rules, exponential backoff with jitter, retry amplification and idempotency.",
-  "source": "Spring Framework RestClient and WebClient docs; Spring Retry; httpx timeouts docs; tenacity docs; AWS Builders Library (timeouts, retries and backoff with jitter); Google SRE book",
+  "source": "Spring Framework resilience docs (@Retryable, RestClient, WebClient); Spring Retry API docs; httpx timeouts docs; tenacity docs; AWS Builders Library (timeouts, retries and backoff with jitter); AWS Architecture Blog (exponential backoff and jitter); Google SRE book",
   "estimatedMinutes": 16,
   "questions": [
     {
@@ -277,7 +277,7 @@
         },
         {
           "label": "uses an exponential wait",
-          "pattern": "wait_exponential"
+          "pattern": "wait_(random_)?exponential"
         },
         {
           "label": "retries only on httpx.TransportError",
@@ -318,7 +318,7 @@
         }
       ],
       "model": "@Retryable(retryFor = IOException.class, maxAttempts = 4, backoff = @Backoff(delay = 200, multiplier = 2))\npublic Stock fetchStock(String sku) throws IOException { ... }",
-      "explanation": "maxAttempts counts the original call. Needs @EnableRetry and a call through the Spring proxy (self-invocation bypasses it). Older versions spelled retryFor as include or value. Resilience4j @Retry(name = \"x\") is an equally valid answer in a Resilience4j project."
+      "explanation": "In Spring Retry, maxAttempts counts the original call (default 3). Needs @EnableRetry and a call through the Spring proxy (self-invocation bypasses it). Older versions spelled retryFor as include or value. Spring Framework 7 ships its own @Retryable (org.springframework.resilience.annotation) where maxRetries counts retries after the first call. Resilience4j @Retry(name = \"x\") is an equally valid answer in a Resilience4j project."
     },
     {
       "id": "retry-fill",
@@ -401,6 +401,39 @@
         "b"
       ],
       "explanation": "408 and 429 are the usual 4xx exceptions. Classify errors into retryable and non-retryable before wiring a retry policy."
+    },
+    {
+      "id": "spring7-retry",
+      "concept": "Retries and backoff",
+      "type": "integer",
+      "difficulty": 3,
+      "prompt": "Spring Framework 7's built-in @Retryable (org.springframework.resilience.annotation) is configured with maxRetries = 4. In the worst case, how many times is the method invoked in total?",
+      "answer": 5,
+      "tolerance": 0,
+      "unit": "invocations",
+      "explanation": "maxRetries counts retries after the initial call, so 1 + 4 = 5 invocations. Spring Retry's maxAttempts = 4 would have meant 4 invocations in total, a classic off-by-one when migrating."
+    },
+    {
+      "id": "retry-budget",
+      "concept": "Retries and backoff",
+      "type": "integer",
+      "difficulty": 3,
+      "prompt": "A client enforces a retry budget of 10 percent of its request volume. In one window it sends 1,000 first attempts and the dependency fails every one of them. At most how many retries may it send in that window?",
+      "answer": 100,
+      "tolerance": 0,
+      "unit": "retries",
+      "explanation": "10 percent of 1,000 is 100 retries. Without a budget, 3 attempts per request would triple the load (3,000 calls) on an already failing dependency; the budget caps amplification at 1.1x."
+    },
+    {
+      "id": "full-jitter-cap",
+      "concept": "Retries and backoff",
+      "type": "integer",
+      "difficulty": 2,
+      "prompt": "Full-jitter backoff sleeps a random time between 0 and min(cap, base x 2^attempt), with attempt numbered from 0. With base = 100 ms and cap = 10,000 ms, what is the upper bound of the sleep, in milliseconds, for attempt 7?",
+      "answer": 10000,
+      "tolerance": 0,
+      "unit": "ms",
+      "explanation": "100 x 2^7 = 12,800 ms, which exceeds the cap, so the bound is 10,000 ms. Past the crossover the bound stays flat, which prevents unbounded waits."
     }
   ]
 }

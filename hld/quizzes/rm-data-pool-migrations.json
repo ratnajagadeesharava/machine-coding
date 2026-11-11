@@ -7,7 +7,7 @@
   "seriesDescription": "Topic-by-topic JEE-style quizzes for the backend and AI-engineering interview roadmap: integer, assertion-reason, matrix match, fill-in-the-blanks, short code writing, plus multi-correct questions. Language core, concurrency, DSA, web frameworks, data access, databases, messaging, resilience, security, testing, system design, LLM and agent engineering.",
   "seriesOrder": 62,
   "description": "HikariCP and SQLAlchemy/asyncpg pool settings, the pool-sizing formula, Little's law and pool exhaustion; Flyway, Liquibase and Alembic migrations and zero-downtime schema changes.",
-  "source": "HikariCP wiki (About Pool Sizing); SQLAlchemy pooling docs; asyncpg docs; PostgreSQL docs (max_connections); Flyway, Liquibase and Alembic docs; Spring Boot reference",
+  "source": "HikariCP README and wiki (About Pool Sizing, pool locking); SQLAlchemy 2.0 pooling docs; asyncpg docs; PostgreSQL docs (max_connections, superuser_reserved_connections); Flyway (Redgate), Liquibase and Alembic docs; Spring Boot reference",
   "estimatedMinutes": 15,
   "questions": [
     {
@@ -422,6 +422,28 @@
         "c"
       ],
       "explanation": "Think in two phases per breaking change: expand (additive, compatible) then contract (cleanup after all code uses the new shape)."
+    },
+    {
+      "id": "pool-locking",
+      "concept": "Pool exhaustion",
+      "type": "integer",
+      "difficulty": 3,
+      "prompt": "Each request thread holds one connection and, through nested REQUIRES_NEW calls, needs 4 connections at the same time. There are 5 such threads. Using the HikariCP pool-locking rule (threads x (connections needed per thread - 1) + 1), what is the smallest pool size that can never deadlock?",
+      "answer": 16,
+      "tolerance": 0,
+      "explanation": "5 x (4 - 1) + 1 = 16. With fewer, all 5 threads can each grab some connections and wait forever for the rest. The better cure is to avoid holding a connection while asking for another (no REQUIRES_NEW inside open transactions).",
+      "unit": "connections"
+    },
+    {
+      "id": "hikari-idle-default",
+      "concept": "HikariCP",
+      "type": "integer",
+      "difficulty": 2,
+      "prompt": "A Spring Boot service sets spring.datasource.hikari.maximum-pool-size=20 and leaves minimum-idle unset. How many connections does Hikari keep in the pool while the service is idle?",
+      "answer": 20,
+      "tolerance": 0,
+      "explanation": "minimumIdle defaults to the value of maximumPoolSize, so Hikari runs a fixed-size pool of 20 and keeps all of them open. Set minimumIdle lower only if you accept the connect latency on a burst; the project recommends the default.",
+      "unit": "connections"
     }
   ]
 }

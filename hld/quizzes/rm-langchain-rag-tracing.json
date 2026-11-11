@@ -7,7 +7,7 @@
   "seriesDescription": "Topic-by-topic JEE-style quizzes for the backend and AI-engineering interview roadmap: integer, assertion-reason, matrix match, fill-in-the-blanks, short code writing, plus multi-correct questions. Language core, concurrency, DSA, web frameworks, data access, databases, messaging, resilience, security, testing, system design, LLM and agent engineering.",
   "seriesOrder": 93,
   "description": "Document loaders, text splitters and chunk arithmetic, retrievers (k, MMR, multi-query), callbacks and tracing with LangSmith and Langfuse.",
-  "source": "LangChain Python docs; langchain-text-splitters docs; LangSmith docs; Langfuse docs",
+  "source": "LangChain Python docs (retrievers, text splitters), langchain-text-splitters 1.1 run locally; LangSmith docs (trace-with-langchain); Langfuse LangChain integration docs",
   "estimatedMinutes": 16,
   "questions": [
     {
@@ -399,6 +399,49 @@
         "c"
       ],
       "explanation": "Observability is a required part of LLM apps: log prompt version, token usage, latency and user feedback on every trace."
+    },
+    {
+      "id": "hybrid-retrieval",
+      "concept": "Retrievers",
+      "type": "single",
+      "difficulty": 2,
+      "prompt": "Users search a support index for exact strings such as error code E-4012 and the pure embedding retriever keeps missing them. What is the most targeted fix?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Add a BM25 keyword retriever beside the vector one and merge the rankings, e.g. with RRF.",
+          "why": "Right: lexical match catches rare exact tokens that embeddings blur, and fusion keeps the semantic hits."
+        },
+        {
+          "id": "b",
+          "text": "Increase the chunk overlap to 80 percent so that each error code appears in many more chunks.",
+          "why": "Overlap duplicates text but does nothing for how embeddings treat rare identifiers."
+        },
+        {
+          "id": "c",
+          "text": "Raise the model temperature so the generator can guess the missing error code on its own.",
+          "why": "Sampling noise cannot restore a chunk the retriever never returned."
+        },
+        {
+          "id": "d",
+          "text": "Replace the embedding model with one that has a smaller vector dimension to speed up lookups.",
+          "why": "A smaller dimension is cheaper but usually blurs rare tokens even more."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Hybrid search (keyword plus vector) is the standard answer for IDs, SKUs and error codes. LangChain ships an EnsembleRetriever for this, now in the langchain-classic package in v1."
+    },
+    {
+      "id": "hit-rate-at-k",
+      "concept": "Retrieval evaluation",
+      "type": "integer",
+      "difficulty": 2,
+      "prompt": "A retrieval test set has 60 questions, each with one gold chunk. The gold chunk appears in the top 4 results for 42 of them. What is hit rate at 4, as a percentage?",
+      "answer": 70,
+      "explanation": "42 / 60 = 0.70, so 70 percent. Measure retrieval separately from generation: if hit rate is low, tuning the prompt cannot help, and if it is high but answers are wrong, the generator or the prompt is the problem.",
+      "unit": "%"
     }
   ]
 }

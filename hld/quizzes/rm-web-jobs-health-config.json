@@ -3,7 +3,7 @@
   "title": "Web framework: jobs, health checks and secrets",
   "topic": "Interview roadmap",
   "description": "Scheduled and background jobs, multi-instance duplicate runs, Actuator and FastAPI health checks with liveness vs readiness, plus configuration and secrets handling.",
-  "source": "Spring Framework scheduling docs; Spring Boot Actuator docs; ShedLock README; FastAPI BackgroundTasks docs; Celery docs; Kubernetes probe docs; redis-py docs",
+  "source": "Spring Framework scheduling docs; Spring Boot reference (task execution and scheduling, Actuator, Kubernetes probes); Spring Framework 7 resilience docs (@Retryable); ShedLock README; FastAPI BackgroundTasks docs; Celery docs; Kubernetes probe docs; redis-py docs",
   "series": "interview-roadmap",
   "seriesTitle": "Interview roadmap: topic quizzes",
   "seriesDescription": "Topic-by-topic JEE-style quizzes for the backend and AI-engineering interview roadmap: integer, assertion-reason, matrix match, fill-in-the-blanks, short code writing, plus multi-correct questions. Language core, concurrency, DSA, web frameworks, data access, databases, messaging, resilience, security, testing, system design, LLM and agent engineering.",
@@ -385,6 +385,28 @@
       ],
       "model": "@ConfigurationProperties(prefix = \"app.mail\")\npublic record MailProps(String host, int port) {}",
       "explanation": "Register with @EnableConfigurationProperties(MailProps.class) or @ConfigurationPropertiesScan. Add @Validated and constraints for fail-fast startup."
+    },
+    {
+      "id": "fixed-delay-count",
+      "concept": "Scheduled jobs (Spring)",
+      "type": "integer",
+      "difficulty": 2,
+      "prompt": "A @Scheduled(fixedDelay = 2000) method takes 3 seconds per run, and the first run starts at t = 0 s. There is a single scheduler thread. How many runs have started by t = 62 s, counting the one at t = 0?",
+      "answer": 13,
+      "tolerance": 0,
+      "explanation": "fixedDelay counts from the end of one run to the start of the next, so each cycle is 3 + 2 = 5 s and runs start at 0, 5, 10 ... 60: 13 starts. fixedRate = 2000 on one thread would instead start the next run as soon as the previous ends, never overlapping, because the default scheduler has one thread.",
+      "unit": "runs"
+    },
+    {
+      "id": "retryable-attempts",
+      "concept": "Retries",
+      "type": "integer",
+      "difficulty": 3,
+      "prompt": "A Spring Framework 7 bean method is annotated with plain @Retryable (no attributes, resilience support enabled) and always throws IOException. A caller invokes it once. How many times is the method body executed in total?",
+      "answer": 4,
+      "tolerance": 0,
+      "explanation": "Spring Framework 7's own @Retryable defaults to maxRetries = 3, which counts retries on top of the first call: 1 + 3 = 4 executions, with a 1 s delay. includes and excludes are empty, so every exception is retried. The older spring-retry library differs: its maxAttempts = 3 counts total attempts, and it uses retryFor (formerly include).",
+      "unit": "executions"
     }
   ]
 }

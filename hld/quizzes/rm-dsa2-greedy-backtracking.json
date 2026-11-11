@@ -329,6 +329,90 @@
         "d": "A is true."
       },
       "explanation": "The index controls which candidates remain available; the remaining value controls termination. Mixing these up is a common bug."
+    },
+    {
+      "id": "n-queens-six",
+      "concept": "N-Queens",
+      "type": "integer",
+      "difficulty": 2,
+      "prompt": "How many distinct ways can 6 queens be placed on a 6 x 6 board so that none attacks another?",
+      "answer": 4,
+      "tolerance": 0,
+      "unit": "solutions",
+      "explanation": "The counts for n = 1..8 are 1, 0, 0, 2, 10, 4, 40, 92. Backtracking places one queen per row and prunes with sets for used columns and both diagonals (r - c and r + c), far less work than the n^n raw placements."
+    },
+    {
+      "id": "jump-game-two",
+      "concept": "Greedy implementation",
+      "type": "integer",
+      "difficulty": 2,
+      "prompt": "For nums = [1, 2, 3, 4, 5], where nums[i] is the maximum jump length from index i, what is the minimum number of jumps to reach the last index?",
+      "answer": 3,
+      "tolerance": 0,
+      "unit": "jumps",
+      "explanation": "0 -> 1 -> 3 -> 4 is 3 jumps. The O(n) greedy keeps the end of the current jump range and the farthest index reachable; each time you pass the range end you count one more jump."
+    },
+    {
+      "id": "word-search",
+      "concept": "Backtracking on grids",
+      "type": "code",
+      "difficulty": 3,
+      "prompt": "Write a Python function exist(board, word) that returns True if word can be traced in a grid of characters through horizontally or vertically adjacent cells, using each cell at most once per path.",
+      "language": "python",
+      "starter": "def exist(board, word):\n    ",
+      "checks": [
+        {
+          "label": "compares the cell with the next letter of the word",
+          "pattern": "word\\s*\\[\\s*\\w+\\s*\\]"
+        },
+        {
+          "label": "marks the cell as used while exploring",
+          "pattern": "[\"']#[\"']|visited|seen|used"
+        },
+        {
+          "label": "explores all four neighbours",
+          "pattern": "\\+\\s*1[\\s\\S]*-\\s*1"
+        },
+        {
+          "label": "returns True on a full match",
+          "pattern": "return\\s+True|or\\s+\\w+\\(|any\\s*\\("
+        }
+      ],
+      "model": "def exist(board, word):\n    R, C = len(board), len(board[0])\n    def dfs(r, c, i):\n        if i == len(word):\n            return True\n        if r < 0 or c < 0 or r >= R or c >= C or board[r][c] != word[i]:\n            return False\n        ch, board[r][c] = board[r][c], \"#\"\n        found = (dfs(r + 1, c, i + 1) or dfs(r - 1, c, i + 1) or\n                 dfs(r, c + 1, i + 1) or dfs(r, c - 1, i + 1))\n        board[r][c] = ch\n        return found\n    return any(dfs(r, c, 0) for r in range(R) for c in range(C))",
+      "explanation": "Restoring the cell after the recursive calls is the backtracking step. Worst case O(R C 4^L) for a word of length L (each step has at most 3 fresh directions in practice). A visited set that you add to and remove from is equally valid."
+    },
+    {
+      "id": "gen-parens-prune",
+      "concept": "Duplicates and pruning",
+      "type": "single",
+      "difficulty": 2,
+      "prompt": "When generating all valid strings of n pairs of parentheses by backtracking, which rule prunes the search so only valid strings are built?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Add \"(\" while fewer than n are used, and \")\" only while closes < opens.",
+          "why": "Right: this keeps every prefix valid, so every completed string is valid and no dead branches are explored."
+        },
+        {
+          "id": "b",
+          "text": "Add \")\" first whenever possible, and \"(\" only when no \")\" fits.",
+          "why": "Closing first produces invalid prefixes such as \")\" and gives no guarantee of balance."
+        },
+        {
+          "id": "c",
+          "text": "Build every string of length 2n and test each one for balance at the end.",
+          "why": "Correct but it explores 2^(2n) strings, which is pruning only at the leaves."
+        },
+        {
+          "id": "d",
+          "text": "Allow \"(\" and \")\" equally, then drop results with unequal counts.",
+          "why": "Equal counts are not enough: \")(\" has equal counts but is invalid."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "The result count is the Catalan number: 1, 2, 5, 14, 42 for n = 1..5. The pattern 'add only while the prefix stays valid' is the general way to prune backtracking."
     }
   ]
 }

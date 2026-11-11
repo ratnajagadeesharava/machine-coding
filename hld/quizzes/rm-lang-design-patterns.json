@@ -7,7 +7,7 @@
   "seriesOrder": 14,
   "seriesDescription": "Topic-by-topic JEE-style quizzes for the backend and AI-engineering interview roadmap: integer, assertion-reason, matrix match, fill-in-the-blanks, short code writing, plus multi-correct questions. Language core, concurrency, DSA, web frameworks, data access, databases, messaging, resilience, security, testing, system design, LLM and agent engineering.",
   "description": "Singleton, Factory, Builder, Strategy, Observer and Command (with undo/redo), plus Python decorators, closures and manual dependency injection, with the classic traps.",
-  "source": "Gang of Four; Effective Java (Bloch); Refactoring.Guru; Python docs: functools, data model; Real Python; Baeldung",
+  "source": "Gang of Four; Effective Java (Bloch); Robert C. Martin SOLID; Refactoring.Guru; Python docs: functools, data model, import system (sys.modules); Real Python; Baeldung; GeeksforGeeks design pattern interview list",
   "estimatedMinutes": 15,
   "questions": [
     {
@@ -444,6 +444,144 @@
         "d": "A is true; Effective Java recommends this approach."
       },
       "explanation": "Limitation: the enum cannot extend another class, and it is eagerly loaded when the enum class initialises."
+    },
+    {
+      "id": "solid-principles",
+      "concept": "Pattern selection",
+      "type": "matrix",
+      "difficulty": 1,
+      "prompt": "Match each SOLID principle with its meaning.",
+      "left": [
+        {
+          "id": "a",
+          "text": "Single Responsibility"
+        },
+        {
+          "id": "b",
+          "text": "Open/Closed"
+        },
+        {
+          "id": "c",
+          "text": "Liskov Substitution"
+        },
+        {
+          "id": "d",
+          "text": "Interface Segregation"
+        },
+        {
+          "id": "e",
+          "text": "Dependency Inversion"
+        }
+      ],
+      "right": [
+        {
+          "id": "p",
+          "text": "A class should have one reason to change"
+        },
+        {
+          "id": "q",
+          "text": "Add behaviour by extension, not by editing tested code"
+        },
+        {
+          "id": "r",
+          "text": "Subtypes must be usable wherever the base type is expected without breaking callers"
+        },
+        {
+          "id": "s",
+          "text": "Prefer several small client-specific interfaces over one fat interface"
+        },
+        {
+          "id": "t",
+          "text": "High-level modules depend on abstractions, not on concrete low-level classes"
+        },
+        {
+          "id": "u",
+          "text": "Every class must be declared final"
+        }
+      ],
+      "pairs": {
+        "a": "p",
+        "b": "q",
+        "c": "r",
+        "d": "s",
+        "e": "t"
+      },
+      "explanation": "A rectangle/square subclass that breaks setWidth is the usual Liskov example; constructor injection is the usual way to apply Dependency Inversion."
+    },
+    {
+      "id": "proxy-pattern",
+      "concept": "Pattern selection",
+      "type": "single",
+      "difficulty": 3,
+      "prompt": "A class implements the same interface as a heavy ImageLoader, creates the real loader only on first use and checks the caller permissions before delegating. Which pattern is this?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Proxy",
+          "why": "Correct: same interface, controls access to the real subject (lazy creation plus protection)."
+        },
+        {
+          "id": "b",
+          "text": "Adapter",
+          "why": "Wrong: an adapter converts one interface into a different one the client expects; here the interface stays the same."
+        },
+        {
+          "id": "c",
+          "text": "Facade",
+          "why": "Wrong: a facade offers a new simplified interface to a whole subsystem, not a stand-in for one object."
+        },
+        {
+          "id": "d",
+          "text": "Composite",
+          "why": "Wrong: composite lets clients treat a tree of parts and wholes uniformly, which is unrelated to lazy access control."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Decorator also keeps the interface but adds behaviour chosen by the client, while a proxy controls access and decides when the real object is created. Spring AOP and JPA lazy loading use proxies."
+    },
+    {
+      "id": "py-module-singleton",
+      "concept": "Singleton",
+      "type": "truefalse",
+      "difficulty": 2,
+      "prompt": "In Python, a module-level object is a simple singleton because the interpreter executes a module once and caches it in sys.modules.",
+      "options": [
+        {
+          "id": "a",
+          "text": "True",
+          "why": "Correct: sys.modules makes repeated imports return the same module object, so its top-level objects are created once per process."
+        },
+        {
+          "id": "b",
+          "text": "False",
+          "why": "Wrong: the import system caches modules by name, so a second import does not re-run the module body."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Importing the same module again returns the cached module object, so module-level state is shared. This is why Python code rarely needs a Singleton class; an exception is separate processes or reloading the module."
+    },
+    {
+      "id": "abstract-factory-families",
+      "concept": "Pattern selection",
+      "type": "assertion",
+      "difficulty": 2,
+      "prompt": "Read the assertion (A) and the reason (R), then choose the option that fits.",
+      "assertion": "Abstract Factory is the right pattern when a program must create families of related objects that are meant to be used together, such as widgets for one UI theme.",
+      "reason": "Factory Method defers the choice of the concrete class to a subclass.",
+      "correct": [
+        "b"
+      ],
+      "whys": {
+        "a": "Not chosen: R is true but it describes a different pattern, so it does not explain A.",
+        "b": "Correct: both statements are true, but R describes Factory Method, which is a related yet separate pattern (Abstract Factory is often built from several factory methods).",
+        "c": "Not chosen: R is a true statement about Factory Method.",
+        "d": "Not chosen: A is true, because creating consistent product families is the stated intent of Abstract Factory."
+      },
+      "explanation": "Remember: Factory Method = one product, subclass decides; Abstract Factory = a family of products from one factory object; Builder = step-by-step construction."
     }
   ]
 }

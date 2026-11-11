@@ -403,6 +403,117 @@
         "a"
       ],
       "explanation": "Use an iterative DFS with a list as a stack, or sys.setrecursionlimit with care (deep recursion can still crash the interpreter). Java has the same issue with StackOverflowError."
+    },
+    {
+      "id": "word-ladder",
+      "concept": "Shortest path in implicit graphs",
+      "type": "integer",
+      "difficulty": 2,
+      "prompt": "Word ladder: change one letter per step, every intermediate word must be in the list [hot, dot, dog, lot, log, cog]. How many words are in the shortest sequence from \"hit\" to \"cog\", counting both ends?",
+      "answer": 5,
+      "tolerance": 0,
+      "unit": "words",
+      "explanation": "hit -> hot -> dot -> dog -> cog (or via lot, log) has 5 words, i.e. 4 transformations. Each word is a node and two words are adjacent when they differ in one letter, so BFS from the start gives the shortest sequence; the first time \"cog\" is dequeued is at level 4."
+    },
+    {
+      "id": "valid-tree",
+      "concept": "Graph properties",
+      "type": "multi",
+      "difficulty": 2,
+      "prompt": "An undirected graph has n nodes. Which condition sets, taken on their own, prove it is a tree? Select all that apply.",
+      "options": [
+        {
+          "id": "a",
+          "text": "It is connected and has exactly n - 1 edges.",
+          "why": "Right: a connected graph needs at least n - 1 edges, and with exactly n - 1 none is spare, so there is no cycle."
+        },
+        {
+          "id": "b",
+          "text": "It has no cycle and has exactly n - 1 edges.",
+          "why": "Right: an acyclic graph with n - 1 edges cannot be a forest of several trees, so it is connected."
+        },
+        {
+          "id": "c",
+          "text": "It is connected and has exactly n edges.",
+          "why": "With n edges and connectivity one edge is surplus, so exactly one cycle exists."
+        },
+        {
+          "id": "d",
+          "text": "It has no cycle and every node has an edge.",
+          "why": "A forest of two separate trees also has no cycle and no isolated node, so it can be disconnected."
+        }
+      ],
+      "correct": [
+        "a",
+        "b"
+      ],
+      "explanation": "Valid Graph Tree is usually solved with union-find (any edge joining two nodes already in the same set means a cycle) or one DFS plus the edge count check n - 1."
+    },
+    {
+      "id": "cycle-colours",
+      "concept": "Topological sort",
+      "type": "code",
+      "difficulty": 3,
+      "prompt": "Write a Python function has_cycle(n, edges) for a directed graph with nodes 0..n-1 (edges are (u, v) pairs) using DFS with three states per node: unvisited, on the current path, finished.",
+      "language": "python",
+      "starter": "def has_cycle(n, edges):\n    ",
+      "checks": [
+        {
+          "label": "builds an adjacency list",
+          "pattern": "adj|graph|\\[\\s*\\[\\s*\\]|defaultdict"
+        },
+        {
+          "label": "keeps a state or colour per node",
+          "pattern": "state|colou?r|visiting|status"
+        },
+        {
+          "label": "treats a node on the current path as a cycle",
+          "pattern": "==\\s*1|visiting|grey|gray|on_stack|in_stack"
+        },
+        {
+          "label": "marks a node finished after exploring it",
+          "pattern": "=\\s*2|done|black|finished"
+        },
+        {
+          "label": "returns True when a cycle is found",
+          "pattern": "return\\s+True"
+        }
+      ],
+      "model": "def has_cycle(n, edges):\n    adj = [[] for _ in range(n)]\n    for a, b in edges:\n        adj[a].append(b)\n    state = [0] * n  # 0 new, 1 on the path, 2 finished\n    def dfs(u):\n        state[u] = 1\n        for v in adj[u]:\n            if state[v] == 1:\n                return True\n            if state[v] == 0 and dfs(v):\n                return True\n        state[u] = 2\n        return False\n    return any(state[u] == 0 and dfs(u) for u in range(n))",
+      "explanation": "A plain visited set is not enough on a directed graph: reaching a finished node again (a diamond) is not a cycle, only reaching a node on the current path is. O(V + E). Kahn's algorithm is the other standard answer; for deep graphs in Python use an explicit stack."
+    },
+    {
+      "id": "undirected-cycle",
+      "concept": "Graph properties",
+      "type": "single",
+      "difficulty": 2,
+      "prompt": "What must a DFS cycle check handle on an undirected graph that the directed version does not?",
+      "options": [
+        {
+          "id": "a",
+          "text": "It must ignore the edge back to the node it just came from.",
+          "why": "Right: every undirected edge is stored in both directions, so the parent looks like a visited neighbour even without a cycle."
+        },
+        {
+          "id": "b",
+          "text": "It must run twice, once on the graph and once on its reverse.",
+          "why": "Reversing an undirected graph changes nothing; one traversal is enough."
+        },
+        {
+          "id": "c",
+          "text": "It must use three colours instead of a plain visited set.",
+          "why": "Three colours are needed for directed graphs; a visited set plus the parent check is enough here."
+        },
+        {
+          "id": "d",
+          "text": "It must sort every adjacency list before it starts the search.",
+          "why": "Neighbour order does not affect whether a cycle exists."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Equivalent alternatives: union-find (an edge whose endpoints already share a root closes a cycle), or the count check edges >= nodes - components. Watch parallel edges in multigraphs, where the parent skip must be by edge id."
     }
   ]
 }

@@ -7,7 +7,7 @@
   "seriesDescription": "Topic-by-topic JEE-style quizzes for the backend and AI-engineering interview roadmap: integer, assertion-reason, matrix match, fill-in-the-blanks, short code writing, plus multi-correct questions. Language core, concurrency, DSA, web frameworks, data access, databases, messaging, resilience, security, testing, system design, LLM and agent engineering.",
   "seriesOrder": 75,
   "description": "The dual-write problem and the transactional outbox, Debezium change data capture, retries and dead-letter queues, saga styles, and reconciling data across systems.",
-  "source": "microservices.io (transactional outbox, saga); Debezium documentation (outbox event router, PostgreSQL connector); Spring for Apache Kafka error handling; Designing Data-Intensive Applications; AWS prescriptive guidance on sagas",
+  "source": "microservices.io (transactional outbox, saga); Debezium documentation (outbox event router, PostgreSQL connector); Spring for Apache Kafka error handling reference; Designing Data-Intensive Applications; AWS prescriptive guidance on sagas",
   "estimatedMinutes": 16,
   "questions": [
     {
@@ -243,12 +243,12 @@
           "pattern": "new\\s+DeadLetterPublishingRecoverer\\s*\\(\\s*template"
         },
         {
-          "label": "uses FixedBackOff (or ExponentialBackOff)",
-          "pattern": "new\\s+(FixedBackOff|ExponentialBackOff)\\s*\\("
+          "label": "uses FixedBackOff (or an ExponentialBackOff variant)",
+          "pattern": "new\\s+(FixedBackOff|ExponentialBackOff(WithMaxRetries)?)\\s*\\("
         }
       ],
       "model": "    return new DefaultErrorHandler(new DeadLetterPublishingRecoverer(template), new FixedBackOff(1000L, 3));\n}",
-      "explanation": "The recoverer publishes to <topic>.DLT by default. FixedBackOff(interval, maxAttempts) counts retries after the first delivery. ExponentialBackOffWithMaxRetries is another valid way to add backoff."
+      "explanation": "The recoverer publishes to <topic>.DLT by default. FixedBackOff(interval, maxAttempts) counts retries after the first delivery, so 3 means 4 deliveries in total. ExponentialBackOffWithMaxRetries is another valid way to add backoff, and DefaultErrorHandler treats some exceptions (such as deserialisation errors) as not retryable."
     },
     {
       "id": "dlq-monitoring",
@@ -407,6 +407,57 @@
         "d": "A is true."
       },
       "explanation": "Compare by event date, make the job re-runnable and idempotent so late records fix earlier mismatches, and track aging buckets for items that stay unmatched."
+    },
+    {
+      "id": "event-router-fill",
+      "concept": "Change data capture",
+      "type": "fill",
+      "difficulty": 2,
+      "prompt": "Complete the Debezium outbox description.",
+      "text": "Debezium's outbox pattern support is the {1} single message transform, which routes each outbox row to a topic named from the {2} column by default and uses the {3} column as the Kafka message key.",
+      "blanks": {
+        "1": "EventRouter",
+        "2": "aggregatetype",
+        "3": "aggregateid"
+      },
+      "bank": [
+        "EventRouter",
+        "aggregatetype",
+        "aggregateid",
+        "payload",
+        "ExtractNewRecordState"
+      ],
+      "explanation": "The default topic pattern is outbox.event.<aggregatetype>. Keying by aggregateid keeps all events of one aggregate in one partition, hence in order. ExtractNewRecordState is a different Debezium transform that unwraps change events."
+    },
+    {
+      "id": "relay-ordering",
+      "concept": "Outbox pattern",
+      "type": "assertion",
+      "difficulty": 3,
+      "prompt": "Read the assertion A and the reason R, then choose the correct relationship between them.",
+      "assertion": "Running several outbox relays, each using FOR UPDATE SKIP LOCKED, can publish events of the same aggregate out of order.",
+      "reason": "SKIP LOCKED lets each relay take a different batch of rows, so a later batch can reach the broker before an earlier batch that another relay is still holding.",
+      "correct": [
+        "a"
+      ],
+      "whys": {
+        "a": "Correct: both are true and R is the mechanism behind A.",
+        "b": "R does explain A, so this relationship is wrong.",
+        "c": "R is true: skipped rows are left to other relays.",
+        "d": "A is true, so it cannot be false."
+      },
+      "explanation": "If per-aggregate order matters, use one relay per partition of the outbox (shard by aggregate id) or log-based CDC, which reads the outbox in commit order."
+    },
+    {
+      "id": "saga-compensations",
+      "concept": "Sagas",
+      "type": "integer",
+      "difficulty": 2,
+      "prompt": "An order saga has 5 sequential local transactions T1..T5, each with a compensation. T4 fails and its own local transaction is rolled back. How many compensating transactions must the saga run?",
+      "answer": 3,
+      "tolerance": 0,
+      "unit": "compensations",
+      "explanation": "T1, T2 and T3 committed, so C3, C2 and C1 run in reverse order: 3. T4 never committed, so it needs no compensation (though its failure handling must be safe to repeat), and T5 never started."
     }
   ]
 }

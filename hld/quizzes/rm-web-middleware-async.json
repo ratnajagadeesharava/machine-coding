@@ -3,7 +3,7 @@
   "title": "Web framework: middleware, AOP and async",
   "topic": "Interview roadmap",
   "description": "Servlet filters, interceptors, AOP and FastAPI middleware/dependencies, plus async endpoints, streaming and server-sent events in both stacks.",
-  "source": "Spring Framework AOP and MVC docs; Servlet specification; Starlette middleware docs; FastAPI docs (middleware, async, custom response); Project Reactor docs; Baeldung",
+  "source": "Spring Framework AOP and MVC docs; Servlet specification; Starlette middleware docs; FastAPI docs (middleware, concurrency and async/await, custom response); AnyIO thread limiter docs; Project Reactor docs; Baeldung",
   "series": "interview-roadmap",
   "seriesTitle": "Interview roadmap: topic quizzes",
   "seriesDescription": "Topic-by-topic JEE-style quizzes for the backend and AI-engineering interview roadmap: integer, assertion-reason, matrix match, fill-in-the-blanks, short code writing, plus multi-correct questions. Language core, concurrency, DSA, web frameworks, data access, databases, messaging, resilience, security, testing, system design, LLM and agent engineering.",
@@ -123,7 +123,7 @@
         }
       ],
       "model": "@Aspect\n@Component\npublic class TimingAspect {\n  @Around(\"execution(* com.acme.service..*.*(..))\")\n  public Object time(ProceedingJoinPoint pjp) throws Throwable {\n    long t = System.nanoTime();\n    try { return pjp.proceed(); }\n    finally { System.out.println(pjp.getSignature() + \" took \" + (System.nanoTime() - t)); }\n  }\n}",
-      "explanation": "Forgetting proceed() silently swallows the call. Also needs spring-boot-starter-aop. Pointcuts using within() or an annotation are valid alternatives."
+      "explanation": "Forgetting proceed() silently swallows the call. Needs spring-boot-starter-aop in Boot 3 (renamed spring-boot-starter-aspectj in Boot 4). Pointcuts using within() or an annotation are valid alternatives."
     },
     {
       "id": "fastapi-http-middleware",
@@ -372,6 +372,40 @@
         "c"
       ],
       "explanation": "WebFlux needs a non-blocking stack end to end; one blocking JDBC call on an event-loop thread hurts like time.sleep in async def. Virtual threads (Java 21) are the simple alternative."
+    },
+    {
+      "id": "threadpool-limit",
+      "concept": "Async endpoints (FastAPI)",
+      "type": "integer",
+      "difficulty": 3,
+      "prompt": "A plain def FastAPI endpoint runs time.sleep(1) in the default threadpool, which allows 40 worker threads. One uvicorn worker receives 100 requests at the same instant. About how many seconds until the last response?",
+      "answer": 3,
+      "tolerance": 0,
+      "explanation": "Sync endpoints run in AnyIO's threadpool with a default limit of 40 threads, so the 100 requests go in batches of 40, 40 and 20: 3 seconds (measured 3.3 s locally). The same 100 requests to an async def with asyncio.sleep(1) would take about 1 s.",
+      "unit": "seconds"
+    },
+    {
+      "id": "exception-through-middleware",
+      "concept": "Middleware (FastAPI)",
+      "type": "truefalse",
+      "difficulty": 2,
+      "prompt": "True or false: in FastAPI, when a dependency raises HTTPException(401), the resulting 401 response still passes back through your @app.middleware(\"http\") function, so a header set there is added to it.",
+      "options": [
+        {
+          "id": "a",
+          "text": "True",
+          "why": "Correct: HTTPException is converted to a response by Starlette's exception handling, which sits inside user middleware."
+        },
+        {
+          "id": "b",
+          "text": "False",
+          "why": "The 401 is a normal response object by the time it unwinds, so middleware still sees it; only unhandled exceptions (500) bypass this."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "ExceptionMiddleware sits inside the middleware you add, so HTTPException responses unwind through it (verified locally: 401 carried the middleware's header). Truly unhandled exceptions are turned into 500 by the outermost ServerErrorMiddleware."
     }
   ]
 }

@@ -7,7 +7,7 @@
   "seriesDescription": "Topic-by-topic JEE-style quizzes for the backend and AI-engineering interview roadmap: integer, assertion-reason, matrix match, fill-in-the-blanks, short code writing, plus multi-correct questions. Language core, concurrency, DSA, web frameworks, data access, databases, messaging, resilience, security, testing, system design, LLM and agent engineering.",
   "seriesOrder": 61,
   "description": "Spring @Transactional propagation, rollback rules and the self-invocation trap; SQLAlchemy Session and AsyncSession transactions; JdbcTemplate, NamedParameterJdbcTemplate, psycopg, asyncpg and SQLAlchemy Core text() with safe parameters.",
-  "source": "Spring Framework reference (transaction management); SQLAlchemy 2.0 docs (session transactions, asyncio); psycopg and asyncpg docs; Baeldung",
+  "source": "Spring Framework reference (transaction management, propagation, read-only); Spring Data JPA reference (transactions); PostgreSQL docs (transaction isolation); SQLAlchemy 2.0 docs (session transactions, asyncio); psycopg and asyncpg docs; Vlad Mihalcea (read-only optimisation); Baeldung",
   "estimatedMinutes": 15,
   "questions": [
     {
@@ -436,6 +436,62 @@
         "d": "s"
       },
       "explanation": "asyncpg uses PostgreSQL-native numbered parameters; psycopg uses %s (or %(name)s); JDBC uses ?; SQLAlchemy text() and Spring NamedParameterJdbcTemplate use :name."
+    },
+    {
+      "id": "readonly-flush",
+      "concept": "Spring @Transactional",
+      "type": "truefalse",
+      "difficulty": 2,
+      "prompt": "True or false: with JPA and Hibernate, a change made to a managed entity inside a @Transactional(readOnly = true) method is still flushed to the database at commit, just like in a normal transaction.",
+      "options": [
+        {
+          "id": "a",
+          "text": "True",
+          "why": "Spring sets the Hibernate session to FlushMode.MANUAL for read-only transactions, so dirty entities are not flushed."
+        },
+        {
+          "id": "b",
+          "text": "False",
+          "why": "Correct: readOnly = true puts Hibernate in MANUAL flush mode, so no automatic flush or dirty-checking UPDATE happens."
+        }
+      ],
+      "correct": [
+        "b"
+      ],
+      "explanation": "readOnly = true is a hint that lets Spring set the flush mode to MANUAL and tell the JDBC driver the transaction is read-only. It also saves dirty-checking work on large result sets. It is not a security control: use database privileges for that."
+    },
+    {
+      "id": "default-isolation",
+      "concept": "Isolation levels",
+      "type": "single",
+      "difficulty": 2,
+      "prompt": "A Spring service uses @Transactional with the default isolation (Isolation.DEFAULT) against PostgreSQL. Which isolation level does each transaction run at?",
+      "options": [
+        {
+          "id": "a",
+          "text": "READ COMMITTED, the PostgreSQL default.",
+          "why": "Correct: DEFAULT means the database default, and for PostgreSQL that is READ COMMITTED."
+        },
+        {
+          "id": "b",
+          "text": "REPEATABLE READ, as in every SQL database.",
+          "why": "REPEATABLE READ is the default of MySQL InnoDB, not of PostgreSQL."
+        },
+        {
+          "id": "c",
+          "text": "SERIALIZABLE, because Spring prefers the safest level.",
+          "why": "Spring never upgrades the level on its own; SERIALIZABLE must be requested explicitly."
+        },
+        {
+          "id": "d",
+          "text": "READ UNCOMMITTED, to give the best throughput by default.",
+          "why": "PostgreSQL treats READ UNCOMMITTED as READ COMMITTED and Spring does not request it by default."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Isolation.DEFAULT delegates to the database: READ COMMITTED on PostgreSQL, Oracle and SQL Server, REPEATABLE READ on MySQL InnoDB. Higher levels can raise serialization failures that the application must retry."
     }
   ]
 }

@@ -7,7 +7,7 @@
   "seriesDescription": "Topic-by-topic JEE-style quizzes for the backend and AI-engineering interview roadmap: integer, assertion-reason, matrix match, fill-in-the-blanks, short code writing, plus multi-correct questions. Language core, concurrency, DSA, web frameworks, data access, databases, messaging, resilience, security, testing, system design, LLM and agent engineering.",
   "seriesOrder": 82,
   "description": "Authentication versus authorisation, sessions versus JWT, refresh-token rotation and revocation, decoding and validating JWT claims (exp, aud, kid, alg=none), Spring Security resource server and PyJWT.",
-  "source": "RFC 7519 (JWT); RFC 8725 (JWT best current practices); OAuth 2.0 Security BCP; Spring Security reference; PyJWT docs; FastAPI security docs",
+  "source": "RFC 7519 (JWT); RFC 8725 (JWT best current practices); RFC 6749 and RFC 7636 (OAuth 2.0, PKCE); RFC 9700 (OAuth 2.0 Security BCP); OAuth 2.1 draft; Spring Security reference; PyJWT docs; FastAPI security docs",
   "estimatedMinutes": 15,
   "questions": [
     {
@@ -417,6 +417,112 @@
         "b"
       ],
       "explanation": "Typical shape: token = Depends(oauth2_scheme), then jwt.decode inside get_current_user, raising 401 on failure."
+    },
+    {
+      "id": "spa-flow",
+      "concept": "OAuth 2.0",
+      "type": "single",
+      "difficulty": 2,
+      "prompt": "A browser single-page app must sign users in through an OAuth 2.0 / OpenID Connect provider. Which flow does current security guidance (RFC 9700, OAuth 2.1 draft) recommend?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Authorization code flow with PKCE.",
+          "why": "Correct: the code is exchanged at the token endpoint with a code verifier, so an intercepted code is useless and no token appears in the URL."
+        },
+        {
+          "id": "b",
+          "text": "Implicit flow, returning the access token in the URL fragment.",
+          "why": "Deprecated: tokens in the fragment leak through history and referrers and cannot be bound to the client."
+        },
+        {
+          "id": "c",
+          "text": "Resource owner password credentials, posting the user's password to the app.",
+          "why": "Removed from OAuth 2.1: the app sees the raw password and it defeats MFA and federation."
+        },
+        {
+          "id": "d",
+          "text": "Client credentials grant using a secret shipped in the JavaScript bundle.",
+          "why": "That grant is for machine-to-machine calls, and a secret in a public client is not secret."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "PKCE is defined in RFC 7636; OAuth 2.1 requires it for all authorization-code clients and drops implicit and password grants. Keep tokens out of URLs and short-lived."
+    },
+    {
+      "id": "grant-match",
+      "concept": "OAuth 2.0",
+      "type": "matrix",
+      "difficulty": 1,
+      "prompt": "Match each OAuth 2.0 grant type with the situation it fits.",
+      "left": [
+        {
+          "id": "a",
+          "text": "Authorization code + PKCE"
+        },
+        {
+          "id": "b",
+          "text": "Client credentials"
+        },
+        {
+          "id": "c",
+          "text": "Refresh token"
+        },
+        {
+          "id": "d",
+          "text": "Device authorization"
+        }
+      ],
+      "right": [
+        {
+          "id": "p",
+          "text": "A user signs in through a browser or mobile app"
+        },
+        {
+          "id": "q",
+          "text": "A backend service calls another API as itself, with no user"
+        },
+        {
+          "id": "r",
+          "text": "Getting a new access token without asking the user to log in again"
+        },
+        {
+          "id": "s",
+          "text": "A TV or CLI with no browser shows a code the user enters on another device"
+        },
+        {
+          "id": "t",
+          "text": "Sending the username and password straight to the API"
+        }
+      ],
+      "pairs": {
+        "a": "p",
+        "b": "q",
+        "c": "r",
+        "d": "s"
+      },
+      "explanation": "The last option is the password grant, which OAuth 2.1 removes. Match the grant to who the actor is (user, service, constrained device) and whether a browser is available."
+    },
+    {
+      "id": "check-aud",
+      "concept": "JWT validation",
+      "type": "assertion",
+      "difficulty": 3,
+      "prompt": "Read the assertion A and the reason R, then choose the correct relationship between them.",
+      "assertion": "A resource server must validate the aud claim of a JWT, not only the signature and exp.",
+      "reason": "Without an audience check, a token issued by the same authorisation server for service A would also be accepted by service B.",
+      "correct": [
+        "a"
+      ],
+      "whys": {
+        "a": "Correct: both are true and R is exactly the attack the audience check prevents (RFC 8725 recommends validating aud).",
+        "b": "R does explain A, so this is wrong.",
+        "c": "R is true, so this is wrong.",
+        "d": "A is true, so this is wrong."
+      },
+      "explanation": "Also pin iss, algorithms and token type. Audience-restricted tokens limit the blast radius of a token leaked from one service."
     }
   ]
 }

@@ -397,6 +397,101 @@
         "a"
       ],
       "explanation": "Array children give O(1) indexed access for a small known alphabet (e.g. lowercase letters); maps win for Unicode."
+    },
+    {
+      "id": "redundant-edge",
+      "concept": "Union-find applications",
+      "type": "integer",
+      "difficulty": 2,
+      "prompt": "Edges of an undirected graph arrive in this order: (1,2), (2,3), (3,4), (1,4), (1,5). Counting from 1, which edge is the first that closes a cycle?",
+      "answer": 4,
+      "tolerance": 0,
+      "unit": "th edge",
+      "explanation": "After the first three edges nodes 1-4 are in one set, so (1,4) joins two nodes with the same root. This is Redundant Connection: the union returns false on that edge. (1,5) later attaches a new node."
+    },
+    {
+      "id": "trie-word-search",
+      "concept": "Trie structure",
+      "type": "single",
+      "difficulty": 3,
+      "prompt": "In Word Search II (find many words in a grid), why build a trie of the words instead of running Word Search I once per word?",
+      "options": [
+        {
+          "id": "a",
+          "text": "One DFS walks the grid and the trie together and stops when the path is no prefix.",
+          "why": "Right: shared prefixes are explored once and dead branches are cut immediately, instead of repeating the grid search per word."
+        },
+        {
+          "id": "b",
+          "text": "The trie sorts the words, so the grid can be searched with binary search.",
+          "why": "A grid is not sorted, so binary search does not apply."
+        },
+        {
+          "id": "c",
+          "text": "The trie removes the need to mark visited cells during the DFS.",
+          "why": "Each path still must not reuse a cell, so you still mark and restore cells."
+        },
+        {
+          "id": "d",
+          "text": "The trie makes every cell visit O(1) and the total cost independent of the grid size.",
+          "why": "The search is still bounded by the grid and word lengths; the trie only prunes work."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Typical optimisation: store the full word at the end node, clear it once found to avoid duplicates, and prune trie leaves after a match. This is among the most commonly asked trie questions."
+    },
+    {
+      "id": "wildcard-trie",
+      "concept": "Trie structure",
+      "type": "code",
+      "difficulty": 3,
+      "prompt": "Write a Python class WordDictionary with add_word(word) and search(word), where search treats \".\" as any single letter. Use nested dicts and recursion.",
+      "language": "python",
+      "starter": "class WordDictionary:\n    ",
+      "checks": [
+        {
+          "label": "defines add_word",
+          "pattern": "def\\s+(add_word|addWord|add|insert)"
+        },
+        {
+          "label": "defines search",
+          "pattern": "def\\s+search"
+        },
+        {
+          "label": "handles the wildcard character",
+          "pattern": "[\"']\\.[\"']"
+        },
+        {
+          "label": "tries every child for a wildcard",
+          "pattern": "\\.values\\(\\)|\\.items\\(\\)|for\\s+\\w+\\s+in\\s+node"
+        }
+      ],
+      "model": "class WordDictionary:\n    def __init__(self):\n        self.root = {}\n    def add_word(self, word):\n        node = self.root\n        for ch in word:\n            node = node.setdefault(ch, {})\n        node[\"$\"] = True\n    def search(self, word):\n        def go(i, node):\n            if i == len(word):\n                return \"$\" in node\n            ch = word[i]\n            if ch == \".\":\n                return any(go(i + 1, child) for k, child in node.items() if k != \"$\")\n            return ch in node and go(i + 1, node[ch])\n        return go(0, self.root)",
+      "explanation": "Without wildcards search is O(L); with k dots the worst case branches over the alphabet at each dot, up to O(26^k * L). The \"$\" end marker keeps words from matching as prefixes. LeetCode 211 (Design Add and Search Words)."
+    },
+    {
+      "id": "kruskal-fill",
+      "concept": "Union-find applications",
+      "type": "fill",
+      "difficulty": 2,
+      "prompt": "Complete the description of Kruskal's minimum spanning tree algorithm.",
+      "text": "Sort the edges by {1}; take an edge only if its endpoints have different {2} in the union-find; stop after {3} edges for a graph with n vertices.",
+      "blanks": {
+        "1": "weight",
+        "2": "roots",
+        "3": "n - 1"
+      },
+      "bank": [
+        "weight",
+        "roots",
+        "n - 1",
+        "n",
+        "degree",
+        "labels"
+      ],
+      "explanation": "Sorting dominates, so the total is O(E log E) = O(E log V). Prim's algorithm with a heap reaches the same bound; Kruskal's find step is the same cycle test as in Redundant Connection."
     }
   ]
 }

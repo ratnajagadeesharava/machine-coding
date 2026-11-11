@@ -7,7 +7,7 @@
   "seriesOrder": 22,
   "seriesDescription": "Topic-by-topic JEE-style quizzes for the backend and AI-engineering interview roadmap: integer, assertion-reason, matrix match, fill-in-the-blanks, short code writing, plus multi-correct questions. Language core, concurrency, DSA, web frameworks, data access, databases, messaging, resilience, security, testing, system design, LLM and agent engineering.",
   "description": "ConcurrentHashMap, BlockingQueue, CopyOnWriteArrayList, asyncio.Queue, latches, barriers, semaphores, the four deadlock conditions, lock ordering and reading thread dumps.",
-  "source": "Oracle Java docs (java.util.concurrent); Java Concurrency in Practice; Python queue, threading and asyncio docs; py-spy README; Baeldung; GeeksforGeeks",
+  "source": "Oracle Java docs (java.util.concurrent, BlockingQueue, ConcurrentHashMap); Java Concurrency in Practice; Python queue, threading and asyncio docs; py-spy README; Baeldung; GeeksforGeeks; DZone thread dump articles",
   "estimatedMinutes": 15,
   "questions": [
     {
@@ -131,7 +131,7 @@
         },
         {
           "id": "r4",
-          "text": "Unbounded lock-free queue where take() never blocks"
+          "text": "Unbounded lock-free queue that never blocks: poll() returns null when empty"
         },
         {
           "id": "r5",
@@ -432,6 +432,80 @@
         "a"
       ],
       "explanation": "py-spy needs ptrace permission (often sudo, or CAP_SYS_PTRACE in containers). Alternatives: faulthandler.dump_traceback registered on a signal, or --native for C frames."
+    },
+    {
+      "id": "chm-merge-count",
+      "concept": "ConcurrentHashMap",
+      "type": "code",
+      "difficulty": 2,
+      "prompt": "Given ConcurrentHashMap<String, Integer> counts and a String word, write one statement that increments the count for word by 1 atomically, starting from 1 when the key is absent.",
+      "language": "java",
+      "checks": [
+        {
+          "label": "uses an atomic per-key update",
+          "pattern": "\\.(merge|compute|computeIfPresent)\\s*\\("
+        },
+        {
+          "label": "adds 1 to the count",
+          "pattern": "(Integer::sum|\\+\\s*1|,\\s*1\\s*,)"
+        }
+      ],
+      "model": "counts.merge(word, 1, Integer::sum);",
+      "explanation": "merge is atomic per key. compute((k, v) -> v == null ? 1 : v + 1) is equally valid; get-then-put is the check-then-act bug."
+    },
+    {
+      "id": "bq-method-families",
+      "concept": "Concurrent collections",
+      "type": "matrix",
+      "difficulty": 2,
+      "prompt": "A BlockingQueue is full. Match each insertion method with what it does.",
+      "left": [
+        {
+          "id": "a",
+          "text": "put(e)"
+        },
+        {
+          "id": "b",
+          "text": "offer(e)"
+        },
+        {
+          "id": "c",
+          "text": "offer(e, 1, SECONDS)"
+        },
+        {
+          "id": "d",
+          "text": "add(e)"
+        }
+      ],
+      "right": [
+        {
+          "id": "p",
+          "text": "Blocks until space is available"
+        },
+        {
+          "id": "q",
+          "text": "Returns false immediately"
+        },
+        {
+          "id": "r",
+          "text": "Waits up to the timeout, then returns false"
+        },
+        {
+          "id": "s",
+          "text": "Throws IllegalStateException"
+        },
+        {
+          "id": "t",
+          "text": "Silently overwrites the oldest element"
+        }
+      ],
+      "pairs": {
+        "a": "p",
+        "b": "q",
+        "c": "r",
+        "d": "s"
+      },
+      "explanation": "BlockingQueue methods come in four families: throws (add), special value (offer), blocks (put) and times out (offer with timeout). The overwrite behaviour is not offered by any standard BlockingQueue."
     }
   ]
 }

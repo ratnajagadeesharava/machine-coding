@@ -3,7 +3,7 @@
   "title": "Web framework: REST, validation and errors",
   "topic": "Interview roadmap",
   "description": "REST controllers and routing, status codes, request validation with DTOs, response models, and global error handling in Spring Boot and FastAPI.",
-  "source": "Spring MVC and Bean Validation docs; Spring Framework ProblemDetail docs; FastAPI docs (handling errors, response model); Pydantic docs; MDN HTTP status codes; Baeldung",
+  "source": "Spring MVC and Bean Validation docs; Spring Framework error responses (ProblemDetail, RFC 9457 which obsoletes RFC 7807); Spring Boot Jackson defaults; FastAPI docs (handling errors, response model); Pydantic v2 docs (migration guide, configuration); MDN HTTP status codes; Baeldung",
   "series": "interview-roadmap",
   "seriesTitle": "Interview roadmap: topic quizzes",
   "seriesDescription": "Topic-by-topic JEE-style quizzes for the backend and AI-engineering interview roadmap: integer, assertion-reason, matrix match, fill-in-the-blanks, short code writing, plus multi-correct questions. Language core, concurrency, DSA, web frameworks, data access, databases, messaging, resilience, security, testing, system design, LLM and agent engineering.",
@@ -153,7 +153,7 @@
           "pattern": "HttpStatus\\.CREATED|\\.created\\(|status\\(\\s*201\\s*\\)|@ResponseStatus"
         }
       ],
-      "model": "  @PostMapping(\"/users\")\n  public ResponseEntity<UserResponse> create(@Valid @RequestBody CreateUserRequest req) {\n    UserResponse out = service.create(req);\n    return ResponseEntity.status(HttpStatus.CREATED).body(out);\n  }\n}",
+      "model": "@PostMapping(\"/users\")\npublic ResponseEntity<UserResponse> create(@Valid @RequestBody CreateUserRequest req) {\n  UserResponse out = service.create(req);\n  return ResponseEntity.status(HttpStatus.CREATED).body(out);\n}",
       "explanation": "ResponseEntity.created(uri).body(out) is even better because it sets the Location header. @ResponseStatus(HttpStatus.CREATED) on the method is another valid way."
     },
     {
@@ -208,7 +208,7 @@
         }
       ],
       "model": "@RestControllerAdvice\nclass ApiErrors {\n  @ExceptionHandler(MethodArgumentNotValidException.class)\n  ProblemDetail onInvalid(MethodArgumentNotValidException ex) {\n    return ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, \"Validation failed\");\n  }\n}",
-      "explanation": "ProblemDetail is Spring 6 / Boot 3's RFC 7807-style body (media type application/problem+json). Extending ResponseEntityExceptionHandler is another common pattern."
+      "explanation": "ProblemDetail is Spring 6 / Boot 3's model of the RFC 9457 problem body (RFC 7807 before it was obsoleted), served as application/problem+json. Extending ResponseEntityExceptionHandler or setting spring.mvc.problemdetails.enabled=true are other common routes."
     },
     {
       "id": "fastapi-exception-handler",
@@ -410,6 +410,131 @@
         "d"
       ],
       "explanation": "Verified by running the app. Customise with exception_handler for HTTPException, RequestValidationError or your own types."
+    },
+    {
+      "id": "unknown-body-fields",
+      "concept": "Request validation (Spring)",
+      "type": "single",
+      "difficulty": 2,
+      "prompt": "A client posts {\"name\": \"Ann\", \"role\": \"admin\"} to an endpoint whose request DTO declares only name. With stock settings, how do Spring Boot (Jackson) and FastAPI (Pydantic v2) treat the unknown role field?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Both accept the request and silently ignore role.",
+          "why": "Correct: Boot turns FAIL_ON_UNKNOWN_PROPERTIES off and Pydantic's default is extra='ignore'."
+        },
+        {
+          "id": "b",
+          "text": "Both reject the request, Spring with 400 and FastAPI with 422.",
+          "why": "Neither framework rejects extra fields unless you opt in to strict parsing."
+        },
+        {
+          "id": "c",
+          "text": "Spring ignores the field but FastAPI answers 422 for it.",
+          "why": "Pydantic v2 ignores extra input by default; 422 needs extra='forbid'."
+        },
+        {
+          "id": "d",
+          "text": "Spring answers 400 for it but FastAPI ignores the field.",
+          "why": "Boot's auto-configured ObjectMapper disables FAIL_ON_UNKNOWN_PROPERTIES, so it ignores it too."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Plain Jackson fails on unknown properties, but Spring Boot's auto-configured ObjectMapper disables that. Strictness is opt-in: spring.jackson.deserialization.fail-on-unknown-properties=true, or extra='forbid' in Pydantic. Ignoring extras is also why binding request JSON directly to an entity invites mass assignment."
+    },
+    {
+      "id": "code-extra-forbid",
+      "concept": "Request validation (FastAPI)",
+      "type": "code",
+      "difficulty": 2,
+      "language": "python",
+      "prompt": "Write a Pydantic v2 model ProfileIn with a field nickname: str that rejects any request body containing fields it does not declare, so FastAPI answers 422 for them.",
+      "starter": "class ProfileIn(BaseModel):\n    ",
+      "checks": [
+        {
+          "label": "extends BaseModel",
+          "pattern": "class\\s+ProfileIn\\s*\\(\\s*BaseModel\\s*\\)"
+        },
+        {
+          "label": "configures extra as forbid through model_config",
+          "pattern": "model_config\\s*=\\s*(ConfigDict\\(\\s*extra\\s*=\\s*[\"']forbid[\"']|\\{\\s*[\"']extra[\"']\\s*:\\s*[\"']forbid[\"'])"
+        },
+        {
+          "label": "declares nickname: str",
+          "pattern": "nickname\\s*:\\s*str"
+        }
+      ],
+      "model": "class ProfileIn(BaseModel):\n    model_config = ConfigDict(extra=\"forbid\")\n    nickname: str",
+      "explanation": "Pydantic v2 uses model_config (v1 used an inner class Config). The error type is extra_forbidden. The value \"ignore\" is the default and \"allow\" stores the extras on the model."
+    },
+    {
+      "id": "pydantic-v2-names",
+      "concept": "Request validation (FastAPI)",
+      "type": "matrix",
+      "difficulty": 2,
+      "prompt": "Match each Pydantic v1 API with its Pydantic v2 replacement.",
+      "left": [
+        {
+          "id": "a",
+          "text": "model.dict()"
+        },
+        {
+          "id": "b",
+          "text": "Model.parse_obj(data)"
+        },
+        {
+          "id": "c",
+          "text": "@validator(\"email\")"
+        },
+        {
+          "id": "d",
+          "text": "Config.orm_mode = True"
+        },
+        {
+          "id": "e",
+          "text": "model.json()"
+        }
+      ],
+      "right": [
+        {
+          "id": "p",
+          "text": "model.model_dump()"
+        },
+        {
+          "id": "q",
+          "text": "Model.model_validate(data)"
+        },
+        {
+          "id": "r",
+          "text": "@field_validator(\"email\")"
+        },
+        {
+          "id": "s",
+          "text": "model_config = ConfigDict(from_attributes=True)"
+        },
+        {
+          "id": "t",
+          "text": "model.model_dump_json()"
+        },
+        {
+          "id": "u",
+          "text": "model.to_dict()"
+        },
+        {
+          "id": "v",
+          "text": "@root_validator"
+        }
+      ],
+      "pairs": {
+        "a": "p",
+        "b": "q",
+        "c": "r",
+        "d": "s",
+        "e": "t"
+      },
+      "explanation": "Pydantic v2 prefixes the instance and class API with model_ and moves configuration into model_config. The v1 names still exist as deprecated aliases but emit warnings, and pre-2.0 tutorials still use them."
     }
   ]
 }

@@ -7,7 +7,7 @@
   "seriesDescription": "Topic-by-topic JEE-style quizzes for the backend and AI-engineering interview roadmap: integer, assertion-reason, matrix match, fill-in-the-blanks, short code writing, plus multi-correct questions. Language core, concurrency, DSA, web frameworks, data access, databases, messaging, resilience, security, testing, system design, LLM and agent engineering.",
   "seriesOrder": 95,
   "description": "Checkpointers and thread_id, MemorySaver versus Postgres, long-term stores, human-in-the-loop interrupt and resume, RetryPolicy, node timeouts and the recursion limit.",
-  "source": "LangGraph docs (persistence, interrupts, errors); langgraph source for RetryPolicy and recursion defaults",
+  "source": "LangGraph docs (persistence, interrupts, errors, add_node timeout); langgraph 1.2 source for RetryPolicy, TimeoutPolicy and recursion defaults, all run locally",
   "estimatedMinutes": 16,
   "questions": [
     {
@@ -408,7 +408,17 @@
         "b",
         "c"
       ],
-      "explanation": "Set recursion_limit as a deliberate budget (for example 2 x the max tool rounds + 1), add a loop counter, and put HTTP/model timeouts on the clients themselves."
+      "explanation": "Set recursion_limit as a deliberate budget (for example 2 x the max tool rounds + 1), add a loop counter, and put HTTP/model timeouts on the clients themselves. Per-node timeouts exist in current LangGraph but rely on asyncio cancellation, so they only help async nodes."
+    },
+    {
+      "id": "history-length",
+      "concept": "Checkpointers and threads",
+      "type": "integer",
+      "difficulty": 3,
+      "prompt": "A graph START -> a -> b -> c -> END is compiled with MemorySaver and run once on a new thread. One checkpoint is saved for the empty input state, one after the input is written (next node: the entry), and one after each node finishes. How many snapshots does list(app.get_state_history(cfg)) hold?",
+      "answer": 5,
+      "explanation": "2 + 3 nodes = 5, newest first: after c, after b, after a, the input snapshot, and the empty start snapshot. I printed it from langgraph 1.2. This is how time travel finds a point to replay from.",
+      "unit": "snapshots"
     }
   ]
 }

@@ -3,7 +3,7 @@
   "title": "Web framework: app structure, DI and config",
   "topic": "Interview roadmap",
   "description": "Spring Boot and FastAPI application structure, auto-configuration, startup lifecycle, dependency injection and bean scopes, proxy pitfalls, and typed configuration.",
-  "source": "Spring Boot reference documentation; Spring Framework core docs; FastAPI docs (dependencies, lifespan); pydantic-settings docs; Baeldung",
+  "source": "Spring Boot reference (auto-configuration, externalised config, circular references in the 2.6 release notes); Spring Framework core docs (dependencies, @Primary/@Qualifier); FastAPI docs (dependencies, lifespan, testing overrides); pydantic-settings docs; Baeldung",
   "series": "interview-roadmap",
   "seriesTitle": "Interview roadmap: topic quizzes",
   "seriesDescription": "Topic-by-topic JEE-style quizzes for the backend and AI-engineering interview roadmap: integer, assertion-reason, matrix match, fill-in-the-blanks, short code writing, plus multi-correct questions. Language core, concurrency, DSA, web frameworks, data access, databases, messaging, resilience, security, testing, system design, LLM and agent engineering.",
@@ -417,6 +417,64 @@
         "c"
       ],
       "explanation": "Remember the rule: external wins over packaged, specific wins over general. Keep secrets out of the jar and supply them through env vars or a secrets manager."
+    },
+    {
+      "id": "circular-constructor",
+      "concept": "Dependency injection (Spring)",
+      "type": "single",
+      "difficulty": 3,
+      "prompt": "OrderService takes PaymentService through its constructor, and PaymentService takes OrderService through its constructor. What happens when a Spring Boot 3 application starts with default settings?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Startup fails because the beans are stuck in creation (BeanCurrentlyInCreationException).",
+          "why": "Correct: constructor cycles cannot be resolved, and Boot also prohibits circular references by default."
+        },
+        {
+          "id": "b",
+          "text": "Spring injects an early reference through its singleton cache and the application starts normally.",
+          "why": "Early references only helped setter or field injection, and Boot 2.6+ turns even that off by default."
+        },
+        {
+          "id": "c",
+          "text": "The application starts, but one of the two fields stays null until first use.",
+          "why": "Spring never leaves a required constructor argument null; it fails fast instead."
+        },
+        {
+          "id": "d",
+          "text": "Spring silently switches one of the beans to prototype scope to break the cycle.",
+          "why": "Scopes are never changed automatically; the cycle is simply reported as an error."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Fix the design (extract a third bean or an event) rather than reaching for spring.main.allow-circular-references=true or @Lazy, which only hide the cycle. Constructor injection is what exposes cycles at startup."
+    },
+    {
+      "id": "code-qualifier",
+      "concept": "Dependency injection (Spring)",
+      "type": "code",
+      "difficulty": 2,
+      "language": "java",
+      "prompt": "Two beans of type PaymentGateway exist, and StripeGateway is annotated @Primary. Write the constructor of CheckoutService (one parameter named gw, no Lombok) so that it receives the bean named \"paypal\" instead of the primary one.",
+      "starter": "public CheckoutService(",
+      "checks": [
+        {
+          "label": "uses @Qualifier with the bean name paypal",
+          "pattern": "@Qualifier\\s*\\(\\s*(value\\s*=\\s*)?\"paypal\"\\s*\\)"
+        },
+        {
+          "label": "parameter is PaymentGateway gw",
+          "pattern": "PaymentGateway\\s+gw\\b"
+        },
+        {
+          "label": "is the CheckoutService constructor",
+          "pattern": "CheckoutService\\s*\\("
+        }
+      ],
+      "model": "public CheckoutService(@Qualifier(\"paypal\") PaymentGateway gw) {\n  this.gw = gw;\n}",
+      "explanation": "An explicit @Qualifier beats @Primary, which only picks a default when nothing narrower is stated. Without either, two candidates throw NoUniqueBeanDefinitionException. Other valid routes: naming the parameter paypal, or injecting List<PaymentGateway> or Map<String, PaymentGateway>."
     }
   ]
 }

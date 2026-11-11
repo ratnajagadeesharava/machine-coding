@@ -420,6 +420,94 @@
         "b"
       ],
       "explanation": "Use bisect_left for lower bound and bisect_right for upper bound; `bisect_left(a, x)` equals count of elements < x."
+    },
+    {
+      "id": "sliding-max",
+      "concept": "Monotonic deque",
+      "type": "code",
+      "difficulty": 3,
+      "prompt": "Write a Python function sliding_max(nums, k) returning the maximum of every window of size k, in O(n), using a deque of indices.",
+      "language": "python",
+      "starter": "from collections import deque\n\ndef sliding_max(nums, k):\n    ",
+      "checks": [
+        {
+          "label": "uses a deque",
+          "pattern": "deque"
+        },
+        {
+          "label": "pops smaller values from the back",
+          "pattern": "\\.pop\\(\\)"
+        },
+        {
+          "label": "drops the front index when it leaves the window",
+          "pattern": "popleft\\("
+        },
+        {
+          "label": "appends the current index",
+          "pattern": "append\\("
+        },
+        {
+          "label": "records the maximum from the front once the first window is full",
+          "pattern": "\\[\\s*0\\s*\\]"
+        }
+      ],
+      "model": "from collections import deque\n\ndef sliding_max(nums, k):\n    dq, out = deque(), []\n    for i, x in enumerate(nums):\n        while dq and nums[dq[-1]] <= x:\n            dq.pop()\n        dq.append(i)\n        if dq[0] <= i - k:\n            dq.popleft()\n        if i >= k - 1:\n            out.append(nums[dq[0]])\n    return out",
+      "explanation": "The deque holds indices with decreasing values, so the front is always the window maximum. Each index is pushed and popped once: O(n), not O(n k). A max-heap with lazy deletion is O(n log n) and also acceptable."
+    },
+    {
+      "id": "rain-water",
+      "concept": "Two pointers",
+      "type": "integer",
+      "difficulty": 2,
+      "prompt": "What is the total water trapped by the elevation map [0, 1, 0, 2, 1, 0, 1, 3, 2, 1, 2, 1]?",
+      "answer": 6,
+      "tolerance": 0,
+      "unit": "units",
+      "explanation": "Water above bar i is min(tallest to the left, tallest to the right) - height[i]; summing gives 6. Two pointers from both ends compute it in O(n) time and O(1) space by always advancing the side with the lower wall."
+    },
+    {
+      "id": "min-stack",
+      "concept": "Stack and deque",
+      "type": "single",
+      "difficulty": 2,
+      "prompt": "To support push, pop, top and getMin all in O(1), what should a min-stack store?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Alongside each pushed value, the minimum of the stack at that moment.",
+          "why": "Right: after a pop, the previous entry already knows the minimum of what remains."
+        },
+        {
+          "id": "b",
+          "text": "One variable holding the smallest value pushed so far, updated on each push.",
+          "why": "After popping that minimum the variable cannot be restored without rescanning."
+        },
+        {
+          "id": "c",
+          "text": "A sorted list of every value, updated on each push and on each pop.",
+          "why": "Keeping a sorted list costs O(n) per update (or O(log n) with a tree), not O(1)."
+        },
+        {
+          "id": "d",
+          "text": "A min-heap kept alongside the stack and polled whenever getMin is called.",
+          "why": "Removing an arbitrary popped value from a heap is not O(1) and getMin would not match the stack contents."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "LeetCode 155. A second stack of minimums, or pairs (value, minSoFar) in one stack, both work in O(1) per operation and O(n) extra space."
+    },
+    {
+      "id": "min-window",
+      "concept": "Sliding window",
+      "type": "integer",
+      "difficulty": 3,
+      "prompt": "What is the length of the shortest substring of s = \"ADOBECODEBANC\" that contains every letter of t = \"ABC\" (with multiplicity)?",
+      "answer": 4,
+      "tolerance": 0,
+      "unit": "characters",
+      "explanation": "The window \"BANC\" is shortest. Expand the right pointer until all needed counts are met, then shrink the left pointer while it stays valid, tracking the best; each pointer moves at most n steps, so O(n + m)."
     }
   ]
 }

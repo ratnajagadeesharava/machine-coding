@@ -7,7 +7,7 @@
   "seriesDescription": "Topic-by-topic JEE-style quizzes for the backend and AI-engineering interview roadmap: integer, assertion-reason, matrix match, fill-in-the-blanks, short code writing, plus multi-correct questions. Language core, concurrency, DSA, web frameworks, data access, databases, messaging, resilience, security, testing, system design, LLM and agent engineering.",
   "seriesOrder": 92,
   "description": "Runnables and the pipe operator, prompt templates, output parsers, structured output and the tool-calling loop, with LangChain4j AI Services as the Java parallel.",
-  "source": "LangChain Python docs (python.langchain.com); LangChain4j docs; Spring AI reference",
+  "source": "LangChain Python docs (docs.langchain.com, python.langchain.com), langchain-core 1.8 run locally; LangChain v1 migration guide; LangChain4j docs; Spring AI reference",
   "estimatedMinutes": 16,
   "questions": [
     {
@@ -95,7 +95,7 @@
         "c": "A is true; R is false: I ran it and @tool raises 'Function must have a docstring if description not provided'.",
         "d": "A is true, so d is wrong."
       },
-      "explanation": "The docstring becomes the tool description the model uses to choose between tools, so write it like documentation for a colleague. @tool(description=...) is the alternative."
+      "explanation": "The docstring becomes the tool description the model uses to choose between tools, so write it like documentation for a colleague. @tool(description=...) is the alternative. In current langchain-core a @tool function with neither a docstring nor a description raises ValueError at definition time (checked by running it), which is why R is false."
     },
     {
       "id": "invoke-vs-stream",
@@ -405,6 +405,62 @@
         "d"
       ],
       "explanation": "I checked the lambda and single-chunk behaviours by running them. Know the method family: invoke, stream, batch and async twins."
+    },
+    {
+      "id": "create-agent-v1",
+      "concept": "Agents",
+      "type": "single",
+      "difficulty": 2,
+      "prompt": "In LangChain 1.x, which constructor is the documented replacement for the older langgraph.prebuilt.create_react_agent when you want a tool-calling agent?",
+      "options": [
+        {
+          "id": "a",
+          "text": "langchain.agents.create_agent, which runs on LangGraph.",
+          "why": "Right: the v1 migration guide moves the prebuilt agent here and renames prompt to system_prompt."
+        },
+        {
+          "id": "b",
+          "text": "langchain_core.agents.create_tool_chain, which builds a fixed sequence of calls and tools.",
+          "why": "No such constructor: a fixed chain cannot loop between model and tools."
+        },
+        {
+          "id": "c",
+          "text": "langchain.chains.AgentExecutor, which is the only supported agent runtime in 1.x.",
+          "why": "AgentExecutor is the legacy runtime and is not the 1.x recommendation."
+        },
+        {
+          "id": "d",
+          "text": "langgraph.graph.create_agent_node, which returns one node for a StateGraph.",
+          "why": "Invented name: the prebuilt agent is a whole compiled graph, not a single node."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "create_agent is a compiled LangGraph graph, so checkpointers, streaming and interrupts still work. Older tutorials use create_react_agent; know both names because both appear in interviews and codebases."
+    },
+    {
+      "id": "structured-include-raw",
+      "concept": "Structured output and parsers",
+      "type": "truefalse",
+      "difficulty": 2,
+      "prompt": "True or false: with_structured_output(Schema, include_raw=True) returns a dict with the keys raw, parsed and parsing_error, so a parse failure is reported in the dict instead of being raised.",
+      "options": [
+        {
+          "id": "a",
+          "text": "True",
+          "why": "Right: raw holds the AIMessage, parsed is None when parsing failed, and parsing_error holds the exception."
+        },
+        {
+          "id": "b",
+          "text": "False",
+          "why": "That is the documented shape of the include_raw=True output, so the statement is true."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Handy when you want to log the raw message, retry on parsing_error, or read usage metadata from the raw AIMessage. Without include_raw the call returns only the parsed object."
     }
   ]
 }

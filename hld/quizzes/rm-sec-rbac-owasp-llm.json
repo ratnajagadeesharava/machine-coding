@@ -7,7 +7,7 @@
   "seriesDescription": "Topic-by-topic JEE-style quizzes for the backend and AI-engineering interview roadmap: integer, assertion-reason, matrix match, fill-in-the-blanks, short code writing, plus multi-correct questions. Language core, concurrency, DSA, web frameworks, data access, databases, messaging, resilience, security, testing, system design, LLM and agent engineering.",
   "seriesOrder": 83,
   "description": "Role and permission checks (@PreAuthorize, FastAPI dependencies), SQL injection, XSS, CSRF, CORS and secrets handling, and LLM risks: prompt injection and cross-tenant leaks.",
-  "source": "OWASP Top 10 and Cheat Sheet Series; OWASP API Security Top 10; OWASP Top 10 for LLM Applications; Spring Security reference; FastAPI docs; Oracle JDBC docs",
+  "source": "OWASP Top 10 (2021 and 2025) and Cheat Sheet Series (Password Storage); OWASP API Security Top 10 (2023); OWASP Top 10 for LLM Applications 2025; Spring Security reference; FastAPI docs; Oracle JDBC docs",
   "estimatedMinutes": 15,
   "questions": [
     {
@@ -127,7 +127,7 @@
       "difficulty": 1,
       "prompt": "Read the assertion and the reason, then choose the option that describes them correctly.",
       "assertion": "Authorisation must be enforced on the server even when the UI hides forbidden buttons.",
-      "reason": "Broken access control was ranked first in the OWASP Top 10 (2021 edition).",
+      "reason": "Broken Access Control is ranked first (A01) in the OWASP Top 10, in both the 2021 and 2025 editions.",
       "correct": [
         "b"
       ],
@@ -137,7 +137,7 @@
         "c": "The reason is also true.",
         "d": "The assertion is true."
       },
-      "explanation": "Hiding UI is usability; checking on the server is security. Missing object-level checks (BOLA) lead the OWASP API Security list too."
+      "explanation": "Hiding UI is usability; checking on the server is security. Missing object-level checks (BOLA) lead the OWASP API Security Top 10 too. In the 2025 edition SSRF was folded into A01 rather than kept as its own category."
     },
     {
       "id": "prepared-stmt",
@@ -395,6 +395,126 @@
         "c"
       ],
       "explanation": "Defence in depth: isolate at retrieval, cache and logging layers; never rely on the model to police access."
+    },
+    {
+      "id": "llm-top10",
+      "concept": "LLM security",
+      "type": "matrix",
+      "difficulty": 1,
+      "prompt": "Match each OWASP Top 10 for LLM Applications (2025) entry with its title.",
+      "left": [
+        {
+          "id": "a",
+          "text": "LLM01:2025"
+        },
+        {
+          "id": "b",
+          "text": "LLM02:2025"
+        },
+        {
+          "id": "c",
+          "text": "LLM08:2025"
+        },
+        {
+          "id": "d",
+          "text": "LLM10:2025"
+        }
+      ],
+      "right": [
+        {
+          "id": "p",
+          "text": "Prompt Injection"
+        },
+        {
+          "id": "q",
+          "text": "Sensitive Information Disclosure"
+        },
+        {
+          "id": "r",
+          "text": "Vector and Embedding Weaknesses"
+        },
+        {
+          "id": "s",
+          "text": "Unbounded Consumption"
+        },
+        {
+          "id": "t",
+          "text": "Insecure Plugin Design"
+        }
+      ],
+      "pairs": {
+        "a": "p",
+        "b": "q",
+        "c": "r",
+        "d": "s"
+      },
+      "explanation": "Vector and Embedding Weaknesses is new in 2025 and covers RAG pitfalls such as retrieval ignoring per-user access. Unbounded Consumption covers denial-of-wallet and extraction by heavy querying. Insecure Plugin Design was an entry in the 2023 list."
+    },
+    {
+      "id": "password-hash",
+      "concept": "Authentication",
+      "type": "single",
+      "difficulty": 1,
+      "prompt": "Which is the best choice for storing user passwords according to the OWASP Password Storage Cheat Sheet?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Argon2id, with a unique salt for every password.",
+          "why": "Correct: a memory-hard, deliberately slow hash; bcrypt, scrypt or PBKDF2 are the fallbacks where it is unavailable."
+        },
+        {
+          "id": "b",
+          "text": "SHA-256 of the password concatenated with a random salt value.",
+          "why": "A fast general-purpose hash lets a GPU test billions of guesses per second."
+        },
+        {
+          "id": "c",
+          "text": "MD5 of the password, hex encoded and stored in the user table.",
+          "why": "Fast, broken and unsalted; rainbow tables crack most of it instantly."
+        },
+        {
+          "id": "d",
+          "text": "AES-encrypt the password so that support staff can recover it later.",
+          "why": "Reversible storage means a key leak exposes every password; passwords should never be recoverable."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Store only the hash (with the algorithm parameters in the encoded string), re-hash on login when the cost parameters are raised, and never log or email passwords."
+    },
+    {
+      "id": "bola",
+      "concept": "Authorisation",
+      "type": "single",
+      "difficulty": 2,
+      "prompt": "GET /api/orders/123 returns an order belonging to another customer when a logged-in user simply changes the id. What is the right fix?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Check on the server that the caller may read order 123, every time.",
+          "why": "Correct: an object-level authorisation check is the actual fix for BOLA / IDOR."
+        },
+        {
+          "id": "b",
+          "text": "Switch the order ids from integers to random UUIDs and change nothing else.",
+          "why": "UUIDs make ids hard to guess but do not remove the missing check; leaked ids still work."
+        },
+        {
+          "id": "c",
+          "text": "Move the id from the URL path into the body of a POST request instead.",
+          "why": "The client controls the body as easily as the URL."
+        },
+        {
+          "id": "d",
+          "text": "Rate limit the endpoint to ten requests per minute for each user.",
+          "why": "Slows enumeration but still lets each attacker read the orders they reach."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "BOLA (Broken Object Level Authorization) is API1 in the OWASP API Security Top 10. Enforce it in a shared layer, for example query by (id, owner) or a policy check, and test it with two accounts."
     }
   ]
 }

@@ -7,7 +7,7 @@
   "seriesOrder": 12,
   "seriesDescription": "Topic-by-topic JEE-style quizzes for the backend and AI-engineering interview roadmap: integer, assertion-reason, matrix match, fill-in-the-blanks, short code writing, plus multi-correct questions. Language core, concurrency, DSA, web frameworks, data access, databases, messaging, resilience, security, testing, system design, LLM and agent engineering.",
   "description": "Checked vs unchecked, try-with-resources and suppressed exceptions, try/except/else/finally and context managers, plus streams, Optional, groupingBy, generators, comprehensions and lazy evaluation.",
-  "source": "Oracle Java Tutorials: exceptions, java.util.stream docs; JLS 14.20; Python docs: errors, contextlib, itertools; Real Python; Baeldung",
+  "source": "Oracle Java Tutorials: exceptions; JLS 14.20.2 (try-finally) and java.util.stream docs (Collectors.toMap, flatMap); Python docs: built-in exception hierarchy, errors, contextlib, itertools; Real Python; Baeldung; GeeksforGeeks interview lists",
   "estimatedMinutes": 16,
   "questions": [
     {
@@ -428,6 +428,122 @@
         "d": "Correct: Python 3 gives comprehensions their own scope (A is false); R is true for Python 2."
       },
       "explanation": "A for loop statement still leaks its variable; only comprehensions and generator expressions have their own scope."
+    },
+    {
+      "id": "tomap-duplicate",
+      "concept": "Streams and lambdas",
+      "type": "single",
+      "difficulty": 2,
+      "prompt": "What happens when this Java code runs?\n\nStream.of(\"a\", \"bb\", \"cc\")\n  .collect(Collectors.toMap(String::length, s -> s));\n\nWhat is the result?",
+      "options": [
+        {
+          "id": "a",
+          "text": "IllegalStateException: Duplicate key 2",
+          "why": "Correct: bb and cc both map to key 2, and the two-argument toMap has no merge function, so it throws."
+        },
+        {
+          "id": "b",
+          "text": "It returns {1=a, 2=cc}, the later value wins",
+          "why": "Wrong: that is what a merge function such as (x, y) -> y would do; without one the collector fails."
+        },
+        {
+          "id": "c",
+          "text": "It returns {1=a, 2=bb}, the first value wins",
+          "why": "Wrong: toMap does not silently keep the first value; HashMap.put semantics are not used here."
+        },
+        {
+          "id": "d",
+          "text": "It returns {1=[a], 2=[bb, cc]}",
+          "why": "Wrong: grouping into lists is the job of Collectors.groupingBy, not toMap."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Pass a third argument toMap(k, v, (x, y) -> y) to resolve clashes, or use groupingBy. Verified by running it."
+    },
+    {
+      "id": "flatmap-count",
+      "concept": "Streams and lambdas",
+      "type": "integer",
+      "difficulty": 2,
+      "prompt": "What does Stream.of(List.of(1, 2), List.of(3), List.<Integer>of()).flatMap(List::stream).map(v -> v * 2).filter(v -> v > 2).count() return?",
+      "answer": 2,
+      "tolerance": 0,
+      "explanation": "flatMap flattens the three lists into 1, 2, 3 (the empty list adds nothing); doubling gives 2, 4, 6; only 4 and 6 are greater than 2, so the count is 2. Verified by running it."
+    },
+    {
+      "id": "finally-return-swallow",
+      "concept": "Exceptions in Java",
+      "type": "single",
+      "difficulty": 3,
+      "prompt": "What does this Java method do when called?\n\nstatic int f() {\n  try { throw new RuntimeException(\"x\"); }\n  finally { return 7; }\n}\n\nWhat is the outcome of System.out.println(f())?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Prints 7 and the RuntimeException is discarded",
+          "why": "Correct: a return in finally overrides the pending exception, so it vanishes without a trace."
+        },
+        {
+          "id": "b",
+          "text": "Throws RuntimeException: x after finally runs",
+          "why": "Wrong: the abrupt completion of the finally block replaces the try block outcome, so the exception never propagates."
+        },
+        {
+          "id": "c",
+          "text": "Does not compile: missing return statement",
+          "why": "Wrong: both paths end abruptly (throw, then return in finally), so the compiler accepts it, usually with a warning."
+        },
+        {
+          "id": "d",
+          "text": "Prints 0, the default value of int",
+          "why": "Wrong: nothing is defaulted; the explicit return 7 supplies the result."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Never return, break or continue inside finally: it swallows exceptions. Verified by running it."
+    },
+    {
+      "id": "py-exception-hierarchy",
+      "concept": "Exceptions in Python",
+      "type": "multi",
+      "difficulty": 2,
+      "prompt": "Select all true statements about the Python exception hierarchy.",
+      "options": [
+        {
+          "id": "a",
+          "text": "A bare except: clause also catches KeyboardInterrupt.",
+          "why": "Correct: bare except catches BaseException, including KeyboardInterrupt and SystemExit."
+        },
+        {
+          "id": "b",
+          "text": "except Exception: catches KeyboardInterrupt.",
+          "why": "Wrong: KeyboardInterrupt derives from BaseException, not Exception, so it passes through."
+        },
+        {
+          "id": "c",
+          "text": "KeyError is a subclass of LookupError.",
+          "why": "Correct: KeyError and IndexError both derive from LookupError."
+        },
+        {
+          "id": "d",
+          "text": "except Exception: catches SystemExit raised by sys.exit().",
+          "why": "Wrong: SystemExit derives from BaseException, which is why sys.exit() is not swallowed by except Exception."
+        },
+        {
+          "id": "e",
+          "text": "FileNotFoundError is a subclass of OSError.",
+          "why": "Correct: since Python 3.3 IOError is an alias of OSError and FileNotFoundError is one of its subclasses."
+        }
+      ],
+      "correct": [
+        "a",
+        "c",
+        "e"
+      ],
+      "explanation": "Catch the narrowest exception you can; at most except Exception at a top-level boundary. Verified with issubclass checks."
     }
   ]
 }

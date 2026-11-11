@@ -7,7 +7,7 @@
   "seriesDescription": "Topic-by-topic JEE-style quizzes for the backend and AI-engineering interview roadmap: integer, assertion-reason, matrix match, fill-in-the-blanks, short code writing, plus multi-correct questions. Language core, concurrency, DSA, web frameworks, data access, databases, messaging, resilience, security, testing, system design, LLM and agent engineering.",
   "seriesOrder": 80,
   "description": "Logs, metrics and traces, one correlation id per request (Logback MDC, ContextVar), Micrometer and prometheus_client instruments, label cardinality, OpenTelemetry propagation and sampling.",
-  "source": "SLF4J/Logback manual; Micrometer docs; Prometheus docs (histograms, naming); OpenTelemetry docs; W3C Trace Context; Python contextvars docs",
+  "source": "SLF4J/Logback manual; Micrometer docs; Prometheus docs (histograms and summaries, rate, naming); OpenTelemetry docs; W3C Trace Context; Python contextvars docs",
   "estimatedMinutes": 15,
   "questions": [
     {
@@ -395,6 +395,69 @@
         "a"
       ],
       "explanation": "Also remember management.endpoints.web.exposure.include=prometheus so that the endpoint is exposed."
+    },
+    {
+      "id": "counter-rate",
+      "concept": "Metrics",
+      "type": "assertion",
+      "difficulty": 2,
+      "prompt": "Read the assertion A and the reason R, then choose the correct relationship between them.",
+      "assertion": "In PromQL you should chart rate(http_requests_total[5m]) rather than the raw counter value.",
+      "reason": "rate() compensates for counter resets, such as when a process restarts and its counter drops back to zero.",
+      "correct": [
+        "a"
+      ],
+      "whys": {
+        "a": "Correct: a raw counter only ever grows until it resets, so the useful quantity is its per-second increase, and rate() handles resets.",
+        "b": "R does explain A, so this is wrong.",
+        "c": "R is true, so this is wrong.",
+        "d": "A is true, so this is wrong."
+      },
+      "explanation": "Apply rate() to each series first and then sum (sum(rate(x[5m]))), never rate(sum(x)): summing raw counters hides resets and breaks the result."
+    },
+    {
+      "id": "fleet-quantile",
+      "concept": "Metrics",
+      "type": "single",
+      "difficulty": 3,
+      "prompt": "Each of 40 instances exposes a classic Prometheus histogram http_request_duration_seconds. Which query gives the fleet-wide p95 over 5 minutes?",
+      "options": [
+        {
+          "id": "a",
+          "text": "histogram_quantile(0.95, sum by (le) (rate(http_request_duration_seconds_bucket[5m])))",
+          "why": "Correct: add the per-bucket rates across instances, keep le, then estimate the quantile."
+        },
+        {
+          "id": "b",
+          "text": "avg(http_request_duration_seconds{quantile=\"0.95\"})",
+          "why": "That averages precomputed per-instance quantiles from a summary, which is statistically meaningless."
+        },
+        {
+          "id": "c",
+          "text": "sum(http_request_duration_seconds_sum) / sum(http_request_duration_seconds_count)",
+          "why": "That is the mean latency, not the 95th percentile."
+        },
+        {
+          "id": "d",
+          "text": "histogram_quantile(0.95, sum(rate(http_request_duration_seconds_bucket[5m])))",
+          "why": "Dropping the le label before histogram_quantile leaves it nothing to interpolate over."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Bucket boundaries limit accuracy: the estimate is interpolated inside a bucket, so place buckets around your SLO threshold."
+    },
+    {
+      "id": "traceparent-length",
+      "concept": "Distributed tracing",
+      "type": "integer",
+      "difficulty": 3,
+      "prompt": "A W3C traceparent value has the form version-traceid-parentid-flags, written in lowercase hex: 2 characters for the version, 32 for the trace id, 16 for the parent id and 2 for the flags, joined by hyphens. How many characters long is the whole header value?",
+      "answer": 55,
+      "tolerance": 0,
+      "unit": "characters",
+      "explanation": "2 + 32 + 16 + 2 = 52 hex characters plus 3 hyphens = 55. Example: 00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01."
     }
   ]
 }

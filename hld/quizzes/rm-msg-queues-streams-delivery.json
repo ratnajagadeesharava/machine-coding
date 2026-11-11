@@ -7,7 +7,7 @@
   "seriesDescription": "Topic-by-topic JEE-style quizzes for the backend and AI-engineering interview roadmap: integer, assertion-reason, matrix match, fill-in-the-blanks, short code writing, plus multi-correct questions. Language core, concurrency, DSA, web frameworks, data access, databases, messaging, resilience, security, testing, system design, LLM and agent engineering.",
   "seriesOrder": 74,
   "description": "RabbitMQ vs Kafka, partitions, consumer groups and offsets, Spring and Python consumers, at-most/at-least/exactly-once and how to make consumers idempotent.",
-  "source": "Apache Kafka documentation; RabbitMQ docs (acknowledgements, exchanges); Spring for Apache Kafka and Spring AMQP reference; aiokafka and Celery docs; Designing Data-Intensive Applications",
+  "source": "Apache Kafka documentation (consumer and producer configs, log compaction); RabbitMQ docs (acknowledgements, dead letter exchanges); Spring for Apache Kafka and Spring AMQP reference; aiokafka and Celery docs; Conduktor Kafka config reference; Designing Data-Intensive Applications",
   "estimatedMinutes": 16,
   "questions": [
     {
@@ -306,7 +306,7 @@
         "c": "R is true.",
         "d": "A is true."
       },
-      "explanation": "acks_late=True gives at-least-once, so tasks must then be idempotent. It also needs care with visibility timeouts on Redis/SQS brokers."
+      "explanation": "acks_late=True gives at-least-once, so tasks must then be idempotent. A worker process killed by the OS (for example out of memory) also needs task_reject_on_worker_lost=True to be redelivered. On Redis/SQS brokers, a task running longer than visibility_timeout can be delivered twice."
     },
     {
       "id": "rabbit-ack-redelivery",
@@ -352,7 +352,7 @@
       "type": "assertion",
       "difficulty": 3,
       "prompt": "Read the assertion A and the reason R, then choose the correct relationship between them.",
-      "assertion": "Records with the same key are always read in the order they were sent, provided the partition count does not change.",
+      "assertion": "With an idempotent producer (the default since Kafka 3.0), records with the same key are always read in the order they were sent, provided the partition count does not change.",
       "reason": "Kafka guarantees a global order across all partitions of a topic.",
       "correct": [
         "c"
@@ -363,7 +363,7 @@
         "c": "Correct: the per-key ordering holds because one key maps to one partition (A true), but there is no global order (R false).",
         "d": "A is true."
       },
-      "explanation": "Retries can also reorder records unless the producer is idempotent or max.in.flight.requests.per.connection is limited (idempotence keeps order with up to 5)."
+      "explanation": "Ordering is per partition, so a stable key-to-partition mapping preserves it. Without idempotence, retries with several in-flight requests could reorder records; idempotent producers keep order with up to 5 in-flight requests per connection."
     },
     {
       "id": "dedup-insert",
@@ -422,6 +422,131 @@
         "a"
       ],
       "explanation": "Exactly-once delivery over an unreliable network is not achievable; an ack can be lost after the work is done. Dedup with a unique constraint on the event id in the same transaction as the effect."
+    },
+    {
+      "id": "poll-interval",
+      "concept": "Kafka consumer groups",
+      "type": "single",
+      "difficulty": 3,
+      "prompt": "With default settings, a Kafka consumer takes 6 minutes to process each batch returned by poll(). The group keeps rebalancing and its offsets are never committed. What is the most likely cause?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Processing exceeds max.poll.interval.ms (default 5 minutes), so the consumer is evicted from the group.",
+          "why": "Correct: the broker expects poll() again within max.poll.interval.ms; otherwise the member leaves and a rebalance starts."
+        },
+        {
+          "id": "b",
+          "text": "heartbeat.interval.ms of 3 seconds is too short, so heartbeats overload the coordinator.",
+          "why": "Heartbeats come from a background thread and are cheap; they do not cause eviction by being frequent."
+        },
+        {
+          "id": "c",
+          "text": "session.timeout.ms of 45 seconds expires because processing blocks the heartbeat thread.",
+          "why": "The heartbeat thread is separate from the processing thread, so slow processing alone does not expire the session."
+        },
+        {
+          "id": "d",
+          "text": "The topic has more partitions than the group has consumers.",
+          "why": "That only means some consumers own several partitions; it does not trigger repeated rebalances."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Fixes: lower max.poll.records, raise max.poll.interval.ms, or hand slow work to another thread (and pause the partitions). Defaults per the Kafka docs: max.poll.interval.ms 300000, session.timeout.ms 45000 (3.0+), heartbeat.interval.ms 3000."
+    },
+    {
+      "id": "offset-reset",
+      "concept": "Kafka offsets",
+      "type": "single",
+      "difficulty": 2,
+      "prompt": "A brand-new consumer group subscribes to an existing topic with no committed offsets and auto.offset.reset left at its default. Where does it start reading?",
+      "options": [
+        {
+          "id": "a",
+          "text": "At the end of each partition, seeing only records produced after it joins.",
+          "why": "Correct: the default is latest."
+        },
+        {
+          "id": "b",
+          "text": "At the first retained record of each partition, replaying all stored history.",
+          "why": "That is auto.offset.reset=earliest, which must be set explicitly."
+        },
+        {
+          "id": "c",
+          "text": "Nowhere: it throws NoOffsetForPartitionException and refuses to start.",
+          "why": "That behaviour needs auto.offset.reset=none."
+        },
+        {
+          "id": "d",
+          "text": "At offset 0 of each partition, even if older segments were already deleted.",
+          "why": "Offset 0 may no longer exist after retention; earliest means the log start offset, not 0."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Classic trap: a new group with the default misses everything produced before it started. Use earliest for replay or backfill groups, and remember the setting applies only when no valid committed offset exists."
+    },
+    {
+      "id": "rabbit-dlx-causes",
+      "concept": "Queues vs streams",
+      "type": "multi",
+      "difficulty": 3,
+      "prompt": "In RabbitMQ a queue has a dead-letter exchange configured. Which events cause a message to be dead-lettered? Select all that apply.",
+      "options": [
+        {
+          "id": "a",
+          "text": "A consumer rejects it with basic.nack or basic.reject and requeue=false.",
+          "why": "Correct: a rejection without requeue sends the message to the DLX."
+        },
+        {
+          "id": "b",
+          "text": "Its per-message or per-queue TTL expires while it waits in the queue.",
+          "why": "Correct: expired messages are dead-lettered."
+        },
+        {
+          "id": "c",
+          "text": "The queue has a maximum length and the message is dropped from the head to make room.",
+          "why": "Correct: with the default drop-head overflow, evicted messages are dead-lettered."
+        },
+        {
+          "id": "d",
+          "text": "A consumer acknowledges it with basic.ack after processing.",
+          "why": "An ack removes the message normally; nothing is dead-lettered."
+        },
+        {
+          "id": "e",
+          "text": "The publisher receives a confirm for it.",
+          "why": "Publisher confirms only tell the publisher the broker has taken responsibility; they do not dead-letter anything."
+        }
+      ],
+      "correct": [
+        "a",
+        "b",
+        "c"
+      ],
+      "explanation": "Quorum queues add a fourth cause: exceeding the delivery limit. The x-death header records the reason, queue and count, which is what a retry-with-delay topology reads."
+    },
+    {
+      "id": "compaction",
+      "concept": "Kafka concepts",
+      "type": "assertion",
+      "difficulty": 3,
+      "prompt": "Read the assertion A and the reason R, then choose the correct relationship between them.",
+      "assertion": "A Kafka topic with cleanup.policy=compact keeps at least the latest record for every key.",
+      "reason": "Compaction deletes every record older than the retention period regardless of its key.",
+      "correct": [
+        "c"
+      ],
+      "whys": {
+        "a": "Not this: R is false.",
+        "b": "Not this: R is false, so it cannot be a true reason.",
+        "c": "Correct: A is true (the last value per key survives, and a null-value tombstone eventually removes the key), but age-based deletion is the delete policy, not compaction.",
+        "d": "A is true, so it cannot be false."
+      },
+      "explanation": "Compaction suits changelog or state topics (latest value per entity). Age-based removal is cleanup.policy=delete; both can be combined as compact,delete."
     }
   ]
 }

@@ -392,6 +392,112 @@
         "a"
       ],
       "explanation": "When weights are restricted to {0,1}, 0-1 BFS beats Dijkstra's log factor. Mentioning it shows you match the algorithm to the weight structure."
+    },
+    {
+      "id": "network-delay",
+      "concept": "Dijkstra",
+      "type": "integer",
+      "difficulty": 2,
+      "prompt": "A signal starts at node 1 of a directed graph with edges (u, v, time): (1,2,9), (1,4,2), (2,5,1), (4,2,4), (4,5,6), (3,2,3), (5,3,7), (3,1,5). How long until all 5 nodes have received it?",
+      "answer": 14,
+      "tolerance": 0,
+      "unit": "time units",
+      "explanation": "Distances from node 1: node 4 = 2, node 2 = 6 (via 4), node 5 = 7, node 3 = 14 (via 5). The answer is the largest shortest distance, 14; if any node were unreachable the answer would be -1. Dijkstra, O(E log V)."
+    },
+    {
+      "id": "floyd-order",
+      "concept": "Floyd-Warshall",
+      "type": "single",
+      "difficulty": 3,
+      "prompt": "In the triple loop of Floyd-Warshall, which loop variable must be the outermost?",
+      "options": [
+        {
+          "id": "a",
+          "text": "The intermediate vertex k.",
+          "why": "Right: after iteration k, dist[i][j] is correct using only intermediate vertices 0..k, which the DP depends on."
+        },
+        {
+          "id": "b",
+          "text": "The source vertex i.",
+          "why": "With i outermost the table does not yet hold paths through later intermediates when it is needed, giving wrong answers."
+        },
+        {
+          "id": "c",
+          "text": "The destination vertex j.",
+          "why": "The same problem: the intermediate vertex defines the DP layer and must be the outer loop."
+        },
+        {
+          "id": "d",
+          "text": "Any order works, since all three loops go from 0 to n - 1.",
+          "why": "The loops are not interchangeable; the layered recurrence is only valid with k outermost."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Time is O(V^3) and space O(V^2) with the in-place table. A negative value on the diagonal afterwards reveals a negative cycle."
+    },
+    {
+      "id": "floyd-python",
+      "concept": "Floyd-Warshall",
+      "type": "code",
+      "difficulty": 2,
+      "prompt": "Write a Python function floyd(dist) that updates an n x n matrix in place to all-pairs shortest distances (float('inf') where no edge, 0 on the diagonal) and returns it.",
+      "language": "python",
+      "starter": "def floyd(dist):\n    ",
+      "checks": [
+        {
+          "label": "three nested loops",
+          "pattern": "for[\\s\\S]*for[\\s\\S]*for"
+        },
+        {
+          "label": "tests a path through the middle vertex",
+          "pattern": "\\w+\\s*\\[\\s*\\w+\\s*\\]\\s*\\[\\s*\\w+\\s*\\]\\s*\\+\\s*\\w+\\s*\\[\\s*\\w+\\s*\\]\\s*\\[\\s*\\w+\\s*\\]"
+        },
+        {
+          "label": "keeps the smaller value",
+          "pattern": "min\\s*\\(|<"
+        },
+        {
+          "label": "returns the table",
+          "pattern": "return"
+        }
+      ],
+      "model": "def floyd(dist):\n    n = len(dist)\n    for k in range(n):\n        for i in range(n):\n            for j in range(n):\n                if dist[i][k] + dist[k][j] < dist[i][j]:\n                    dist[i][j] = dist[i][k] + dist[k][j]\n    return dist",
+      "explanation": "O(n^3) time, O(1) extra space. The intermediate vertex k must be the outer loop. It suits small dense graphs (n up to a few hundred); for sparse large graphs run Dijkstra from each source."
+    },
+    {
+      "id": "min-effort",
+      "concept": "Dijkstra",
+      "type": "single",
+      "difficulty": 3,
+      "prompt": "In a grid, the effort of a path is the largest absolute height difference between two consecutive cells on it, and you want the path with minimum effort. How should Dijkstra change?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Use max(current effort, step difference) as the path cost instead of the sum.",
+          "why": "Right: a path's cost is its bottleneck edge; this combine rule is monotone, so popped nodes stay final."
+        },
+        {
+          "id": "b",
+          "text": "Keep summing step differences, since a smaller total always means smaller maximum.",
+          "why": "A path with a small total can still contain one huge step, so the sum is the wrong objective."
+        },
+        {
+          "id": "c",
+          "text": "Use plain BFS, because every move to a neighbour counts as one step.",
+          "why": "BFS minimises the number of moves, not the largest height change."
+        },
+        {
+          "id": "d",
+          "text": "Use Bellman-Ford, because the differences can be negative.",
+          "why": "Absolute differences are non-negative, so Dijkstra applies and Bellman-Ford is needlessly slow."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "This is the minimax (bottleneck) path. The same Dijkstra skeleton with a different combine function also solves Swim in Rising Water; a binary search on the answer plus BFS is another valid approach."
     }
   ]
 }

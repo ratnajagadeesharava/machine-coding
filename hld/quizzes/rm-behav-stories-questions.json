@@ -7,7 +7,7 @@
   "seriesOrder": 107,
   "seriesDescription": "Topic-by-topic JEE-style quizzes for the backend and AI-engineering interview roadmap: integer, assertion-reason, matrix match, fill-in-the-blanks, short code writing, plus multi-correct questions. Language core, concurrency, DSA, web frameworks, data access, databases, messaging, resilience, security, testing, system design, LLM and agent engineering.",
   "description": "Framing why you are leaving and why this company, telling mistake, conflict and feedback stories, and asking the interviewer good questions. Scenario-judgement style: pick the strongest answer or the statement that weakens a story.",
-  "source": "Amazon Leadership Principles; Harvard Business Review on behavioural interviewing; Cracking the Coding Interview (behavioural chapter); common interview-prep guides on STAR, exit reasons and questions to ask",
+  "source": "Amazon Leadership Principles and interview guide (aboutamazon.com); Harvard Business Review on behavioural interviewing; Cracking the Coding Interview (behavioural chapter); common interview-prep guides on STAR, exit reasons and questions to ask",
   "estimatedMinutes": 16,
   "questions": [
     {
@@ -428,6 +428,72 @@
         "a"
       ],
       "explanation": "Prepare more stories than principles so a repeated question gets a fresh example."
+    },
+    {
+      "id": "weakness-answer",
+      "concept": "Weakness question",
+      "type": "single",
+      "difficulty": 2,
+      "prompt": "Asked 'What is your greatest weakness?', which answer is strongest?",
+      "options": [
+        {
+          "id": "a",
+          "text": "A real, non-critical weakness, the concrete steps you took on it, and visible progress.",
+          "why": "Right: honesty plus a working improvement plan shows self-awareness."
+        },
+        {
+          "id": "b",
+          "text": "'I am a perfectionist', followed by an explanation that this is really a strength for the team.",
+          "why": "A disguised strength sounds rehearsed and avoids the question."
+        },
+        {
+          "id": "c",
+          "text": "A weakness that is central to the job, such as 'I find debugging production issues stressful'.",
+          "why": "A core-skill weakness without a plan makes the interviewer doubt the fit."
+        },
+        {
+          "id": "d",
+          "text": "'I do not really have weaknesses that affect my work', since you track your performance closely.",
+          "why": "Claiming none signals low self-awareness, which interviewers read as a risk."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Pick something genuinely improvable (for example delegating, or writing design docs earlier), say what you changed, and give evidence it worked."
+    },
+    {
+      "id": "ambiguity-story",
+      "concept": "Ambiguity story",
+      "type": "single",
+      "difficulty": 3,
+      "prompt": "Asked about a time you had to decide with incomplete data, which answer shows the most mature judgement?",
+      "options": [
+        {
+          "id": "a",
+          "text": "State the assumptions, pick a reversible step, set a metric and a checkpoint, then adjust.",
+          "why": "Right: it shows bias for action with a safety net and a learning loop."
+        },
+        {
+          "id": "b",
+          "text": "Wait until the missing data arrives, because acting on partial information is always irresponsible.",
+          "why": "Always waiting is the opposite of bias for action when decisions are reversible."
+        },
+        {
+          "id": "c",
+          "text": "Make the call alone and quietly, because asking for input would show a lack of confidence.",
+          "why": "Skipping stakeholders hides risk and weakens trust."
+        },
+        {
+          "id": "d",
+          "text": "Escalate to the manager immediately and implement whichever option they choose, without analysis.",
+          "why": "Escalating with no analysis shows no ownership of the decision."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Interviewers map this to Bias for Action and Are Right, A Lot. Name what you did not know, how you reduced the risk, and what you measured afterwards."
     }
   ]
 }

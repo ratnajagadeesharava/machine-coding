@@ -7,7 +7,7 @@
   "seriesDescription": "Topic-by-topic JEE-style quizzes for the backend and AI-engineering interview roadmap: integer, assertion-reason, matrix match, fill-in-the-blanks, short code writing, plus multi-correct questions. Language core, concurrency, DSA, web frameworks, data access, databases, messaging, resilience, security, testing, system design, LLM and agent engineering.",
   "seriesOrder": 77,
   "description": "The circuit-breaker state machine, token-bucket arithmetic, bulkhead sizing, Resilience4j / pybreaker / slowapi usage, and designing safe fallbacks.",
-  "source": "Resilience4j documentation; Martin Fowler on circuit breakers; Release It! (Nygard); pybreaker and slowapi docs; Stripe engineering blog on rate limiters; Google SRE book (handling overload)",
+  "source": "Resilience4j documentation (circuit breaker, aspect order, Spring Boot); Martin Fowler on circuit breakers; Release It! (Nygard); pybreaker and aiobreaker docs; slowapi docs; RFC 6585 (429); Stripe engineering blog on rate limiters; Google SRE book (handling overload)",
   "estimatedMinutes": 16,
   "questions": [
     {
@@ -165,7 +165,7 @@
         }
       ],
       "model": "@CircuitBreaker(name = \"inventory\", fallbackMethod = \"stockFallback\")\npublic Stock getStock(String sku) { return client.fetch(sku); }",
-      "explanation": "The fallback must be in the same class with the same parameters plus an optional exception argument, e.g. stockFallback(String sku, Throwable t). Calls must cross the Spring proxy, so self-invocation does not trigger the breaker."
+      "explanation": "The fallback must be in the same class with the same parameters plus an optional exception argument, e.g. stockFallback(String sku, Throwable t). Calls must cross the Spring proxy, so self-invocation does not trigger the breaker. By default Resilience4j's aspect order puts Retry outside CircuitBreaker, with Bulkhead innermost."
     },
     {
       "id": "resilience4j-yaml",
@@ -223,7 +223,7 @@
         }
       ],
       "model": "breaker = pybreaker.CircuitBreaker(fail_max=5, reset_timeout=30)\n\n@breaker\ndef call_api():\n    ...",
-      "explanation": "When open, pybreaker raises CircuitBreakerError immediately. Catch it to run a fallback. For asyncio code use breaker.call_async or an async-aware library, because the plain decorator is for sync functions."
+      "explanation": "When open, pybreaker raises CircuitBreakerError immediately; catch it to run a fallback. pybreaker's call_async and async decorator flag are for Tornado coroutines, not asyncio, so in an asyncio service use a library built for it (for example aiobreaker, a fork of pybreaker) or wrap the call yourself."
     },
     {
       "id": "slowapi-limit",
@@ -248,7 +248,7 @@
         }
       ],
       "model": "@app.get(\"/search\")\n@limiter.limit(\"5/minute\")\nasync def search(request: Request):\n    return {\"ok\": True}",
-      "explanation": "slowapi needs the Request parameter to read the client key (for example get_remote_address). Register app.state.limiter and the RateLimitExceeded handler. Behind a proxy use the forwarded address, and use Redis storage when running several workers."
+      "explanation": "slowapi needs the Request parameter to read the client key (for example get_remote_address). Register app.state.limiter and the RateLimitExceeded handler. Behind a proxy use the forwarded address, and give the Limiter a shared storage backend (storage_uri such as Redis) when running several workers."
     },
     {
       "id": "breaker-fail-fast",
@@ -419,6 +419,71 @@
         "a"
       ],
       "explanation": "Retry outside the breaker means each retry attempt is seen (and may be rejected) by the breaker. You can change the order with the aspect-order properties."
+    },
+    {
+      "id": "r4j-exceptions-yaml",
+      "concept": "Circuit breaker",
+      "type": "code",
+      "difficulty": 3,
+      "prompt": "Extend the Resilience4j circuit breaker instance inventory in application.yml so that only java.io.IOException counts as a failure and com.example.NotFoundException is ignored (counted as neither success nor failure).",
+      "language": "yaml",
+      "starter": "resilience4j:\n  circuitbreaker:\n    instances:\n      inventory:\n",
+      "checks": [
+        {
+          "label": "records IOException",
+          "pattern": "record-?exceptions:[\\s\\S]*java\\.io\\.IOException"
+        },
+        {
+          "label": "ignores NotFoundException",
+          "pattern": "ignore-?exceptions:[\\s\\S]*com\\.example\\.NotFoundException"
+        }
+      ],
+      "model": "resilience4j:\n  circuitbreaker:\n    instances:\n      inventory:\n        recordExceptions:\n          - java.io.IOException\n        ignoreExceptions:\n          - com.example.NotFoundException",
+      "explanation": "A 404-style business exception is not a sign of an unhealthy dependency, so ignoring it keeps it from skewing the failure rate. Without recordExceptions every exception counts as a failure (except the ignored ones). Camel-case and kebab-case keys both bind."
+    },
+    {
+      "id": "overload-response",
+      "concept": "Load shedding",
+      "type": "single",
+      "difficulty": 2,
+      "prompt": "A service must tell a client that exceeded its rate limit to slow down. Which response is the standard way?",
+      "options": [
+        {
+          "id": "a",
+          "text": "HTTP 429 Too Many Requests with a Retry-After header.",
+          "why": "Correct: 429 (RFC 6585) signals the rate limit and Retry-After tells the client when to try again."
+        },
+        {
+          "id": "b",
+          "text": "HTTP 200 with an error message in the response body, hiding the failure.",
+          "why": "Clients, caches and retry libraries treat 200 as success, so the signal is lost."
+        },
+        {
+          "id": "c",
+          "text": "HTTP 404 Not Found, to make the endpoint look absent to the caller.",
+          "why": "It misleads clients and monitoring; a missing resource is a different condition."
+        },
+        {
+          "id": "d",
+          "text": "HTTP 500 with no further hint, so that clients retry again very soon.",
+          "why": "A 500 implies a server bug, and clients retrying at once adds load instead of removing it."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Use 429 for per-client limits and 503 (also with Retry-After) when the whole service sheds load. Well-behaved clients honour Retry-After and add jitter."
+    },
+    {
+      "id": "half-open-trials",
+      "concept": "Circuit breaker",
+      "type": "integer",
+      "difficulty": 3,
+      "prompt": "A Resilience4j breaker is HALF_OPEN with permittedNumberOfCallsInHalfOpenState = 4 and failureRateThreshold = 50. After the 4 trial calls, what is the largest number of failed trials for which the breaker still returns to CLOSED?",
+      "answer": 1,
+      "tolerance": 0,
+      "unit": "failures",
+      "explanation": "The breaker opens when the failure rate is greater than or equal to the threshold. 1 of 4 is 25 percent (closes), 2 of 4 is 50 percent (reopens), so at most 1."
     }
   ]
 }

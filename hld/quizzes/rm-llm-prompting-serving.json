@@ -7,7 +7,7 @@
   "seriesDescription": "Topic-by-topic JEE-style quizzes for the backend and AI-engineering interview roadmap: integer, assertion-reason, matrix match, fill-in-the-blanks, short code writing, plus multi-correct questions. Language core, concurrency, DSA, web frameworks, data access, databases, messaging, resilience, security, testing, system design, LLM and agent engineering.",
   "seriesOrder": 91,
   "description": "System prompts, few-shot examples, prompt versioning, streaming to the client with SSE, exact and semantic caching, prompt caching and token budgets.",
-  "source": "OpenAI prompt caching docs; Anthropic prompt caching docs; Spring Framework SseEmitter docs; FastAPI StreamingResponse docs; LangChain caching docs",
+  "source": "OpenAI prompt caching guide; Anthropic prompt caching docs (minimums, 0.1x reads, 1.25x writes); Spring Framework SseEmitter docs; FastAPI StreamingResponse docs; LangChain caching docs; OWASP Top 10 for LLM Applications",
   "estimatedMinutes": 15,
   "questions": [
     {
@@ -199,7 +199,7 @@
         "cache_id",
         "256"
       ],
-      "explanation": "Anthropic: cache_control {\"type\": \"ephemeral\"} on a content block. OpenAI: automatic for prompts of 1,024 tokens or more. Check the current docs for minimum sizes, which vary by model."
+      "explanation": "Anthropic: cache_control {\"type\": \"ephemeral\"} on a content block (up to 4 explicit breakpoints per request). OpenAI: automatic for prompts of 1,024 tokens or more, hits in 128-token steps. Anthropic's minimum cacheable length differs by model (from 512 to 4,096 tokens in the current docs) and shorter prompts are simply not cached, with no error, so check cache_read_input_tokens."
     },
     {
       "id": "sse-wire-format",
@@ -374,6 +374,16 @@
         "d"
       ],
       "explanation": "Few-shot is cheap steering, not a guarantee. Combine delimiters, output validation and permission checks outside the model."
+    },
+    {
+      "id": "anthropic-cache-cost",
+      "concept": "Prompt caching",
+      "type": "integer",
+      "difficulty": 3,
+      "prompt": "Assume Anthropic's usual multipliers: a 5-minute cache write costs 1.25 times the base input price and a cache read costs 0.1 times. A 4,000-token prefix is written once and then read 5 times within the TTL. Counting only the prefix, how many full-price token equivalents does the bill come to?",
+      "answer": 7000,
+      "explanation": "4,000 x (1.25 + 5 x 0.1) = 4,000 x 1.75 = 7,000, against 24,000 without caching (6 x 4,000). The write premium is why caching only pays off when the prefix is reused. Newer models can have a lower read multiplier, so check the pricing page.",
+      "unit": "tokens"
     }
   ]
 }

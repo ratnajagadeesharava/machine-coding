@@ -7,7 +7,7 @@
   "seriesOrder": 20,
   "seriesDescription": "Topic-by-topic JEE-style quizzes for the backend and AI-engineering interview roadmap: integer, assertion-reason, matrix match, fill-in-the-blanks, short code writing, plus multi-correct questions. Language core, concurrency, DSA, web frameworks, data access, databases, messaging, resilience, security, testing, system design, LLM and agent engineering.",
   "description": "Thread lifecycle and states, GIL limits, synchronized vs ReentrantLock vs Python Lock, volatile, happens-before, atomics, CAS and check-then-act races.",
-  "source": "Oracle Java tutorials and Java Language Spec ch.17; Java Concurrency in Practice; Python threading docs and GIL glossary; Baeldung; Real Python",
+  "source": "Oracle Java docs (Thread, Object.wait, java.util.concurrent, ReentrantLock); JLS 17 (memory model); Java Concurrency in Practice; Python docs: threading, GIL glossary; PEP 703 and PEP 779 (free-threaded CPython); Baeldung; GeeksforGeeks; DZone and InterviewBit multithreading lists",
   "estimatedMinutes": 16,
   "questions": [
     {
@@ -127,7 +127,7 @@
       "correct": [
         "a"
       ],
-      "explanation": "The GIL only stops two threads executing Python bytecode at the same instant. Waiting on I/O is not executing bytecode, so threads still overlap waits. (CPython 3.13 also ships an optional experimental free-threaded build, PEP 703.)"
+      "explanation": "The GIL only stops two threads executing Python bytecode at the same instant. Waiting on I/O is not executing bytecode, so threads still overlap waits. (Free-threaded CPython without a GIL, PEP 703, was experimental in 3.13 and became an officially supported but still optional separate build in 3.14 via PEP 779; the default build keeps the GIL.)"
     },
     {
       "id": "cpu-bound-python",
@@ -475,6 +475,114 @@
         "d": "A is true, so option d (A false) is wrong."
       },
       "explanation": "Executors accept both; submit(Callable) returns a Future<V> whose get() rethrows failures wrapped in ExecutionException."
+    },
+    {
+      "id": "sleep-keeps-monitor",
+      "concept": "Thread basics",
+      "type": "truefalse",
+      "difficulty": 1,
+      "prompt": "Thread.sleep(), like Object.wait(), releases every monitor the calling thread holds for the duration of the pause.",
+      "options": [
+        {
+          "id": "a",
+          "text": "True",
+          "why": "Wrong: this is true only for wait(); sleep() never gives up any monitor."
+        },
+        {
+          "id": "b",
+          "text": "False",
+          "why": "Correct: sleep() holds on to its monitors, while wait() releases the one it was called on and reacquires it before returning."
+        }
+      ],
+      "correct": [
+        "b"
+      ],
+      "explanation": "Only Object.wait() releases the monitor of the object it is called on; Thread.sleep() keeps all locks, so a sleeping thread inside synchronized blocks other threads that need the monitor."
+    },
+    {
+      "id": "interrupt-flag",
+      "concept": "Thread basics",
+      "type": "single",
+      "difficulty": 3,
+      "prompt": "What does this Java code print when run on the main thread?\n\nThread t = Thread.currentThread();\nt.interrupt();\ntry { Thread.sleep(10); }\ncatch (InterruptedException e) { System.out.print(Thread.currentThread().isInterrupted()); }\nSystem.out.print(\" \" + Thread.interrupted());",
+      "options": [
+        {
+          "id": "a",
+          "text": "false false",
+          "why": "Correct: sleep sees the flag, throws InterruptedException and clears the flag, so both checks report false."
+        },
+        {
+          "id": "b",
+          "text": "true false",
+          "why": "Wrong: the flag is cleared when InterruptedException is thrown, so isInterrupted() inside the catch is already false."
+        },
+        {
+          "id": "c",
+          "text": "true true",
+          "why": "Wrong: interrupted() reads and clears the flag, and it was already cleared by the exception."
+        },
+        {
+          "id": "d",
+          "text": "false true",
+          "why": "Wrong: nothing sets the flag again after the exception, so the later interrupted() call returns false."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "After catching InterruptedException, restore the status with Thread.currentThread().interrupt() unless you are really ending the thread. Verified by running it."
+    },
+    {
+      "id": "lock-owner-semantics",
+      "concept": "Locks",
+      "type": "assertion",
+      "difficulty": 3,
+      "prompt": "Read the assertion (A) and the reason (R), then choose the option that fits.",
+      "assertion": "A Python threading.Lock can be released by a thread other than the one that acquired it.",
+      "reason": "A Python threading.RLock must be released by the thread that owns it.",
+      "correct": [
+        "b"
+      ],
+      "whys": {
+        "a": "Not chosen: both statements are true, but R describes the contrast case and does not explain why Lock has no owner.",
+        "b": "Correct: both are true (Lock is a plain binary semaphore-like primitive with no owner, RLock records its owner and a recursion count), but R is a contrast rather than the explanation. Verified by running it.",
+        "c": "Not chosen: R is true; releasing an RLock from another thread raises RuntimeError.",
+        "d": "Not chosen: A is true; another thread may call release() on a locked Lock."
+      },
+      "explanation": "Use RLock for re-entrant code (a thread may acquire it again); a second acquire() of a plain Lock by the same thread deadlocks. Verified by running it."
+    },
+    {
+      "id": "static-vs-instance-sync",
+      "concept": "Locks",
+      "type": "single",
+      "difficulty": 2,
+      "prompt": "A class has a static synchronized method and an instance synchronized method. Thread 1 is inside the static method; thread 2 calls the instance method on an object. What happens to thread 2?",
+      "options": [
+        {
+          "id": "a",
+          "text": "It runs at once, since the two methods use different locks",
+          "why": "Correct: static synchronized locks the Class object, instance synchronized locks this, so they do not exclude each other."
+        },
+        {
+          "id": "b",
+          "text": "It blocks until thread 1 leaves, because both methods share the class monitor",
+          "why": "Wrong: the instance method uses the object monitor, not the class monitor, so there is no contention."
+        },
+        {
+          "id": "c",
+          "text": "It blocks only when both methods happen to have exactly the same name",
+          "why": "Wrong: method names are irrelevant to locking; only the lock object matters."
+        },
+        {
+          "id": "d",
+          "text": "It throws IllegalMonitorStateException because the lock kinds are mixed",
+          "why": "Wrong: that exception comes from calling wait or notify without holding the monitor, not from mixing lock kinds."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Guarding one piece of state with both kinds of method leaves it unprotected. Use one explicit lock object for the shared data."
     }
   ]
 }

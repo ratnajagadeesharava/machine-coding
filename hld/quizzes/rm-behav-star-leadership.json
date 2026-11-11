@@ -7,7 +7,7 @@
   "seriesOrder": 106,
   "seriesDescription": "Topic-by-topic JEE-style quizzes for the backend and AI-engineering interview roadmap: integer, assertion-reason, matrix match, fill-in-the-blanks, short code writing, plus multi-correct questions. Language core, concurrency, DSA, web frameworks, data access, databases, messaging, resilience, security, testing, system design, LLM and agent engineering.",
   "description": "Structure STAR answers, map situations to the 16 Amazon Leadership Principles, recall what each principle means and spot what strengthens or weakens a story.",
-  "source": "Amazon Leadership Principles page (aboutamazon.com); Amazon interview preparation guidance; common STAR-method guides (Indeed, Harvard Business Review on behavioural interviews)",
+  "source": "Amazon Leadership Principles (aboutamazon.com); Amazon interview guide (aboutamazon.com) on STAR; Harvard Business Review on behavioural interviews; third-party prep guides for Bar Raiser details",
   "estimatedMinutes": 14,
   "questions": [
     {
@@ -392,6 +392,73 @@
       ],
       "model": "Result: p95 latency fell from 800 ms to 200 ms (75%), timeouts dropped from 40 a day to 2, and I added a load test to CI so the regression would be caught before release.",
       "explanation": "This free-text question is graded by simple keyword patterns; any answer with a measured change and a preventive step passes. Quantify with a baseline."
+    },
+    {
+      "id": "bar-raiser",
+      "concept": "Interview loop",
+      "type": "single",
+      "difficulty": 2,
+      "prompt": "In an Amazon-style interview loop, what is the Bar Raiser?",
+      "options": [
+        {
+          "id": "a",
+          "text": "A specially trained interviewer from outside the hiring team who helps keep the hiring bar high.",
+          "why": "Right: independence from the team is the point, and the Bar Raiser's view carries special weight in the debrief."
+        },
+        {
+          "id": "b",
+          "text": "The hiring manager's own manager, who signs the offer letter after the loop has finished.",
+          "why": "The role is an independent interviewer, not a place in the reporting chain."
+        },
+        {
+          "id": "c",
+          "text": "A recruiter who negotiates the salary and the start date once the candidate has accepted.",
+          "why": "Compensation is handled by recruiting, not by the Bar Raiser."
+        },
+        {
+          "id": "d",
+          "text": "A coding judge who grades only the algorithm round and does not ask behavioural questions.",
+          "why": "Bar Raisers also probe Leadership Principles, so prepare stories for them as well."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Third-party prep guides describe a trained interviewer from another team with a strong say, often described as a veto, in the debrief; Amazon does not publish the details, so treat specifics as folklore. Practical takeaway: expect deep follow-ups on every story."
+    },
+    {
+      "id": "lp-added-2021",
+      "concept": "Leadership principles",
+      "type": "multi",
+      "difficulty": 2,
+      "prompt": "Which of these were added to the Leadership Principles in the 2021 update from 14 to 16? Select all that apply.",
+      "options": [
+        {
+          "id": "a",
+          "text": "Strive to be Earth's Best Employer",
+          "why": "One of the two additions announced in 2021."
+        },
+        {
+          "id": "b",
+          "text": "Success and Scale Bring Broad Responsibility",
+          "why": "The other 2021 addition, about the company's wider impact."
+        },
+        {
+          "id": "c",
+          "text": "Learn and Be Curious",
+          "why": "Added earlier (around 2015), so it was not part of the 2021 update."
+        },
+        {
+          "id": "d",
+          "text": "Deliver Results",
+          "why": "One of the original principles, not a 2021 addition."
+        }
+      ],
+      "correct": [
+        "a",
+        "b"
+      ],
+      "explanation": "Know the two newest by name; interviewers rarely ask about them directly, but 'Earth's Best Employer' stories (mentoring, safety, inclusion) are increasingly common."
     }
   ]
 }

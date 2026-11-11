@@ -3,7 +3,7 @@
   "title": "Web framework: API design, versioning and GraphQL",
   "topic": "Interview roadmap",
   "description": "Pagination (offset vs cursor), idempotency keys, status-code choice, API versioning and deprecation, and GraphQL with N+1 and DataLoader in Spring and Strawberry.",
-  "source": "Spring Data JPA docs (Page/Slice/Pageable); RFC 9110 (HTTP semantics); RFC 9745 and RFC 8594; Stripe idempotency docs; Spring for GraphQL docs; Strawberry docs; Use The Index, Luke (keyset pagination)",
+  "source": "Spring Data JPA docs (Page/Slice/Pageable); RFC 9110 (HTTP semantics, conditional requests); RFC 9745 (Deprecation header) and RFC 8594 (Sunset); GraphQL specification (execution); Stripe idempotency docs; Spring for GraphQL docs (@BatchMapping); Strawberry docs; Use The Index, Luke (keyset pagination)",
   "series": "interview-roadmap",
   "seriesTitle": "Interview roadmap: topic quizzes",
   "seriesDescription": "Topic-by-topic JEE-style quizzes for the backend and AI-engineering interview roadmap: integer, assertion-reason, matrix match, fill-in-the-blanks, short code writing, plus multi-correct questions. Language core, concurrency, DSA, web frameworks, data access, databases, messaging, resilience, security, testing, system design, LLM and agent engineering.",
@@ -406,6 +406,50 @@
         "a"
       ],
       "explanation": "Monitoring on status codes alone misses GraphQL failures; inspect the errors array."
+    },
+    {
+      "id": "mutation-serial",
+      "concept": "GraphQL",
+      "type": "integer",
+      "difficulty": 3,
+      "prompt": "A GraphQL request contains three top-level mutation fields, m1, m2 and m3, and each resolver waits 100 ms on I/O. A spec-compliant server runs them one after another. Roughly how many milliseconds does the whole operation take?",
+      "answer": 300,
+      "tolerance": 0,
+      "explanation": "The GraphQL specification requires top-level mutation fields to execute serially, so 3 x 100 = 300 ms. Top-level query fields may run in parallel (about 100 ms). Serial order is what makes 'create then use' mutation lists predictable, and there is no rollback across them.",
+      "unit": "ms"
+    },
+    {
+      "id": "etag-304",
+      "concept": "HTTP caching",
+      "type": "single",
+      "difficulty": 2,
+      "prompt": "A client re-requests GET /products/7 with If-None-Match set to the ETag it stored earlier, and the product has not changed. Which response is correct?",
+      "options": [
+        {
+          "id": "a",
+          "text": "304 Not Modified with no body; the client reuses its cached copy.",
+          "why": "Correct: a matching If-None-Match on a GET gives 304, saving the transfer of the body."
+        },
+        {
+          "id": "b",
+          "text": "412 Precondition Failed, because the client sent a precondition header at all.",
+          "why": "412 is for If-Match style preconditions on unsafe requests; a matching If-None-Match on GET gives 304."
+        },
+        {
+          "id": "c",
+          "text": "204 No Content, because nothing changed since the last request.",
+          "why": "204 means success with an intentionally empty body, but it does not tell the client its cache is valid."
+        },
+        {
+          "id": "d",
+          "text": "200 OK with the full body again, since validators are only a hint meant for proxies.",
+          "why": "A server that honours validators answers 304; sending 200 would waste the bandwidth ETags exist to save."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Conditional GET: If-None-Match + ETag gives 304 when unchanged. The mirror image for writes is If-Match, where a mismatch yields 412 and enables optimistic concurrency over HTTP."
     }
   ]
 }

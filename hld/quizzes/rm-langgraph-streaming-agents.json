@@ -7,7 +7,7 @@
   "seriesDescription": "Topic-by-topic JEE-style quizzes for the backend and AI-engineering interview roadmap: integer, assertion-reason, matrix match, fill-in-the-blanks, short code writing, plus multi-correct questions. Language core, concurrency, DSA, web frameworks, data access, databases, messaging, resilience, security, testing, system design, LLM and agent engineering.",
   "seriesOrder": 96,
   "description": "Stream modes and what they emit, supervisor and subgraph patterns (and their reducer trap), Send fan-out, and drawing the 11-node copilot graph from memory.",
-  "source": "LangGraph docs (streaming, subgraphs, multi-agent); verified by running langgraph 1.2",
+  "source": "LangGraph docs (streaming, subgraphs, multi-agent, get_stream_writer); LangChain docs; verified by running langgraph 1.2",
   "estimatedMinutes": 16,
   "questions": [
     {
@@ -430,6 +430,35 @@
         "a"
       ],
       "explanation": "Human approval gates the action, not the chat. Pair it with idempotent tools and an audit entry; the node restarts after resume, so avoid side effects before interrupt()."
+    },
+    {
+      "id": "custom-stream-writer",
+      "concept": "Streaming modes",
+      "type": "code",
+      "difficulty": 2,
+      "prompt": "Inside a node work(state), emit the custom progress event {'progress': 'half'} with LangGraph's stream writer and return no state change. Then show how the caller of the compiled graph app (variables inputs and cfg exist) receives only those custom events.",
+      "language": "python",
+      "starter": "from langgraph.config import get_stream_writer\n",
+      "checks": [
+        {
+          "label": "gets the stream writer",
+          "pattern": "get_stream_writer\\s*\\(\\s*\\)"
+        },
+        {
+          "label": "writes the progress payload",
+          "pattern": "\\w+\\(\\s*\\{\\s*[\"']progress[\"']\\s*:\\s*[\"']half[\"']\\s*\\}"
+        },
+        {
+          "label": "streams with stream_mode custom",
+          "pattern": "stream_mode\\s*=\\s*[\"']custom[\"']"
+        },
+        {
+          "label": "iterates over app.stream",
+          "pattern": "for\\s+\\w+\\s+in\\s+app\\.stream\\("
+        }
+      ],
+      "model": "def work(state):\n    writer = get_stream_writer()\n    writer({\"progress\": \"half\"})\n    return {}\n\nfor event in app.stream(inputs, cfg, stream_mode=\"custom\"):\n    print(event)",
+      "explanation": "get_stream_writer() returns a callable that pushes any payload into the custom stream (I ran it with stream_mode=['custom','updates'] and got both). Use it for progress bars and long-running tool status, separate from token streaming."
     }
   ]
 }

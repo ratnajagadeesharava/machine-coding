@@ -336,6 +336,78 @@
       ],
       "model": "from collections import defaultdict\n\ndef group_anagrams(strs):\n    groups = defaultdict(list)\n    for s in strs:\n        groups[\"\".join(sorted(s))].append(s)\n    return list(groups.values())",
       "explanation": "A list cannot be a dict key, so join or tuple the sorted letters. A tuple of 26 counts also works and is faster for long words."
+    },
+    {
+      "id": "longest-consecutive",
+      "concept": "Hashing patterns",
+      "type": "code",
+      "difficulty": 2,
+      "prompt": "Write a Python function longest_consecutive(nums) returning the length of the longest run of consecutive integers (like 3,4,5,6) present in an unsorted list, in O(n) expected time using a set.",
+      "language": "python",
+      "starter": "def longest_consecutive(nums):\n    ",
+      "checks": [
+        {
+          "label": "puts the numbers in a set",
+          "pattern": "set\\s*\\(|\\{"
+        },
+        {
+          "label": "only starts counting at a number whose predecessor is absent",
+          "pattern": "-\\s*1\\s+not\\s+in|not\\s+in\\s+\\w+[\\s\\S]*-\\s*1|\\+\\s*1\\s+in"
+        },
+        {
+          "label": "extends the run with a loop",
+          "pattern": "while|for"
+        },
+        {
+          "label": "keeps the best length",
+          "pattern": "max\\s*\\(|best|ans|res"
+        }
+      ],
+      "model": "def longest_consecutive(nums):\n    s = set(nums)\n    best = 0\n    for x in s:\n        if x - 1 not in s:\n            y = x\n            while y + 1 in s:\n                y += 1\n            best = max(best, y - x + 1)\n    return best",
+      "explanation": "Starting only at run beginnings means each element is visited at most twice overall, so it is O(n) expected despite the nested loop. Sorting is O(n log n) and also accepted by interviewers as a first answer, but the question asks for O(n)."
+    },
+    {
+      "id": "hashcode-contract",
+      "concept": "Hashing patterns",
+      "type": "single",
+      "difficulty": 2,
+      "prompt": "A Java class overrides equals but not hashCode, and instances are stored in a HashSet. What can go wrong?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Equal objects can land in different buckets, so contains may fail.",
+          "why": "Right: the contract says equal objects must have equal hash codes; otherwise lookup probes the wrong bucket."
+        },
+        {
+          "id": "b",
+          "text": "The class fails to compile, because the compiler insists both methods are overridden together.",
+          "why": "The compiler does not enforce the pair; the bug appears at run time as missed lookups."
+        },
+        {
+          "id": "c",
+          "text": "The set throws an exception on the second add of an object equal to an existing one.",
+          "why": "HashSet does not throw on duplicates; add just returns false when it finds an equal element."
+        },
+        {
+          "id": "d",
+          "text": "The set switches to comparing by identity for every later call to add or contains.",
+          "why": "It still calls equals and hashCode; it just receives inconsistent hash values."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Also never use a mutable field in hashCode for keys you keep in a map: changing it after insertion loses the entry. Objects.hash(...) and records give a correct pair for free."
+    },
+    {
+      "id": "product-except-self",
+      "concept": "Prefix sums",
+      "type": "integer",
+      "difficulty": 1,
+      "prompt": "For nums = [2, 3, 4, 5], the product-except-self array has output[i] equal to the product of all other elements. What is output[1]?",
+      "answer": 40,
+      "tolerance": 0,
+      "explanation": "2 * 4 * 5 = 40. The O(n) solution without division multiplies a running prefix product on the way right and a running suffix product on the way back, using the output array itself, so extra space is O(1) besides the answer."
     }
   ]
 }

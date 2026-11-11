@@ -370,6 +370,86 @@
         "b"
       ],
       "explanation": "A classic follow-up. Knapsack is NP-hard (weakly), and the DP is efficient only when W is small."
+    },
+    {
+      "id": "lcs-length",
+      "concept": "Longest common subsequence",
+      "type": "integer",
+      "difficulty": 2,
+      "prompt": "What is the length of the longest common subsequence of \"ABCBDAB\" and \"BDCABA\"?",
+      "answer": 4,
+      "tolerance": 0,
+      "unit": "characters",
+      "explanation": "One LCS is BCBA (others are BDAB and BCAB). The table recurrence is dp[i][j] = dp[i-1][j-1] + 1 if the characters match, else max(dp[i-1][j], dp[i][j-1]); it fills 7 x 6 cells in O(m n)."
+    },
+    {
+      "id": "grid-obstacles",
+      "concept": "Grid DP",
+      "type": "code",
+      "difficulty": 2,
+      "prompt": "Write a Python function paths(grid) counting the ways to go from the top-left to the bottom-right of a grid moving only right or down, where grid[r][c] == 1 is an obstacle you cannot enter.",
+      "language": "python",
+      "starter": "def paths(grid):\n    ",
+      "checks": [
+        {
+          "label": "loops over rows and columns",
+          "pattern": "for[\\s\\S]*for"
+        },
+        {
+          "label": "sets blocked cells to zero ways",
+          "pattern": "==\\s*1"
+        },
+        {
+          "label": "adds the ways from above and from the left",
+          "pattern": "\\+"
+        },
+        {
+          "label": "returns the value for the last cell",
+          "pattern": "return"
+        }
+      ],
+      "model": "def paths(grid):\n    R, C = len(grid), len(grid[0])\n    dp = [0] * C\n    dp[0] = 1 if grid[0][0] == 0 else 0\n    for r in range(R):\n        for c in range(C):\n            if grid[r][c] == 1:\n                dp[c] = 0\n            elif c > 0:\n                dp[c] += dp[c - 1]\n    return dp[-1]",
+      "explanation": "State: dp[r][c] = ways to reach the cell; transition: from above plus from the left; a blocked cell has 0. The single row dp[c] is the space-optimised form, O(R C) time and O(C) space. For a grid without obstacles the answer is C(R+C-2, R-1) (28 for 3 x 7)."
+    },
+    {
+      "id": "word-break",
+      "concept": "String DP",
+      "type": "code",
+      "difficulty": 2,
+      "prompt": "Write a Python function word_break(s, words) returning True if s can be split into one or more words from the list (words may be reused).",
+      "language": "python",
+      "starter": "def word_break(s, words):\n    ",
+      "checks": [
+        {
+          "label": "stores words in a set for fast lookup",
+          "pattern": "set\\s*\\("
+        },
+        {
+          "label": "sets the empty prefix as reachable",
+          "pattern": "\\[\\s*0\\s*\\]\\s*=\\s*True|=\\s*\\[\\s*True"
+        },
+        {
+          "label": "tries each split point inside a nested loop",
+          "pattern": "for[\\s\\S]*for"
+        },
+        {
+          "label": "returns whether the whole string is reachable",
+          "pattern": "return\\s+\\w+\\[\\s*(n|len\\s*\\(\\s*\\w+\\s*\\)|-\\s*1)\\s*\\]"
+        }
+      ],
+      "model": "def word_break(s, words):\n    ws = set(words)\n    n = len(s)\n    dp = [False] * (n + 1)\n    dp[0] = True\n    for i in range(1, n + 1):\n        for j in range(i):\n            if dp[j] and s[j:i] in ws:\n                dp[i] = True\n                break\n    return dp[n]",
+      "explanation": "dp[i] means the first i characters can be segmented. O(n^2) splits times the substring/hash cost (so up to O(n^3) character work), or O(n * maxWordLen) if you only try lengths up to the longest word. A top-down version with memoisation is also correct but would not match the bottom-up checks here."
+    },
+    {
+      "id": "lis-length",
+      "concept": "Longest increasing subsequence",
+      "type": "integer",
+      "difficulty": 2,
+      "prompt": "What is the length of the longest strictly increasing subsequence of [10, 9, 2, 5, 3, 7, 101, 18]?",
+      "answer": 4,
+      "tolerance": 0,
+      "unit": "elements",
+      "explanation": "For example 2, 3, 7, 101 (or 2, 5, 7, 18). The O(n^2) DP takes the best over all earlier smaller elements; keeping a tails array and binary-searching each value gives O(n log n), where the array length is the answer even though it is not itself a valid subsequence."
     }
   ]
 }
