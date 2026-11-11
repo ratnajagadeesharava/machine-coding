@@ -1,13 +1,14 @@
 {
-  "id": "rm-db-mongo-redis",
+  "id": "rm-db-mongo-redis-core",
   "title": "MongoDB and Redis",
   "topic": "Interview roadmap",
-  "series": "interview-roadmap",
-  "seriesTitle": "Interview roadmap: topic quizzes",
-  "seriesDescription": "Topic-by-topic JEE-style quizzes for the backend and AI-engineering interview roadmap: integer, assertion-reason, matrix match, fill-in-the-blanks, short code writing, plus multi-correct questions. Language core, concurrency, DSA, web frameworks, data access, databases, messaging, resilience, security, testing, system design, LLM and agent engineering.",
+  "language": "neutral",
+  "series": "interview-roadmap-core",
+  "seriesTitle": "Interview roadmap: language-independent topics",
+  "seriesDescription": "Language-independent interview topics (concepts, SQL, design, AI engineering): no Java and no Python code or library names.",
   "seriesOrder": 72,
-  "description": "Document modelling, indexes and aggregation pipelines in MongoDB (PyMongo, Spring Data), then Redis data types, TTL, eviction, caching patterns, stampedes and the limits of distributed locks.",
-  "source": "MongoDB manual (aggregation, indexes, TTL, transactions); Spring Data MongoDB reference; Redis docs (data types, eviction, persistence, distributed locks, ZRANGE/ZREVRANGE); Spring Framework cache abstraction; Kleppmann on Redlock",
+  "description": "Document modelling, indexes and aggregation pipelines in MongoDB, then Redis data types, TTL, eviction, caching patterns, stampedes and the limits of distributed locks.",
+  "source": "MongoDB manual (aggregation, indexes, TTL, transactions); Redis docs (data types, eviction, persistence, distributed locks, ZRANGE/ZREVRANGE); Kleppmann on Redlock",
   "estimatedMinutes": 16,
   "questions": [
     {
@@ -98,12 +99,12 @@
       "explanation": "Compound indexes follow the equality, sort, range (ESR) guideline. A multikey index is automatic on array fields (a compound index may include at most one array field). TTL deletion runs in a background task about once a minute."
     },
     {
-      "id": "mongo-agg-py",
+      "id": "mongo-agg-shell",
       "concept": "Aggregation pipeline",
       "type": "code",
       "difficulty": 2,
-      "prompt": "Collection orders has documents {customerId, status, amount}. With PyMongo, write db.orders.aggregate(...) returning the 3 customers with the highest total amount among orders whose status is \"paid\", as {_id: customerId, total: ...}.",
-      "language": "python",
+      "prompt": "Collection orders has documents {customerId, status, amount}. In mongosh, write db.orders.aggregate(...) returning the 3 customers with the highest total amount among orders whose status is \"paid\", as {_id: customerId, total: ...}.",
+      "language": "javascript",
       "starter": "db.orders.aggregate([\n",
       "checks": [
         {
@@ -120,40 +121,44 @@
         },
         {
           "label": "sorts descending by the total",
-          "pattern": "\\$sort[\"']?\\s*:\\s*\\{\\s*[\"']?total[\"']?\\s*:\\s*(-1|pymongo\\.DESCENDING)|\\$sort[\"']?\\s*:\\s*SON"
+          "pattern": "\\$sort[\"']?\\s*:\\s*\\{\\s*[\"']?total[\"']?\\s*:\\s*-1"
         },
         {
           "label": "limits to 3",
           "pattern": "\\$limit[\"']?\\s*:\\s*3"
         }
       ],
-      "model": "db.orders.aggregate([\n  {\"$match\": {\"status\": \"paid\"}},\n  {\"$group\": {\"_id\": \"$customerId\", \"total\": {\"$sum\": \"$amount\"}}},\n  {\"$sort\": {\"total\": -1}},\n  {\"$limit\": 3},\n])",
-      "explanation": "Put $match first so it can use an index and shrink the stream. $sort followed by $limit is optimised into a top-k sort. Motor uses the same pipeline, awaited as an async cursor."
+      "model": "db.orders.aggregate([\n  { $match: { status: \"paid\" } },\n  { $group: { _id: \"$customerId\", total: { $sum: \"$amount\" } } },\n  { $sort: { total: -1 } },\n  { $limit: 3 }\n])",
+      "explanation": "Put $match first so it can use an index and shrink the stream. $sort followed by $limit is optimised into a top-k sort. Quoting the stage keys (as JSON) is equally valid."
     },
     {
-      "id": "mongo-spring-query",
-      "concept": "Spring Data MongoDB",
+      "id": "mongo-find-shell",
+      "concept": "MongoDB queries",
       "type": "code",
       "difficulty": 2,
-      "prompt": "In a Spring Data MongoDB repository for the Order document, declare a method findByStatus that takes a String status and returns a List of Order, using an @Query annotation with the JSON filter on the status field and a positional parameter.",
-      "language": "java",
-      "starter": "public interface OrderRepository extends MongoRepository<Order, String> {\n",
+      "prompt": "Collection orders has documents {customerId, status, amount}. In mongosh, write a find that returns only customerId and amount (no _id) of the 5 largest orders whose status is \"paid\".",
+      "language": "javascript",
+      "starter": "db.orders.find(",
       "checks": [
         {
-          "label": "uses @Query",
-          "pattern": "@Query\\s*\\("
+          "label": "filters on status \"paid\"",
+          "pattern": "status[\"']?\\s*:\\s*[\"']paid[\"']"
         },
         {
-          "label": "filters on status with ?0",
-          "pattern": "status['\"]?\\s*:\\s*\\?0"
+          "label": "projects customerId and amount without _id",
+          "pattern": "_id[\"']?\\s*:\\s*0[\\s\\S]*|customerId[\"']?\\s*:\\s*1"
         },
         {
-          "label": "returns List<Order>",
-          "pattern": "List\\s*<\\s*Order\\s*>\\s+findByStatus\\s*\\(\\s*String\\s+\\w+\\s*\\)"
+          "label": "sorts by amount descending",
+          "pattern": "sort\\s*\\(\\s*\\{\\s*[\"']?amount[\"']?\\s*:\\s*-1"
+        },
+        {
+          "label": "limits to 5",
+          "pattern": "limit\\s*\\(\\s*5\\s*\\)"
         }
       ],
-      "model": "@Query(\"{ 'status': ?0 }\")\nList<Order> findByStatus(String status);",
-      "explanation": "A derived query List<Order> findByStatus(String status) works without any annotation; the @Query form lets you control the filter, projection and sort explicitly."
+      "model": "db.orders.find({ status: \"paid\" }, { _id: 0, customerId: 1, amount: 1 }).sort({ amount: -1 }).limit(5)",
+      "explanation": "The second argument of find is the projection; _id is returned unless excluded explicitly. The cursor methods sort and limit may be chained in any order because the server always applies sort, then skip, then limit. An aggregate with $match, $sort, $limit and $project is an equally valid answer."
     },
     {
       "id": "embed-vs-reference",
@@ -335,7 +340,7 @@
         "write-behind",
         "read-through"
       ],
-      "explanation": "Cache-aside is the default and what Spring Cache @Cacheable implements with a CacheManager. Write-behind is fastest but can lose acknowledged writes if the cache dies before the flush."
+      "explanation": "Cache-aside is the default pattern: the application owns the lookup and the fill. Write-behind is fastest but can lose acknowledged writes if the cache dies before the flush."
     },
     {
       "id": "ttl-jitter",
@@ -416,23 +421,23 @@
       "explanation": "Single-threaded execution makes each command atomic. The failures come from expiry during a pause and asynchronous replication, not from interleaved commands."
     },
     {
-      "id": "cacheable-private",
-      "concept": "Spring Cache",
+      "id": "cache-delete-before-commit",
+      "concept": "Cache stampede",
       "type": "assertion",
       "difficulty": 2,
       "prompt": "Read the assertion A and the reason R, then choose the correct relationship between them.",
-      "assertion": "In Spring a @Cacheable annotation on a private method, or on a method called through this.method(), still caches results.",
-      "reason": "Spring Cache is applied through a proxy around the bean.",
+      "assertion": "Deleting the cache entry before the database transaction commits is safe against stale reads.",
+      "reason": "A concurrent reader that misses the cache can reload the old row between the delete and the commit.",
       "correct": [
         "d"
       ],
       "whys": {
-        "a": "A is false, so R cannot explain it.",
-        "b": "A is false.",
+        "a": "A is false, so R cannot be explaining a true statement.",
+        "b": "A is false: deleting early leaves a window in which stale data is re-cached.",
         "c": "R is true, so the option calling it false is wrong.",
-        "d": "Correct: the proxy is only crossed by external calls, so private and self-invoked methods bypass the cache; R is true."
+        "d": "Correct: the reader repopulates the cache with the old row before the commit lands, so the stale value then lives until the TTL; R is true."
       },
-      "explanation": "This is the classic self-invocation trap, shared by @Transactional and @Async. Move the method to another bean or use AspectJ mode."
+      "explanation": "Invalidate after the commit (and keep a TTL as a safety net), or use delayed double delete or change-data-capture driven invalidation. Invalidating early is a classic cache-aside race."
     },
     {
       "id": "mongo-transactions",

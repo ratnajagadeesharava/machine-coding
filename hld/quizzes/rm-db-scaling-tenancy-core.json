@@ -1,10 +1,11 @@
 {
-  "id": "rm-db-scaling-tenancy",
+  "id": "rm-db-scaling-tenancy-core",
   "title": "Scaling databases and multi-tenancy",
   "topic": "Interview roadmap",
-  "series": "interview-roadmap",
-  "seriesTitle": "Interview roadmap: topic quizzes",
-  "seriesDescription": "Topic-by-topic JEE-style quizzes for the backend and AI-engineering interview roadmap: integer, assertion-reason, matrix match, fill-in-the-blanks, short code writing, plus multi-correct questions. Language core, concurrency, DSA, web frameworks, data access, databases, messaging, resilience, security, testing, system design, LLM and agent engineering.",
+  "language": "neutral",
+  "series": "interview-roadmap-core",
+  "seriesTitle": "Interview roadmap: language-independent topics",
+  "seriesDescription": "Language-independent interview topics (concepts, SQL, design, AI engineering): no Java and no Python code or library names.",
   "seriesOrder": 71,
   "description": "Replication, partitioning, sharding, consistent hashing and quorum arithmetic, then the three multi-tenancy models and PostgreSQL row-level security.",
   "source": "Designing Data-Intensive Applications; PostgreSQL 16 documentation (partitioning, row security); Dynamo paper; Karger et al. consistent hashing; AWS SaaS tenant isolation whitepaper; PgBouncer docs",
@@ -368,25 +369,24 @@
       "concept": "Consistent hashing",
       "type": "code",
       "difficulty": 3,
-      "prompt": "ring is a list of (hash, node) tuples sorted by hash. Write def get_node(ring, h) that returns the node owning hash h: the first entry with hash >= h, wrapping around to the first entry past the end. Use the bisect module.",
-      "language": "python",
-      "starter": "import bisect\n\n",
+      "prompt": "In pseudocode, ring is an array of (hash, node) entries sorted by hash. Write getNode(ring, h) that returns the node owning hash h: the first entry with hash >= h, wrapping around to the first entry when h is past the last one. Use binary search.",
+      "language": "pseudocode",
       "checks": [
         {
-          "label": "uses bisect",
-          "pattern": "bisect"
+          "label": "uses binary search / lower bound",
+          "pattern": "lower_?bound|binary|search"
         },
         {
-          "label": "defines get_node",
-          "pattern": "def\\s+get_node\\s*\\("
+          "label": "defines getNode",
+          "pattern": "getNode\\s*\\("
         },
         {
           "label": "wraps around the end of the ring",
-          "pattern": "%\\s*len\\(|<\\s*len\\(|>=\\s*len\\(|==\\s*len\\(|ring\\[0\\]"
+          "pattern": "%\\s*(len|length|size)|==\\s*(len|length|size)|>=\\s*(len|length|size)|ring\\[0\\]|=\\s*0\\b"
         }
       ],
-      "model": "def get_node(ring, h):\n    i = bisect.bisect_left(ring, (h,))\n    return ring[i % len(ring)][1]",
-      "explanation": "A tuple (h,) sorts before any (h, node), so bisect_left finds the first entry with hash >= h. Using a separate list of hashes with bisect_right or an explicit if-wrap is equally valid, but check the boundary rule."
+      "model": "function getNode(ring, h):\n    i = lowerBound(ring, h)     // first index with hash >= h, by binary search\n    if i == length(ring): i = 0 // wrap around\n    return ring[i].node",
+      "explanation": "Binary search finds the first entry with hash >= h in O(log n); the wrap-around turns the sorted array into a ring. A modulo (i % length) or a separate array of hashes is equally valid, but check the boundary rule."
     }
   ]
 }

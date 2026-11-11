@@ -1,10 +1,11 @@
 {
-  "id": "rm-sql-acid-isolation",
+  "id": "rm-sql-acid-isolation-core",
   "title": "SQL: transactions, ACID and isolation levels",
   "topic": "Interview roadmap",
-  "series": "interview-roadmap",
-  "seriesTitle": "Interview roadmap: topic quizzes",
-  "seriesDescription": "Topic-by-topic JEE-style quizzes for the backend and AI-engineering interview roadmap: integer, assertion-reason, matrix match, fill-in-the-blanks, short code writing, plus multi-correct questions. Language core, concurrency, DSA, web frameworks, data access, databases, messaging, resilience, security, testing, system design, LLM and agent engineering.",
+  "language": "neutral",
+  "series": "interview-roadmap-core",
+  "seriesTitle": "Interview roadmap: language-independent topics",
+  "seriesDescription": "Language-independent interview topics (concepts, SQL, design, AI engineering): no Java and no Python code or library names.",
   "seriesOrder": 66,
   "description": "ACID, savepoints, the isolation levels and anomalies (dirty read, non-repeatable read, phantom, lost update, write skew) in the SQL standard and in PostgreSQL MVCC, with retry on serialization failures.",
   "source": "PostgreSQL 16 documentation (transaction isolation, MVCC, explicit locking, asynchronous commit); Designing Data-Intensive Applications ch. 7; Jepsen/Hermitage isolation tables; Use The Index, Luke",
@@ -215,7 +216,7 @@
       "difficulty": 2,
       "prompt": "BEGIN; INSERT row 1; SAVEPOINT s; INSERT row 2; INSERT row 3; ROLLBACK TO s; INSERT row 4; COMMIT. How many of these rows are committed?",
       "answer": 2,
-      "explanation": "ROLLBACK TO s undoes rows 2 and 3 but keeps the transaction (and row 1) alive; row 4 is inserted afterwards, so rows 1 and 4 commit. Verified on PostgreSQL. Spring NESTED propagation maps to savepoints.",
+      "explanation": "ROLLBACK TO s undoes rows 2 and 3 but keeps the transaction (and row 1) alive; row 4 is inserted afterwards, so rows 1 and 4 commit. Verified on PostgreSQL. Nested transactions in application frameworks are usually implemented with savepoints.",
       "unit": "rows"
     },
     {
@@ -327,27 +328,27 @@
       "concept": "Isolation levels",
       "type": "code",
       "difficulty": 3,
-      "prompt": "With psycopg 3, a connection `conn` and a function do_transfer(conn), write a loop of at most 3 attempts that runs do_transfer inside `with conn.transaction():`, retries only on psycopg.errors.SerializationFailure, and stops after the first success.",
-      "language": "python",
+      "prompt": "In pseudocode, given a function doTransfer() that runs a whole transaction (BEGIN ... COMMIT) and fails with SQLSTATE 40001 when serialization fails, write a loop of at most 3 attempts that retries only on that error and stops after the first success.",
+      "language": "pseudocode",
       "checks": [
         {
           "label": "loops at most 3 times",
-          "pattern": "for\\s+\\w+\\s+in\\s+range\\s*\\(\\s*3\\s*\\)|while\\b"
+          "pattern": "for\\b[\\s\\S]*\\b3\\b|while\\b[\\s\\S]*\\b3\\b|repeat\\b[\\s\\S]*\\b3\\b|attempts?\\s*(<|<=|>)\\s*\\d"
         },
         {
-          "label": "uses conn.transaction()",
-          "pattern": "conn\\.transaction\\s*\\("
+          "label": "runs the whole transaction function",
+          "pattern": "doTransfer"
         },
         {
-          "label": "catches SerializationFailure",
-          "pattern": "SerializationFailure|40001"
+          "label": "catches the serialization failure (40001)",
+          "pattern": "serialization|40001"
         },
         {
           "label": "stops after success",
-          "pattern": "\\bbreak\\b|\\breturn\\b"
+          "pattern": "\\bbreak\\b|\\breturn\\b|\\bexit\\b"
         }
       ],
-      "model": "for attempt in range(3):\n    try:\n        with conn.transaction():\n            do_transfer(conn)\n        break\n    except psycopg.errors.SerializationFailure:\n        continue",
+      "model": "for attempt in 1..3:\n    try:\n        doTransfer()      // BEGIN ... COMMIT inside\n        break             // success\n    catch SerializationFailure (SQLSTATE 40001):\n        continue          // retry the whole transaction",
       "explanation": "In real code re-raise on the last attempt and add jittered back-off. The whole transaction must be retried, not just the failing statement, because its snapshot is gone."
     },
     {

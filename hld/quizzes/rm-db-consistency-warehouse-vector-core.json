@@ -1,13 +1,14 @@
 {
-  "id": "rm-db-consistency-warehouse-vector",
+  "id": "rm-db-consistency-warehouse-vector-core",
   "title": "CAP, warehouses and vector databases",
   "topic": "Interview roadmap",
-  "series": "interview-roadmap",
-  "seriesTitle": "Interview roadmap: topic quizzes",
-  "seriesDescription": "Topic-by-topic JEE-style quizzes for the backend and AI-engineering interview roadmap: integer, assertion-reason, matrix match, fill-in-the-blanks, short code writing, plus multi-correct questions. Language core, concurrency, DSA, web frameworks, data access, databases, messaging, resilience, security, testing, system design, LLM and agent engineering.",
+  "language": "neutral",
+  "series": "interview-roadmap-core",
+  "seriesTitle": "Interview roadmap: language-independent topics",
+  "seriesDescription": "Language-independent interview topics (concepts, SQL, design, AI engineering): no Java and no Python code or library names.",
   "seriesOrder": 73,
-  "description": "CAP and PACELC, consistency models, OLTP vs OLAP and columnar storage, Snowflake/Databricks basics, and vector search with pgvector (HNSW vs IVF, distance metrics) and Spring AI.",
-  "source": "Brewer/Gilbert-Lynch CAP; Abadi PACELC (2012); Jepsen consistency map; Snowflake and Databricks docs; pgvector README; Spring AI reference; Chroma and Qdrant docs",
+  "description": "CAP and PACELC, consistency models, OLTP vs OLAP and columnar storage, Snowflake/Databricks basics, and vector search with pgvector (HNSW vs IVF, distance metrics).",
+  "source": "Brewer/Gilbert-Lynch CAP; Abadi PACELC (2012); Jepsen consistency map; Snowflake and Databricks docs; pgvector README",
   "estimatedMinutes": 16,
   "questions": [
     {
@@ -415,29 +416,33 @@
       "explanation": "Each list holds about 10,000 vectors and 5 lists are scanned, so about 50,000. Raising probes increases recall and cost; probes = lists is an exact scan."
     },
     {
-      "id": "spring-ai-search",
-      "concept": "Vector store clients",
+      "id": "pgvector-filtered-search",
+      "concept": "pgvector",
       "type": "code",
       "difficulty": 2,
-      "prompt": "With Spring AI, vectorStore is a VectorStore. Write the call that returns the 4 most similar documents to the text \"refund policy\" using a SearchRequest.",
-      "language": "java",
-      "starter": "List<Document> docs = ",
+      "prompt": "Table docs(id, tenant_id, embedding vector(3)). Write a pgvector query returning the ids of the 4 documents of tenant 7 closest to the vector [0.1, 0.2, 0.3] by Euclidean (L2) distance.",
+      "language": "sql",
+      "starter": "SELECT ",
       "checks": [
         {
-          "label": "calls similaritySearch",
-          "pattern": "similaritySearch\\s*\\("
+          "label": "selects from docs",
+          "pattern": "from\\s+docs"
         },
         {
-          "label": "queries \"refund policy\"",
-          "pattern": "query\\s*\\(\\s*\"refund policy\"\\s*\\)"
+          "label": "filters on tenant 7",
+          "pattern": "tenant_id\\s*=\\s*7\\b"
         },
         {
-          "label": "sets topK to 4",
-          "pattern": "topk\\s*\\(\\s*4\\s*\\)"
+          "label": "orders by embedding <-> a vector",
+          "pattern": "order\\s+by\\s+embedding\\s*<->\\s*['\"]?\\[?"
+        },
+        {
+          "label": "limits to 4",
+          "pattern": "limit\\s+4"
         }
       ],
-      "model": "List<Document> docs = vectorStore.similaritySearch(SearchRequest.builder().query(\"refund policy\").topK(4).build());",
-      "explanation": "The builder style is Spring AI 1.0. A plain similaritySearch(\"refund policy\") string overload uses default topK. In Python, Chroma is collection.query(query_texts=[...], n_results=4) and Qdrant is client.query_points(collection_name, query=vector, limit=4)."
+      "model": "SELECT id FROM docs WHERE tenant_id = 7 ORDER BY embedding <-> '[0.1,0.2,0.3]' LIMIT 4;",
+      "explanation": "<-> is L2 distance and ascending order puts the nearest first. With an approximate (HNSW or IVF) index the filter is applied after the index scan, so fewer than 4 rows can come back; raise hnsw.ef_search, or use a partial index or partitions per tenant for selective filters."
     },
     {
       "id": "columnar-compress",

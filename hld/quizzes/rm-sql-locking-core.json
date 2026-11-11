@@ -1,13 +1,14 @@
 {
-  "id": "rm-sql-locking",
+  "id": "rm-sql-locking-core",
   "title": "SQL: locking, deadlocks and optimistic vs pessimistic control",
   "topic": "Interview roadmap",
-  "series": "interview-roadmap",
-  "seriesTitle": "Interview roadmap: topic quizzes",
-  "seriesDescription": "Topic-by-topic JEE-style quizzes for the backend and AI-engineering interview roadmap: integer, assertion-reason, matrix match, fill-in-the-blanks, short code writing, plus multi-correct questions. Language core, concurrency, DSA, web frameworks, data access, databases, messaging, resilience, security, testing, system design, LLM and agent engineering.",
+  "language": "neutral",
+  "series": "interview-roadmap-core",
+  "seriesTitle": "Interview roadmap: language-independent topics",
+  "seriesDescription": "Language-independent interview topics (concepts, SQL, design, AI engineering): no Java and no Python code or library names.",
   "seriesOrder": 67,
   "description": "Row locks, SELECT FOR UPDATE, NOWAIT and SKIP LOCKED job queues, deadlocks and how to avoid them, and choosing between optimistic (version column) and pessimistic locking. Checked on PostgreSQL 16.",
-  "source": "PostgreSQL 16 documentation (explicit locking, SELECT locking clause, deadlock_timeout, lock_timeout); Baeldung (JPA locking); Designing Data-Intensive Applications ch. 7",
+  "source": "PostgreSQL 16 documentation (explicit locking, SELECT locking clause, deadlock_timeout, lock_timeout); Designing Data-Intensive Applications ch. 7",
   "estimatedMinutes": 14,
   "questions": [
     {
@@ -243,7 +244,7 @@
         }
       ],
       "model": "SELECT balance FROM accounts WHERE id = 1 FOR UPDATE;",
-      "explanation": "FOR NO KEY UPDATE is a weaker lock that does not block foreign-key checks from child inserts and is enough when you do not change key columns. In JPA the equivalent is @Lock(LockModeType.PESSIMISTIC_WRITE)."
+      "explanation": "FOR NO KEY UPDATE is a weaker lock that does not block foreign-key checks from child inserts and is enough when you do not change key columns. Object-mapping libraries expose the same thing as a pessimistic write lock mode."
     },
     {
       "id": "code-optimistic-update",
@@ -267,7 +268,7 @@
         }
       ],
       "model": "UPDATE accounts\nSET balance = :new_balance, version = version + 1\nWHERE id = :id AND version = :version;",
-      "explanation": "If the driver reports 0 affected rows, someone else won; raise a conflict and let the caller re-read and retry. This is exactly what JPA @Version and SQLAlchemy version_id_col generate."
+      "explanation": "If the driver reports 0 affected rows, someone else won; raise a conflict and let the caller re-read and retry. This is exactly the statement that the version-column feature of an object mapper generates."
     },
     {
       "id": "hot-row-inventory",
