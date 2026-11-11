@@ -225,7 +225,7 @@
       "options": [
         {
           "id": "a",
-          "text": "As (n & (n - 1)) == 0, because & binds tighter than the comparison.",
+          "text": "As (n & (n - 1)) == 0, since & outranks comparisons.",
           "why": "Correct: in Python the bitwise operators rank above the comparisons."
         },
         {
@@ -258,22 +258,22 @@
       "options": [
         {
           "id": "a",
-          "text": "x & 0xFFFFFFFF",
+          "text": "x & 0xFFFFFFFF, keeping the low 32 bits",
           "why": "Correct: masking keeps the low 32 bits of the infinite two's complement form."
         },
         {
           "id": "b",
-          "text": "x >>> 0",
+          "text": "x >>> 0, an unsigned shift of x by zero bits",
           "why": "Python has no >>> operator, so this is a syntax error."
         },
         {
           "id": "c",
-          "text": "abs(x)",
+          "text": "abs(x), the absolute value of x",
           "why": "abs(-1) is 1, which is not the 32-bit pattern of -1."
         },
         {
           "id": "d",
-          "text": "x % 31",
+          "text": "x % 31, the remainder by 31",
           "why": "A remainder by 31 has no relation to the 32-bit pattern."
         }
       ],

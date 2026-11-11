@@ -1,0 +1,432 @@
+{
+  "id": "rm-data-pool-migrations-python",
+  "title": "SQLAlchemy, asyncpg and Alembic: pools and schema migrations",
+  "topic": "Interview roadmap",
+  "language": "python",
+  "description": "SQLAlchemy QueuePool and asyncpg pool settings, connection arithmetic across workers, pre-ping, and Alembic migrations including zero-downtime practices.",
+  "source": "SQLAlchemy 2.0 documentation (connection pooling, pool_pre_ping); asyncpg documentation (create_pool); Alembic documentation (autogenerate, operations, autocommit_block); PostgreSQL documentation (max_connections, CREATE INDEX CONCURRENTLY)",
+  "series": "interview-roadmap-python",
+  "seriesTitle": "Interview roadmap: Python and FastAPI",
+  "seriesDescription": "Python and FastAPI interview topics in JEE-Advanced style: integer, assertion-reason, matrix match, fill-in-the-blanks, short Python/SQL code and multi-correct questions. Python only: nothing here mixes in Java.",
+  "seriesOrder": 62,
+  "estimatedMinutes": 16,
+  "questions": [
+    {
+      "id": "pool-symptoms",
+      "concept": "Pool exhaustion",
+      "type": "matrix",
+      "difficulty": 2,
+      "prompt": "Match each symptom with the most appropriate first response.",
+      "left": [
+        {
+          "id": "l1",
+          "text": "SQLAlchemy: \"QueuePool limit of size 5 overflow 10 reached, connection timed out\""
+        },
+        {
+          "id": "l2",
+          "text": "psycopg: \"server closed the connection unexpectedly\" after a quiet night"
+        },
+        {
+          "id": "l3",
+          "text": "PostgreSQL: \"FATAL: sorry, too many clients already\""
+        },
+        {
+          "id": "l4",
+          "text": "asyncpg: tasks wait forever in pool.acquire()"
+        }
+      ],
+      "right": [
+        {
+          "id": "r1",
+          "text": "Return connections sooner: close sessions, shorten transactions, no slow I/O inside them"
+        },
+        {
+          "id": "r2",
+          "text": "Enable pool_pre_ping or a pool_recycle shorter than the server or firewall idle timeout"
+        },
+        {
+          "id": "r3",
+          "text": "Cap per-process pool sizes or put PgBouncer in front of the database"
+        },
+        {
+          "id": "r4",
+          "text": "Pass a timeout to acquire() and release connections promptly with async with"
+        },
+        {
+          "id": "r5",
+          "text": "Raise max_connections to 10000"
+        },
+        {
+          "id": "r6",
+          "text": "Switch the pool to NullPool and open a connection per query"
+        }
+      ],
+      "pairs": {
+        "l1": "r1",
+        "l2": "r2",
+        "l3": "r3",
+        "l4": "r4"
+      },
+      "explanation": "Exhaustion (waiting for a free connection) and stale connections (dead sockets in the pool) look different but both show up as pool errors. Raising max_connections only moves the memory cost to the database."
+    },
+    {
+      "id": "code-sqlalchemy-pool",
+      "concept": "SQLAlchemy engine pool",
+      "type": "code",
+      "difficulty": 2,
+      "prompt": "Create the SQLAlchemy engine `engine` for the URL in DATABASE_URL with a pool of 10 connections, at most 5 extra overflow connections, a 10 second wait for a free connection, and a liveness check on checkout.",
+      "language": "python",
+      "checks": [
+        {
+          "label": "calls create_engine",
+          "pattern": "create_engine\\s*\\("
+        },
+        {
+          "label": "sets pool_size=10",
+          "pattern": "pool_size\\s*=\\s*10"
+        },
+        {
+          "label": "sets max_overflow=5",
+          "pattern": "max_overflow\\s*=\\s*5"
+        },
+        {
+          "label": "sets pool_timeout=10",
+          "pattern": "pool_timeout\\s*=\\s*10"
+        },
+        {
+          "label": "enables pool_pre_ping",
+          "pattern": "pool_pre_ping\\s*=\\s*True"
+        }
+      ],
+      "model": "engine = create_engine(\n    DATABASE_URL, pool_size=10, max_overflow=5,\n    pool_timeout=10, pool_pre_ping=True)",
+      "explanation": "Defaults of the QueuePool are pool_size=5, max_overflow=10, pool_timeout=30. The hard cap per process is pool_size + max_overflow; remember to multiply by the number of processes."
+    },
+    {
+      "id": "code-asyncpg-pool",
+      "concept": "asyncpg pool",
+      "type": "code",
+      "difficulty": 2,
+      "prompt": "Using asyncpg and a DSN string `dsn`, create a pool with a minimum of 2 and a maximum of 10 connections, then acquire a connection from it and read the number of rows in table orders into `n`.",
+      "language": "python",
+      "checks": [
+        {
+          "label": "creates the pool with asyncpg.create_pool",
+          "pattern": "asyncpg\\.create_pool\\s*\\("
+        },
+        {
+          "label": "sets min_size=2 and max_size=10",
+          "pattern": "min_size\\s*=\\s*2[\\s\\S]*max_size\\s*=\\s*10|max_size\\s*=\\s*10[\\s\\S]*min_size\\s*=\\s*2"
+        },
+        {
+          "label": "acquires a connection with async with pool.acquire()",
+          "pattern": "async\\s+with\\s+\\w+\\.acquire\\s*\\(\\s*\\)"
+        },
+        {
+          "label": "awaits a query such as fetchval",
+          "pattern": "await\\s+\\w+\\.(fetchval|fetchrow|fetch)\\s*\\("
+        }
+      ],
+      "model": "pool = await asyncpg.create_pool(dsn, min_size=2, max_size=10)\nasync with pool.acquire() as conn:\n    n = await conn.fetchval(\"SELECT count(*) FROM orders\")",
+      "explanation": "Create the pool once at application start (for example in a FastAPI lifespan handler), not per request. asyncpg placeholders are $1, $2, and the default pool is min_size=10, max_size=10."
+    },
+    {
+      "id": "max-connections-total",
+      "concept": "Pool sizing",
+      "type": "integer",
+      "difficulty": 3,
+      "prompt": "Each uvicorn worker process creates its own SQLAlchemy engine with pool_size=5 and max_overflow=5. A pod runs 4 workers and the service runs 3 pods. At most how many connections can the service hold open against PostgreSQL?",
+      "answer": 120,
+      "tolerance": 0,
+      "unit": "connections",
+      "explanation": "Each process can reach pool_size + max_overflow = 10 connections; 3 pods x 4 workers x 10 = 120. Pools are per process, so the total scales with workers and autoscaling; compare it with max_connections."
+    },
+    {
+      "id": "queuepool-waiters",
+      "concept": "Pool sizing",
+      "type": "integer",
+      "difficulty": 2,
+      "prompt": "An engine uses the default pool_size=5 and max_overflow=10. 20 requests arrive together and each holds a connection for a long time. How many of them must wait for a connection to be returned?",
+      "answer": 5,
+      "tolerance": 0,
+      "unit": "requests",
+      "explanation": "The pool can hand out at most 5 + 10 = 15 connections at once, so 20 - 15 = 5 requests wait (and fail after pool_timeout, 30 s by default, if none is released)."
+    },
+    {
+      "id": "pre-ping",
+      "concept": "SQLAlchemy engine pool",
+      "type": "assertion",
+      "difficulty": 2,
+      "prompt": "Judge the assertion and the reason.",
+      "assertion": "With pool_pre_ping=True SQLAlchemy tests a pooled connection with a lightweight ping on checkout and replaces it if it is dead.",
+      "reason": "Pre-ping adds a small extra round trip to every checkout.",
+      "correct": [
+        "b"
+      ],
+      "whys": {
+        "a": "Wrong: the extra round trip is a cost, not the reason pre-ping works.",
+        "b": "Correct: both are true, but R is a drawback, not an explanation of how dead connections are detected.",
+        "c": "Wrong: R is true.",
+        "d": "Wrong: A is true."
+      },
+      "explanation": "The small cost is usually worth it behind firewalls or load balancers that silently drop idle connections. pool_recycle is the complementary time-based setting."
+    },
+    {
+      "id": "queuepool-cap",
+      "concept": "SQLAlchemy engine pool",
+      "type": "truefalse",
+      "difficulty": 3,
+      "prompt": "True or false: pool_size=5 is a hard cap on the number of connections a SQLAlchemy QueuePool will open.",
+      "options": [
+        {
+          "id": "a",
+          "text": "True",
+          "why": "Wrong: max_overflow allows extra, temporary connections beyond pool_size."
+        },
+        {
+          "id": "b",
+          "text": "False",
+          "why": "Correct: the cap is pool_size + max_overflow; overflow connections are closed when returned."
+        }
+      ],
+      "correct": [
+        "b"
+      ],
+      "explanation": "Set max_overflow=0 for a strict cap. Remember that every process has its own pool."
+    },
+    {
+      "id": "asyncpg-pool-defaults",
+      "concept": "asyncpg pool",
+      "type": "truefalse",
+      "difficulty": 2,
+      "prompt": "True or false: asyncpg.create_pool() without size arguments creates a pool with min_size=10 and max_size=10.",
+      "options": [
+        {
+          "id": "a",
+          "text": "True",
+          "why": "Correct: those are asyncpg's defaults, so unset sizes mean ten connections opened up front."
+        },
+        {
+          "id": "b",
+          "text": "False",
+          "why": "The defaults give a fixed ten-connection pool."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Create the pool once at application startup (a lifespan handler), not per request, and size it with the number of worker processes in mind."
+    },
+    {
+      "id": "alembic-vocab",
+      "concept": "Alembic",
+      "type": "matrix",
+      "difficulty": 1,
+      "prompt": "Match each Alembic term with its meaning.",
+      "left": [
+        {
+          "id": "l1",
+          "text": "alembic_version"
+        },
+        {
+          "id": "l2",
+          "text": "down_revision"
+        },
+        {
+          "id": "l3",
+          "text": "alembic upgrade head"
+        },
+        {
+          "id": "l4",
+          "text": "alembic downgrade -1"
+        },
+        {
+          "id": "l5",
+          "text": "op.add_column(...)"
+        }
+      ],
+      "right": [
+        {
+          "id": "r1",
+          "text": "The table that stores the current revision id"
+        },
+        {
+          "id": "r2",
+          "text": "The revision a migration file builds on, forming a chain"
+        },
+        {
+          "id": "r3",
+          "text": "Applies every pending revision up to the newest"
+        },
+        {
+          "id": "r4",
+          "text": "Reverts the most recently applied revision"
+        },
+        {
+          "id": "r5",
+          "text": "A migration operation that emits ALTER TABLE ... ADD COLUMN"
+        },
+        {
+          "id": "r6",
+          "text": "The command that drops the whole database"
+        },
+        {
+          "id": "r7",
+          "text": "The setting that auto-creates tables on import"
+        }
+      ],
+      "pairs": {
+        "l1": "r1",
+        "l2": "r2",
+        "l3": "r3",
+        "l4": "r4",
+        "l5": "r5"
+      },
+      "explanation": "Alembic keeps one row (the current revision) in alembic_version, unlike tools that record every applied script. Revisions form a linked list through down_revision, and branches need an explicit merge."
+    },
+    {
+      "id": "code-alembic-cmds",
+      "concept": "Alembic",
+      "type": "code",
+      "difficulty": 2,
+      "prompt": "Write the two shell commands that generate an Alembic revision named \"add status\" by comparing the models with the database, and then apply all pending revisions.",
+      "language": "bash",
+      "checks": [
+        {
+          "label": "generates a revision with --autogenerate",
+          "pattern": "alembic\\s+revision\\b[^\\n]*--autogenerate"
+        },
+        {
+          "label": "gives the revision a message with -m",
+          "pattern": "-m\\s+[\"']add status[\"']|--message[ =][\"']add status[\"']"
+        },
+        {
+          "label": "applies migrations with alembic upgrade head",
+          "pattern": "alembic\\s+upgrade\\s+head"
+        }
+      ],
+      "model": "alembic revision --autogenerate -m \"add status\"\nalembic upgrade head",
+      "explanation": "Always read the generated script: autogenerate cannot detect column renames (it emits drop + add), many constraint changes or data migrations. alembic downgrade -1 steps back one revision."
+    },
+    {
+      "id": "alembic-upgrade-body",
+      "concept": "Alembic",
+      "type": "code",
+      "difficulty": 2,
+      "prompt": "Write the body of an Alembic upgrade() function that adds a nullable status column of type String(20) to the table orders, using op and sqlalchemy imported as sa.",
+      "language": "python",
+      "checks": [
+        {
+          "label": "uses op.add_column on orders",
+          "pattern": "op\\.add_column\\(\\s*[\"\\']orders[\"\\']"
+        },
+        {
+          "label": "column status",
+          "pattern": "sa\\.Column\\(\\s*[\"\\']status[\"\\']"
+        },
+        {
+          "label": "String(20)",
+          "pattern": "sa\\.String\\(\\s*20\\s*\\)"
+        },
+        {
+          "label": "nullable",
+          "pattern": "nullable\\s*=\\s*True"
+        }
+      ],
+      "model": "op.add_column(\"orders\", sa.Column(\"status\", sa.String(20), nullable=True))",
+      "explanation": "Verified against a real table. Adding a nullable column is the safe first step of an expand/contract change; backfill in batches and add NOT NULL in a later release. Write the matching downgrade() with op.drop_column.",
+      "starter": "def upgrade():\n    "
+    },
+    {
+      "id": "autogenerate-rename",
+      "concept": "Alembic",
+      "type": "assertion",
+      "difficulty": 3,
+      "prompt": "Judge the assertion and the reason.",
+      "assertion": "alembic revision --autogenerate detects a renamed column and emits an ALTER ... RENAME COLUMN.",
+      "reason": "Autogenerate compares column names between the models and the database, so a renamed column looks like one dropped and one added column.",
+      "correct": [
+        "d"
+      ],
+      "whys": {
+        "a": "Wrong: A is false.",
+        "b": "Wrong: A is false.",
+        "c": "Wrong: A is false.",
+        "d": "Correct: R is true and explains why A is false; the generated script would drop the old column (and its data) and add a new one, so you must edit it into op.alter_column(..., new_column_name=...)."
+      },
+      "explanation": "Always read the generated script. Autogenerate also misses many constraint changes and any data migration."
+    },
+    {
+      "id": "zero-downtime-alembic",
+      "concept": "Alembic",
+      "type": "multi",
+      "difficulty": 3,
+      "prompt": "Select all practices that make an Alembic-managed schema change safer for a zero-downtime PostgreSQL deployment.",
+      "options": [
+        {
+          "id": "a",
+          "text": "Add the new column as nullable, backfill in batches, then add NOT NULL in a later revision.",
+          "why": "Avoids long locks and works with old and new code."
+        },
+        {
+          "id": "b",
+          "text": "Rename a column in one revision while old and new code are both running.",
+          "why": "The old version breaks the moment its column disappears."
+        },
+        {
+          "id": "c",
+          "text": "Create large indexes with postgresql_concurrently=True inside op.get_context().autocommit_block().",
+          "why": "CREATE INDEX CONCURRENTLY cannot run inside a transaction block."
+        },
+        {
+          "id": "d",
+          "text": "Call alembic upgrade head in every worker's lifespan handler at startup.",
+          "why": "Many workers racing to migrate invites lock contention and half-applied changes."
+        },
+        {
+          "id": "e",
+          "text": "Run alembic upgrade head once as a deploy step before the new application version starts.",
+          "why": "A single migration run avoids races between workers."
+        }
+      ],
+      "correct": [
+        "a",
+        "c",
+        "e"
+      ],
+      "explanation": "Think in two phases per breaking change: expand (additive, compatible), then contract (cleanup after every instance uses the new shape)."
+    },
+    {
+      "id": "engine-scope",
+      "concept": "SQLAlchemy engine pool",
+      "type": "single",
+      "difficulty": 1,
+      "prompt": "Where should a FastAPI application create its SQLAlchemy engine?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Inside each request handler, so that every single request gets a fresh pool of its own.",
+          "why": "A new engine per request defeats pooling and opens a new connection each time."
+        },
+        {
+          "id": "b",
+          "text": "Once per process, at startup or module level, shared by all requests.",
+          "why": "Correct: the engine owns the connection pool, which only helps if it is reused."
+        },
+        {
+          "id": "c",
+          "text": "Inside each dependency call, then disposed when the request ends.",
+          "why": "Creating and disposing pools per request wastes time and connections."
+        },
+        {
+          "id": "d",
+          "text": "In a background task that rebuilds it every minute.",
+          "why": "There is no reason to rebuild a healthy engine; pool_pre_ping handles dead connections."
+        }
+      ],
+      "correct": [
+        "b"
+      ],
+      "explanation": "Sessions are cheap and per request; the engine and its pool are long-lived and per process."
+    }
+  ]
+}

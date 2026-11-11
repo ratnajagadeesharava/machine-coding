@@ -1,0 +1,488 @@
+{
+  "id": "rm-langchain-core-java",
+  "title": "LangChain4j and Spring AI: AI Services, tools, memory and structured output",
+  "topic": "Interview roadmap",
+  "language": "java",
+  "series": "interview-roadmap-java",
+  "seriesTitle": "Interview roadmap: Java and Spring Boot",
+  "seriesDescription": "Java and Spring Boot interview topics in JEE-Advanced style: integer, assertion-reason, matrix match, fill-in-the-blanks, short Java/SQL code and multi-correct questions. Java only: nothing here mixes in Python.",
+  "seriesOrder": 92,
+  "description": "AI Services as the LangChain4j counterpart of a prompt-model-parser chain: system and user templates, @Tool methods and the tool-calling loop, chat memory, typed return values, and the Spring AI ChatClient.",
+  "source": "LangChain4j docs (AI Services, tools, chat memory), version 1.23 compiled and run locally against a stub ChatModel; Spring AI reference, 1.1.8 compiled locally",
+  "estimatedMinutes": 18,
+  "questions": [
+    {
+      "id": "tool-loop-llm-calls",
+      "concept": "Tool-calling loop",
+      "type": "integer",
+      "difficulty": 2,
+      "prompt": "An AI Service has two @Tool methods, getWeather and convertToF. A user asks for the weather in Paris and Rome in Fahrenheit. Round 1: the model requests getWeather for both cities in one response. Round 2: it requests convertToF for both in one response. Round 3: it writes the final answer. How many chat model calls does the service make in total?",
+      "answer": 3,
+      "explanation": "Each model response is one chat model call: two tool-requesting responses plus the final answer = 3. The four tool executions are ordinary Java method calls, not model calls. I ran exactly this script against a stub ChatModel with LangChain4j 1.23 and counted 3 calls and 4 tool executions.",
+      "unit": "model calls"
+    },
+    {
+      "id": "memory-window",
+      "concept": "Chat memory",
+      "type": "integer",
+      "difficulty": 2,
+      "prompt": "An AI Service is built with chatMemory(MessageWindowChatMemory.withMaxMessages(4)) and no system message. The user sends 3 messages and the model answers each one once. How many messages does the memory hold afterwards?",
+      "answer": 4,
+      "explanation": "Three turns add 6 messages (user and AI each time), and the window keeps only the newest 4: the second user message and answer, and the third pair. I printed memory.messages() to confirm. A window counts messages, not tokens, so long messages can still overflow the context.",
+      "unit": "messages"
+    },
+    {
+      "id": "max-tool-trips",
+      "concept": "Tool-calling loop",
+      "type": "integer",
+      "difficulty": 3,
+      "prompt": "An AI Service is built with maxSequentialToolsInvocations(3) and a stub model that requests a tool in every single response. How many chat model calls are made before the exception is thrown?",
+      "answer": 4,
+      "explanation": "The first call plus 3 allowed round trips is 4 calls; the fourth response still asks for a tool, and LangChain4j throws instead of calling a fifth time. I ran this on LangChain4j 1.23 (the message says it exceeded 3 tool calling round trips). Always cap the loop: a model that never stops asking for tools burns tokens forever.",
+      "unit": "model calls"
+    },
+    {
+      "id": "tools-not-run",
+      "concept": "Tools",
+      "type": "assertion",
+      "difficulty": 2,
+      "prompt": "Assertion and reason: read both statements and choose the right option.",
+      "assertion": "The model itself never executes a @Tool method.",
+      "reason": "The model replies with a tool execution request (a name plus JSON arguments); LangChain4j calls the Java method in your application and sends the result back to the model.",
+      "correct": [
+        "a"
+      ],
+      "whys": {
+        "a": "Both true, and R explains A: the model only asks, and your code does the work.",
+        "b": "Not chosen: R is the mechanism that makes A true, not a side fact.",
+        "c": "Not chosen: R is true, because the framework runs the method and returns its result.",
+        "d": "Not chosen: A is true, since the provider only sees names and JSON."
+      },
+      "explanation": "That split is what lets you validate, authorise and log every call in Java before it runs."
+    },
+    {
+      "id": "proxy",
+      "concept": "AI Services",
+      "type": "assertion",
+      "difficulty": 1,
+      "prompt": "Assertion and reason: read both statements and choose the right option.",
+      "assertion": "AiServices.create(Assistant.class, model) returns an object that implements the Assistant interface at runtime.",
+      "reason": "A Java interface may declare default methods.",
+      "correct": [
+        "b"
+      ],
+      "whys": {
+        "a": "Not chosen: default methods are unrelated to how the implementation object appears.",
+        "b": "Both true, but R does not explain A: the object is a dynamic proxy generated by LangChain4j, not a result of default methods.",
+        "c": "Not chosen: R is true, so the pair is not A true and R false.",
+        "d": "Not chosen: A is true; I called methods on it in a test."
+      },
+      "explanation": "The proxy formats the prompt from the annotations, calls the model, runs tools and parses the reply into the declared return type."
+    },
+    {
+      "id": "record-return",
+      "concept": "Structured output",
+      "type": "assertion",
+      "difficulty": 2,
+      "prompt": "Assertion and reason: read both statements and choose the right option.",
+      "assertion": "Declaring a record as an AI Service method's return type makes LangChain4j ask the model for JSON that it maps onto that record.",
+      "reason": "An AI Service method can only return String.",
+      "correct": [
+        "c"
+      ],
+      "whys": {
+        "a": "Not chosen: R is false, so it cannot explain A.",
+        "b": "Not chosen: R is false, so the pair cannot both be true.",
+        "c": "A is true and R is false: methods can return records, POJOs, lists, enums and Result<T> as well as String.",
+        "d": "Not chosen: A is true; I parsed {\"name\":\"Ada\",\"age\":36} into a record this way."
+      },
+      "explanation": "Prefer a typed return value over parsing strings by hand; the framework sends a JSON schema to models that support it and deserialises the reply."
+    },
+    {
+      "id": "shared-memory",
+      "concept": "Chat memory",
+      "type": "assertion",
+      "difficulty": 3,
+      "prompt": "Assertion and reason: read both statements and choose the right option.",
+      "assertion": "One AI Service built with a single shared MessageWindowChatMemory keeps every user's conversation separate.",
+      "reason": "Combining @MemoryId with chatMemoryProvider gives each memory id its own ChatMemory.",
+      "correct": [
+        "d"
+      ],
+      "whys": {
+        "a": "Not chosen: A is false, so it cannot be explained by R.",
+        "b": "Not chosen: A is false, so it cannot be true together with R.",
+        "c": "Not chosen: A is false (the memory is shared), so this option is wrong.",
+        "d": "A is false: a single shared memory mixes all users into one history. R is the fix and is true."
+      },
+      "explanation": "In a web application never reuse one memory object across users; key the memory by user or session id."
+    },
+    {
+      "id": "annotation-roles",
+      "concept": "AI Services",
+      "type": "matrix",
+      "difficulty": 2,
+      "prompt": "Match each LangChain4j element with its role.",
+      "left": [
+        {
+          "id": "a",
+          "text": "@SystemMessage"
+        },
+        {
+          "id": "b",
+          "text": "@V"
+        },
+        {
+          "id": "c",
+          "text": "@MemoryId"
+        },
+        {
+          "id": "d",
+          "text": "MessageWindowChatMemory"
+        },
+        {
+          "id": "e",
+          "text": "@Tool"
+        }
+      ],
+      "right": [
+        {
+          "id": "p",
+          "text": "Fixed instruction that sets the assistant role"
+        },
+        {
+          "id": "q",
+          "text": "Binds a method parameter to a {{variable}} in the prompt template"
+        },
+        {
+          "id": "r",
+          "text": "Selects which conversation memory a call uses"
+        },
+        {
+          "id": "s",
+          "text": "Keeps only the most recent N messages"
+        },
+        {
+          "id": "t",
+          "text": "Exposes a Java method that the model may request"
+        },
+        {
+          "id": "u",
+          "text": "Finds relevant text segments in a vector store"
+        }
+      ],
+      "pairs": {
+        "a": "p",
+        "b": "q",
+        "c": "r",
+        "d": "s",
+        "e": "t"
+      },
+      "explanation": "The unused role belongs to a ContentRetriever, which is part of the RAG side of LangChain4j."
+    },
+    {
+      "id": "tool-vocabulary",
+      "concept": "Tools",
+      "type": "fill",
+      "difficulty": 1,
+      "prompt": "Complete the tool registration sentence.",
+      "text": "Annotate a method with {1} so the model may request it, describe a parameter with {2}, and register an instance on the AiServices builder through {3}(...).",
+      "blanks": {
+        "1": "@Tool",
+        "2": "@P",
+        "3": "tools"
+      },
+      "bank": [
+        "@Tool",
+        "@P",
+        "tools",
+        "@V",
+        "chatMemory"
+      ],
+      "explanation": "@V binds prompt template variables, chatMemory configures memory; tools(...) accepts one or more objects whose @Tool methods become available to the model."
+    },
+    {
+      "id": "langchain4j-aiservice",
+      "concept": "Runnables and LCEL",
+      "type": "code",
+      "difficulty": 2,
+      "prompt": "LangChain4j: declare an interface Assistant with a method String chat(String userMessage) whose system prompt is 'You are a terse assistant.', then create an implementation from a model variable named model.",
+      "language": "java",
+      "checks": [
+        {
+          "label": "declares interface Assistant",
+          "pattern": "interface\\s+Assistant"
+        },
+        {
+          "label": "sets the system message with @SystemMessage",
+          "pattern": "@SystemMessage\\s*\\(\\s*\"You are a terse assistant\\.?\""
+        },
+        {
+          "label": "declares chat(String ...)",
+          "pattern": "String\\s+chat\\s*\\(\\s*String"
+        },
+        {
+          "label": "creates it with AiServices.create",
+          "pattern": "AiServices\\.(create|builder)\\s*\\(\\s*Assistant\\.class"
+        }
+      ],
+      "model": "interface Assistant {\n  @SystemMessage(\"You are a terse assistant.\")\n  String chat(String userMessage);\n}\nAssistant a = AiServices.create(Assistant.class, model);",
+      "explanation": "AiServices builds a proxy that formats the prompt, calls the model and parses the result. AiServices.builder(...).chatModel(model).build() is an equivalent way to create it. I compiled and ran this shape against LangChain4j 1.23 with a stub model."
+    },
+    {
+      "id": "tool-and-register",
+      "concept": "Tools",
+      "type": "code",
+      "difficulty": 2,
+      "prompt": "Write a class OrderTools with a method String orderStatus(String orderId) that the model can call (tool description 'Look up the shipping status of an order', parameter described as 'the order id') and that returns \"shipped\". Then build an Assistant AI Service from the variable model that registers an OrderTools instance.",
+      "language": "java",
+      "checks": [
+        {
+          "label": "marks the method as a tool",
+          "pattern": "@Tool\\s*\\("
+        },
+        {
+          "label": "describes the parameter",
+          "pattern": "@P\\s*\\("
+        },
+        {
+          "label": "declares orderStatus(String orderId)",
+          "pattern": "String\\s+orderStatus\\s*\\(\\s*(@P\\s*\\([^)]*\\)\\s*)?String\\s+orderId"
+        },
+        {
+          "label": "builds the service from the model",
+          "pattern": "AiServices\\s*\\.\\s*builder\\s*\\(\\s*Assistant\\.class\\s*\\)[\\s\\S]*\\.chatModel\\s*\\(\\s*model\\s*\\)"
+        },
+        {
+          "label": "registers the tool object",
+          "pattern": "\\.tools\\s*\\(\\s*new\\s+OrderTools\\s*\\(\\s*\\)\\s*\\)"
+        }
+      ],
+      "model": "class OrderTools {\n  @Tool(\"Look up the shipping status of an order\")\n  String orderStatus(@P(\"the order id\") String orderId) {\n    return \"shipped\";\n  }\n}\n\nAssistant a = AiServices.builder(Assistant.class)\n    .chatModel(model)\n    .tools(new OrderTools())\n    .build();",
+      "explanation": "@Tool takes the description as its value, and @P describes a parameter. Compile with -parameters, or give every parameter a @P, so parameter names reach the model correctly (without the flag the names appear as arg0). tools(...) also accepts several objects."
+    },
+    {
+      "id": "user-template",
+      "concept": "Prompt templates",
+      "type": "code",
+      "difficulty": 2,
+      "prompt": "Declare an interface Summariser with a method String summarise(String text) whose user message template is 'Summarise in one sentence: {{text}}', binding the method argument to that template variable.",
+      "language": "java",
+      "checks": [
+        {
+          "label": "uses @UserMessage with the template",
+          "pattern": "@UserMessage\\s*\\(\\s*\"[^\"]*\\{\\{\\s*text\\s*\\}\\}"
+        },
+        {
+          "label": "binds the parameter with @V",
+          "pattern": "@V\\s*\\(\\s*\"text\"\\s*\\)\\s*String\\s+\\w+"
+        },
+        {
+          "label": "declares summarise",
+          "pattern": "String\\s+summarise\\s*\\("
+        }
+      ],
+      "model": "interface Summariser {\n  @UserMessage(\"Summarise in one sentence: {{text}}\")\n  String summarise(@V(\"text\") String text);\n}",
+      "explanation": "With exactly one parameter the template may use the implicit variable {{it}} and the parameter needs no @V (I ran that variant too). With several parameters, name each with @V."
+    },
+    {
+      "id": "structured-record",
+      "concept": "Structured output",
+      "type": "code",
+      "difficulty": 2,
+      "prompt": "Define a record Person(String name, int age) and an AI Service interface Extractor with a method Person extract(String text), then create an Extractor from the variable model.",
+      "language": "java",
+      "checks": [
+        {
+          "label": "defines the record",
+          "pattern": "record\\s+Person\\s*\\(\\s*String\\s+name\\s*,\\s*int\\s+age\\s*\\)"
+        },
+        {
+          "label": "declares the extractor method",
+          "pattern": "interface\\s+Extractor[\\s\\S]*Person\\s+extract\\s*\\(\\s*String"
+        },
+        {
+          "label": "creates the service",
+          "pattern": "AiServices\\s*\\.\\s*(create|builder)\\s*\\(\\s*Extractor\\.class"
+        }
+      ],
+      "model": "record Person(String name, int age) {}\n\ninterface Extractor {\n  Person extract(String text);\n}\n\nExtractor extractor = AiServices.create(Extractor.class, model);",
+      "explanation": "No parsing code is needed: LangChain4j asks for JSON matching the record and deserialises it (I ran this with a stub that returned {\"name\":\"Ada\",\"age\":36}). The result can still be wrong, so validate the fields afterwards."
+    },
+    {
+      "id": "memory-id",
+      "concept": "Chat memory",
+      "type": "code",
+      "difficulty": 3,
+      "prompt": "Declare an interface MultiChat with a method String chat(@MemoryId String userId, @UserMessage String message), then build it from the variable model so that each userId gets its own window of the last 10 messages.",
+      "language": "java",
+      "checks": [
+        {
+          "label": "declares the memory id parameter",
+          "pattern": "@MemoryId\\s+String\\s+userId"
+        },
+        {
+          "label": "marks the message parameter",
+          "pattern": "@UserMessage\\s+String\\s+message"
+        },
+        {
+          "label": "uses a memory provider",
+          "pattern": "\\.chatMemoryProvider\\s*\\("
+        },
+        {
+          "label": "creates a 10-message window per id",
+          "pattern": "MessageWindowChatMemory\\s*\\.\\s*withMaxMessages\\s*\\(\\s*10\\s*\\)"
+        }
+      ],
+      "model": "interface MultiChat {\n  String chat(@MemoryId String userId, @UserMessage String message);\n}\n\nMultiChat chat = AiServices.builder(MultiChat.class)\n    .chatModel(model)\n    .chatMemoryProvider(id -> MessageWindowChatMemory.withMaxMessages(10))\n    .build();",
+      "explanation": "The provider is called with the memory id and returns that id's own ChatMemory (I ran two users through it). Use a persistent ChatMemoryStore if conversations must survive a restart."
+    },
+    {
+      "id": "chatclient-basic",
+      "concept": "Spring AI ChatClient",
+      "type": "code",
+      "difficulty": 2,
+      "prompt": "With a Spring AI ChatModel variable model, build a ChatClient with the default system prompt 'You are a terse assistant.' and use it to send the user text in the String variable q, returning the answer as a String.",
+      "language": "java",
+      "checks": [
+        {
+          "label": "builds the client from the model",
+          "pattern": "ChatClient\\s*\\.\\s*builder\\s*\\(\\s*model\\s*\\)"
+        },
+        {
+          "label": "sets the system prompt",
+          "pattern": "defaultSystem\\s*\\(|\\.system\\s*\\("
+        },
+        {
+          "label": "sends the user text",
+          "pattern": "\\.prompt\\s*\\(\\s*\\)[\\s\\S]*\\.user\\s*\\(\\s*q\\s*\\)"
+        },
+        {
+          "label": "reads the text answer",
+          "pattern": "\\.call\\s*\\(\\s*\\)\\s*\\.content\\s*\\(\\s*\\)"
+        }
+      ],
+      "model": "ChatClient client = ChatClient.builder(model)\n    .defaultSystem(\"You are a terse assistant.\")\n    .build();\nString answer = client.prompt().user(q).call().content();",
+      "explanation": "I compiled this against Spring AI 1.1.8. ChatClient.create(model) plus .system(...) per call is equivalent. Replace .content() with .entity(SomeRecord.class) to get a typed object, or .stream().content() for a reactive stream of text."
+    },
+    {
+      "id": "java-ai-facts",
+      "concept": "AI Services",
+      "type": "multi",
+      "difficulty": 3,
+      "prompt": "Which statements about LangChain4j AI Services are true? Select all that apply.",
+      "options": [
+        {
+          "id": "a",
+          "text": "The Java method behind a @Tool runs inside your own application, not at the model provider.",
+          "why": "True: the model only asks for it by name and JSON arguments."
+        },
+        {
+          "id": "b",
+          "text": "An interface method that returns a record makes the framework request JSON for that type.",
+          "why": "True: it maps the reply onto the declared return type."
+        },
+        {
+          "id": "c",
+          "text": "Chat memory lives at the model provider, so no memory object is ever needed for multi-turn chat.",
+          "why": "False: models are stateless and memory must be configured and resent."
+        },
+        {
+          "id": "d",
+          "text": "maxSequentialToolsInvocations limits how many times the model may chain tool calls in one request.",
+          "why": "True: it protects against an endless tool-calling loop."
+        },
+        {
+          "id": "e",
+          "text": "AiServices.create works only for interface methods that return String.",
+          "why": "False: records, lists, enums and Result<T> are supported return types."
+        }
+      ],
+      "correct": [
+        "a",
+        "b",
+        "d"
+      ],
+      "explanation": "I verified the tool, record and cap behaviour with a stub ChatModel. Know the method family: AiServices.create or builder, then chatModel, chatMemory, tools and contentRetriever."
+    },
+    {
+      "id": "entity-vs-content",
+      "concept": "Spring AI ChatClient",
+      "type": "single",
+      "difficulty": 1,
+      "prompt": "With a Spring AI ChatClient, which call chain returns the model's answer as an instance of a Java record Person?",
+      "options": [
+        {
+          "id": "a",
+          "text": "client.prompt().user(text).call().entity(Person.class)",
+          "why": "Right: entity(Class) converts the reply to the requested type."
+        },
+        {
+          "id": "b",
+          "text": "client.prompt().user(text).call().content()",
+          "why": "content() returns the answer as a plain String."
+        },
+        {
+          "id": "c",
+          "text": "client.prompt().user(text).stream().content()",
+          "why": "stream().content() returns a reactive stream of text chunks."
+        },
+        {
+          "id": "d",
+          "text": "client.prompt().user(text).call().chatResponse()",
+          "why": "chatResponse() returns the full ChatResponse object with metadata, not a Person."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "All four chains exist; the difference is the return type. entity(...) uses a structured output converter that adds format instructions to the prompt and parses the reply."
+    },
+    {
+      "id": "chat-model-name",
+      "concept": "AI Services",
+      "type": "truefalse",
+      "difficulty": 1,
+      "prompt": "True or false: in LangChain4j 1.x the AiServices builder method that sets the model is chatModel(...).",
+      "options": [
+        {
+          "id": "a",
+          "text": "True",
+          "why": "Right: AiServices.builder(X.class).chatModel(model) compiles on 1.23, which I checked."
+        },
+        {
+          "id": "b",
+          "text": "False",
+          "why": "Not true: older tutorials show chatLanguageModel(...), but current releases use chatModel(...)."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Version drift is common in tutorials, so check the method names against the release you use."
+    },
+    {
+      "id": "tool-body-sent",
+      "concept": "Tools",
+      "type": "truefalse",
+      "difficulty": 2,
+      "prompt": "True or false: LangChain4j sends the body of a @Tool method to the model so that the model can run the code itself.",
+      "options": [
+        {
+          "id": "a",
+          "text": "True",
+          "why": "Only the name, description and parameter schema are sent, never the code."
+        },
+        {
+          "id": "b",
+          "text": "False",
+          "why": "Right: the model receives a JSON schema for the tool and your application runs the method."
+        }
+      ],
+      "correct": [
+        "b"
+      ],
+      "explanation": "Because your code runs the tool, you can check permissions, validate arguments and record an audit entry before executing it."
+    }
+  ]
+}

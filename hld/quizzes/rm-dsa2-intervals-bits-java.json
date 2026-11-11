@@ -172,7 +172,7 @@
       "concept": "Integer overflow",
       "type": "integer",
       "difficulty": 3,
-      "prompt": "In Java, what does the int expression 100000 * 100001 evaluate to? (The true product is 10,000,100,000.)",
+      "prompt": "In Java, what does the int expression 100000 * 100001 evaluate to, given that the true product is 10,000,100,000?",
       "explanation": "The product exceeds 2^31 - 1, so it wraps modulo 2^32: 10,000,100,000 - 2 * 4,294,967,296 = 1,410,165,408, which fits in an int. Use 100000L * 100001 or long variables to avoid it.",
       "answer": 1410165408
     },

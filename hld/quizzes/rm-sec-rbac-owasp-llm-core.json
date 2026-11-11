@@ -1,0 +1,490 @@
+{
+  "id": "rm-sec-rbac-owasp-llm-core",
+  "title": "RBAC, OWASP basics and LLM risks",
+  "topic": "Interview roadmap",
+  "series": "interview-roadmap-core",
+  "seriesTitle": "Interview roadmap: language-independent topics",
+  "seriesDescription": "Language-independent interview topics (concepts, SQL, design, AI engineering): no Java and no Python code or library names.",
+  "seriesOrder": 83,
+  "language": "neutral",
+  "description": "Access-control models, injection, XSS, CSRF, CORS and password storage, HTTP security headers, secrets handling, and LLM-specific risks: prompt injection and cross-tenant leaks.",
+  "source": "OWASP Top 10 (2021, 2025), OWASP API Security Top 10, OWASP Password Storage and CSRF cheat sheets, OWASP Top 10 for LLM Applications (2025), MDN (CORS, Strict-Transport-Security), PostgreSQL documentation (PREPARE)",
+  "estimatedMinutes": 18,
+  "questions": [
+    {
+      "id": "access-models",
+      "concept": "RBAC",
+      "type": "matrix",
+      "difficulty": 2,
+      "prompt": "Match each access-control model to its defining idea.",
+      "left": [
+        {
+          "id": "l1",
+          "text": "RBAC"
+        },
+        {
+          "id": "l2",
+          "text": "ABAC"
+        },
+        {
+          "id": "l3",
+          "text": "ACL"
+        },
+        {
+          "id": "l4",
+          "text": "ReBAC"
+        }
+      ],
+      "right": [
+        {
+          "id": "r1",
+          "text": "Permissions are granted to roles, and users hold roles"
+        },
+        {
+          "id": "r2",
+          "text": "Decisions evaluate attributes of user, resource and context"
+        },
+        {
+          "id": "r3",
+          "text": "Each object carries a list of who may do what"
+        },
+        {
+          "id": "r4",
+          "text": "Access follows relationships in a graph, such as owner or member of"
+        },
+        {
+          "id": "r5",
+          "text": "Access is granted by network location only"
+        }
+      ],
+      "pairs": {
+        "l1": "r1",
+        "l2": "r2",
+        "l3": "r3",
+        "l4": "r4"
+      },
+      "explanation": "Real systems combine them: roles for coarse access, attributes or ownership checks for fine access."
+    },
+    {
+      "id": "server-side-authz",
+      "concept": "RBAC",
+      "type": "assertion",
+      "difficulty": 1,
+      "prompt": "Read the assertion A and the reason R, then choose the correct relationship between them.",
+      "assertion": "Authorisation must be enforced on the server even when the UI hides forbidden buttons.",
+      "reason": "Broken Access Control is ranked first (A01) in the OWASP Top 10, in both the 2021 and 2025 editions.",
+      "correct": [
+        "b"
+      ],
+      "whys": {
+        "a": "Not this one: Both A and R are true and R explains A does not describe this pair; R does not explain A.",
+        "b": "Correct: Both are true, but the ranking is evidence of how common the flaw is, not the reason the check must be server-side: clients can be bypassed.",
+        "c": "Not this one: A is true while R is false does not describe this pair; check the truth of R again.",
+        "d": "Not this one: A is false while R is true does not describe this pair; check the truth of A again."
+      },
+      "explanation": "Hiding UI is usability; checking on the server is security. Missing object-level checks (BOLA) lead the OWASP API Security Top 10 too. In the 2025 edition SSRF was folded into A01 rather than kept as its own category."
+    },
+    {
+      "id": "bola",
+      "concept": "Authorisation",
+      "type": "single",
+      "difficulty": 2,
+      "prompt": "GET /api/orders/123 returns an order belonging to another customer when a logged-in user simply changes the id. What is the right fix?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Switch the order ids from integers to random UUIDs and change nothing else.",
+          "why": "Unguessable ids help a little but any leaked id still works."
+        },
+        {
+          "id": "b",
+          "text": "Check on the server that the caller may read order 123, every time.",
+          "why": "Correct: an object-level authorisation check on each request."
+        },
+        {
+          "id": "c",
+          "text": "Move the id from the URL path into the body of a POST request instead.",
+          "why": "Changing where the id travels does not check who may use it."
+        },
+        {
+          "id": "d",
+          "text": "Rate limit the endpoint to ten requests per minute for each user.",
+          "why": "Throttling slows enumeration but still lets one request through."
+        }
+      ],
+      "correct": [
+        "b"
+      ],
+      "explanation": "BOLA (Broken Object Level Authorization) is API1 in the OWASP API Security Top 10. Enforce it in a shared layer, for example query by (id, owner) or a policy check, and test it with two accounts."
+    },
+    {
+      "id": "sql-prepare",
+      "concept": "SQL injection",
+      "type": "code",
+      "difficulty": 2,
+      "prompt": "Write PostgreSQL statements that PREPARE a statement named find_user taking one text parameter and selecting from users where email equals that parameter, then EXECUTE it for 'a@example.com'.",
+      "language": "sql",
+      "checks": [
+        {
+          "label": "prepares find_user with a text parameter",
+          "pattern": "prepare\\s+find_user\\s*\\(\\s*text\\s*\\)\\s+as"
+        },
+        {
+          "label": "uses a positional parameter",
+          "pattern": "email\\s*=\\s*\\$1"
+        },
+        {
+          "label": "executes it with the value",
+          "pattern": "execute\\s+find_user\\s*\\(\\s*'a@example\\.com'\\s*\\)"
+        }
+      ],
+      "model": "PREPARE find_user (text) AS SELECT * FROM users WHERE email = $1;\nEXECUTE find_user('a@example.com');",
+      "explanation": "The parameter is sent separately from the statement text, so a value like x' OR '1'='1 is just a string. Application drivers do the same with placeholders. Table and column names cannot be parameters: allowlist them."
+    },
+    {
+      "id": "sqli-rows",
+      "concept": "SQL injection",
+      "type": "integer",
+      "difficulty": 2,
+      "prompt": "The users table has 7 rows. Code builds \"SELECT * FROM users WHERE name = '\" + input + \"'\" and the attacker sends the input x' OR '1'='1. How many rows come back?",
+      "answer": 7,
+      "unit": "rows",
+      "explanation": "The query becomes WHERE name = 'x' OR '1'='1', and the OR condition is true for every row, so all 7 return. The same trick with UNION or stacked statements can read other tables."
+    },
+    {
+      "id": "bcrypt-cost",
+      "concept": "Secrets and passwords",
+      "type": "integer",
+      "difficulty": 2,
+      "prompt": "bcrypt's cost factor is a work exponent. How many key-expansion rounds does cost factor 12 perform?",
+      "answer": 4096,
+      "unit": "rounds",
+      "explanation": "The work is 2^cost, so 2^12 = 4096. Each +1 doubles the time, which lets you tune hashing speed as hardware improves."
+    },
+    {
+      "id": "password-hash",
+      "concept": "Authentication",
+      "type": "single",
+      "difficulty": 1,
+      "prompt": "Which is the best choice for storing user passwords according to the OWASP Password Storage Cheat Sheet?",
+      "options": [
+        {
+          "id": "a",
+          "text": "SHA-256 of the password concatenated with a random salt value.",
+          "why": "A fast hash lets attackers test billions of guesses per second."
+        },
+        {
+          "id": "b",
+          "text": "Argon2id, with a unique salt for every password.",
+          "why": "Correct: a memory-hard password hash with per-password salt."
+        },
+        {
+          "id": "c",
+          "text": "MD5 of the password, hex encoded and stored in the user table.",
+          "why": "MD5 is both fast and broken."
+        },
+        {
+          "id": "d",
+          "text": "AES-encrypt the password so that support staff can recover it later.",
+          "why": "Reversible storage means one key theft exposes every password."
+        }
+      ],
+      "correct": [
+        "b"
+      ],
+      "explanation": "Store only the hash (with the algorithm parameters in the encoded string), re-hash on login when the cost parameters are raised, and never log or email passwords."
+    },
+    {
+      "id": "leaked-secret",
+      "concept": "Secrets and passwords",
+      "type": "single",
+      "difficulty": 2,
+      "prompt": "An API key was committed to a git repository and pushed. What is the correct first action?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Revoke and rotate the key immediately, then clean up the history.",
+          "why": "Correct: once pushed, assume the key is compromised."
+        },
+        {
+          "id": "b",
+          "text": "Delete the file in a new commit so the key disappears from the project.",
+          "why": "The key stays in the history and in every clone."
+        },
+        {
+          "id": "c",
+          "text": "Make the repository private and wait to see whether anyone uses the key.",
+          "why": "Copies and forks may already exist, and waiting gives attackers time."
+        },
+        {
+          "id": "d",
+          "text": "Change the variable name in the code so the key is harder to find.",
+          "why": "Renaming a variable hides nothing from a scan of the history."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Rotating is the only fix that works; rewriting history is hygiene. Add secret scanning in CI and a pre-commit hook, and load secrets from a secret manager or environment."
+    },
+    {
+      "id": "csrf",
+      "concept": "CSRF",
+      "type": "multi",
+      "difficulty": 2,
+      "prompt": "Which measures help against CSRF for a cookie-authenticated web app? Select all that apply.",
+      "options": [
+        {
+          "id": "a",
+          "text": "SameSite=Lax or Strict on the session cookie.",
+          "why": "Correct: the browser withholds the cookie on most cross-site requests."
+        },
+        {
+          "id": "b",
+          "text": "A synchroniser or double-submit CSRF token on state-changing requests.",
+          "why": "Correct: a forged request cannot know the token."
+        },
+        {
+          "id": "c",
+          "text": "Checking Origin or Referer on unsafe methods.",
+          "why": "Correct: cross-origin requests show a foreign origin."
+        },
+        {
+          "id": "d",
+          "text": "Escaping HTML on output.",
+          "why": "Output encoding fights XSS, not forged requests."
+        },
+        {
+          "id": "e",
+          "text": "Configuring CORS with Access-Control-Allow-Origin: *.",
+          "why": "A wildcard does not stop forged form posts and weakens isolation."
+        }
+      ],
+      "correct": [
+        "a",
+        "b",
+        "c"
+      ],
+      "explanation": "Frameworks often enable CSRF protection by default for browser flows; stateless bearer-token APIs often disable it deliberately."
+    },
+    {
+      "id": "csrf-bearer",
+      "concept": "CSRF",
+      "type": "truefalse",
+      "difficulty": 3,
+      "prompt": "True or false: a stateless API that authenticates only with an Authorization: Bearer header (never cookies) is not vulnerable to classic CSRF.",
+      "options": [
+        {
+          "id": "a",
+          "text": "True",
+          "why": "Correct: browsers do not attach the header automatically to cross-site requests."
+        },
+        {
+          "id": "b",
+          "text": "False",
+          "why": "Classic CSRF relies on the browser sending credentials on its own, which a bearer header does not do."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "The caveat: if the token is kept in a cookie, or XSS can read it, other attacks remain."
+    },
+    {
+      "id": "cors-server",
+      "concept": "CORS",
+      "type": "truefalse",
+      "difficulty": 2,
+      "prompt": "True or false: configuring CORS on the server stops other sites and tools such as curl from calling the API.",
+      "options": [
+        {
+          "id": "a",
+          "text": "True",
+          "why": "CORS is enforced by browsers; tools ignore it."
+        },
+        {
+          "id": "b",
+          "text": "False",
+          "why": "Correct: CORS only controls which web origins a browser lets read responses."
+        }
+      ],
+      "correct": [
+        "b"
+      ],
+      "explanation": "Keep authentication and authorisation on the server. Avoid Access-Control-Allow-Origin: * together with credentials."
+    },
+    {
+      "id": "hsts-header",
+      "concept": "HTTP security headers",
+      "type": "code",
+      "difficulty": 2,
+      "prompt": "Write the HTTP response header that tells browsers to use HTTPS only for this host and its subdomains for one year (31536000 seconds).",
+      "language": "http",
+      "checks": [
+        {
+          "label": "Strict-Transport-Security header",
+          "pattern": "strict-transport-security\\s*:"
+        },
+        {
+          "label": "max-age of one year",
+          "pattern": "max-age\\s*=\\s*31536000"
+        },
+        {
+          "label": "covers subdomains",
+          "pattern": "includeSubDomains"
+        }
+      ],
+      "model": "Strict-Transport-Security: max-age=31536000; includeSubDomains",
+      "explanation": "HSTS is honoured only when delivered over HTTPS. Add preload only after you are sure every subdomain supports HTTPS. Content-Security-Policy and X-Content-Type-Options: nosniff are the other headers interviewers expect."
+    },
+    {
+      "id": "owasp-defences",
+      "concept": "OWASP basics",
+      "type": "fill",
+      "difficulty": 1,
+      "prompt": "Match defence to attack by filling the blanks.",
+      "text": "Stop XSS with output {1} and a Content-Security-Policy, stop SQL injection with {2} queries, and stop CSRF with SameSite cookies and anti-forgery {3}.",
+      "blanks": {
+        "1": "encoding",
+        "2": "parameterised",
+        "3": "tokens"
+      },
+      "bank": [
+        "encoding",
+        "parameterised",
+        "tokens",
+        "hashing",
+        "compression",
+        "proxies"
+      ],
+      "explanation": "Defences are specific: encoding fits XSS, parameters fit SQLi, tokens fit CSRF."
+    },
+    {
+      "id": "injection-filter",
+      "concept": "LLM risks",
+      "type": "assertion",
+      "difficulty": 2,
+      "prompt": "Read the assertion A and the reason R, then choose the correct relationship between them.",
+      "assertion": "Blocking the phrase \"ignore previous instructions\" fully prevents prompt injection.",
+      "reason": "Attackers can paraphrase, translate or encode their instructions.",
+      "correct": [
+        "d"
+      ],
+      "whys": {
+        "a": "Not this one: Both A and R are true and R explains A does not describe this pair; R does not explain A.",
+        "b": "Not this one: Both are true but R is not the reason A holds does not describe this pair; R is actually the reason or is false.",
+        "c": "Not this one: A is true while R is false does not describe this pair; check the truth of R again.",
+        "d": "Correct: A is false: a phrase filter is easy to evade. R is true and is the reason."
+      },
+      "explanation": "Treat model output and tool arguments as untrusted, limit the tools the agent can reach, and require confirmation for risky actions."
+    },
+    {
+      "id": "tenant-rag",
+      "concept": "LLM risks",
+      "type": "assertion",
+      "difficulty": 3,
+      "prompt": "Read the assertion A and the reason R, then choose the correct relationship between them.",
+      "assertion": "In a multi-tenant RAG app the tenant filter must be applied inside the vector search query.",
+      "reason": "If the system prompt says \"only reveal data for tenant A\", the model will reliably refuse to expose other tenants' documents.",
+      "correct": [
+        "c"
+      ],
+      "whys": {
+        "a": "Not this one: Both A and R are true and R explains A does not describe this pair; R does not explain A.",
+        "b": "Not this one: Both are true but R is not the reason A holds does not describe this pair; R is actually the reason or is false.",
+        "c": "Correct: A is true because documents must never enter the context. R is false: prompts are not an access control.",
+        "d": "Not this one: A is false while R is true does not describe this pair; check the truth of A again."
+      },
+      "explanation": "Enforce isolation before text enters the context: tenant id filter or separate namespace per tenant, then check document ACLs."
+    },
+    {
+      "id": "tenant-leak",
+      "concept": "LLM risks",
+      "type": "multi",
+      "difficulty": 3,
+      "prompt": "Which controls prevent cross-tenant data leaks in an LLM feature? Select all that apply.",
+      "options": [
+        {
+          "id": "a",
+          "text": "Apply the tenant id as a mandatory filter or namespace in retrieval.",
+          "why": "Correct: other tenants' text never reaches the context."
+        },
+        {
+          "id": "b",
+          "text": "Include the tenant id in semantic-cache keys.",
+          "why": "Correct: a cached answer for tenant A must not be served to tenant B."
+        },
+        {
+          "id": "c",
+          "text": "Check each retrieved document against the caller's permissions.",
+          "why": "Correct: finer-grained ACLs still apply inside a tenant."
+        },
+        {
+          "id": "d",
+          "text": "Tell the model in the prompt not to mention other tenants.",
+          "why": "Prompts are advice, not enforcement."
+        }
+      ],
+      "correct": [
+        "a",
+        "b",
+        "c"
+      ],
+      "explanation": "Defence in depth: isolate at retrieval, cache and logging layers; never rely on the model to police access."
+    },
+    {
+      "id": "llm-top10",
+      "concept": "LLM security",
+      "type": "matrix",
+      "difficulty": 1,
+      "prompt": "Match each OWASP Top 10 for LLM Applications (2025) entry with its title.",
+      "left": [
+        {
+          "id": "l1",
+          "text": "LLM01:2025"
+        },
+        {
+          "id": "l2",
+          "text": "LLM02:2025"
+        },
+        {
+          "id": "l3",
+          "text": "LLM08:2025"
+        },
+        {
+          "id": "l4",
+          "text": "LLM10:2025"
+        }
+      ],
+      "right": [
+        {
+          "id": "r1",
+          "text": "Prompt Injection"
+        },
+        {
+          "id": "r2",
+          "text": "Sensitive Information Disclosure"
+        },
+        {
+          "id": "r3",
+          "text": "Vector and Embedding Weaknesses"
+        },
+        {
+          "id": "r4",
+          "text": "Unbounded Consumption"
+        },
+        {
+          "id": "r5",
+          "text": "Insecure Plugin Design"
+        }
+      ],
+      "pairs": {
+        "l1": "r1",
+        "l2": "r2",
+        "l3": "r3",
+        "l4": "r4"
+      },
+      "explanation": "Vector and Embedding Weaknesses is new in 2025 and covers RAG pitfalls such as retrieval ignoring per-user access. Unbounded Consumption covers denial-of-wallet and extraction by heavy querying. Insecure Plugin Design was an entry in the 2023 list."
+    }
+  ]
+}

@@ -423,7 +423,7 @@
       "options": [
         {
           "id": "a",
-          "text": "Retry immediately with the same request, three times.",
+          "text": "Retry immediately with the same request, three times in a row, since the limit window may already have reset.",
           "why": "Hammering a rate-limited endpoint keeps the limit exceeded and may extend the block."
         },
         {
@@ -456,7 +456,7 @@
       "options": [
         {
           "id": "a",
-          "text": "PUT creates a new user each time; PATCH updates the existing one.",
+          "text": "PUT creates a brand-new user with a fresh id on every call, while PATCH updates the existing user in place.",
           "why": "PUT to a known URL replaces or creates that one resource; it does not mint a new id per call."
         },
         {
@@ -539,7 +539,7 @@
         },
         {
           "id": "b",
-          "text": "304 Not Modified, because the document did not change for this client.",
+          "text": "304 Not Modified, because the document did not change as far as this particular client is concerned.",
           "why": "304 answers conditional GET or HEAD requests, not writes."
         },
         {

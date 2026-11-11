@@ -1,0 +1,355 @@
+{
+  "id": "rm-web-jobs-health-java",
+  "title": "Spring Boot: jobs, health checks and secrets",
+  "topic": "Interview roadmap",
+  "language": "java",
+  "description": "Scheduled and background jobs, ShedLock for multi-instance runs, @Async, Actuator health and Kubernetes probes, retries and secrets handling.",
+  "source": "Spring Framework scheduling documentation; Spring Boot reference (task execution and scheduling, Actuator, Kubernetes probes, sanitising endpoints); Spring Framework 7 resilience documentation (@Retryable); ShedLock README; Kubernetes probe documentation",
+  "series": "interview-roadmap-java",
+  "seriesTitle": "Interview roadmap: Java and Spring Boot",
+  "seriesDescription": "Java and Spring Boot interview topics in JEE-Advanced style: integer, assertion-reason, matrix match, fill-in-the-blanks, short Java/SQL code and multi-correct questions. Java only: nothing here mixes in Python.",
+  "seriesOrder": 54,
+  "estimatedMinutes": 16,
+  "questions": [
+    {
+      "id": "cron-fires",
+      "concept": "Scheduled jobs (Spring)",
+      "type": "integer",
+      "difficulty": 1,
+      "prompt": "@Scheduled(cron = \"0 0/15 * * * *\") uses Spring's six-field cron (second minute hour day month weekday). How many times per hour does the method fire?",
+      "answer": 4,
+      "tolerance": 0,
+      "explanation": "Seconds=0, minutes=0/15 means minutes 0, 15, 30, 45 of every hour: 4 runs. Spring cron has a leading seconds field, unlike Unix cron.",
+      "unit": "runs"
+    },
+    {
+      "id": "cron-weeks",
+      "concept": "Scheduled jobs (Spring)",
+      "type": "integer",
+      "difficulty": 2,
+      "prompt": "A Spring method is annotated @Scheduled(cron = \"0 30 9 * * MON-FRI\") (six fields: second minute hour day month weekday). How many times does it fire in four full weeks?",
+      "answer": 20,
+      "tolerance": 0,
+      "unit": "runs",
+      "explanation": "It fires at 09:30:00 on each weekday: 5 per week x 4 weeks = 20. Remember the leading seconds field that Unix cron does not have."
+    },
+    {
+      "id": "fixed-delay-count",
+      "concept": "Scheduled jobs (Spring)",
+      "type": "integer",
+      "difficulty": 2,
+      "prompt": "A @Scheduled(fixedDelay = 2000) method takes 3 seconds per run, and the first run starts at t = 0 s. There is a single scheduler thread. How many runs have started by t = 62 s, counting the one at t = 0?",
+      "answer": 13,
+      "tolerance": 0,
+      "explanation": "fixedDelay counts from the end of one run to the start of the next, so each cycle is 3 + 2 = 5 s and runs start at 0, 5, 10 ... 60: 13 starts. fixedRate = 2000 on one thread would instead start the next run as soon as the previous ends, never overlapping, because the default scheduler has one thread.",
+      "unit": "runs"
+    },
+    {
+      "id": "duplicate-runs",
+      "concept": "Multi-instance jobs",
+      "type": "integer",
+      "difficulty": 3,
+      "prompt": "A Spring app with a nightly @Scheduled cleanup job is deployed as 3 identical replicas and nothing coordinates them. How many times does the cleanup run each night across the cluster?",
+      "answer": 3,
+      "tolerance": 0,
+      "explanation": "Each instance has its own scheduler, so the job runs 3 times. Fixes: a distributed lock (ShedLock, Redis SET NX, DB advisory lock), a leader election, or a dedicated scheduler instance or Kubernetes CronJob.",
+      "unit": "runs"
+    },
+    {
+      "id": "shedlock-job",
+      "concept": "Multi-instance jobs",
+      "type": "code",
+      "difficulty": 3,
+      "prompt": "Write a Spring method cleanup() that runs at 02:00 every night (cron \"0 0 2 * * *\") and is protected by ShedLock: lock name \"nightlyCleanup\", held at most 10 minutes (ISO-8601 duration) so a crashed node cannot block it forever.",
+      "language": "java",
+      "checks": [
+        {
+          "label": "@Scheduled with the cron",
+          "pattern": "@Scheduled\\(\\s*cron\\s*=\\s*\"0 0 2 \\* \\* \\*\"\\s*\\)"
+        },
+        {
+          "label": "@SchedulerLock with the name",
+          "pattern": "@SchedulerLock\\([^)]*name\\s*=\\s*\"nightlyCleanup\""
+        },
+        {
+          "label": "lockAtMostFor of 10 minutes",
+          "pattern": "lockAtMostFor\\s*=\\s*\"(PT10M|10m)\""
+        }
+      ],
+      "model": "@Scheduled(cron = \"0 0 2 * * *\")\n@SchedulerLock(name = \"nightlyCleanup\", lockAtMostFor = \"PT10M\", lockAtLeastFor = \"PT1M\")\npublic void cleanup() {\n  // delete old rows\n}",
+      "explanation": "ShedLock stores the lock in a shared database or Redis table; the first node to insert or update the row runs the job. lockAtLeastFor keeps a fast job from being re-run by a node whose clock is slightly ahead."
+    },
+    {
+      "id": "async-self-invocation",
+      "concept": "Background jobs (Spring)",
+      "type": "assertion",
+      "difficulty": 2,
+      "prompt": "Judge the assertion and the reason.",
+      "assertion": "A @Async method called from another method of the same class runs synchronously on the caller's thread.",
+      "reason": "The async behaviour is applied by a proxy, and an internal this.call() bypasses that proxy.",
+      "correct": [
+        "a"
+      ],
+      "whys": {
+        "a": "Correct: no proxy, no executor hand-off.",
+        "b": "Wrong: R explains A.",
+        "c": "Wrong: R is true.",
+        "d": "Wrong: A is true."
+      },
+      "explanation": "Put async methods on another bean, and remember @EnableAsync. Same pitfall as @Transactional and @Cacheable."
+    },
+    {
+      "id": "async-service-method",
+      "concept": "Background jobs (Spring)",
+      "type": "code",
+      "difficulty": 2,
+      "prompt": "Write a Spring service method sendEmail(String to) that runs on a separate thread through Spring's async support and returns a CompletableFuture<Void> that is already completed once the work is done (call mail.send(to) first).",
+      "language": "java",
+      "checks": [
+        {
+          "label": "@Async annotation",
+          "pattern": "@Async"
+        },
+        {
+          "label": "returns CompletableFuture<Void>",
+          "pattern": "CompletableFuture\\s*<\\s*Void\\s*>\\s+sendEmail\\s*\\("
+        },
+        {
+          "label": "calls mail.send",
+          "pattern": "mail\\.send\\(\\s*to\\s*\\)"
+        },
+        {
+          "label": "returns a completed future",
+          "pattern": "CompletableFuture\\.completedFuture\\(\\s*null\\s*\\)|CompletableFuture\\.runAsync"
+        }
+      ],
+      "model": "@Async\npublic CompletableFuture<Void> sendEmail(String to) {\n  mail.send(to);\n  return CompletableFuture.completedFuture(null);\n}",
+      "explanation": "The caller must reach the method through the proxy (another bean), and @EnableAsync must be present. Configure a bounded ThreadPoolTaskExecutor; the default executor settings are rarely right for production."
+    },
+    {
+      "id": "scheduled-pool",
+      "concept": "Scheduled jobs (Spring)",
+      "type": "assertion",
+      "difficulty": 3,
+      "prompt": "Judge the assertion and the reason.",
+      "assertion": "Spring's @Scheduled tasks run on a pool of 10 threads by default.",
+      "reason": "A @Scheduled method must take no arguments.",
+      "correct": [
+        "d"
+      ],
+      "whys": {
+        "a": "Wrong: A is false.",
+        "b": "Wrong: A is false.",
+        "c": "Wrong: A is false.",
+        "d": "Correct: the default scheduler is single-threaded (Boot's spring.task.scheduling.pool.size defaults to 1); R is true because the method must be void-compatible and argument-free."
+      },
+      "explanation": "One slow job can delay all others. Set spring.task.scheduling.pool.size or use your own TaskScheduler."
+    },
+    {
+      "id": "fixed-rate-overlap",
+      "concept": "Scheduled jobs (Spring)",
+      "type": "assertion",
+      "difficulty": 3,
+      "prompt": "Judge the assertion and the reason.",
+      "assertion": "With the default single-thread scheduler, a @Scheduled(fixedRate = 1000) method that takes 3 seconds never runs concurrently with itself.",
+      "reason": "Boot's default scheduler uses a pool of 10 threads.",
+      "correct": [
+        "c"
+      ],
+      "whys": {
+        "a": "Wrong: R is false, so it cannot explain A.",
+        "b": "Wrong: R is false.",
+        "c": "Correct: A is true because a single thread cannot start a second run while the first is busy, so runs start late; R is false because the default pool size is 1.",
+        "d": "Wrong: A is true."
+      },
+      "explanation": "Late runs queue up and start back to back. Raise spring.task.scheduling.pool.size if independent jobs must not delay each other, and guard against overlap explicitly if you do."
+    },
+    {
+      "id": "health-indicator",
+      "concept": "Health checks (Spring)",
+      "type": "code",
+      "difficulty": 2,
+      "prompt": "Write a Spring Boot Actuator health indicator bean PaymentsHealth for a boolean method gateway.ping(): report UP when true, otherwise DOWN with the detail \"gateway\" set to \"unreachable\".",
+      "language": "java",
+      "starter": "@Component\n",
+      "checks": [
+        {
+          "label": "implements HealthIndicator",
+          "pattern": "implements\\s+HealthIndicator"
+        },
+        {
+          "label": "returns Health.up()",
+          "pattern": "Health\\.up\\(\\)"
+        },
+        {
+          "label": "returns Health.down() with withDetail",
+          "pattern": "Health\\.down\\(\\)[\\s\\S]*withDetail\\("
+        }
+      ],
+      "model": "@Component\nclass PaymentsHealth implements HealthIndicator {\n  public Health health() {\n    return gateway.ping() ? Health.up().build()\n        : Health.down().withDetail(\"gateway\", \"unreachable\").build();\n  }\n}",
+      "explanation": "A bean named PaymentsHealth appears as payments in /actuator/health. Beware: adding a flaky dependency to the aggregate health can mark the whole app DOWN."
+    },
+    {
+      "id": "probe-matrix",
+      "concept": "Health checks",
+      "type": "matrix",
+      "difficulty": 2,
+      "prompt": "Match each probe or endpoint with what it means in Kubernetes / Spring Boot.",
+      "left": [
+        {
+          "id": "l1",
+          "text": "Liveness probe fails"
+        },
+        {
+          "id": "l2",
+          "text": "Readiness probe fails"
+        },
+        {
+          "id": "l3",
+          "text": "Startup probe"
+        },
+        {
+          "id": "l4",
+          "text": "/actuator/metrics"
+        }
+      ],
+      "right": [
+        {
+          "id": "r1",
+          "text": "The kubelet restarts the container"
+        },
+        {
+          "id": "r2",
+          "text": "The pod is removed from Service endpoints but is not restarted"
+        },
+        {
+          "id": "r3",
+          "text": "Other probes wait until a slow boot has finished"
+        },
+        {
+          "id": "r4",
+          "text": "Micrometer meters such as jvm.memory.used"
+        },
+        {
+          "id": "r5",
+          "text": "The cluster autoscaler adds replicas"
+        }
+      ],
+      "pairs": {
+        "l1": "r1",
+        "l2": "r2",
+        "l3": "r3",
+        "l4": "r4"
+      },
+      "explanation": "Spring Boot exposes /actuator/health/liveness and /readiness probe groups (enabled automatically on Kubernetes, or via management.endpoint.health.probes.enabled)."
+    },
+    {
+      "id": "liveness-db",
+      "concept": "Health checks",
+      "type": "single",
+      "difficulty": 3,
+      "prompt": "Your service depends on a database. Where should the DB check live to avoid a restart storm during a DB outage?",
+      "options": [
+        {
+          "id": "a",
+          "text": "In readiness only; liveness should reflect only that the process itself is healthy.",
+          "why": "Readiness failure stops traffic without killing pods."
+        },
+        {
+          "id": "b",
+          "text": "In the liveness probe, so that pods that cannot reach the database are restarted quickly.",
+          "why": "A DB outage would restart every pod and extend recovery."
+        },
+        {
+          "id": "c",
+          "text": "In both probes with the same timeout.",
+          "why": "This still triggers restarts of healthy processes."
+        },
+        {
+          "id": "d",
+          "text": "In neither; health checks must never touch dependencies.",
+          "why": "Readiness checks on critical dependencies are standard."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Spring Boot's readiness group excludes external systems by default and liveness is for unrecoverable internal states."
+    },
+    {
+      "id": "probe-groups",
+      "concept": "Health checks",
+      "type": "fill",
+      "difficulty": 1,
+      "prompt": "Complete the Kubernetes and Actuator probe vocabulary.",
+      "text": "A pod whose {1} probe fails is restarted by the kubelet; a pod whose {2} probe fails keeps running but receives no traffic. Spring Boot publishes both as health groups under /actuator/health.",
+      "blanks": {
+        "1": "liveness",
+        "2": "readiness"
+      },
+      "bank": [
+        "liveness",
+        "readiness",
+        "startup",
+        "metrics"
+      ],
+      "explanation": "Boot enables the probe groups automatically on Kubernetes, or with management.endpoint.health.probes.enabled=true. During graceful shutdown the readiness state flips so the load balancer stops sending traffic first."
+    },
+    {
+      "id": "retryable-attempts",
+      "concept": "Retries",
+      "type": "integer",
+      "difficulty": 3,
+      "prompt": "A Spring Framework 7 bean method is annotated with plain @Retryable (no attributes, resilience support enabled) and always throws IOException. A caller invokes it once. How many times is the method body executed in total?",
+      "answer": 4,
+      "tolerance": 0,
+      "explanation": "Spring Framework 7's own @Retryable defaults to maxRetries = 3, which counts retries on top of the first call: 1 + 3 = 4 executions, with a 1 s delay. includes and excludes are empty, so every exception is retried. The older spring-retry library differs: its maxAttempts = 3 counts total attempts, and it uses retryFor (formerly include).",
+      "unit": "executions"
+    },
+    {
+      "id": "secrets-practices",
+      "concept": "Config and secrets",
+      "type": "multi",
+      "difficulty": 2,
+      "prompt": "Select all that apply: which are sound practices for configuration and secrets in a Spring Boot service?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Inject passwords through environment variables or a secrets manager.",
+          "why": "Keeps secrets out of the repository and the image."
+        },
+        {
+          "id": "b",
+          "text": "Commit application-prod.yml with the production database password.",
+          "why": "Anything in git history must be treated as compromised."
+        },
+        {
+          "id": "c",
+          "text": "Use @ConfigurationProperties with @Validated to fail fast on missing config.",
+          "why": "Binding validation stops the application at startup rather than at first use."
+        },
+        {
+          "id": "d",
+          "text": "Log every property at startup to simplify debugging.",
+          "why": "That writes secrets into log aggregation."
+        },
+        {
+          "id": "e",
+          "text": "Leave Actuator's env and configprops values masked, which is the default since Boot 3.",
+          "why": "Since Boot 3 the show-values property defaults to NEVER, so values are hidden unless you opt in."
+        },
+        {
+          "id": "f",
+          "text": "Bake the payment API key into the Docker image.",
+          "why": "Anyone who can pull the image can read the key."
+        }
+      ],
+      "correct": [
+        "a",
+        "c",
+        "e"
+      ],
+      "explanation": "Principle: config in the environment (twelve-factor), secrets from a vault, validate at boot, never log them."
+    }
+  ]
+}

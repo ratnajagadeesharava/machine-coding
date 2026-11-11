@@ -176,7 +176,7 @@
       "options": [
         {
           "id": "a",
-          "text": "100, because T1 keeps the snapshot from its first statement.",
+          "text": "100, because T1 keeps using the snapshot that it took when its first statement started running.",
           "why": "That is snapshot or REPEATABLE READ behaviour, not READ COMMITTED."
         },
         {
@@ -239,7 +239,7 @@
       "options": [
         {
           "id": "a",
-          "text": "A loop of identical UPDATEs on the server until one succeeds.",
+          "text": "The server repeats the identical UPDATE in a loop, over and over, until one of the attempts finally succeeds.",
           "why": "The stale version never matches again, so the loop would never succeed."
         },
         {
@@ -363,7 +363,7 @@
         },
         {
           "id": "b",
-          "text": "The driver escapes every quote in the value before it is concatenated.",
+          "text": "The driver escapes every quote and backslash in the value before the value is concatenated into the SQL text.",
           "why": "Escaping tricks are fragile; placeholders avoid concatenation altogether."
         },
         {

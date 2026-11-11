@@ -1,0 +1,394 @@
+{
+  "id": "rm-data-orm-loading-python",
+  "title": "SQLAlchemy 2.0: mapping, loading strategies and optimistic locking",
+  "topic": "Interview roadmap",
+  "language": "python",
+  "description": "SQLAlchemy 2.0 declarative mapping and SQLModel basics, lazy versus eager loading, N+1 statement counting, the identity map, async pitfalls and version_id_col locking.",
+  "source": "SQLAlchemy 2.0 documentation (relationship loading techniques, version_id_col, asyncio extension, identity map); SQLModel documentation; FastAPI documentation (handling errors)",
+  "series": "interview-roadmap-python",
+  "seriesTitle": "Interview roadmap: Python and FastAPI",
+  "seriesDescription": "Python and FastAPI interview topics in JEE-Advanced style: integer, assertion-reason, matrix match, fill-in-the-blanks, short Python/SQL code and multi-correct questions. Python only: nothing here mixes in Java.",
+  "seriesOrder": 60,
+  "estimatedMinutes": 17,
+  "questions": [
+    {
+      "id": "sqlalchemy-basics-fill",
+      "concept": "SQLAlchemy 2.0 ORM",
+      "type": "fill",
+      "difficulty": 1,
+      "prompt": "Complete the SQLAlchemy 2.0 and SQLModel basics.",
+      "text": "In SQLAlchemy 2.0 a model derives from {1} and declares columns as `id: {2}[int] = mapped_column(primary_key=True)`. Queries run through `{3}.scalars(select(User))`. A SQLModel class becomes a database table only when it is declared with {4}.",
+      "blanks": {
+        "1": "DeclarativeBase",
+        "2": "Mapped",
+        "3": "session",
+        "4": "table=True"
+      },
+      "bank": [
+        "DeclarativeBase",
+        "Mapped",
+        "session",
+        "table=True",
+        "Column",
+        "engine",
+        "BaseModel"
+      ],
+      "explanation": "SQLModel combines Pydantic validation with SQLAlchemy mapping; without table=True a SQLModel class is just a Pydantic schema (useful for request/response models). Session.scalars() returns ORM objects rather than Row tuples."
+    },
+    {
+      "id": "async-lazy",
+      "concept": "SQLAlchemy 2.0 ORM",
+      "type": "assertion",
+      "difficulty": 2,
+      "prompt": "Read the assertion (A) and the reason (R), then choose the option that fits.",
+      "assertion": "In SQLAlchemy 2.0 with asyncio, touching an unloaded lazy relationship on an object loaded through AsyncSession raises MissingGreenlet.",
+      "reason": "SQLAlchemy 2.0 recommends select() with session.scalars() as the primary query style.",
+      "correct": [
+        "b"
+      ],
+      "whys": {
+        "a": "The recommended query style has nothing to do with why lazy loading fails in async code.",
+        "b": "Both are true, but R does not explain A: lazy loading fails because it would need implicit blocking I/O inside the event loop.",
+        "c": "R is true, so this option wrongly says it is false.",
+        "d": "A is true, so this option wrongly says it is false."
+      },
+      "explanation": "Implicit lazy loading would issue I/O from a plain attribute access, which cannot be awaited. Use selectinload/joinedload up front, await session.refresh(obj, [\"rel\"]), or AsyncAttrs.awaitable_attrs."
+    },
+    {
+      "id": "identity-map-count",
+      "concept": "N+1 problem",
+      "type": "integer",
+      "difficulty": 3,
+      "prompt": "12 Book rows belong to 4 distinct Authors. In SQLAlchemy 2.0 with default settings, `books = session.scalars(select(Book)).all()` runs once, then a loop reads the lazy many-to-one `book.author` for all 12 books. How many SELECT statements run in total?",
+      "answer": 5,
+      "explanation": "The Session identity map caches each Author by primary key, so only the first access per distinct author hits the database: 1 + 4 = 5, not 13. (Checked by counting cursor executions on SQLAlchemy.) A one-to-many loop would not have this saving.",
+      "unit": "statements"
+    },
+    {
+      "id": "lazy-one-to-many-count",
+      "concept": "N+1 problem",
+      "type": "integer",
+      "difficulty": 2,
+      "prompt": "In SQLAlchemy 2.0 with default relationship settings, authors = session.scalars(select(Author).limit(20)).all() runs once, then a loop calls len(a.books) on each of the 20 authors (a lazy one-to-many collection). How many SELECT statements run in total?",
+      "answer": 21,
+      "tolerance": 0,
+      "unit": "statements",
+      "explanation": "1 for the authors plus one lazy load per author is 21, the classic N+1. Verified by counting cursor executions. Adding selectinload(Author.books) turns it into 2."
+    },
+    {
+      "id": "selectinload-chunks",
+      "concept": "N+1 problem",
+      "type": "integer",
+      "difficulty": 3,
+      "prompt": "select(Author).options(selectinload(Author.books)) loads 1,200 authors. selectinload sends its follow-up SELECT ... WHERE author_id IN (...) in chunks of at most 500 parameters. How many SELECT statements run in total, counting the first?",
+      "answer": 4,
+      "tolerance": 0,
+      "unit": "statements",
+      "explanation": "1 statement for the authors plus ceil(1200 / 500) = 3 chunked IN queries gives 4. Verified by counting cursor executions on 1,200 authors."
+    },
+    {
+      "id": "code-selectinload",
+      "concept": "SQLAlchemy 2.0 ORM",
+      "type": "code",
+      "difficulty": 2,
+      "prompt": "Models Author and Book exist, with Author.books a one-to-many relationship. Write the SQLAlchemy 2.0 statement `stmt` that selects all authors and loads their books collection with a second SELECT ... WHERE author_id IN (...) rather than a join.",
+      "language": "python",
+      "checks": [
+        {
+          "label": "selects Author with select()",
+          "pattern": "select\\s*\\(\\s*Author\\s*\\)"
+        },
+        {
+          "label": "passes a loader option through .options()",
+          "pattern": "\\.options\\s*\\("
+        },
+        {
+          "label": "uses selectinload on Author.books",
+          "pattern": "selectinload\\s*\\(\\s*Author\\.books\\s*\\)"
+        }
+      ],
+      "model": "stmt = select(Author).options(selectinload(Author.books))",
+      "explanation": "selectinload suits collections because it avoids the row multiplication of joinedload. joinedload is better for many-to-one. Both avoid the N+1 of the default lazy=\"select\"."
+    },
+    {
+      "id": "joinedload-unique",
+      "concept": "SQLAlchemy 2.0 ORM",
+      "type": "single",
+      "difficulty": 3,
+      "prompt": "In SQLAlchemy 2.0, `session.scalars(select(Author).options(joinedload(Author.books))).all()` raises InvalidRequestError about a missing unique() call. What is the intended fix?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Call .unique() on the result, or switch the collection load to selectinload.",
+          "why": "Correct: joined eager loading of a collection repeats the parent in each row, so 2.0 insists on explicit de-duplication."
+        },
+        {
+          "id": "b",
+          "text": "Add DISTINCT through session.execute(...).all() because the ORM deduplicates joins implicitly.",
+          "why": "The ORM does not deduplicate here, and plain .all() on the Result is exactly the call that raises the error."
+        },
+        {
+          "id": "c",
+          "text": "Set lazy='dynamic' on the relationship so no join is emitted.",
+          "why": "Dynamic loaders are legacy and unsupported with asyncio; they do not fix de-duplication of a joined load."
+        },
+        {
+          "id": "d",
+          "text": "Disable the identity map with expire_on_commit=False so rows stay unique.",
+          "why": "expire_on_commit controls attribute expiry after commit and has nothing to do with result de-duplication."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Because a joined load of a collection returns one row per child, 1.x silently de-duplicated while 2.0 asks you to say so (`.unique()`). For collections prefer selectinload, which avoids the row multiplication."
+    },
+    {
+      "id": "loader-strategies",
+      "concept": "Lazy loading",
+      "type": "matrix",
+      "difficulty": 2,
+      "prompt": "Match each SQLAlchemy relationship loading strategy with its behaviour.",
+      "left": [
+        {
+          "id": "l1",
+          "text": "lazy=\"select\" (the default)"
+        },
+        {
+          "id": "l2",
+          "text": "selectinload()"
+        },
+        {
+          "id": "l3",
+          "text": "joinedload()"
+        },
+        {
+          "id": "l4",
+          "text": "raiseload()"
+        }
+      ],
+      "right": [
+        {
+          "id": "r1",
+          "text": "Loads the related rows on first access with a separate SELECT"
+        },
+        {
+          "id": "r2",
+          "text": "Runs a second SELECT ... WHERE parent_id IN (...) for all loaded parents"
+        },
+        {
+          "id": "r3",
+          "text": "Fetches the related rows in the same statement with a LEFT OUTER JOIN"
+        },
+        {
+          "id": "r4",
+          "text": "Raises an error if the relationship is accessed without being loaded"
+        },
+        {
+          "id": "r5",
+          "text": "Caches the collection in Redis between requests"
+        },
+        {
+          "id": "r6",
+          "text": "Loads related rows in a background thread"
+        }
+      ],
+      "pairs": {
+        "l1": "r1",
+        "l2": "r2",
+        "l3": "r3",
+        "l4": "r4"
+      },
+      "explanation": "raiseload is a good test-time guard: it turns every accidental lazy load into an exception, which exposes N+1 and async-incompatible lazy access early (verified: it raises InvalidRequestError)."
+    },
+    {
+      "id": "relationship-cascade",
+      "concept": "ORM mapping (SQLAlchemy)",
+      "type": "code",
+      "difficulty": 2,
+      "prompt": "In a SQLAlchemy 2.0 declarative class Author, write the books relationship (typed with Mapped[list[\"Book\"]]) that is the inverse side of Book.author (back_populates=\"author\") and deletes books removed from the collection or when the author is deleted.",
+      "language": "python",
+      "checks": [
+        {
+          "label": "typed relationship",
+          "pattern": "books\\s*:\\s*Mapped\\[\\s*list\\[\\s*[\"\\']?Book[\"\\']?\\s*\\]\\s*\\]\\s*=\\s*relationship\\("
+        },
+        {
+          "label": "back_populates author",
+          "pattern": "back_populates\\s*=\\s*[\"\\']author[\"\\']"
+        },
+        {
+          "label": "delete-orphan cascade",
+          "pattern": "cascade\\s*=\\s*[\"\\']all\\s*,\\s*delete-orphan[\"\\']"
+        }
+      ],
+      "model": "books: Mapped[list[\"Book\"]] = relationship(\n    back_populates=\"author\", cascade=\"all, delete-orphan\")",
+      "explanation": "Verified in a runnable model. The foreign key lives on Book.author_id; the many-to-one side declares back_populates=\"books\" in return. Without delete-orphan, removing a book from the list only clears its foreign key.",
+      "starter": "class Author(Base):\n    __tablename__ = \"authors\"\n    id: Mapped[int] = mapped_column(primary_key=True)\n    "
+    },
+    {
+      "id": "stale-data-handler",
+      "concept": "Optimistic locking",
+      "type": "code",
+      "difficulty": 3,
+      "prompt": "A FastAPI app uses version_id_col for optimistic locking. Register an exception handler on app so that StaleDataError produces HTTP 409 with the JSON body {\"error\": \"conflict\"}.",
+      "language": "python",
+      "checks": [
+        {
+          "label": "registers a StaleDataError handler",
+          "pattern": "@app\\.exception_handler\\(\\s*StaleDataError\\s*\\)|add_exception_handler\\(\\s*StaleDataError"
+        },
+        {
+          "label": "returns JSONResponse with 409",
+          "pattern": "JSONResponse\\([\\s\\S]*409"
+        },
+        {
+          "label": "error body",
+          "pattern": "[\"\\']error[\"\\']\\s*:\\s*[\"\\']conflict[\"\\']"
+        }
+      ],
+      "model": "@app.exception_handler(StaleDataError)\nasync def on_conflict(request, exc):\n    return JSONResponse(status_code=409, content={\"error\": \"conflict\"})",
+      "explanation": "Optimistic locking detects a conflict; it does not resolve it. The client should reload and re-apply its change. A 412 with an ETag/If-Match flow is an equally valid contract.",
+      "starter": "from fastapi.responses import JSONResponse\nfrom sqlalchemy.orm.exc import StaleDataError\n"
+    },
+    {
+      "id": "code-version-id-col",
+      "concept": "Optimistic locking",
+      "type": "code",
+      "difficulty": 3,
+      "prompt": "In a SQLAlchemy 2.0 declarative class Product, `version: Mapped[int] = mapped_column(default=1)` is already declared. Write the class-level line that tells the ORM to use it for optimistic locking.",
+      "language": "python",
+      "checks": [
+        {
+          "label": "sets __mapper_args__",
+          "pattern": "__mapper_args__\\s*="
+        },
+        {
+          "label": "configures version_id_col",
+          "pattern": "[\"']version_id_col[\"']\\s*:\\s*\\w+|version_id_col\\s*=\\s*\\w+"
+        }
+      ],
+      "model": "__mapper_args__ = {\"version_id_col\": version}",
+      "explanation": "On a stale update the UPDATE ... WHERE id = ? AND version = ? matches 0 rows and the Session raises StaleDataError (checked against SQLAlchemy 2.x). The keyword form __mapper_args__ = dict(version_id_col=version) is equivalent."
+    },
+    {
+      "id": "stale-data-response",
+      "concept": "Optimistic locking",
+      "type": "single",
+      "difficulty": 2,
+      "prompt": "Two users edit the same row. The second save raises StaleDataError from SQLAlchemy. What should a REST API normally do?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Retry the identical UPDATE in a loop until it succeeds, since the conflict is transient.",
+          "why": "The stale version never matches again, so the loop would never end."
+        },
+        {
+          "id": "b",
+          "text": "Return 409 Conflict and let the client reload and re-apply its change.",
+          "why": "Correct: the data changed underneath the client; a person must decide how to merge."
+        },
+        {
+          "id": "c",
+          "text": "Return 500 and page the on-call engineer, since it is an unexpected failure.",
+          "why": "It is an expected concurrency outcome and maps to a client-side error."
+        },
+        {
+          "id": "d",
+          "text": "Drop version_id_col so later saves silently overwrite the first one.",
+          "why": "That restores the lost-update bug the version column prevents."
+        }
+      ],
+      "correct": [
+        "b"
+      ],
+      "explanation": "Automatic retry is only safe for server-side read-modify-write that re-reads the row on each attempt."
+    },
+    {
+      "id": "n1-fixes-sqlalchemy",
+      "concept": "N+1 problem",
+      "type": "multi",
+      "difficulty": 2,
+      "prompt": "Select all valid ways to avoid the N+1 problem when listing authors together with their books in SQLAlchemy 2.0.",
+      "options": [
+        {
+          "id": "a",
+          "text": "Use selectinload(Author.books) in the query options.",
+          "why": "One extra IN query loads all collections."
+        },
+        {
+          "id": "b",
+          "text": "Set echo=True on the engine.",
+          "why": "It only logs SQL; it does not change the statements."
+        },
+        {
+          "id": "c",
+          "text": "Use joinedload(Author.books) and call .unique() on the result.",
+          "why": "One joined statement; unique() removes duplicate parents."
+        },
+        {
+          "id": "d",
+          "text": "Set expire_on_commit=False on the sessionmaker.",
+          "why": "It controls attribute expiry after commit, not how relationships load."
+        },
+        {
+          "id": "e",
+          "text": "Select only the columns you need with a join, e.g. select(Author.name, Book.title).join(Author.books).",
+          "why": "Plain rows, no lazy loading, one statement."
+        }
+      ],
+      "correct": [
+        "a",
+        "c",
+        "e"
+      ],
+      "explanation": "Fix N+1 per use case. Detect it by counting statements in tests or by setting lazy=\"raise\" on relationships."
+    },
+    {
+      "id": "session-get-identity-map",
+      "concept": "Identity map",
+      "type": "truefalse",
+      "difficulty": 3,
+      "prompt": "True or false: calling session.get(Author, 7) issues no SQL if the Author with primary key 7 is already present in that Session's identity map.",
+      "options": [
+        {
+          "id": "a",
+          "text": "True",
+          "why": "Correct: Session.get() checks the identity map first and returns the existing object."
+        },
+        {
+          "id": "b",
+          "text": "False",
+          "why": "The identity map caches loaded objects by primary key for the life of the Session."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Only primary-key lookups use this shortcut; queries with other conditions always go to the database (though they return the existing identity for matching rows)."
+    },
+    {
+      "id": "asyncsession-implicit-lazy",
+      "concept": "SQLAlchemy 2.0 ORM",
+      "type": "truefalse",
+      "difficulty": 2,
+      "prompt": "True or false: with AsyncSession, reading an unloaded relationship attribute automatically awaits a lazy load and returns the data.",
+      "options": [
+        {
+          "id": "a",
+          "text": "True",
+          "why": "Wrong: an attribute access cannot be awaited, so the implicit load raises MissingGreenlet."
+        },
+        {
+          "id": "b",
+          "text": "False",
+          "why": "Correct: use eager loading options up front, await session.refresh(obj, [\"rel\"]) or AsyncAttrs.awaitable_attrs."
+        }
+      ],
+      "correct": [
+        "b"
+      ],
+      "explanation": "The same constraint is why many async codebases set lazy=\"raise\" on relationships and expire_on_commit=False on the sessionmaker."
+    }
+  ]
+}

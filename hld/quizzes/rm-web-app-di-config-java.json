@@ -1,0 +1,425 @@
+{
+  "id": "rm-web-app-di-config-java",
+  "title": "Spring Boot: app structure, DI, scopes and configuration",
+  "topic": "Interview roadmap",
+  "language": "java",
+  "description": "Spring Boot application structure, auto-configuration, dependency injection and bean scopes, proxy pitfalls, circular references, and typed externalised configuration.",
+  "source": "Spring Boot reference (auto-configuration, externalised config, circular references in the 2.6 release notes); Spring Framework core documentation (dependencies, @Primary and @Qualifier); Baeldung",
+  "series": "interview-roadmap-java",
+  "seriesTitle": "Interview roadmap: Java and Spring Boot",
+  "seriesDescription": "Java and Spring Boot interview topics in JEE-Advanced style: integer, assertion-reason, matrix match, fill-in-the-blanks, short Java/SQL code and multi-correct questions. Java only: nothing here mixes in Python.",
+  "seriesOrder": 50,
+  "estimatedMinutes": 16,
+  "questions": [
+    {
+      "id": "boot-annotation-parts",
+      "concept": "Spring Boot app structure",
+      "type": "multi",
+      "difficulty": 1,
+      "prompt": "Select all that apply: which annotations are meta-annotations of @SpringBootApplication?",
+      "options": [
+        {
+          "id": "a",
+          "text": "@SpringBootConfiguration",
+          "why": "It marks the class as a configuration source, a specialised @Configuration."
+        },
+        {
+          "id": "b",
+          "text": "@EnableAutoConfiguration",
+          "why": "It turns on conditional auto-configuration driven by the classpath."
+        },
+        {
+          "id": "c",
+          "text": "@ComponentScan",
+          "why": "It scans the annotated class's package and sub-packages for stereotypes."
+        },
+        {
+          "id": "d",
+          "text": "@EnableWebMvc",
+          "why": "Not included; adding it would even switch off Boot's MVC defaults."
+        },
+        {
+          "id": "e",
+          "text": "@EnableTransactionManagement",
+          "why": "Not included; transaction support comes from auto-configuration instead."
+        },
+        {
+          "id": "f",
+          "text": "@EnableAsync",
+          "why": "Not included; @Async needs this annotation added by hand."
+        }
+      ],
+      "correct": [
+        "a",
+        "b",
+        "c"
+      ],
+      "explanation": "@SpringBootApplication = @SpringBootConfiguration + @EnableAutoConfiguration + @ComponentScan. Because of the component scan, the main class normally sits in the root package; beans in sibling packages above it are not found."
+    },
+    {
+      "id": "autoconfig-conditional",
+      "concept": "Auto-configuration",
+      "type": "assertion",
+      "difficulty": 2,
+      "prompt": "Judge the assertion and the reason.",
+      "assertion": "With spring-boot-starter-data-jpa and the H2 driver on the classpath and no datasource properties, Boot starts with an embedded in-memory DataSource.",
+      "reason": "Auto-configuration classes are guarded by conditions such as @ConditionalOnClass and @ConditionalOnMissingBean.",
+      "correct": [
+        "a"
+      ],
+      "whys": {
+        "a": "Correct: the conditions detect H2 on the classpath and the missing DataSource bean, which is why the embedded database appears.",
+        "b": "Wrong: R is the actual mechanism behind A.",
+        "c": "Wrong: R is true.",
+        "d": "Wrong: A is true; embedded DB auto-config is documented behaviour."
+      },
+      "explanation": "Auto-configuration backs off when you define your own bean (@ConditionalOnMissingBean) and activates on classpath content (@ConditionalOnClass). Use --debug or the conditions report to see what matched."
+    },
+    {
+      "id": "prototype-in-singleton",
+      "concept": "Bean scopes",
+      "type": "integer",
+      "difficulty": 3,
+      "prompt": "A prototype-scoped bean is injected through the constructor into a singleton @Service. After startup the service method that uses it is called 5 times. How many instances of the prototype bean does the container create in total?",
+      "answer": 1,
+      "tolerance": 0,
+      "explanation": "Injection happens once, when the singleton is built, so the singleton keeps that single prototype instance. To get a fresh one per call, inject an ObjectProvider<T>, use a scoped proxy, or a lookup method.",
+      "unit": "instances"
+    },
+    {
+      "id": "scope-words",
+      "concept": "Bean scopes",
+      "type": "fill",
+      "difficulty": 1,
+      "prompt": "Fill in the bean scope vocabulary.",
+      "text": "The default Spring scope is {1}: one shared instance per container. A {2} bean is created anew every time it is requested, and a {3} bean lives for one HTTP request (web applications only).",
+      "blanks": {
+        "1": "singleton",
+        "2": "prototype",
+        "3": "request"
+      },
+      "bank": [
+        "singleton",
+        "prototype",
+        "request",
+        "session",
+        "thread"
+      ],
+      "explanation": "Singleton is the default. Prototype beans are not tracked after creation, so their destroy callbacks are not called by the container. Request and session are web scopes."
+    },
+    {
+      "id": "constructor-injection",
+      "concept": "Dependency injection (Spring)",
+      "type": "code",
+      "difficulty": 1,
+      "prompt": "Write a Spring service class OrderService, annotated as a service bean, that depends on an OrderRepository through constructor injection (final field, no field injection).",
+      "language": "java",
+      "starter": "@Service\n",
+      "checks": [
+        {
+          "label": "is annotated @Service (or @Component)",
+          "pattern": "@(Service|Component)"
+        },
+        {
+          "label": "declares a final OrderRepository field",
+          "pattern": "(private\\s+)?final\\s+OrderRepository\\s+\\w+"
+        },
+        {
+          "label": "has a constructor taking OrderRepository",
+          "pattern": "OrderService\\s*\\(\\s*(final\\s+)?OrderRepository\\s+\\w+\\s*\\)"
+        }
+      ],
+      "model": "@Service\npublic class OrderService {\n  private final OrderRepository repo;\n  public OrderService(OrderRepository repo) { this.repo = repo; }\n}",
+      "explanation": "With a single constructor Spring 4.3+ injects without @Autowired. A final field makes the dependency mandatory and the class easy to unit-test with a plain new. Lombok @RequiredArgsConstructor is an equally valid alternative."
+    },
+    {
+      "id": "self-invocation-proxy",
+      "concept": "Proxy pitfalls",
+      "type": "assertion",
+      "difficulty": 3,
+      "prompt": "Judge the assertion and the reason.",
+      "assertion": "Calling a @Transactional method from another method of the same class does not start a transaction.",
+      "reason": "Spring Boot defaults to CGLIB class-based proxies (proxyTargetClass=true).",
+      "correct": [
+        "b"
+      ],
+      "whys": {
+        "a": "Wrong: CGLIB vs JDK proxy does not explain it; the same bypass happens with both.",
+        "b": "Correct: both statements are true, but the real cause is that this.method() never goes through the proxy object.",
+        "c": "Wrong: R is true; Boot has defaulted to CGLIB since 2.0.",
+        "d": "Wrong: A is true; self-invocation skips the transactional proxy."
+      },
+      "explanation": "Transactions, @Async, @Cacheable and @Aspect advice are applied by a proxy around the bean. An internal call uses this, not the proxy. Fixes: move the method to another bean, inject the bean's own proxy, or use AspectJ weaving."
+    },
+    {
+      "id": "singleton-thread-safe",
+      "concept": "Bean scopes",
+      "type": "assertion",
+      "difficulty": 2,
+      "prompt": "Judge the assertion and the reason.",
+      "assertion": "A Spring singleton bean is automatically thread-safe.",
+      "reason": "Singleton scope means a single shared instance per application context.",
+      "correct": [
+        "d"
+      ],
+      "whys": {
+        "a": "Wrong: A is false, so R cannot be explaining a true assertion.",
+        "b": "Wrong: A is not true.",
+        "c": "Wrong: A is false; R is true.",
+        "d": "Correct: one shared instance is exactly why mutable state in a singleton needs care; Spring adds no synchronisation."
+      },
+      "explanation": "Singleton means shared, not synchronised. Keep singleton beans stateless or guard their mutable state, a classic interview follow-up."
+    },
+    {
+      "id": "spring-config-precedence",
+      "concept": "Config and secrets",
+      "type": "multi",
+      "difficulty": 3,
+      "prompt": "Select all that apply: which statements about Spring Boot externalised configuration are correct?",
+      "options": [
+        {
+          "id": "a",
+          "text": "A command-line argument --server.port=9000 overrides server.port in application.yml.",
+          "why": "Command-line arguments sit near the top of the property-source order."
+        },
+        {
+          "id": "b",
+          "text": "The environment variable SPRING_DATASOURCE_URL binds to spring.datasource.url.",
+          "why": "Relaxed binding maps upper-case underscore names to dotted properties."
+        },
+        {
+          "id": "c",
+          "text": "application-prod.yml values override application.yml when the prod profile is active.",
+          "why": "Profile-specific files take precedence over the default file."
+        },
+        {
+          "id": "d",
+          "text": "Values in a file packaged inside the jar always beat environment variables.",
+          "why": "Reversed: environment variables override packaged files, which is how containers are configured."
+        },
+        {
+          "id": "e",
+          "text": "Setting spring.profiles.active is only possible inside application.yml.",
+          "why": "It can also come from an env var or a command-line flag."
+        },
+        {
+          "id": "f",
+          "text": "Profiles can only be used to switch configuration, never beans.",
+          "why": "@Profile on a @Bean or @Component also includes or excludes beans."
+        }
+      ],
+      "correct": [
+        "a",
+        "b",
+        "c"
+      ],
+      "explanation": "Remember the rule: external wins over packaged, specific wins over general. Keep secrets out of the jar and supply them through env vars or a secrets manager."
+    },
+    {
+      "id": "circular-constructor",
+      "concept": "Dependency injection (Spring)",
+      "type": "single",
+      "difficulty": 3,
+      "prompt": "OrderService takes PaymentService through its constructor, and PaymentService takes OrderService through its constructor. What happens when a Spring Boot 3 application starts with default settings?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Startup fails because the beans are stuck in creation (BeanCurrentlyInCreationException).",
+          "why": "Correct: constructor cycles cannot be resolved, and Boot also prohibits circular references by default."
+        },
+        {
+          "id": "b",
+          "text": "Spring injects an early reference through its singleton cache and the application starts normally.",
+          "why": "Early references only helped setter or field injection, and Boot 2.6+ turns even that off by default."
+        },
+        {
+          "id": "c",
+          "text": "The application starts, but one of the two fields stays null until first use.",
+          "why": "Spring never leaves a required constructor argument null; it fails fast instead."
+        },
+        {
+          "id": "d",
+          "text": "Spring silently switches one of the beans to prototype scope to break the cycle.",
+          "why": "Scopes are never changed automatically; the cycle is simply reported as an error."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Fix the design (extract a third bean or an event) rather than reaching for spring.main.allow-circular-references=true or @Lazy, which only hide the cycle. Constructor injection is what exposes cycles at startup."
+    },
+    {
+      "id": "code-qualifier",
+      "concept": "Dependency injection (Spring)",
+      "type": "code",
+      "difficulty": 2,
+      "language": "java",
+      "prompt": "Two beans of type PaymentGateway exist, and StripeGateway is annotated @Primary. Write the constructor of CheckoutService (one parameter named gw, no Lombok) so that it receives the bean named \"paypal\" instead of the primary one.",
+      "starter": "public CheckoutService(",
+      "checks": [
+        {
+          "label": "uses @Qualifier with the bean name paypal",
+          "pattern": "@Qualifier\\s*\\(\\s*(value\\s*=\\s*)?\"paypal\"\\s*\\)"
+        },
+        {
+          "label": "parameter is PaymentGateway gw",
+          "pattern": "PaymentGateway\\s+gw\\b"
+        },
+        {
+          "label": "is the CheckoutService constructor",
+          "pattern": "CheckoutService\\s*\\("
+        }
+      ],
+      "model": "public CheckoutService(@Qualifier(\"paypal\") PaymentGateway gw) {\n  this.gw = gw;\n}",
+      "explanation": "An explicit @Qualifier beats @Primary, which only picks a default when nothing narrower is stated. Without either, two candidates throw NoUniqueBeanDefinitionException. Other valid routes: naming the parameter paypal, or injecting List<PaymentGateway> or Map<String, PaymentGateway>."
+    },
+    {
+      "id": "spring-config-matrix",
+      "concept": "Configuration and lifecycle",
+      "type": "matrix",
+      "difficulty": 2,
+      "prompt": "Match each Spring Boot construct with its job.",
+      "left": [
+        {
+          "id": "l1",
+          "text": "@Profile(\"prod\") on a bean"
+        },
+        {
+          "id": "l2",
+          "text": "@ConfigurationProperties class"
+        },
+        {
+          "id": "l3",
+          "text": "ApplicationRunner bean"
+        },
+        {
+          "id": "l4",
+          "text": "@Bean factory method"
+        }
+      ],
+      "right": [
+        {
+          "id": "r1",
+          "text": "Registers the bean only when the prod profile is active"
+        },
+        {
+          "id": "r2",
+          "text": "Binds a property prefix to a typed object"
+        },
+        {
+          "id": "r3",
+          "text": "Runs code once after the context has started"
+        },
+        {
+          "id": "r4",
+          "text": "Creates and registers a bean that you build by hand"
+        },
+        {
+          "id": "r5",
+          "text": "Schedules a method with a cron expression"
+        },
+        {
+          "id": "r6",
+          "text": "Intercepts every HTTP request before the controller"
+        }
+      ],
+      "pairs": {
+        "l1": "r1",
+        "l2": "r2",
+        "l3": "r3",
+        "l4": "r4"
+      },
+      "explanation": "Profiles switch configuration and beans per environment, ConfigurationProperties gives typed and validated settings, and runners cover startup work."
+    },
+    {
+      "id": "config-binding",
+      "concept": "Config and secrets",
+      "type": "fill",
+      "difficulty": 2,
+      "prompt": "Complete the configuration terms.",
+      "text": "Bind a property prefix to a typed class with {1}; Spring Boot's relaxed binding maps the environment variable {2} onto spring.datasource.url; a single property can be injected with {3}.",
+      "blanks": {
+        "1": "@ConfigurationProperties",
+        "2": "SPRING_DATASOURCE_URL",
+        "3": "@Value"
+      },
+      "bank": [
+        "@ConfigurationProperties",
+        "SPRING_DATASOURCE_URL",
+        "@Value",
+        "@Autowired",
+        "SPRING.DATASOURCE.URL"
+      ],
+      "explanation": "@Value is for single properties and does not support relaxed binding as flexibly. Relaxed binding upper-cases the name and replaces dots and dashes with underscores."
+    },
+    {
+      "id": "config-properties-record",
+      "concept": "Config and secrets",
+      "type": "code",
+      "difficulty": 2,
+      "prompt": "Write a Spring Boot immutable configuration class MailProps for properties under prefix app.mail with a String host and an int port, as a record bound by @ConfigurationProperties.",
+      "language": "java",
+      "starter": "",
+      "checks": [
+        {
+          "label": "uses @ConfigurationProperties with prefix app.mail",
+          "pattern": "@ConfigurationProperties\\(\\s*(prefix\\s*=\\s*)?\\\"app\\.mail\\\""
+        },
+        {
+          "label": "is a record (or class) named MailProps",
+          "pattern": "(record|class)\\s+MailProps"
+        },
+        {
+          "label": "has String host and int port",
+          "pattern": "String\\s+host[\\s\\S]*int\\s+port|int\\s+port[\\s\\S]*String\\s+host"
+        }
+      ],
+      "model": "@ConfigurationProperties(prefix = \"app.mail\")\npublic record MailProps(String host, int port) {}",
+      "explanation": "Register with @EnableConfigurationProperties(MailProps.class) or @ConfigurationPropertiesScan. Add @Validated and constraints for fail-fast startup."
+    },
+    {
+      "id": "singleton-instances",
+      "concept": "Bean scopes",
+      "type": "integer",
+      "difficulty": 1,
+      "prompt": "A @Service bean with the default scope is injected into three different controllers of one application context. How many instances of that service exist?",
+      "answer": 1,
+      "tolerance": 0,
+      "unit": "instance",
+      "explanation": "Singleton scope means one shared instance per application context, injected wherever it is requested. Hence the service must be stateless or thread-safe."
+    },
+    {
+      "id": "component-scan-scope",
+      "concept": "Spring Boot app structure",
+      "type": "single",
+      "difficulty": 2,
+      "prompt": "The main class is annotated @SpringBootApplication and lives in package com.acme.app. A @Component class lives in com.acme.shared. With default settings, what happens to it?",
+      "options": [
+        {
+          "id": "a",
+          "text": "It is registered, because Boot scans every package whose name starts with the same com.acme prefix as the main class.",
+          "why": "Boot scans downwards from the main class package only, not by company prefix."
+        },
+        {
+          "id": "b",
+          "text": "It is registered, because @Component classes are discovered through the classpath index.",
+          "why": "Discovery follows the scan base packages, not a global index."
+        },
+        {
+          "id": "c",
+          "text": "It is not found by component scanning, because scanning covers only com.acme.app and its sub-packages.",
+          "why": "Correct: the scan starts at the package of the annotated main class."
+        },
+        {
+          "id": "d",
+          "text": "Application start fails with a duplicate bean error as the package is outside the root.",
+          "why": "Missing beans cause injection errors later, not a duplicate bean failure at scan time."
+        }
+      ],
+      "correct": [
+        "c"
+      ],
+      "explanation": "Fix by moving the main class to the root package (com.acme), or by naming extra base packages with scanBasePackages."
+    }
+  ]
+}

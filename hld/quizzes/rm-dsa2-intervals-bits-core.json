@@ -204,7 +204,7 @@
       "concept": "Subnet and CIDR math",
       "type": "assertion",
       "difficulty": 1,
-      "prompt": "IPv4 subnets.",
+      "prompt": "Consider the size of IPv4 subnets.",
       "explanation": "Host bits = 32 - prefix length; addresses = 2 to the power of host bits.",
       "assertion": "A /24 block contains 256 addresses.",
       "reason": "IPv4 addresses are 32 bits wide.",

@@ -1,0 +1,347 @@
+{
+  "id": "rm-web-jobs-health-python",
+  "title": "FastAPI: background jobs, Celery, health checks and secrets",
+  "topic": "Interview roadmap",
+  "language": "python",
+  "description": "FastAPI BackgroundTasks, Celery retries and beat schedules, duplicate runs across workers, Redis locks, health probes and secrets handling with pydantic.",
+  "source": "FastAPI documentation (BackgroundTasks); Celery documentation (tasks, retrying, beat, acks_late); APScheduler documentation; redis-py documentation; Kubernetes probe documentation; pydantic-settings documentation",
+  "series": "interview-roadmap-python",
+  "seriesTitle": "Interview roadmap: Python and FastAPI",
+  "seriesDescription": "Python and FastAPI interview topics in JEE-Advanced style: integer, assertion-reason, matrix match, fill-in-the-blanks, short Python/SQL code and multi-correct questions. Python only: nothing here mixes in Java.",
+  "seriesOrder": 54,
+  "estimatedMinutes": 16,
+  "questions": [
+    {
+      "id": "background-tasks-loss",
+      "concept": "Background jobs (FastAPI)",
+      "type": "assertion",
+      "difficulty": 2,
+      "prompt": "Judge the assertion and the reason.",
+      "assertion": "FastAPI BackgroundTasks run after the response has been sent.",
+      "reason": "BackgroundTasks run in the same process as the web server, so they are lost if that process dies.",
+      "correct": [
+        "b"
+      ],
+      "whys": {
+        "a": "Wrong: where they run does not explain when they run.",
+        "b": "Correct: both are true, but R is a separate durability limitation, not the reason for the timing.",
+        "c": "Wrong: R is true.",
+        "d": "Wrong: A is true."
+      },
+      "explanation": "Good for small jobs like e-mails. For retries, durability or heavy CPU work use Celery, RQ, Arq or a queue."
+    },
+    {
+      "id": "fastapi-background",
+      "concept": "Background jobs (FastAPI)",
+      "type": "code",
+      "difficulty": 2,
+      "prompt": "Write a FastAPI POST /signup handler signup(email: str, tasks: BackgroundTasks) that queues send_welcome_email(email) to run after the response and answers with status code 202.",
+      "language": "python",
+      "starter": "",
+      "checks": [
+        {
+          "label": "declares BackgroundTasks",
+          "pattern": "BackgroundTasks"
+        },
+        {
+          "label": "queues with add_task(send_welcome_email, ...)",
+          "pattern": "\\.add_task\\(\\s*send_welcome_email"
+        },
+        {
+          "label": "uses status_code=202",
+          "pattern": "status_code\\s*=\\s*202"
+        }
+      ],
+      "model": "@app.post(\"/signup\", status_code=202)\ndef signup(email: str, tasks: BackgroundTasks):\n    tasks.add_task(send_welcome_email, email)\n    return {\"status\": \"queued\"}",
+      "explanation": "The task function and args are passed separately to add_task. Both async and plain functions are accepted."
+    },
+    {
+      "id": "background-lost-on-restart",
+      "concept": "Background jobs (FastAPI)",
+      "type": "assertion",
+      "difficulty": 2,
+      "prompt": "Judge the assertion and the reason.",
+      "assertion": "A job added with FastAPI BackgroundTasks survives a restart of the server process.",
+      "reason": "BackgroundTasks run inside the same process as the web server.",
+      "correct": [
+        "d"
+      ],
+      "whys": {
+        "a": "Wrong: A is false.",
+        "b": "Wrong: A is false.",
+        "c": "Wrong: A is false; R is true.",
+        "d": "Correct: because the work lives only in that process, a restart or crash drops unfinished jobs. R is true and is the reason A is false."
+      },
+      "explanation": "Use a durable queue (Celery, RQ, Arq, a database outbox) when the job must survive restarts or needs retries."
+    },
+    {
+      "id": "celery-exactly-once",
+      "concept": "Background jobs (Celery)",
+      "type": "assertion",
+      "difficulty": 3,
+      "prompt": "Judge the assertion and the reason.",
+      "assertion": "Celery tasks should be written to be idempotent.",
+      "reason": "Celery guarantees exactly-once execution by default.",
+      "correct": [
+        "c"
+      ],
+      "whys": {
+        "a": "Wrong: R is false.",
+        "b": "Wrong: R is not true.",
+        "c": "Correct: A is true, R is false; delivery is at-least-once, especially with acks_late or visibility timeouts.",
+        "d": "Wrong: A is true."
+      },
+      "explanation": "Redelivery after a worker crash or timeout can run a task twice, so use idempotency keys or upserts."
+    },
+    {
+      "id": "celery-retry-task",
+      "concept": "Background jobs (Celery)",
+      "type": "code",
+      "difficulty": 3,
+      "prompt": "Write a Celery task send_email(self, to) bound to itself (bind=True), allowing at most 3 retries with a 10 second default delay. It calls deliver(to) and, if that raises ConnectionError, retries the task with the caught exception.",
+      "language": "python",
+      "checks": [
+        {
+          "label": "bound task with retry settings",
+          "pattern": "@\\w+\\.task\\(\\s*bind\\s*=\\s*True[\\s\\S]*max_retries\\s*=\\s*3|@\\w+\\.task\\([^)]*max_retries\\s*=\\s*3[\\s\\S]*bind\\s*=\\s*True"
+        },
+        {
+          "label": "default delay of 10 s",
+          "pattern": "default_retry_delay\\s*=\\s*10"
+        },
+        {
+          "label": "catches ConnectionError",
+          "pattern": "except\\s+ConnectionError"
+        },
+        {
+          "label": "raises self.retry with exc",
+          "pattern": "raise\\s+self\\.retry\\(\\s*exc\\s*=\\s*\\w+\\s*\\)"
+        }
+      ],
+      "model": "@celery.task(bind=True, max_retries=3, default_retry_delay=10)\ndef send_email(self, to):\n    try:\n        deliver(to)\n    except ConnectionError as exc:\n        raise self.retry(exc=exc)",
+      "explanation": "Verified with an eager Celery app: a task that always fails runs 4 times (the first call plus 3 retries). Raising self.retry (rather than just calling it) ends the current run immediately.",
+      "starter": "from celery import Celery\ncelery = Celery(\"jobs\")\n"
+    },
+    {
+      "id": "celery-retries",
+      "concept": "Background jobs (Celery)",
+      "type": "integer",
+      "difficulty": 2,
+      "prompt": "A Celery task declared with max_retries=3 always fails and calls self.retry(exc=exc) each time. It is published once. How many times does the task body run in total?",
+      "answer": 4,
+      "tolerance": 0,
+      "unit": "executions",
+      "explanation": "One initial run plus 3 retries gives 4 executions (verified by running an eager Celery app). After the last retry the original exception is raised."
+    },
+    {
+      "id": "celery-beat",
+      "concept": "Scheduled jobs (Celery)",
+      "type": "code",
+      "difficulty": 2,
+      "prompt": "Write a Celery beat schedule on celery.conf that runs the task \"tasks.cleanup\" every day at 02:00 using crontab, under the entry name \"nightly-cleanup\".",
+      "language": "python",
+      "checks": [
+        {
+          "label": "beat_schedule setting",
+          "pattern": "beat_schedule"
+        },
+        {
+          "label": "entry name and task",
+          "pattern": "[\"\\']nightly-cleanup[\"\\'][\\s\\S]*[\"\\']tasks\\.cleanup[\"\\']"
+        },
+        {
+          "label": "crontab at 02:00",
+          "pattern": "crontab\\(\\s*(hour\\s*=\\s*2\\s*,\\s*minute\\s*=\\s*0|minute\\s*=\\s*0\\s*,\\s*hour\\s*=\\s*2)\\s*\\)"
+        }
+      ],
+      "model": "celery.conf.beat_schedule = {\n    \"nightly-cleanup\": {\n        \"task\": \"tasks.cleanup\",\n        \"schedule\": crontab(hour=2, minute=0),\n    },\n}",
+      "explanation": "Run exactly one beat process; two beats would enqueue every job twice. Workers then execute the tasks, and the task itself should still be idempotent.",
+      "starter": "from celery.schedules import crontab\n"
+    },
+    {
+      "id": "scheduler-per-worker",
+      "concept": "Multi-instance jobs",
+      "type": "integer",
+      "difficulty": 3,
+      "prompt": "A FastAPI service starts an in-process APScheduler with a nightly cron job inside its lifespan handler. It is deployed with 4 uvicorn worker processes on each of 2 machines. How many times does the job fire each night across the whole deployment?",
+      "answer": 8,
+      "tolerance": 0,
+      "unit": "runs",
+      "explanation": "Each worker process runs its own lifespan and therefore its own scheduler: 4 x 2 = 8 runs. Run the scheduler in one dedicated process, use a distributed lock, or move scheduling to Celery beat or a cluster cron job."
+    },
+    {
+      "id": "redis-job-lock",
+      "concept": "Multi-instance jobs",
+      "type": "code",
+      "difficulty": 3,
+      "prompt": "Python with redis-py: at the start of a scheduled job, take a lock so only one instance runs it. Use the single atomic call that sets key lock:nightly only if it does not exist, expiring after 300 seconds, and return early if the lock was not acquired.",
+      "language": "python",
+      "starter": "import redis\nr = redis.Redis()\n",
+      "checks": [
+        {
+          "label": "uses r.set with nx=True",
+          "pattern": "\\.set\\([^)]*nx\\s*=\\s*True"
+        },
+        {
+          "label": "sets a TTL with ex= (or px=)",
+          "pattern": "\\b(ex|px)\\s*=\\s*\\d+"
+        },
+        {
+          "label": "returns when the lock was not acquired",
+          "pattern": "if\\s+not\\s+[\\s\\S]*return|if\\s+\\w+\\s+is\\s+None[\\s\\S]*return"
+        }
+      ],
+      "model": "if not r.set(\"lock:nightly\", \"1\", nx=True, ex=300):\n    return  # another instance holds the lock\nrun_cleanup()",
+      "explanation": "SET NX EX is atomic, unlike SETNX followed by EXPIRE. Pick a TTL longer than the job, or renew it. A lock library such as redis-py's Lock adds renewal and ownership checks."
+    },
+    {
+      "id": "fastapi-ready",
+      "concept": "Health checks (FastAPI)",
+      "type": "code",
+      "difficulty": 2,
+      "prompt": "Write GET /health/ready for FastAPI. Call db_ping() (raises on failure); on success return {\"status\": \"ok\"}, on failure answer HTTP 503.",
+      "language": "python",
+      "starter": "from fastapi import HTTPException\n",
+      "checks": [
+        {
+          "label": "declares GET /health/ready",
+          "pattern": "@app\\.get\\(\\s*[\\\"']/health/ready[\\\"']"
+        },
+        {
+          "label": "calls db_ping() inside try/except",
+          "pattern": "try:[\\s\\S]*db_ping\\(\\)[\\s\\S]*except"
+        },
+        {
+          "label": "answers 503 on failure",
+          "pattern": "503"
+        }
+      ],
+      "model": "@app.get(\"/health/ready\")\ndef ready():\n    try:\n        db_ping()\n    except Exception:\n        raise HTTPException(status_code=503, detail=\"db down\")\n    return {\"status\": \"ok\"}",
+      "explanation": "A JSONResponse(status_code=503) is equally fine. Keep readiness cheap and time-boxed."
+    },
+    {
+      "id": "fastapi-liveness-db",
+      "concept": "Health checks (FastAPI)",
+      "type": "single",
+      "difficulty": 3,
+      "prompt": "A FastAPI service depends on PostgreSQL and runs under Kubernetes. Where should the database ping live so that a database outage does not cause a restart storm?",
+      "options": [
+        {
+          "id": "a",
+          "text": "In /health/live, so pods that lose the database are restarted quickly.",
+          "why": "A database outage would restart every pod and lengthen recovery."
+        },
+        {
+          "id": "b",
+          "text": "In both endpoints with a generous 30 second timeout inside each, to be thorough about it.",
+          "why": "Slow dependency calls in liveness only make the restart storm worse."
+        },
+        {
+          "id": "c",
+          "text": "In /health/ready only; /health/live just returns 200 if the process responds.",
+          "why": "Correct: readiness failure removes the pod from traffic without killing it."
+        },
+        {
+          "id": "d",
+          "text": "In neither endpoint; health routes must never call anything outside the process.",
+          "why": "Readiness checks on critical dependencies are standard."
+        }
+      ],
+      "correct": [
+        "c"
+      ],
+      "explanation": "Keep both routes cheap and time-boxed (asyncio.wait_for around the ping) and let the orchestrator decide using readiness for traffic and liveness for deadlocks."
+    },
+    {
+      "id": "secrets-practices",
+      "concept": "Config and secrets",
+      "type": "multi",
+      "difficulty": 2,
+      "prompt": "Select all that apply: which are sound practices for configuration and secrets in a FastAPI service?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Inject passwords through environment variables or a secrets manager.",
+          "why": "Keeps secrets out of the repository and the image."
+        },
+        {
+          "id": "b",
+          "text": "Commit a .env file that contains production credentials.",
+          "why": "Anything in version-control history must be treated as compromised."
+        },
+        {
+          "id": "c",
+          "text": "Use SecretStr in pydantic settings so values are masked in repr and logs.",
+          "why": "get_secret_value() is required to read the real value."
+        },
+        {
+          "id": "d",
+          "text": "Print settings.model_dump() at startup to help debugging.",
+          "why": "That writes secret values into log aggregation."
+        },
+        {
+          "id": "e",
+          "text": "Let BaseSettings fail at startup when a required variable is missing.",
+          "why": "A crash at boot is cheaper than a failure on the first request."
+        },
+        {
+          "id": "f",
+          "text": "Bake the API key into the Docker image.",
+          "why": "Anyone who can pull the image can read the key."
+        }
+      ],
+      "correct": [
+        "a",
+        "c",
+        "e"
+      ],
+      "explanation": "Principle: config in the environment (twelve-factor), secrets from a vault, validate at boot, never log them."
+    },
+    {
+      "id": "acks-late",
+      "concept": "Background jobs (Celery)",
+      "type": "truefalse",
+      "difficulty": 3,
+      "prompt": "True or false: with acks_late=True a Celery message is acknowledged only after the task finishes, so a worker crash mid-task leads to redelivery.",
+      "options": [
+        {
+          "id": "a",
+          "text": "True",
+          "why": "Correct: the broker still holds the unacknowledged message and hands it to another worker."
+        },
+        {
+          "id": "b",
+          "text": "False",
+          "why": "Late acknowledgement trades possible duplicates for fewer lost tasks."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "This is why tasks must be idempotent. The default (early ack) risks losing a task on a crash instead."
+    },
+    {
+      "id": "orm-object-as-task-arg",
+      "concept": "Background jobs (Celery)",
+      "type": "truefalse",
+      "difficulty": 1,
+      "prompt": "True or false: it is good practice to pass a full ORM object as an argument to a Celery task.",
+      "options": [
+        {
+          "id": "a",
+          "text": "True",
+          "why": "Wrong: serialising entities is fragile and the data may be stale by the time the task runs."
+        },
+        {
+          "id": "b",
+          "text": "False",
+          "why": "Correct: pass identifiers or small plain values and re-load inside the task, so it sees fresh data and the message stays small."
+        }
+      ],
+      "correct": [
+        "b"
+      ],
+      "explanation": "Task arguments must be serialisable (JSON by default). A stale object also hides the \"row was deleted meanwhile\" case."
+    }
+  ]
+}

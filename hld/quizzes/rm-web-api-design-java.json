@@ -1,0 +1,325 @@
+{
+  "id": "rm-web-api-design-java",
+  "title": "Spring: pagination, idempotency, versioning and GraphQL",
+  "topic": "Interview roadmap",
+  "language": "java",
+  "description": "Spring Data paging, keyset queries, idempotency keys, API deprecation headers, conditional GET and Spring for GraphQL batching.",
+  "source": "Spring Data JPA documentation (Page, Slice, Pageable, scrolling); Spring Web MVC documentation (ShallowEtagHeaderFilter); RFC 9745 and RFC 8594; GraphQL specification; Spring for GraphQL documentation (@SchemaMapping, @BatchMapping); Stripe idempotency documentation; Use The Index, Luke",
+  "series": "interview-roadmap-java",
+  "seriesTitle": "Interview roadmap: Java and Spring Boot",
+  "seriesDescription": "Java and Spring Boot interview topics in JEE-Advanced style: integer, assertion-reason, matrix match, fill-in-the-blanks, short Java/SQL code and multi-correct questions. Java only: nothing here mixes in Python.",
+  "seriesOrder": 53,
+  "estimatedMinutes": 16,
+  "questions": [
+    {
+      "id": "offset-math",
+      "concept": "Pagination",
+      "type": "integer",
+      "difficulty": 1,
+      "prompt": "A Spring Data PageRequest.of(3, 20) is used (page index is zero-based). How many rows does the database skip with OFFSET?",
+      "answer": 60,
+      "tolerance": 0,
+      "explanation": "offset = page x size = 3 x 20 = 60, i.e. the 4th page. Pages in Spring Data start at 0, a common off-by-one trap.",
+      "unit": "rows"
+    },
+    {
+      "id": "total-pages",
+      "concept": "Pagination",
+      "type": "integer",
+      "difficulty": 2,
+      "prompt": "A Spring Data repository returns a Page for PageRequest.of(0, 25), and the table holds 130 matching rows. What does page.getTotalPages() return?",
+      "answer": 6,
+      "tolerance": 0,
+      "unit": "pages",
+      "explanation": "ceil(130 / 25) = ceil(5.2) = 6; the last page holds 5 rows. Page knows the total because it runs an extra COUNT query, which Slice avoids."
+    },
+    {
+      "id": "page-vs-slice",
+      "concept": "Pagination",
+      "type": "assertion",
+      "difficulty": 3,
+      "prompt": "Judge the assertion and the reason.",
+      "assertion": "Returning Page<T> from a Spring Data repository avoids a separate COUNT query.",
+      "reason": "Slice<T> avoids the count query by fetching one extra row to learn whether a next page exists.",
+      "correct": [
+        "d"
+      ],
+      "whys": {
+        "a": "Wrong: A is false.",
+        "b": "Wrong: A is false.",
+        "c": "Wrong: A is false.",
+        "d": "Correct: Page<T> issues a count to know totals; Slice<T> skips it."
+      },
+      "explanation": "Use Slice (or keyset) for infinite scroll and when the count is expensive."
+    },
+    {
+      "id": "page-slice-words",
+      "concept": "Pagination",
+      "type": "fill",
+      "difficulty": 1,
+      "prompt": "Complete the Spring Data pagination vocabulary.",
+      "text": "A {1} knows the total number of elements and pages because it triggers a COUNT query; a {2} only knows whether a next slice exists; both are requested by passing a {3} such as PageRequest.of(page, size).",
+      "blanks": {
+        "1": "Page",
+        "2": "Slice",
+        "3": "Pageable"
+      },
+      "bank": [
+        "Page",
+        "Slice",
+        "Pageable",
+        "Sort",
+        "Example",
+        "Specification"
+      ],
+      "explanation": "Slice fetches pageSize + 1 rows to learn whether more exist. Use it, or keyset scrolling, for infinite scroll and for tables where COUNT is expensive."
+    },
+    {
+      "id": "pageable-defaults",
+      "concept": "Pagination",
+      "type": "multi",
+      "difficulty": 3,
+      "prompt": "Select all that apply: which statements about Spring Data web pagination (a Pageable controller argument) are correct?",
+      "options": [
+        {
+          "id": "a",
+          "text": "When the request omits size, the default page size is 20.",
+          "why": "spring.data.web.pageable.default-page-size defaults to 20."
+        },
+        {
+          "id": "b",
+          "text": "The page parameter is one-based by default.",
+          "why": "It is zero-based by default; the one-indexed option must be switched on."
+        },
+        {
+          "id": "c",
+          "text": "A requested size larger than the configured maximum is capped (2000 by default).",
+          "why": "max-page-size protects the database from ?size=1000000."
+        },
+        {
+          "id": "d",
+          "text": "A size above the maximum makes Spring answer 400 Bad Request.",
+          "why": "The size is silently reduced to the maximum rather than rejected."
+        },
+        {
+          "id": "e",
+          "text": "The page parameter is zero-based unless one-indexed-parameters is enabled.",
+          "why": "Index 0 is the first page by default, a classic off-by-one trap."
+        },
+        {
+          "id": "f",
+          "text": "A Slice return type still runs a COUNT query to fill the totals.",
+          "why": "Slice exists precisely to skip the COUNT query."
+        }
+      ],
+      "correct": [
+        "a",
+        "c",
+        "e"
+      ],
+      "explanation": "Pair web pagination with a stable sort (a unique tiebreaker such as the id) or pages can overlap or skip rows."
+    },
+    {
+      "id": "keyset-repository",
+      "concept": "Pagination",
+      "type": "code",
+      "difficulty": 3,
+      "prompt": "Entity Post has createdAt (Instant) and id (Long). In a Spring Data JPA PostRepository, declare a method named next that returns List<Post> and takes Instant c, long i and a Pageable page. Use a JPQL @Query for the keyset condition (createdAt < c, or equal createdAt with id < i), newest first with id as tiebreaker.",
+      "language": "java",
+      "checks": [
+        {
+          "label": "@Query annotation",
+          "pattern": "@Query\\s*\\("
+        },
+        {
+          "label": "keyset comparison on createdAt and id",
+          "pattern": "createdAt\\s*<\\s*:\\w+[\\s\\S]*id\\s*<\\s*:\\w+"
+        },
+        {
+          "label": "order by createdAt desc, id desc",
+          "pattern": "order\\s+by\\s+\\w+\\.createdAt\\s+desc\\s*,\\s*\\w+\\.id\\s+desc"
+        },
+        {
+          "label": "method signature",
+          "pattern": "List\\s*<\\s*Post\\s*>\\s+next\\s*\\("
+        }
+      ],
+      "model": "@Query(\"select p from Post p where p.createdAt < :c or (p.createdAt = :c and p.id < :i) \"\n     + \"order by p.createdAt desc, p.id desc\")\nList<Post> next(@Param(\"c\") Instant c, @Param(\"i\") long i, Pageable page);",
+      "explanation": "Call it with PageRequest.of(0, 21) to fetch one extra row. Spring Data 3.1+ also offers built-in keyset scrolling (ScrollPosition and Window), which generates this query for you.",
+      "starter": "public interface PostRepository extends JpaRepository<Post, Long> {\n  \n}"
+    },
+    {
+      "id": "idempotency-controller",
+      "concept": "Idempotency",
+      "type": "code",
+      "difficulty": 3,
+      "prompt": "Write a Spring POST /payments handler pay(@RequestBody PaymentIn body, ...) that reads the Idempotency-Key request header into a String key. A ConcurrentHashMap<String, PaymentResult> store exists: return the stored result for a repeated key, otherwise call charge(body) exactly once for that key and return its result.",
+      "language": "java",
+      "checks": [
+        {
+          "label": "reads Idempotency-Key header",
+          "pattern": "@RequestHeader\\(\\s*(value\\s*=\\s*|name\\s*=\\s*)?\"Idempotency-Key\"\\s*\\)"
+        },
+        {
+          "label": "atomic compute per key",
+          "pattern": "computeIfAbsent\\s*\\(|putIfAbsent\\s*\\("
+        },
+        {
+          "label": "calls charge",
+          "pattern": "charge\\s*\\(\\s*body\\s*\\)"
+        }
+      ],
+      "model": "@PostMapping(\"/payments\")\npublic PaymentResult pay(@RequestBody PaymentIn body,\n                         @RequestHeader(\"Idempotency-Key\") String key) {\n  return store.computeIfAbsent(key, k -> charge(body));\n}",
+      "explanation": "computeIfAbsent is atomic per key, so two simultaneous retries charge once. In production the store is a database table with a unique constraint (INSERT ... ON CONFLICT DO NOTHING) so it survives restarts and works across instances; also store a hash of the body to reject a reused key with a different payload."
+    },
+    {
+      "id": "deprecation-headers-java",
+      "concept": "API versioning",
+      "type": "code",
+      "difficulty": 2,
+      "prompt": "Write a Spring handler method users() for GET /api/v1/users returning ResponseEntity<List<UserDto>> from service.all(). Add the response headers Deprecation and Sunset (any plausible values) through the ResponseEntity builder.",
+      "language": "java",
+      "checks": [
+        {
+          "label": "mapped to /api/v1/users",
+          "pattern": "(Get|Request)Mapping\\(\\s*(value\\s*=\\s*|path\\s*=\\s*)?\"[^\"]*v1/users\""
+        },
+        {
+          "label": "Deprecation header",
+          "pattern": "header\\(\\s*\"Deprecation\""
+        },
+        {
+          "label": "Sunset header",
+          "pattern": "header\\(\\s*\"Sunset\""
+        },
+        {
+          "label": "returns ResponseEntity.ok()",
+          "pattern": "ResponseEntity\\s*\\.\\s*ok\\(\\)"
+        }
+      ],
+      "model": "@GetMapping(\"/api/v1/users\")\npublic ResponseEntity<List<UserDto>> users() {\n  return ResponseEntity.ok()\n      .header(\"Deprecation\", \"@1767225599\")\n      .header(\"Sunset\", \"Wed, 01 Jul 2026 00:00:00 GMT\")\n      .body(service.all());\n}",
+      "explanation": "RFC 9745 defines Deprecation as a structured-field date (\"@\" plus a Unix timestamp) and RFC 8594 defines Sunset as an HTTP date. A servlet filter or interceptor can add the headers to a whole /api/v1 prefix instead of every method."
+    },
+    {
+      "id": "batch-mapping",
+      "concept": "GraphQL",
+      "type": "code",
+      "difficulty": 3,
+      "prompt": "In a Spring for GraphQL @Controller, write a batch resolver for the author field of Book: method author takes List<Book> books and returns Map<Book, Author>, loading all authors with one call authorRepo.findAllById(ids) instead of one query per book.",
+      "language": "java",
+      "starter": "",
+      "checks": [
+        {
+          "label": "uses @BatchMapping",
+          "pattern": "@BatchMapping"
+        },
+        {
+          "label": "takes List<Book> and returns Map<Book, Author>",
+          "pattern": "Map<\\s*Book\\s*,\\s*Author\\s*>\\s+\\w+\\s*\\(\\s*List<\\s*Book\\s*>"
+        },
+        {
+          "label": "loads authors in bulk with findAllById (or findByIdIn)",
+          "pattern": "findAllById|findByIdIn"
+        }
+      ],
+      "model": "@BatchMapping\npublic Map<Book, Author> author(List<Book> books) {\n  Map<Long, Author> byId = authorRepo.findAllById(books.stream().map(Book::authorId).toList())\n      .stream().collect(Collectors.toMap(Author::id, a -> a));\n  return books.stream().collect(Collectors.toMap(b -> b, b -> byId.get(b.authorId())));\n}",
+      "explanation": "@BatchMapping wraps a DataLoader so the framework batches all author lookups for one request. A hand-registered DataLoader is the lower-level equivalent when you need more control."
+    },
+    {
+      "id": "graphql-n-plus-1",
+      "concept": "GraphQL",
+      "type": "integer",
+      "difficulty": 3,
+      "prompt": "A GraphQL query lists 25 books and resolves author for each book. Each author resolver does its own SELECT, and the books list itself is one SELECT. How many SQL statements run in total?",
+      "answer": 26,
+      "tolerance": 0,
+      "explanation": "1 for the list plus 25 (one per book) is the N+1 problem. With a DataLoader or @BatchMapping the 25 author lookups collapse into one, giving 2.",
+      "unit": "queries"
+    },
+    {
+      "id": "schema-mapping-per-parent",
+      "concept": "GraphQL",
+      "type": "assertion",
+      "difficulty": 3,
+      "prompt": "Judge the assertion and the reason.",
+      "assertion": "A plain @SchemaMapping method author(Book book) is invoked once for every Book in the result list.",
+      "reason": "A @BatchMapping method receives all the Books of the request as one List.",
+      "correct": [
+        "b"
+      ],
+      "whys": {
+        "a": "Wrong: R describes the fix, it is not the reason A happens.",
+        "b": "Correct: both are true, but A happens because the field resolver is per parent object; R is how batching removes the repeated calls.",
+        "c": "Wrong: R is true.",
+        "d": "Wrong: A is true."
+      },
+      "explanation": "Per-parent resolvers are the source of GraphQL N+1. Batch them with @BatchMapping or a DataLoader registered through BatchLoaderRegistry."
+    },
+    {
+      "id": "graphql-error-status",
+      "concept": "GraphQL",
+      "type": "single",
+      "difficulty": 2,
+      "prompt": "A GraphQL query asks for books and each book's author, and the author resolver throws for one book. What does a typical Spring HTTP GraphQL endpoint return?",
+      "options": [
+        {
+          "id": "a",
+          "text": "HTTP 500 with an empty body, because the resolver crashed the request.",
+          "why": "Field-level exceptions are caught by the engine and reported per field."
+        },
+        {
+          "id": "b",
+          "text": "HTTP 404 for the missing author, as a REST controller would answer.",
+          "why": "GraphQL has a single endpoint, so status codes do not map to fields."
+        },
+        {
+          "id": "c",
+          "text": "HTTP 200 with partial data and an errors array.",
+          "why": "Correct: GraphQL reports field errors in the body; the transport call itself succeeded."
+        },
+        {
+          "id": "d",
+          "text": "HTTP 400 with a violations list like Bean Validation produces.",
+          "why": "That body shape belongs to REST validation, not to GraphQL execution errors."
+        }
+      ],
+      "correct": [
+        "c"
+      ],
+      "explanation": "Monitoring on status codes alone misses GraphQL failures; inspect the errors array and add a DataFetcherExceptionResolver for consistent error classification."
+    },
+    {
+      "id": "etag-filter",
+      "concept": "HTTP caching",
+      "type": "single",
+      "difficulty": 3,
+      "prompt": "What does registering Spring's ShallowEtagHeaderFilter for GET endpoints actually save?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Controller work, because a matching ETag stops the handler from running at all, so no queries execute.",
+          "why": "The filter needs the response body to compute the hash, so the handler always runs."
+        },
+        {
+          "id": "b",
+          "text": "Database queries, because the filter caches the result set between requests.",
+          "why": "It keeps no server-side cache of results."
+        },
+        {
+          "id": "c",
+          "text": "Bandwidth only: the controller still runs, then a matching ETag turns the reply into a 304.",
+          "why": "Correct: the work is done, only the transfer is skipped."
+        },
+        {
+          "id": "d",
+          "text": "Nothing, because Spring MVC cannot produce 304 responses on its own.",
+          "why": "Conditional GET handling with 304 is supported by the filter and by checkNotModified."
+        }
+      ],
+      "correct": [
+        "c"
+      ],
+      "explanation": "To skip the work as well, compute a cheap version (updated-at or a version column) and call request.checkNotModified(etag) before loading the data."
+    }
+  ]
+}

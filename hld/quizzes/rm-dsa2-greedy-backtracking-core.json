@@ -1,0 +1,385 @@
+{
+  "id": "rm-dsa2-greedy-backtracking-core",
+  "title": "Greedy and backtracking: concepts and counts",
+  "topic": "Interview roadmap",
+  "language": "neutral",
+  "series": "interview-roadmap-core",
+  "seriesTitle": "Interview roadmap: language-independent topics",
+  "seriesDescription": "Language-independent interview topics (concepts, SQL, design, AI engineering): no Java and no Python code or library names.",
+  "seriesOrder": 44,
+  "description": "When greedy works and how to prove it, activity selection, jump game, gas station, then subsets, permutations, combination sum, N-Queens and pruning (no language-specific code).",
+  "source": "CLRS ch. 16; MIT 6.046 greedy notes; LeetCode Jump Game, Gas Station, Subsets I/II, Permutations II, Combination Sum; NeetCode backtracking roadmap",
+  "estimatedMinutes": 15,
+  "questions": [
+    {
+      "id": "activity-count",
+      "concept": "Activity selection",
+      "type": "integer",
+      "difficulty": 2,
+      "prompt": "Activities as (start, finish): (1,4), (3,5), (0,6), (5,7), (3,9), (5,9), (6,10), (8,11), (8,12), (2,14), (12,16). An activity may start exactly when another finishes. What is the maximum number of activities one person can attend?",
+      "explanation": "Sort by finish and pick greedily: (1,4), (5,7), (8,11), (12,16) = 4. No schedule of 5 exists; the earliest-finish rule is optimal.",
+      "answer": 4,
+      "unit": "activities"
+    },
+    {
+      "id": "gas-start",
+      "concept": "Gas station",
+      "type": "integer",
+      "difficulty": 3,
+      "prompt": "Gas station circuit: gas = [1, 2, 3, 4, 5] and cost = [3, 4, 5, 1, 2]. Station i gives gas[i] and the trip to the next station costs cost[i]. At which index (0-based) must you start to complete the circle?",
+      "explanation": "Total gas 15 equals total cost 15, so a solution exists. Reset the start whenever the running tank goes negative: it fails at 0, 1, 2 and the start becomes 3. From 3 the tank runs 3, 6, 4, 2, 0 and never goes negative.",
+      "answer": 3,
+      "unit": "index"
+    },
+    {
+      "id": "perm-count",
+      "concept": "Permutations",
+      "type": "integer",
+      "difficulty": 1,
+      "prompt": "How many distinct permutations does the multiset {A, A, B, C} have?",
+      "explanation": "4! / 2! = 24 / 2 = 12. A backtracking solution that sorts the input and skips equal neighbours (using a used[] array) produces exactly 12 leaves; a naive one produces 24 with duplicates.",
+      "answer": 12,
+      "unit": "permutations"
+    },
+    {
+      "id": "comb-sum-count",
+      "concept": "Combination sum",
+      "type": "integer",
+      "difficulty": 2,
+      "prompt": "Candidates [2, 3, 6, 7] (each may be reused any number of times) and target 7. How many distinct combinations sum to 7?",
+      "explanation": "[2,2,3] and [7] are the only two. Every other path either overshoots 7 or leaves a remainder of 1, which no candidate can fill. Sorting and breaking when a candidate exceeds the remainder prunes the search.",
+      "answer": 2,
+      "unit": "combinations"
+    },
+    {
+      "id": "n-queens-six",
+      "concept": "N-Queens",
+      "type": "integer",
+      "difficulty": 2,
+      "prompt": "How many distinct ways can 6 queens be placed on a 6 x 6 board so that none attacks another?",
+      "explanation": "The counts for n = 1..8 are 1, 0, 0, 2, 10, 4, 40, 92. Backtracking places one queen per row and prunes with sets for used columns and both diagonals (r - c and r + c), far less work than the n^n raw placements.",
+      "answer": 4,
+      "tolerance": 0,
+      "unit": "solutions"
+    },
+    {
+      "id": "jump-game-two",
+      "concept": "Greedy implementation",
+      "type": "integer",
+      "difficulty": 2,
+      "prompt": "For nums = [1, 2, 3, 4, 5], where nums[i] is the maximum jump length from index i, what is the minimum number of jumps to reach the last index?",
+      "explanation": "0 -> 1 -> 3 -> 4 is 3 jumps. The O(n) greedy keeps the end of the current jump range and the farthest index reachable; each time you pass the range end you count one more jump.",
+      "answer": 3,
+      "tolerance": 0,
+      "unit": "jumps"
+    },
+    {
+      "id": "exchange-arg",
+      "concept": "Greedy proofs",
+      "type": "single",
+      "difficulty": 3,
+      "prompt": "What does an exchange argument show about a greedy algorithm?",
+      "explanation": "For activity selection: take any optimal schedule, swap its first activity for the earliest-finishing one; it still fits and has the same size.",
+      "options": [
+        {
+          "id": "a",
+          "text": "Any optimal solution can be reshaped into the greedy one without getting worse.",
+          "why": "Correct: swapping step by step to the greedy choice never loses value, so greedy is optimal."
+        },
+        {
+          "id": "b",
+          "text": "The greedy choice is optimal on every random test you ran, including large ones.",
+          "why": "Testing builds confidence but is not a proof; an exchange argument is a proof."
+        },
+        {
+          "id": "c",
+          "text": "The algorithm runs in O(n log n) because it sorts the input first and then scans once.",
+          "why": "That is a running-time statement, unrelated to correctness."
+        },
+        {
+          "id": "d",
+          "text": "Every subproblem is solved once and cached in a table for later reuse.",
+          "why": "That describes dynamic programming, not an exchange argument."
+        }
+      ],
+      "correct": [
+        "a"
+      ]
+    },
+    {
+      "id": "earliest-finish",
+      "concept": "Greedy proofs",
+      "type": "assertion",
+      "difficulty": 2,
+      "prompt": "Maximising the number of non-overlapping meetings in a room.",
+      "explanation": "Earliest start fails on one long meeting that starts first and blocks many short ones.",
+      "assertion": "Sort by earliest finish time, not earliest start time.",
+      "reason": "Finishing earliest leaves the most room for the remaining meetings, which an exchange argument proves.",
+      "correct": [
+        "a"
+      ],
+      "whys": {
+        "a": "Right: R is the justification that A is the correct rule.",
+        "b": "R is the justification, not an unrelated fact.",
+        "c": "A is true.",
+        "d": "R is true."
+      }
+    },
+    {
+      "id": "greedy-coins",
+      "concept": "When greedy works",
+      "type": "assertion",
+      "difficulty": 2,
+      "prompt": "Making change with the fewest coins.",
+      "explanation": "Whether greedy works depends on the coin system. For arbitrary coins use DP.",
+      "assertion": "Taking the largest coin that fits at each step gives the fewest coins for any coin system.",
+      "reason": "Largest-first is optimal for the coin system {1, 5, 10, 25}.",
+      "correct": [
+        "d"
+      ],
+      "whys": {
+        "a": "A is false, so R cannot explain it.",
+        "b": "A is false.",
+        "c": "A is false.",
+        "d": "Right: A is false because of counterexamples like {1,5,6,9} with 11 (greedy 3 coins, optimal 2); R is true for canonical systems such as US coins."
+      }
+    },
+    {
+      "id": "reuse-index",
+      "concept": "Combination sum",
+      "type": "assertion",
+      "difficulty": 3,
+      "prompt": "In Combination Sum with reusable candidates.",
+      "explanation": "The index controls which candidates remain available; the remaining value controls termination. Mixing these up is a common bug.",
+      "assertion": "Recursing with the same index i, not i + 1, lets a candidate be used again.",
+      "reason": "Each recursive call subtracts the chosen candidate from the remaining target.",
+      "correct": [
+        "b"
+      ],
+      "whys": {
+        "a": "R does not explain why reuse is allowed.",
+        "b": "Right: both are true; reuse comes from the index, while subtracting the candidate is how the target shrinks.",
+        "c": "R is true.",
+        "d": "A is true."
+      }
+    },
+    {
+      "id": "jump-greedy",
+      "concept": "Greedy implementation",
+      "type": "assertion",
+      "difficulty": 3,
+      "prompt": "Jump Game: can you reach the last index when nums[i] is the maximum jump from i?",
+      "explanation": "Backtracking or memoised DP also work but cost far more; the greedy keeps a single number, the farthest reachable index.",
+      "assertion": "The farthest-reach greedy solves Jump Game in O(n) time.",
+      "reason": "It explores every possible jump sequence with backtracking.",
+      "correct": [
+        "c"
+      ],
+      "whys": {
+        "a": "R is false, so it cannot explain A.",
+        "b": "R is false.",
+        "c": "Right: A is true because the reachable indices form a prefix, but the greedy does not enumerate sequences, so R is false.",
+        "d": "A is true."
+      }
+    },
+    {
+      "id": "shortest-first",
+      "concept": "When greedy works",
+      "type": "truefalse",
+      "difficulty": 2,
+      "prompt": "True or false: to maximise the number of non-overlapping activities, always pick the shortest remaining activity first.",
+      "explanation": "Only earliest-finish-time is provably optimal; earliest-start and shortest-first both have counterexamples.",
+      "options": [
+        {
+          "id": "a",
+          "text": "True",
+          "why": "A short activity placed in the middle of two long ones can block both, so shortest-first fails."
+        },
+        {
+          "id": "b",
+          "text": "False",
+          "why": "Correct: shortest-first has counterexamples; earliest finish is the proven rule."
+        }
+      ],
+      "correct": [
+        "b"
+      ]
+    },
+    {
+      "id": "greedy-ok",
+      "concept": "When greedy works",
+      "type": "multi",
+      "difficulty": 2,
+      "prompt": "Select all that apply: for which problems does a simple greedy rule give a provably optimal answer?",
+      "explanation": "Greedy needs the greedy-choice property. When you cannot prove it, test with small counterexamples and fall back to DP.",
+      "options": [
+        {
+          "id": "a",
+          "text": "Activity selection by earliest finish time.",
+          "why": "Correct: the exchange argument proves it."
+        },
+        {
+          "id": "b",
+          "text": "0/1 knapsack by value per unit weight.",
+          "why": "A high ratio item can waste capacity; counterexamples exist, so use DP."
+        },
+        {
+          "id": "c",
+          "text": "Fractional knapsack by value per unit weight.",
+          "why": "Correct: filling the best ratios first is optimal when items can be split."
+        },
+        {
+          "id": "d",
+          "text": "Coin change for the arbitrary coin set {1, 5, 6, 9}.",
+          "why": "Largest-first gives 3 coins for 11 where 2 is possible."
+        }
+      ],
+      "correct": [
+        "a",
+        "c"
+      ]
+    },
+    {
+      "id": "dup-subsets",
+      "concept": "Duplicates and pruning",
+      "type": "fill",
+      "difficulty": 3,
+      "prompt": "Complete the rule for subsets of an array that may contain duplicates.",
+      "explanation": "Sorting groups equal values. Skipping a repeat only at the same recursion level (i > start) still allows [2,2] while removing a duplicate [2] branch. [1,2,2] yields 6 unique subsets instead of 8.",
+      "text": "First {1} the array. In the loop, skip nums[i] when i > start and nums[i] == nums[{2}]. A set of n distinct items has {3} subsets.",
+      "blanks": {
+        "1": "sort",
+        "2": "i-1",
+        "3": "2^n"
+      },
+      "bank": [
+        "2^n",
+        "i+1",
+        "n!",
+        "shuffle",
+        "sort",
+        "i-1"
+      ]
+    },
+    {
+      "id": "result-counts",
+      "concept": "Backtracking complexity",
+      "type": "matrix",
+      "difficulty": 2,
+      "prompt": "Match each enumeration with the number of results (leaves) it produces.",
+      "explanation": "Subsets: include/exclude per item. Permutations: n choices, then n-1, ... Combinations: n-choose-k. Parentheses: Catalan numbers (1, 2, 5, 14 for n = 1..4). Total work multiplies by the cost of copying each result.",
+      "left": [
+        {
+          "id": "a",
+          "text": "All subsets of n distinct items"
+        },
+        {
+          "id": "b",
+          "text": "All permutations of n distinct items"
+        },
+        {
+          "id": "c",
+          "text": "All combinations of k items chosen from n"
+        },
+        {
+          "id": "d",
+          "text": "All valid strings of n pairs of parentheses"
+        }
+      ],
+      "right": [
+        {
+          "id": "p",
+          "text": "C(n, k)"
+        },
+        {
+          "id": "q",
+          "text": "Catalan number C(2n, n) / (n + 1)"
+        },
+        {
+          "id": "r",
+          "text": "n^2"
+        },
+        {
+          "id": "s",
+          "text": "n * 2^n"
+        },
+        {
+          "id": "t",
+          "text": "2^n"
+        },
+        {
+          "id": "u",
+          "text": "n!"
+        }
+      ],
+      "pairs": {
+        "a": "t",
+        "b": "u",
+        "c": "p",
+        "d": "q"
+      }
+    },
+    {
+      "id": "gen-parens-prune",
+      "concept": "Duplicates and pruning",
+      "type": "single",
+      "difficulty": 2,
+      "prompt": "When generating all valid strings of n pairs of parentheses by backtracking, which rule prunes the search so only valid strings are built?",
+      "explanation": "The result count is the Catalan number: 1, 2, 5, 14, 42 for n = 1..5. The pattern 'add only while the prefix stays valid' is the general way to prune backtracking.",
+      "options": [
+        {
+          "id": "a",
+          "text": "Add \")\" first whenever possible, and \"(\" only when no \")\" fits.",
+          "why": "Closing first produces invalid prefixes such as \")(\" immediately."
+        },
+        {
+          "id": "b",
+          "text": "Add \"(\" while fewer than n are used, and \")\" only while closes < opens.",
+          "why": "Correct: the prefix stays valid at every step, so no dead branches are explored."
+        },
+        {
+          "id": "c",
+          "text": "Build every string of length 2n and test each one for balance at the end.",
+          "why": "That enumerates 2^(2n) strings instead of pruning during construction."
+        },
+        {
+          "id": "d",
+          "text": "Allow \"(\" and \")\" equally, then drop results with unequal counts.",
+          "why": "Equal counts are not enough: \")(\" has equal counts but is invalid."
+        }
+      ],
+      "correct": [
+        "b"
+      ]
+    },
+    {
+      "id": "activity-pseudo",
+      "concept": "Activity selection",
+      "type": "code",
+      "difficulty": 2,
+      "prompt": "Write pseudocode for the greedy that returns the maximum number of non-overlapping activities from a list of (start, finish) pairs, where an activity may start exactly when the previous one finishes.",
+      "explanation": "Sorting dominates, so the total is O(n log n). The >= test lets an activity start exactly when the previous one ends. The earliest-finish rule is justified by an exchange argument.",
+      "language": "pseudocode",
+      "starter": "",
+      "checks": [
+        {
+          "label": "sorts the activities by finish time",
+          "pattern": "sort[\\s\\S]*(finish|end|f\\b|\\[\\s*1\\s*\\])"
+        },
+        {
+          "label": "keeps the finish time of the last chosen activity",
+          "pattern": "last\\w*\\s*(=|:=|<-)\\s*(f|finish|end|\\w+\\s*\\[\\s*1\\s*\\])"
+        },
+        {
+          "label": "takes an activity when its start is at or after that finish",
+          "pattern": "(s|start|\\[\\s*0\\s*\\])\\s*>=\\s*last|last\\w*\\s*<=\\s*(s|start)"
+        },
+        {
+          "label": "counts the chosen activities",
+          "pattern": "count|chosen|result|len"
+        }
+      ],
+      "model": "sort activities by finish time\nlast_end = -infinity; count = 0\nfor (s, f) in sorted activities:\n    if s >= last_end:\n        count = count + 1\n        last_end = f\nreturn count"
+    }
+  ]
+}

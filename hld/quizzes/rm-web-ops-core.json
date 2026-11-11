@@ -20,7 +20,7 @@
       "options": [
         {
           "id": "a",
-          "text": "In the liveness check, so pods that cannot reach the database are restarted quickly.",
+          "text": "In the liveness check, so that pods which cannot reach the database are restarted as quickly as possible.",
           "why": "A database outage would restart every instance and prolong recovery."
         },
         {

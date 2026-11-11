@@ -1,0 +1,464 @@
+{
+  "id": "rm-obs-telemetry-java",
+  "title": "Observability in Spring: Micrometer, MDC correlation, JFR and thread dumps",
+  "topic": "Interview roadmap",
+  "series": "interview-roadmap-java",
+  "seriesTitle": "Interview roadmap: Java and Spring Boot",
+  "seriesDescription": "Java and Spring Boot interview topics in JEE-Advanced style: integer, assertion-reason, matrix match, fill-in-the-blanks, short Java/SQL code and multi-correct questions. Java only: nothing here mixes in Python.",
+  "seriesOrder": 80,
+  "language": "java",
+  "description": "Spring Boot Actuator and Micrometer meters, Logback and MDC correlation ids, trace ids in logs, OpenTelemetry Java agent, and diagnosing slow endpoints with JFR, thread dumps and wall-clock profiling.",
+  "source": "Micrometer documentation (counters, timers, gauges, histograms); Spring Boot reference (Actuator, Prometheus endpoint, tracing); SLF4J/Logback manual (MDC); OpenTelemetry Java agent documentation; JDK Flight Recorder and jcmd documentation",
+  "estimatedMinutes": 22,
+  "questions": [
+    {
+      "id": "java-mdc-filter",
+      "concept": "Correlation id",
+      "type": "code",
+      "difficulty": 2,
+      "prompt": "Write the body of a Spring OncePerRequestFilter.doFilterInternal(req, res, chain) that takes the id from the X-Request-Id header (or generates a UUID), puts it in the SLF4J MDC under \"requestId\", echoes it in the response header, and always cleans the MDC afterwards.",
+      "language": "java",
+      "checks": [
+        {
+          "label": "reads X-Request-Id or generates a UUID",
+          "pattern": "(x-request-id|uuid\\.randomuuid)"
+        },
+        {
+          "label": "puts requestId in the MDC",
+          "pattern": "mdc\\.put\\(\\s*\"requestid\","
+        },
+        {
+          "label": "continues the filter chain",
+          "pattern": "chain\\.dofilter\\("
+        },
+        {
+          "label": "removes the entry in finally",
+          "pattern": "finally\\s*\\{[^}]*mdc\\.(remove|clear)\\("
+        }
+      ],
+      "model": "String id = Optional.ofNullable(req.getHeader(\"X-Request-Id\")).orElse(UUID.randomUUID().toString());\nMDC.put(\"requestId\", id);\nres.setHeader(\"X-Request-Id\", id);\ntry { chain.doFilter(req, res); }\nfinally { MDC.remove(\"requestId\"); }",
+      "explanation": "Server threads are pooled, so an MDC entry that is not removed leaks into the next request handled by that thread. The Logback pattern then prints %X{requestId}. Other shapes (a servlet Filter, a HandlerInterceptor) are equally valid."
+    },
+    {
+      "id": "logback-pattern",
+      "concept": "Correlation id",
+      "type": "code",
+      "difficulty": 1,
+      "prompt": "Write the Logback <pattern> element that prints the timestamp, the level, the MDC value requestId in square brackets, and the message followed by a newline.",
+      "language": "xml",
+      "checks": [
+        {
+          "label": "is a pattern element",
+          "pattern": "<pattern>[\\s\\S]*</pattern>"
+        },
+        {
+          "label": "prints the MDC value",
+          "pattern": "%X\\{requestId\\}"
+        },
+        {
+          "label": "prints level, message and newline",
+          "pattern": "%(-?\\d*)level[\\s\\S]*%(m|msg|message)[\\s\\S]*%n"
+        }
+      ],
+      "model": "<pattern>%d{HH:mm:ss.SSS} %-5level [%X{requestId}] %msg%n</pattern>",
+      "explanation": "%X{key} reads one MDC entry; %X alone prints the whole map. For JSON logs use an encoder such as logstash-logback-encoder, which writes MDC entries as fields. Any ordering of the elements is fine."
+    },
+    {
+      "id": "mdc-thread-pool",
+      "concept": "Correlation id",
+      "type": "assertion",
+      "difficulty": 3,
+      "prompt": "Read the assertion A and the reason R, then choose the correct relationship between them.",
+      "assertion": "Log lines written from tasks submitted to an ExecutorService lose the request id unless you copy the MDC into the task.",
+      "reason": "SLF4J MDC is backed by a ThreadLocal, so each pool thread has its own, initially empty, context.",
+      "correct": [
+        "a"
+      ],
+      "whys": {
+        "a": "Correct: The task runs on another thread whose MDC is empty, so the id must be copied across.",
+        "b": "Not this one: Both are true but R is not the reason A holds does not describe this pair; R is actually the reason or is false.",
+        "c": "Not this one: A is true while R is false does not describe this pair; check the truth of R again.",
+        "d": "Not this one: A is false while R is true does not describe this pair; check the truth of A again."
+      },
+      "explanation": "Capture MDC.getCopyOfContextMap() before submitting and restore it inside the task (or use a TaskDecorator or the OpenTelemetry context wrappers)."
+    },
+    {
+      "id": "boot-trace-id",
+      "concept": "Distributed tracing",
+      "type": "single",
+      "difficulty": 2,
+      "prompt": "A Spring Boot 3 service has Micrometer Tracing on the classpath. Where does the traceId shown in its log lines come from?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Logback generates a random id for every line and prints it as the trace id.",
+          "why": "Logback never generates trace ids on its own."
+        },
+        {
+          "id": "b",
+          "text": "The servlet container writes the id into the log file itself after each response.",
+          "why": "Containers do not know about trace context."
+        },
+        {
+          "id": "c",
+          "text": "Actuator copies the id from the JVM process identifier into each log line.",
+          "why": "A process id has no relation to a request trace."
+        },
+        {
+          "id": "d",
+          "text": "Micrometer Tracing puts traceId and spanId into the MDC for the current span.",
+          "why": "Correct: the log pattern then prints those MDC keys."
+        }
+      ],
+      "correct": [
+        "d"
+      ],
+      "explanation": "Spring Boot 3 configures the default log pattern to include the correlation id when tracing is active. Propagation across services uses the W3C traceparent header."
+    },
+    {
+      "id": "micrometer-counter-timer",
+      "concept": "Micrometer",
+      "type": "code",
+      "difficulty": 2,
+      "prompt": "Given a MeterRegistry named registry, write Java that increments a counter named orders.created with the tag status=ok and records the duration of handle() with a timer named orders.latency.",
+      "language": "java",
+      "checks": [
+        {
+          "label": "counter with the status tag",
+          "pattern": "registry\\.counter\\(\\s*\"orders\\.created\"\\s*,\\s*\"status\"\\s*,\\s*\"ok\"\\s*\\)"
+        },
+        {
+          "label": "increments it",
+          "pattern": "\\.increment\\(\\s*\\)"
+        },
+        {
+          "label": "uses a timer named orders.latency",
+          "pattern": "timer[\\s\\S]*\"orders\\.latency\""
+        },
+        {
+          "label": "records handle()",
+          "pattern": "\\.record\\("
+        }
+      ],
+      "model": "registry.counter(\"orders.created\", \"status\", \"ok\").increment();\nregistry.timer(\"orders.latency\").record(() -> handle());",
+      "explanation": "Timer.builder(\"orders.latency\").publishPercentileHistogram().register(registry) is the builder form when you need histogram buckets. Tags must come from a small closed set, as every tag combination is a separate time series."
+    },
+    {
+      "id": "micrometer-meters",
+      "concept": "Micrometer",
+      "type": "matrix",
+      "difficulty": 1,
+      "prompt": "Match each Micrometer meter with what it records.",
+      "left": [
+        {
+          "id": "l1",
+          "text": "Counter"
+        },
+        {
+          "id": "l2",
+          "text": "Gauge"
+        },
+        {
+          "id": "l3",
+          "text": "Timer"
+        },
+        {
+          "id": "l4",
+          "text": "DistributionSummary"
+        }
+      ],
+      "right": [
+        {
+          "id": "r1",
+          "text": "A count that only increases, such as completed orders"
+        },
+        {
+          "id": "r2",
+          "text": "A current value that can go up and down, such as queue size"
+        },
+        {
+          "id": "r3",
+          "text": "Durations and counts of short events such as request handling"
+        },
+        {
+          "id": "r4",
+          "text": "The distribution of non-time values such as payload size"
+        },
+        {
+          "id": "r5",
+          "text": "A free-text event with a timestamp"
+        }
+      ],
+      "pairs": {
+        "l1": "r1",
+        "l2": "r2",
+        "l3": "r3",
+        "l4": "r4"
+      },
+      "explanation": "Micrometer is the facade; the Prometheus registry turns these meters into counters, gauges and histograms in the Prometheus text format."
+    },
+    {
+      "id": "gauge-weak-ref",
+      "concept": "Micrometer",
+      "type": "assertion",
+      "difficulty": 3,
+      "prompt": "Read the assertion A and the reason R, then choose the correct relationship between them.",
+      "assertion": "A Micrometer Gauge built from a local object keeps reporting the last value even after that object has been garbage collected.",
+      "reason": "Gauges hold only a weak reference to the object they observe.",
+      "correct": [
+        "d"
+      ],
+      "whys": {
+        "a": "Not this one: Both A and R are true and R explains A does not describe this pair; R does not explain A.",
+        "b": "Not this one: Both are true but R is not the reason A holds does not describe this pair; R is actually the reason or is false.",
+        "c": "Not this one: A is true while R is false does not describe this pair; check the truth of R again.",
+        "d": "Correct: A is false: once the object is collected the gauge reports NaN. R is true and is the cause."
+      },
+      "explanation": "Keep a strong reference to the observed object (a field or a Spring bean), or use a gauge on a collection you own."
+    },
+    {
+      "id": "actuator",
+      "concept": "Metrics in Spring",
+      "type": "single",
+      "difficulty": 1,
+      "prompt": "You use Spring Boot and want Prometheus to scrape JVM and HTTP metrics. What is the standard setup?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Add the Prometheus registry and expose /actuator/prometheus.",
+          "why": "Correct: the micrometer-registry-prometheus dependency adds the endpoint."
+        },
+        {
+          "id": "b",
+          "text": "Write your own servlet that prints counters by hand in text format.",
+          "why": "Hand-rolled exposition duplicates what the registry already does."
+        },
+        {
+          "id": "c",
+          "text": "Ship JFR recordings to Prometheus every minute through a cron job.",
+          "why": "Prometheus scrapes metrics over HTTP; it does not ingest recordings."
+        },
+        {
+          "id": "d",
+          "text": "Enable DEBUG logging and parse the log files for numbers.",
+          "why": "Log parsing is fragile and expensive compared with real metrics."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Also remember management.endpoints.web.exposure.include=prometheus so that the endpoint is exposed."
+    },
+    {
+      "id": "actuator-yaml",
+      "concept": "Metrics in Spring",
+      "type": "code",
+      "difficulty": 2,
+      "prompt": "Write the application.yml fragment that exposes the health and prometheus Actuator endpoints over HTTP.",
+      "language": "yaml",
+      "starter": "management:\n",
+      "checks": [
+        {
+          "label": "exposure setting",
+          "pattern": "endpoints:[\\s\\S]*web:[\\s\\S]*exposure:[\\s\\S]*include:"
+        },
+        {
+          "label": "includes health",
+          "pattern": "health"
+        },
+        {
+          "label": "includes prometheus",
+          "pattern": "prometheus"
+        }
+      ],
+      "model": "management:\n  endpoints:\n    web:\n      exposure:\n        include: health,prometheus",
+      "explanation": "By default only health is exposed over HTTP. Protect the actuator port or paths, for example with management.server.port on a private interface, because metrics reveal internals."
+    },
+    {
+      "id": "histogram-yaml",
+      "concept": "Micrometer",
+      "type": "code",
+      "difficulty": 3,
+      "prompt": "Write the application.yml fragment that makes Spring Boot publish histogram buckets for the http.server.requests timer so that percentiles can be computed on the Prometheus side.",
+      "language": "yaml",
+      "starter": "management:\n",
+      "checks": [
+        {
+          "label": "percentiles-histogram setting",
+          "pattern": "percentiles-histogram"
+        },
+        {
+          "label": "targets http.server.requests",
+          "pattern": "http\\.server\\.requests"
+        },
+        {
+          "label": "enabled",
+          "pattern": ":\\s*true"
+        }
+      ],
+      "model": "management:\n  metrics:\n    distribution:\n      percentiles-histogram:\n        http.server.requests: true",
+      "explanation": "The same switch exists as the property management.metrics.distribution.percentiles-histogram.http.server.requests=true. Histogram buckets can be aggregated across instances; client-side percentiles cannot."
+    },
+    {
+      "id": "histogram-bucket-count",
+      "concept": "Micrometer",
+      "type": "integer",
+      "difficulty": 3,
+      "prompt": "A Timer publishes a Prometheus histogram with three service-level-objective boundaries (100 ms, 500 ms and 1 s). Counting the mandatory +Inf bucket, how many _bucket series does that timer expose per tag combination?",
+      "answer": 4,
+      "unit": "series",
+      "explanation": "Three boundaries give three le buckets, and the cumulative +Inf bucket adds a fourth. More boundaries mean more series for every tag combination, so keep the list short."
+    },
+    {
+      "id": "prom-text-format",
+      "concept": "Metrics in Spring",
+      "type": "assertion",
+      "difficulty": 1,
+      "prompt": "Read the assertion A and the reason R, then choose the correct relationship between them.",
+      "assertion": "The /actuator/prometheus endpoint returns metrics in the Prometheus text exposition format.",
+      "reason": "Micrometer can publish to many monitoring systems through different registry implementations.",
+      "correct": [
+        "b"
+      ],
+      "whys": {
+        "a": "Not this one: Both A and R are true and R explains A does not describe this pair; R does not explain A.",
+        "b": "Correct: Both are true, but multiple registries are not why this endpoint uses the Prometheus format; that comes from the Prometheus registry on the classpath.",
+        "c": "Not this one: A is true while R is false does not describe this pair; check the truth of R again.",
+        "d": "Not this one: A is false while R is true does not describe this pair; check the truth of A again."
+      },
+      "explanation": "The registry implementation chooses the output format, which is why the same meters can feed Prometheus, Datadog or others."
+    },
+    {
+      "id": "otel-java-agent",
+      "concept": "Distributed tracing",
+      "type": "fill",
+      "difficulty": 1,
+      "prompt": "Complete the OpenTelemetry Java agent sentence.",
+      "text": "Attach the OpenTelemetry Java {1} with the JVM flag {2}:opentelemetry-javaagent.jar to instrument common libraries without code changes, and name the service with the {3} environment variable.",
+      "blanks": {
+        "1": "agent",
+        "2": "-javaagent",
+        "3": "OTEL_SERVICE_NAME"
+      },
+      "bank": [
+        "agent",
+        "-javaagent",
+        "OTEL_SERVICE_NAME",
+        "-agentlib",
+        "sidecar",
+        "OTEL_TRACES_SAMPLER"
+      ],
+      "explanation": "The agent uses bytecode instrumentation at class load, so it can trace HTTP servers, JDBC and clients with no changes to the code. Manual spans are still available through the OpenTelemetry API."
+    },
+    {
+      "id": "jfr-overhead",
+      "concept": "Profiling",
+      "type": "assertion",
+      "difficulty": 3,
+      "prompt": "Read the assertion A and the reason R, then choose the correct relationship between them.",
+      "assertion": "Java Flight Recorder is suitable for continuous recording in production.",
+      "reason": "JFR rewrites every method with bytecode instrumentation that adds an enter and exit probe.",
+      "correct": [
+        "c"
+      ],
+      "whys": {
+        "a": "Not this one: Both A and R are true and R explains A does not describe this pair; R does not explain A.",
+        "b": "Not this one: Both are true but R is not the reason A holds does not describe this pair; R is actually the reason or is false.",
+        "c": "Correct: A is true. R is false: JFR samples and uses low-overhead built-in events instead of instrumenting every method.",
+        "d": "Not this one: A is false while R is true does not describe this pair; check the truth of A again."
+      },
+      "explanation": "The default configuration (default.jfc) targets roughly 1% overhead or less, which is why it can stay on in production; the heavier profile settings cost more."
+    },
+    {
+      "id": "jfr-cmd",
+      "concept": "Profiling",
+      "type": "code",
+      "difficulty": 2,
+      "prompt": "Write the shell command that starts a 60 second Java Flight Recorder recording on the running JVM with pid 4321 and saves it to /tmp/slow.jfr.",
+      "language": "shell",
+      "checks": [
+        {
+          "label": "uses jcmd on the pid",
+          "pattern": "jcmd\\s+4321\\s+jfr\\.start"
+        },
+        {
+          "label": "60 second duration",
+          "pattern": "duration=60s?"
+        },
+        {
+          "label": "writes /tmp/slow.jfr",
+          "pattern": "filename=/tmp/slow\\.jfr"
+        }
+      ],
+      "model": "jcmd 4321 JFR.start duration=60s filename=/tmp/slow.jfr",
+      "explanation": "Open the file in JDK Mission Control or run jfr print --events jdk.ExecutionSample. Starting JFR with -XX:StartFlightRecording at launch is the other route, but this question asks about a running process."
+    },
+    {
+      "id": "thread-dump",
+      "concept": "Thread dumps",
+      "type": "multi",
+      "difficulty": 3,
+      "prompt": "You take three jstack thread dumps ten seconds apart. Which findings point to a connection-pool or lock bottleneck? Select all that apply.",
+      "options": [
+        {
+          "id": "a",
+          "text": "Many http-nio threads parked (WAITING or TIMED_WAITING) in HikariPool.getConnection in every dump.",
+          "why": "Correct: requests queue for a connection from the pool."
+        },
+        {
+          "id": "b",
+          "text": "Many threads BLOCKED waiting for the same monitor held by one thread.",
+          "why": "Correct: a contended lock serialises the requests."
+        },
+        {
+          "id": "c",
+          "text": "One thread RUNNABLE in a socket read in a single dump only.",
+          "why": "One momentary frame in one dump is noise."
+        },
+        {
+          "id": "d",
+          "text": "A thread named Reference Handler WAITING in all dumps.",
+          "why": "That JVM housekeeping thread is always idle and harmless."
+        }
+      ],
+      "correct": [
+        "a",
+        "b"
+      ],
+      "explanation": "Repeat the dump: a pattern that persists across samples is signal; a single frame is noise."
+    },
+    {
+      "id": "java-low-cpu",
+      "concept": "Profiling",
+      "type": "single",
+      "difficulty": 3,
+      "prompt": "A Spring service shows p99 of 5 s while CPU stays at 15%. A CPU flame graph has no hot method. Which next step is most useful?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Increase the heap size to the maximum available on the host machine.",
+          "why": "A bigger heap does not explain waiting threads at low CPU use."
+        },
+        {
+          "id": "b",
+          "text": "Disable the JIT compiler so that stack traces become easier to read.",
+          "why": "Disabling the compiler slows everything and adds no wait information."
+        },
+        {
+          "id": "c",
+          "text": "Rewrite the hottest method in the flame graph with a faster algorithm.",
+          "why": "There is no hot method; the time is spent waiting."
+        },
+        {
+          "id": "d",
+          "text": "Sample wall-clock time and take repeated thread dumps to see where threads wait.",
+          "why": "Correct: waiting threads are invisible to CPU sampling."
+        }
+      ],
+      "correct": [
+        "d"
+      ],
+      "explanation": "async-profiler with -e wall (or -e lock) shows wall-clock and lock waits, and jstack or jcmd Thread.print shows the pool and monitor queues."
+    }
+  ]
+}
