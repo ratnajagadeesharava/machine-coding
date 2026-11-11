@@ -1,0 +1,384 @@
+{
+  "id": "rm-conc-drills",
+  "title": "Concurrency: code drills",
+  "topic": "Interview roadmap",
+  "series": "interview-roadmap",
+  "seriesTitle": "Interview roadmap: topic quizzes",
+  "seriesOrder": 23,
+  "seriesDescription": "Topic-by-topic JEE-style quizzes for the backend and AI-engineering interview roadmap: integer, assertion-reason, matrix match, fill-in-the-blanks, short code writing, plus multi-correct questions. Language core, concurrency, DSA, web frameworks, data access, databases, messaging, resilience, security, testing, system design, LLM and agent engineering.",
+  "description": "Write-the-code drills: producer-consumer (BlockingQueue, wait/notify, queue.Queue, asyncio.Queue), thread-safe LRU cache, token-bucket rate limiter and odd/even printing with two threads.",
+  "source": "Oracle Java docs (BlockingQueue, LinkedHashMap); Java Concurrency in Practice; Python queue, threading, collections and asyncio docs; Baeldung; GeeksforGeeks",
+  "estimatedMinutes": 15,
+  "questions": [
+    {
+      "id": "blocked-producer",
+      "concept": "Producer-consumer",
+      "type": "integer",
+      "difficulty": 1,
+      "prompt": "A producer thread calls put() for the numbers 1..10 on an ArrayBlockingQueue with capacity 3. No consumer is running. How many put() calls complete before the producer blocks?",
+      "answer": 3,
+      "tolerance": 0,
+      "explanation": "put() blocks when the queue is full, so exactly capacity (3) calls return and the fourth waits for a take(). That blocking is the back-pressure that makes bounded queues safe.",
+      "unit": "calls"
+    },
+    {
+      "id": "bq-prod-cons",
+      "concept": "Producer-consumer",
+      "type": "code",
+      "difficulty": 2,
+      "prompt": "Using a BlockingQueue<Integer> named q (already created, capacity 10), write a producer loop that puts 1..100 and then one -1 sentinel, and a consumer loop that takes items until it sees -1.",
+      "language": "java",
+      "checks": [
+        {
+          "label": "producer uses put(",
+          "pattern": "\\.put\\s*\\("
+        },
+        {
+          "label": "consumer uses take(",
+          "pattern": "\\.take\\s*\\("
+        },
+        {
+          "label": "sends and checks the -1 sentinel",
+          "pattern": "-1"
+        }
+      ],
+      "model": "// producer\nfor (int i = 1; i <= 100; i++) q.put(i);\nq.put(-1);\n// consumer\nwhile (true) {\n  int v = q.take();\n  if (v == -1) break;\n  process(v);\n}",
+      "explanation": "put/take block, so no manual locking or sleeping is needed. Both throw InterruptedException. offer/poll with timeouts are valid but need retry logic."
+    },
+    {
+      "id": "wait-notify-buffer",
+      "concept": "Producer-consumer",
+      "type": "code",
+      "difficulty": 3,
+      "prompt": "Write a Java class Buffer holding a Queue<Integer> q (a LinkedList) and a final int cap, with synchronized put(int x) and take() methods using wait() and notifyAll(). put must wait while the queue is full, take while it is empty. Both methods throw InterruptedException.",
+      "language": "java",
+      "checks": [
+        {
+          "label": "methods are synchronized",
+          "pattern": "synchronized"
+        },
+        {
+          "label": "waits in a while loop, not an if",
+          "pattern": "while\\s*\\([^)]*\\)\\s*\\{?\\s*wait\\s*\\("
+        },
+        {
+          "label": "signals with notifyAll or notify",
+          "pattern": "notify(All)?\\s*\\("
+        },
+        {
+          "label": "handles both the full and the empty condition",
+          "pattern": "size\\(\\)\\s*(==|>=)\\s*cap[\\s\\S]*isEmpty\\(\\)|isEmpty\\(\\)[\\s\\S]*size\\(\\)\\s*(==|>=)\\s*cap"
+        }
+      ],
+      "model": "synchronized void put(int x) throws InterruptedException {\n  while (q.size() == cap) wait();\n  q.add(x); notifyAll();\n}\nsynchronized int take() throws InterruptedException {\n  while (q.isEmpty()) wait();\n  int v = q.remove(); notifyAll(); return v;\n}",
+      "explanation": "Verified to run correctly with a producer and consumer thread. notifyAll is safer than notify because producers and consumers share one wait set. Using ReentrantLock with two Conditions (notFull, notEmpty) is the cleaner alternative.",
+      "starter": "class Buffer {\n  private final Queue<Integer> q = new LinkedList<>();\n  private final int cap = 5;\n  \n}"
+    },
+    {
+      "id": "while-not-if",
+      "concept": "wait/notify",
+      "type": "single",
+      "difficulty": 3,
+      "prompt": "In the wait/notify buffer, why must the guard be while (q.isEmpty()) wait(); rather than if (q.isEmpty()) wait();?",
+      "options": [
+        {
+          "id": "a",
+          "text": "A woken thread must re-check the condition, because another consumer may have emptied the queue first or the wake-up was spurious.",
+          "why": "Correct: the condition can be false again by the time the woken thread reacquires the monitor."
+        },
+        {
+          "id": "b",
+          "text": "wait() only compiles inside a loop.",
+          "why": "Nothing in the language requires a loop around wait()."
+        },
+        {
+          "id": "c",
+          "text": "The loop makes the monitor fair for waiting threads.",
+          "why": "Looping has no influence on fairness; it only re-tests the predicate."
+        },
+        {
+          "id": "d",
+          "text": "notify() does not wake a thread unless the guard is a loop.",
+          "why": "notify() wakes a waiter regardless of how the guard is written."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Always wait in a loop on the predicate. The same rule applies to Condition.await() and Python's Condition.wait() (use wait_for(predicate))."
+    },
+    {
+      "id": "poison-pills",
+      "concept": "Producer-consumer",
+      "type": "integer",
+      "difficulty": 2,
+      "prompt": "One producer feeds a shared queue that 4 consumer threads read, and consumers stop when they take a poison pill. How many pills must the producer enqueue after the last real item so that every consumer terminates?",
+      "answer": 4,
+      "tolerance": 0,
+      "explanation": "A consumer that takes a pill exits and never takes another, so each consumer needs its own pill: 4. (Re-queueing one pill is the alternative.)",
+      "unit": "pills"
+    },
+    {
+      "id": "py-queue-prod-cons",
+      "concept": "Producer-consumer",
+      "type": "code",
+      "difficulty": 2,
+      "prompt": "Using queue.Queue(maxsize=10) named q, write a Python producer function that puts the numbers 0..99 followed by None, and a consumer function that gets items until None, calling q.task_done() for every item it took.",
+      "language": "python",
+      "checks": [
+        {
+          "label": "producer puts items",
+          "pattern": "q\\.put\\s*\\("
+        },
+        {
+          "label": "consumer gets items",
+          "pattern": "q\\.get\\s*\\("
+        },
+        {
+          "label": "stops at the None sentinel",
+          "pattern": "None"
+        },
+        {
+          "label": "acknowledges with task_done",
+          "pattern": "task_done\\s*\\("
+        }
+      ],
+      "model": "def producer():\n    for i in range(100):\n        q.put(i)\n    q.put(None)\n\ndef consumer():\n    while True:\n        item = q.get()\n        try:\n            if item is None:\n                break\n            print(item)\n        finally:\n            q.task_done()",
+      "explanation": "queue.Queue is thread-safe with its own locks; put blocks when full. q.join() then waits until task_done has been called for every item. Run each function in a threading.Thread.",
+      "starter": "import queue\nq = queue.Queue(maxsize=10)\n"
+    },
+    {
+      "id": "asyncio-prod-cons",
+      "concept": "Producer-consumer",
+      "type": "code",
+      "difficulty": 3,
+      "prompt": "With asyncio.Queue(maxsize=10) named q, write async def producer() that awaits putting 0..99, and async def consumer() that loops forever awaiting q.get() and calling q.task_done(). Then write main() code that runs both, waits for the queue to drain with q.join() and cancels the consumer.",
+      "language": "python",
+      "checks": [
+        {
+          "label": "producer awaits q.put",
+          "pattern": "await\\s+q\\.put\\s*\\("
+        },
+        {
+          "label": "consumer awaits q.get and calls task_done",
+          "pattern": "await\\s+q\\.get\\s*\\([\\s\\S]*task_done\\s*\\("
+        },
+        {
+          "label": "uses q.join()",
+          "pattern": "q\\.join\\s*\\("
+        },
+        {
+          "label": "cancels the consumer task",
+          "pattern": "cancel\\s*\\("
+        }
+      ],
+      "model": "async def producer():\n    for i in range(100): await q.put(i)\n\nasync def consumer():\n    while True:\n        item = await q.get(); print(item); q.task_done()\n\nasync def main():\n    c = asyncio.create_task(consumer())\n    await producer()\n    await q.join()\n    c.cancel()",
+      "explanation": "Forgetting the await on put/get is the usual mistake: you get a never-awaited coroutine. The queue is not thread-safe; use it from one event loop.",
+      "starter": "q = asyncio.Queue(maxsize=10)\n"
+    },
+    {
+      "id": "lru-linkedhashmap",
+      "concept": "LRU cache",
+      "type": "fill",
+      "difficulty": 2,
+      "prompt": "Complete the Java LRU recipe.",
+      "text": "Create a LinkedHashMap with accessOrder set to {1}, override {2} to return size() > capacity, and make it thread-safe by synchronizing every method or wrapping it with Collections.{3}.",
+      "blanks": {
+        "1": "true",
+        "2": "removeEldestEntry",
+        "3": "synchronizedMap"
+      },
+      "bank": [
+        "true",
+        "false",
+        "removeEldestEntry",
+        "removeLast",
+        "synchronizedMap",
+        "unmodifiableMap"
+      ],
+      "explanation": "With access order, get() moves the entry to the tail, so the head is the least recently used. removeLast does not exist on LinkedHashMap's hooks. ConcurrentHashMap alone cannot give you LRU ordering."
+    },
+    {
+      "id": "lru-get-lock",
+      "concept": "LRU cache",
+      "type": "assertion",
+      "difficulty": 3,
+      "prompt": "Read the assertion (A) and the reason (R), then choose the correct option.",
+      "assertion": "In a LinkedHashMap with accessOrder=true, even get() needs the same lock as put().",
+      "reason": "In access-order mode get() relinks the entry to the end of the list, which is a structural modification.",
+      "correct": [
+        "a"
+      ],
+      "whys": {
+        "a": "Correct: get() mutates the linked list, so reads cannot run in parallel; a ReadWriteLock read lock would be wrong.",
+        "b": "R is the direct cause of A, so b understates the relationship.",
+        "c": "R is true, so c is wrong.",
+        "d": "A is true, so d is wrong."
+      },
+      "explanation": "This is why a ReadWriteLock does not help an LRU cache: every hit is a write to recency order."
+    },
+    {
+      "id": "java-lru",
+      "concept": "LRU cache",
+      "type": "code",
+      "difficulty": 3,
+      "prompt": "Write a Java class LruCache<K,V> with a constructor LruCache(int cap), synchronized V get(K k) and synchronized void put(K k, V v). Back it with a LinkedHashMap in access order that evicts the eldest entry when size exceeds cap.",
+      "language": "java",
+      "checks": [
+        {
+          "label": "uses an access-ordered LinkedHashMap",
+          "pattern": "LinkedHashMap[^;]*,\\s*true\\s*\\)"
+        },
+        {
+          "label": "overrides removeEldestEntry with a size check",
+          "pattern": "removeEldestEntry[\\s\\S]*size\\(\\)\\s*>"
+        },
+        {
+          "label": "get and put are synchronized (or locked)",
+          "pattern": "synchronized[\\s\\S]*get[\\s\\S]*synchronized[\\s\\S]*put|lock\\.lock"
+        }
+      ],
+      "model": "class LruCache<K, V> {\n  private final int cap;\n  private final LinkedHashMap<K, V> m;\n  LruCache(int cap) {\n    this.cap = cap;\n    m = new LinkedHashMap<>(16, 0.75f, true) {\n      protected boolean removeEldestEntry(Map.Entry<K, V> e) { return size() > LruCache.this.cap; }\n    };\n  }\n  synchronized V get(K k) { return m.get(k); }\n  synchronized void put(K k, V v) { m.put(k, v); }\n}",
+      "explanation": "Verified: after put a, put b, get a, put c with capacity 2 the cache holds {a, c}. Subclassing LinkedHashMap and wrapping in Collections.synchronizedMap is another accepted design.",
+      "starter": "class LruCache<K, V> {\n  \n}"
+    },
+    {
+      "id": "py-lru-lock",
+      "concept": "LRU cache",
+      "type": "code",
+      "difficulty": 2,
+      "prompt": "Write a Python class LRU with __init__(self, cap), get(key) returning None on a miss, and put(key, value), using an OrderedDict and a threading.Lock. A hit and a put both mark the key most recent, and the oldest key is evicted when size exceeds cap.",
+      "language": "python",
+      "checks": [
+        {
+          "label": "uses OrderedDict",
+          "pattern": "OrderedDict\\s*\\("
+        },
+        {
+          "label": "guards with a Lock",
+          "pattern": "Lock\\s*\\("
+        },
+        {
+          "label": "marks recency with move_to_end",
+          "pattern": "move_to_end\\s*\\("
+        },
+        {
+          "label": "evicts with popitem(last=False)",
+          "pattern": "popitem\\s*\\(\\s*last\\s*=\\s*False\\s*\\)"
+        }
+      ],
+      "model": "class LRU:\n    def __init__(self, cap):\n        self.cap, self.d, self.lock = cap, OrderedDict(), threading.Lock()\n    def get(self, key):\n        with self.lock:\n            if key not in self.d: return None\n            self.d.move_to_end(key); return self.d[key]\n    def put(self, key, value):\n        with self.lock:\n            self.d[key] = value; self.d.move_to_end(key)\n            if len(self.d) > self.cap: self.d.popitem(last=False)",
+      "explanation": "Verified: the order after put a, put b, get a, put c is [a, c]. popitem(last=False) pops the oldest. functools.lru_cache is thread-safe for its own bookkeeping but cannot be inspected like this.",
+      "starter": "import threading\nfrom collections import OrderedDict\n\nclass LRU:\n    "
+    },
+    {
+      "id": "token-bucket-burst",
+      "concept": "Rate limiter",
+      "type": "assertion",
+      "difficulty": 2,
+      "prompt": "Read the assertion (A) and the reason (R), then choose the correct option.",
+      "assertion": "A token bucket with capacity 10 allows a burst of up to 10 requests at once, then roughly the refill rate.",
+      "reason": "A fixed-window counter resets to zero at every window boundary.",
+      "correct": [
+        "b"
+      ],
+      "whys": {
+        "a": "R describes a different algorithm, so it does not explain the token bucket's burst behaviour.",
+        "b": "Correct: both true, but R is about fixed windows and does not explain why a bucket allows bursts (stored tokens do).",
+        "c": "R is true, so c is wrong.",
+        "d": "A is true, so d is wrong."
+      },
+      "explanation": "Token bucket: burst up to capacity, long-run rate = refill rate. Fixed windows can allow double the rate across a boundary; sliding windows or buckets avoid that."
+    },
+    {
+      "id": "py-token-bucket",
+      "concept": "Rate limiter",
+      "type": "code",
+      "difficulty": 3,
+      "prompt": "Write a thread-safe Python class TokenBucket(cap, rate) where tokens start full and refill at rate tokens per second up to cap. allow() refills lazily from the elapsed time (time.monotonic), consumes one token if at least one is available and returns True, otherwise False.",
+      "language": "python",
+      "checks": [
+        {
+          "label": "uses a Lock",
+          "pattern": "Lock\\s*\\("
+        },
+        {
+          "label": "uses time.monotonic (or time.time/perf_counter)",
+          "pattern": "monotonic|time\\.time|perf_counter"
+        },
+        {
+          "label": "caps the refill with min()",
+          "pattern": "min\\s*\\("
+        },
+        {
+          "label": "consumes a token",
+          "pattern": "tokens\\s*-=\\s*1|tokens\\s*=\\s*self\\.tokens\\s*-\\s*1|-=\\s*1"
+        }
+      ],
+      "model": "class TokenBucket:\n    def __init__(self, cap, rate):\n        self.cap, self.rate, self.tokens = cap, rate, cap\n        self.last, self.lock = time.monotonic(), threading.Lock()\n    def allow(self):\n        with self.lock:\n            now = time.monotonic()\n            self.tokens = min(self.cap, self.tokens + (now - self.last) * self.rate)\n            self.last = now\n            if self.tokens >= 1:\n                self.tokens -= 1\n                return True\n            return False",
+      "explanation": "Verified: a bucket of 3 answers [True, True, True, False, False] for five instant calls. The lock matters because refill and consume are one read-modify-write. In Java, synchronized or an AtomicLong with CAS works.",
+      "starter": "import threading, time\n\nclass TokenBucket:\n    "
+    },
+    {
+      "id": "py-odd-even-sem",
+      "concept": "Odd-even printing",
+      "type": "code",
+      "difficulty": 2,
+      "prompt": "Two threads print 1..n alternately, odd numbers first. Semaphores sem_odd = Semaphore(1) and sem_even = Semaphore(0) already exist. Write odd(n) and even(n) so the output is 1 2 3 ... n in order.",
+      "language": "python",
+      "checks": [
+        {
+          "label": "odd() waits on sem_odd",
+          "pattern": "sem_odd\\.acquire\\s*\\("
+        },
+        {
+          "label": "odd() wakes sem_even",
+          "pattern": "sem_even\\.release\\s*\\("
+        },
+        {
+          "label": "even() waits on sem_even",
+          "pattern": "sem_even\\.acquire\\s*\\("
+        },
+        {
+          "label": "even() wakes sem_odd",
+          "pattern": "sem_odd\\.release\\s*\\("
+        },
+        {
+          "label": "steps by 2",
+          "pattern": "range\\s*\\([^)]*,\\s*2\\s*\\)"
+        }
+      ],
+      "model": "def odd(n):\n    for i in range(1, n + 1, 2):\n        sem_odd.acquire(); print(i); sem_even.release()\n\ndef even(n):\n    for i in range(2, n + 1, 2):\n        sem_even.acquire(); print(i); sem_odd.release()",
+      "explanation": "Verified for n = 9 with two threads. Each semaphore acts as a baton. A threading.Condition with a shared turn variable and wait_for is the alternative."
+    },
+    {
+      "id": "java-odd-even",
+      "concept": "Odd-even printing",
+      "type": "code",
+      "difficulty": 3,
+      "prompt": "Write a Java class OddEven with a field int next = 1, a final int max, and one synchronized method print(boolean odd) throws InterruptedException that two threads call (one with true, one with false) so numbers 1..max are printed alternately using wait() and notifyAll().",
+      "language": "java",
+      "checks": [
+        {
+          "label": "method is synchronized",
+          "pattern": "synchronized"
+        },
+        {
+          "label": "loops while next <= max",
+          "pattern": "while\\s*\\(\\s*next\\s*<=\\s*max"
+        },
+        {
+          "label": "prints and advances next",
+          "pattern": "println\\s*\\(\\s*next\\s*\\+\\+|print\\s*\\(\\s*next\\s*\\+\\+|next\\s*\\+\\+"
+        },
+        {
+          "label": "uses wait() and notifyAll()",
+          "pattern": "wait\\s*\\(\\s*\\)[\\s\\S]*notifyAll|notifyAll[\\s\\S]*wait\\s*\\(\\s*\\)"
+        }
+      ],
+      "model": "synchronized void print(boolean odd) throws InterruptedException {\n  while (next <= max) {\n    if ((next % 2 == 1) == odd) { System.out.println(next++); notifyAll(); }\n    else wait();\n  }\n}",
+      "explanation": "Verified for max = 9. The final notifyAll lets the other thread see next > max and exit. Two Semaphores (as in the Python version) are a simpler valid answer.",
+      "starter": "class OddEven {\n  private int next = 1;\n  private final int max;\n  OddEven(int max) { this.max = max; }\n  \n}"
+    }
+  ]
+}
