@@ -1,14 +1,15 @@
 {
-  "id": "rm-dsa2-mock-habits",
-  "title": "DSA: timed mock habits (25-minute problem)",
+  "id": "rm-dsa2-mock-habits-core",
+  "title": "Timed mock habits: the 25-minute problem",
   "topic": "Interview roadmap",
-  "series": "interview-roadmap",
-  "seriesTitle": "Interview roadmap: topic quizzes",
-  "seriesDescription": "Topic-by-topic JEE-style quizzes for the backend and AI-engineering interview roadmap: integer, assertion-reason, matrix match, fill-in-the-blanks, short code writing, plus multi-correct questions. Language core, concurrency, DSA, web frameworks, data access, databases, messaging, resilience, security, testing, system design, LLM and agent engineering.",
+  "language": "neutral",
+  "series": "interview-roadmap-core",
+  "seriesTitle": "Interview roadmap: language-independent topics",
+  "seriesDescription": "Language-independent interview topics (concepts, SQL, design, AI engineering): no Java and no Python code or library names.",
   "seriesOrder": 45,
-  "description": "How to run one problem in 25 minutes: clarify, brute force first, narrate, choose edge cases, write your own tests, and use constraints to pick complexity.",
+  "description": "How to run one problem in 25 minutes: clarify, brute force first, narrate, choose edge cases, write your own tests, and use constraints to pick complexity (language-independent).",
   "source": "Cracking the Coding Interview (McDowell); Tech Interview Handbook; LeetCode constraints-to-complexity discussions; interview experience write-ups",
-  "estimatedMinutes": 13,
+  "estimatedMinutes": 14,
   "questions": [
     {
       "id": "time-budget",
@@ -16,9 +17,9 @@
       "type": "integer",
       "difficulty": 1,
       "prompt": "In a 25-minute round you spend 4 minutes clarifying, 6 minutes agreeing an approach out loud and 10 minutes coding. How many minutes are left for testing and fixing?",
+      "explanation": "25 - 4 - 6 - 10 = 5. A rough split is 3-5 clarify, 5-7 approach, 10-12 code and 5 test. If coding is running long, say so and prioritise a working core over polish.",
       "answer": 5,
-      "unit": "minutes",
-      "explanation": "25 - 4 - 6 - 10 = 5. A rough split is 3-5 clarify, 5-7 approach, 10-12 code and 5 test. If coding is running long, say so and prioritise a working core over polish."
+      "unit": "minutes"
     },
     {
       "id": "ops-estimate",
@@ -26,9 +27,20 @@
       "type": "integer",
       "difficulty": 2,
       "prompt": "The input has n = 10^5 elements and your idea is O(n^2). Assuming about 10^8 simple operations per second, roughly how many seconds will it take?",
+      "explanation": "n^2 = 10^10 operations, divided by 10^8 per second is 100 seconds, far too slow. An n of 10^5 signals you need O(n log n) or O(n). The 10^8 rate is a rule of thumb, not a guarantee.",
       "answer": 100,
-      "unit": "seconds",
-      "explanation": "n^2 = 10^10 operations, divided by 10^8 per second is 100 seconds, far too slow. An n of 10^5 signals you need O(n log n) or O(n). The 10^8 rate is a rule of thumb, not a guarantee."
+      "unit": "seconds"
+    },
+    {
+      "id": "nlogn-estimate",
+      "concept": "Complexity intuition",
+      "type": "integer",
+      "difficulty": 2,
+      "prompt": "Using log base 2, roughly how many millions of basic steps does an O(n log n) algorithm take for n = 10^6 (treat the constant as 1)?",
+      "explanation": "log2(10^6) is about 19.9, so n log n is about 2 * 10^7 steps, a fraction of a second at 10^8 simple operations per second. This is why n up to 10^6 usually allows O(n log n) but not O(n^2).",
+      "answer": 20,
+      "tolerance": 1,
+      "unit": "million steps"
     },
     {
       "id": "stuck-move",
@@ -36,32 +48,32 @@
       "type": "single",
       "difficulty": 3,
       "prompt": "Five minutes in, you have no optimal idea. What is the best next move?",
+      "explanation": "A correct brute force beats a half-built optimal solution. Then improve it: ask what work repeats, and what data structure removes it.",
       "options": [
         {
           "id": "a",
           "text": "State the brute force and its complexity aloud, then find the bottleneck.",
-          "why": "Correct: it shows progress, gives the interviewer something to steer, and exposes the repeated work."
+          "why": "Correct: a working baseline earns credit and shows where to improve."
         },
         {
           "id": "b",
           "text": "Stay silent until the right idea arrives, so you never say anything wrong at all.",
-          "why": "Silence gives the interviewer no signal and no chance to hint."
+          "why": "Silence gives the interviewer nothing to assess or to hint on."
         },
         {
           "id": "c",
           "text": "Ask the interviewer to name the algorithm, then implement it from memory.",
-          "why": "Asking for the answer outright ends the evaluation; ask a targeted question instead."
+          "why": "This outsources the thinking that the interview is meant to measure."
         },
         {
           "id": "d",
           "text": "Switch to a different, easier problem without telling anyone.",
-          "why": "Abandoning the question silently looks like giving up."
+          "why": "Changing the problem silently ends the interview rather than progressing it."
         }
       ],
       "correct": [
         "a"
-      ],
-      "explanation": "A correct brute force beats a half-built optimal solution. Then improve it: ask what work repeats, and what data structure removes it."
+      ]
     },
     {
       "id": "clarify-first",
@@ -69,32 +81,32 @@
       "type": "single",
       "difficulty": 1,
       "prompt": "The prompt says: \"find the duplicate numbers in an array\". You start typing code immediately. What did you skip?",
+      "explanation": "Questions to ask: size and range, duplicates allowed, sorted, memory limits, return all or one, invalid input.",
       "options": [
         {
           "id": "a",
-          "text": "Clarifying inputs, constraints and an example, such as size, ranges and return type.",
-          "why": "Correct: the answer changes with the constraints, e.g. O(1) space is possible for values in 1..n."
+          "text": "Writing the unit tests first, because every interview requires strict test-driven development.",
+          "why": "No interview requires strict test-first development; tests come after a design."
         },
         {
           "id": "b",
-          "text": "Writing the unit tests first, because every interview requires strict test-driven development.",
-          "why": "Tests are good, but they are not the usual first step in a timed round."
+          "text": "Clarifying inputs, constraints and an example, such as size, ranges and return type.",
+          "why": "Correct: the statement is ambiguous until constraints and expected output are agreed."
         },
         {
           "id": "c",
-          "text": "Choosing between Java and Python for the rest of the interview before reading further.",
-          "why": "Choose a language early, but that is not what the missing step is here."
+          "text": "Choosing a programming language for the rest of the interview before reading further.",
+          "why": "Language choice is usually settled up front and is not the missing step here."
         },
         {
           "id": "d",
           "text": "Declaring the final Big-O before you have a design, as the first sentence.",
-          "why": "Complexity comes after you have an approach to analyse."
+          "why": "Complexity follows a design; announcing it first is premature."
         }
       ],
       "correct": [
-        "a"
-      ],
-      "explanation": "Questions to ask: size and range, duplicates allowed, sorted, memory limits, return all or one, invalid input."
+        "b"
+      ]
     },
     {
       "id": "constraint-hint",
@@ -102,32 +114,32 @@
       "type": "single",
       "difficulty": 2,
       "prompt": "A problem states n <= 2 * 10^5. What does that most strongly suggest about the target time complexity?",
+      "explanation": "n <= 20 suggests bitmask or backtracking, n <= 10^3 to 10^4 allows O(n^2), n up to 10^5-10^6 needs O(n log n) or O(n).",
       "options": [
         {
           "id": "a",
           "text": "O(n log n) or O(n); nested loops over n would be too slow.",
-          "why": "Correct: 2*10^5 squared is 4*10^10 operations."
+          "why": "Correct: 2 * 10^5 squared is 4 * 10^10 steps, far beyond a time limit."
         },
         {
           "id": "b",
           "text": "O(n^2) is fine, because computers perform billions of operations per second now.",
-          "why": "Even at 10^8 to 10^9 simple operations per second, 4*10^10 takes far too long."
+          "why": "Billions of operations per second still makes 4 * 10^10 steps take tens of seconds."
         },
         {
           "id": "c",
           "text": "O(2^n) with pruning, because the input is bounded by a constant of about 2*10^5.",
-          "why": "Exponential only works for n up to roughly 20-25."
+          "why": "2^n is astronomically large; 2 * 10^5 is a bound on n, not a constant that tames it."
         },
         {
           "id": "d",
           "text": "O(n!) with memoisation, as the bound is generous enough to permit it.",
-          "why": "Factorial only works for n up to roughly 10-11, even with pruning."
+          "why": "n! grows even faster than 2^n and is feasible only for n around 10."
         }
       ],
       "correct": [
         "a"
-      ],
-      "explanation": "n <= 20 suggests bitmask or backtracking, n <= 10^3 to 10^4 allows O(n^2), n up to 10^5-10^6 needs O(n log n) or O(n)."
+      ]
     },
     {
       "id": "edge-cases",
@@ -135,36 +147,37 @@
       "type": "multi",
       "difficulty": 2,
       "prompt": "You wrote merge(intervals) for merging overlapping closed intervals. Select all that apply: which inputs belong in your own test cases?",
+      "explanation": "Good habit: empty/minimum, single element, boundaries, duplicates, already sorted vs reversed, and one tiny case you can verify by hand.",
       "options": [
         {
           "id": "a",
           "text": "An empty list.",
-          "why": "Correct: the minimum input often crashes code that reads intervals[0]."
+          "why": "Correct: the minimum input often crashes first-element access."
         },
         {
           "id": "b",
           "text": "Touching intervals such as [1,2] and [2,3].",
-          "why": "Correct: the boundary decides between < and <=."
+          "why": "Correct: it checks the boundary of your overlap condition."
         },
         {
           "id": "c",
           "text": "A nested interval such as [1,10] and [2,3].",
-          "why": "Correct: it checks that the end uses max, not the latest end."
+          "why": "Correct: it catches code that shrinks the end instead of taking the max."
         },
         {
           "id": "d",
           "text": "Unsorted input such as [[8,10],[1,3],[2,6]].",
-          "why": "Correct: it proves the sort is really there."
+          "why": "Correct: it verifies that the sort step exists and works."
         },
         {
           "id": "e",
           "text": "Only the sample from the problem statement.",
-          "why": "The sample is written to pass; it rarely probes boundaries."
+          "why": "The sample usually passes even with boundary bugs."
         },
         {
           "id": "f",
           "text": "One random array of 10^6 values and nothing else.",
-          "why": "A single large input cannot be checked by hand and misses targeted boundaries."
+          "why": "A large random case rarely hits boundaries and cannot be checked by hand."
         }
       ],
       "correct": [
@@ -172,8 +185,7 @@
         "b",
         "c",
         "d"
-      ],
-      "explanation": "Good habit: empty/minimum, single element, boundaries, duplicates, already sorted vs reversed, and one tiny case you can verify by hand."
+      ]
     },
     {
       "id": "mock-flow",
@@ -181,6 +193,7 @@
       "type": "fill",
       "difficulty": 1,
       "prompt": "Complete the order of a well-run round.",
+      "explanation": "Stating brute force first banks partial credit and creates a baseline. Tracing a small input through your code finds off-by-one errors before the interviewer does.",
       "text": "Clarify the inputs, state a {1} solution, give its {2}, then optimise; after coding, {3} an example by hand.",
       "blanks": {
         "1": "brute-force",
@@ -188,14 +201,13 @@
         "3": "trace"
       },
       "bank": [
-        "brute-force",
-        "complexity",
         "trace",
         "memorise",
         "rewrite",
-        "optimal"
-      ],
-      "explanation": "Stating brute force first banks partial credit and creates a baseline. Tracing a small input through your code finds off-by-one errors before the interviewer does."
+        "optimal",
+        "brute-force",
+        "complexity"
+      ]
     },
     {
       "id": "habit-match",
@@ -203,6 +215,7 @@
       "type": "matrix",
       "difficulty": 2,
       "prompt": "Match each situation in a timed round with the best habit.",
+      "explanation": "Interviewers grade the process: fixing a visible bug calmly is positive, restarting silently is not. Narrating the trade-off between two approaches is often worth more than coding the second one.",
       "left": [
         {
           "id": "a",
@@ -224,32 +237,31 @@
       "right": [
         {
           "id": "p",
-          "text": "Ask a clarifying question before coding on"
-        },
-        {
-          "id": "q",
-          "text": "Say it aloud, name the cause and make a minimal fix"
-        },
-        {
-          "id": "r",
           "text": "Compare the trade-offs and agree one with the interviewer"
         },
         {
-          "id": "s",
+          "id": "q",
           "text": "State what remains, the complexity, and how you would finish"
         },
         {
-          "id": "t",
+          "id": "r",
           "text": "Delete everything and restart in silence"
+        },
+        {
+          "id": "s",
+          "text": "Ask a clarifying question before coding on"
+        },
+        {
+          "id": "t",
+          "text": "Say it aloud, name the cause and make a minimal fix"
         }
       ],
       "pairs": {
-        "a": "p",
-        "b": "q",
-        "c": "r",
-        "d": "s"
-      },
-      "explanation": "Interviewers grade the process: fixing a visible bug calmly is positive, restarting silently is not. Narrating the trade-off between two approaches is often worth more than coding the second one."
+        "a": "s",
+        "b": "t",
+        "c": "p",
+        "d": "q"
+      }
     },
     {
       "id": "narrate",
@@ -257,6 +269,7 @@
       "type": "assertion",
       "difficulty": 1,
       "prompt": "Think-aloud during a coding round.",
+      "explanation": "Short, structured narration works best: what you are doing, why, and what the complexity will be. Do not narrate every keystroke.",
       "assertion": "You should narrate your reasoning while you solve the problem.",
       "reason": "Interviewers can only give hints or award credit for thinking they can hear.",
       "correct": [
@@ -267,8 +280,26 @@
         "b": "R explains A directly.",
         "c": "A is true.",
         "d": "R is true."
-      },
-      "explanation": "Short, structured narration works best: what you are doing, why, and what the complexity will be. Do not narrate every keystroke."
+      }
+    },
+    {
+      "id": "clarify-ask",
+      "concept": "Communication",
+      "type": "assertion",
+      "difficulty": 2,
+      "prompt": "At the start of a timed problem.",
+      "explanation": "Ask about size, ranges, duplicates, ordering and output format.",
+      "assertion": "Asking clarifying questions before you code is expected by interviewers.",
+      "reason": "Constraints such as n <= 10^5 suggest which complexity is intended.",
+      "correct": [
+        "b"
+      ],
+      "whys": {
+        "a": "The constraint hint is a separate benefit; it is not why questions are expected.",
+        "b": "Right: both are true, but expectations about questions come from under-specified prompts, so R is related yet not the explanation.",
+        "c": "R is true.",
+        "d": "A is true."
+      }
     },
     {
       "id": "own-tests",
@@ -276,6 +307,7 @@
       "type": "assertion",
       "difficulty": 2,
       "prompt": "About testing your own solution.",
+      "explanation": "Optimal complexity with a wrong boundary condition is still a wrong answer. Always trace at least one normal and one edge case.",
       "assertion": "Writing your own test cases before the interviewer asks is a strong positive signal.",
       "reason": "Interviewers stop caring about correctness once the algorithm has the optimal complexity.",
       "correct": [
@@ -286,8 +318,7 @@
         "b": "R is false.",
         "c": "Right: A is true, but R is false because a wrong optimal-looking solution still fails.",
         "d": "A is true."
-      },
-      "explanation": "Optimal complexity with a wrong boundary condition is still a wrong answer. Always trace at least one normal and one edge case."
+      }
     },
     {
       "id": "skip-testing",
@@ -295,6 +326,7 @@
       "type": "assertion",
       "difficulty": 3,
       "prompt": "Finishing the code with minutes to spare.",
+      "explanation": "Use the leftover time for one normal case, one boundary case, and a note on complexity.",
       "assertion": "If the solution has the optimal complexity, testing it is unnecessary.",
       "reason": "Off-by-one errors and empty-input crashes are common, and a short dry run usually catches them.",
       "correct": [
@@ -305,17 +337,17 @@
         "b": "A is false.",
         "c": "A is false.",
         "d": "Right: A is false, and R is true, which is exactly why a dry run is needed."
-      },
-      "explanation": "Use the leftover time for one normal case, one boundary case, and a note on complexity."
+      }
     },
     {
       "id": "own-asserts",
       "concept": "Test cases",
       "type": "code",
       "difficulty": 2,
-      "prompt": "In Python, write three assert statements for merge(intervals) (which returns a list of [start, end] lists): an empty input, touching intervals [1,2] and [2,3], and a nested pair [1,10] and [2,3].",
-      "language": "python",
-      "starter": "# merge(intervals) is already written\n",
+      "prompt": "Write three assert statements (pseudocode is fine) for merge(intervals), which returns a list of [start, end] pairs: an empty input, touching intervals [1,2] and [2,3], and a nested pair [1,10] and [2,3].",
+      "explanation": "Pick expected values you can verify by hand. Input order matters in the touching case: [2,3] first would test the sort as well. Plain asserts are fine in an interview; a test framework is not expected.",
+      "language": "pseudocode",
+      "starter": "// merge(intervals) is already written\n",
       "checks": [
         {
           "label": "has three asserts",
@@ -334,8 +366,7 @@
           "pattern": "\\[\\s*1\\s*,\\s*10\\s*\\]\\s*,\\s*\\[\\s*2\\s*,\\s*3\\s*\\]"
         }
       ],
-      "model": "assert merge([]) == []\nassert merge([[1, 2], [2, 3]]) == [[1, 3]]\nassert merge([[1, 10], [2, 3]]) == [[1, 10]]",
-      "explanation": "Pick expected values you can verify by hand. Input order matters in the touching case: [2,3] first would test the sort as well. Frameworks like pytest.mark.parametrize group these, but plain asserts are fine in an interview."
+      "model": "assert merge([]) == []\nassert merge([[1, 2], [2, 3]]) == [[1, 3]]\nassert merge([[1, 10], [2, 3]]) == [[1, 10]]"
     },
     {
       "id": "silent-restart",
@@ -343,22 +374,45 @@
       "type": "truefalse",
       "difficulty": 2,
       "prompt": "True or false: if you realise halfway that your approach is wrong, the best move is to silently restart so you do not look unsure.",
+      "explanation": "Recovering visibly is a positive signal; hiding the pivot wastes time and removes any chance of a hint.",
       "options": [
         {
           "id": "a",
           "text": "True",
-          "why": "Silence hides your thinking."
+          "why": "Hiding the pivot wastes time and removes any chance of a hint."
         },
         {
           "id": "b",
           "text": "False",
-          "why": "Correct: say \"this approach breaks when ... so I will switch to ...\"; changing course openly shows good judgement."
+          "why": "Correct: saying why the approach fails and switching openly is a positive signal."
         }
       ],
       "correct": [
         "b"
+      ]
+    },
+    {
+      "id": "brute-first",
+      "concept": "Round structure",
+      "type": "truefalse",
+      "difficulty": 1,
+      "prompt": "True or false: stating a correct brute-force solution and its complexity before optimising is a good habit, even when you already suspect a faster idea.",
+      "explanation": "Brute force first also makes the bottleneck visible, which leads to the optimisation.",
+      "options": [
+        {
+          "id": "a",
+          "text": "True",
+          "why": "Correct: it shows you can solve the problem, and gives a baseline to improve."
+        },
+        {
+          "id": "b",
+          "text": "False",
+          "why": "A correct baseline earns partial credit, so the statement is true."
+        }
       ],
-      "explanation": "Recovering visibly is a positive signal; hiding the pivot wastes time and removes any chance of a hint."
+      "correct": [
+        "a"
+      ]
     },
     {
       "id": "follow-up-scale",
@@ -366,43 +420,32 @@
       "type": "single",
       "difficulty": 3,
       "prompt": "You finished an O(n) solution that keeps all input in memory. The interviewer asks what changes if the input is an endless stream. What is the best response?",
+      "explanation": "Common follow-ups: input does not fit in memory, input arrives online, many queries on the same data, concurrent callers. Each is solved by changing one assumption of the base design, not by discarding it.",
       "options": [
         {
           "id": "a",
           "text": "Name which assumption breaks, propose a bounded-memory variant, and state its trade-off.",
-          "why": "Right: it shows you can adapt, for example a size-k heap or a sketch, and that you know what accuracy or latency you give up."
+          "why": "Correct: it adapts the design by changing the broken assumption."
         },
         {
           "id": "b",
           "text": "Say the same code works, because O(n) time is already optimal.",
-          "why": "Time optimality says nothing about memory; holding an unbounded stream will fail."
+          "why": "Optimal time says nothing about memory; a stream never ends."
         },
         {
           "id": "c",
           "text": "Refuse to answer until the interviewer gives exact hardware numbers.",
-          "why": "Asking one clarifying question is fine, but refusing to propose anything gets no credit."
+          "why": "Estimates are expected; blocking on exact numbers ends the discussion."
         },
         {
           "id": "d",
           "text": "Restart from scratch with a different algorithm without comment.",
-          "why": "Restarting silently hides your reasoning and ignores the working base solution you can extend."
+          "why": "Discarding the design silently loses the work and the reasoning."
         }
       ],
       "correct": [
         "a"
-      ],
-      "explanation": "Common follow-ups: input does not fit in memory, input arrives online, many queries on the same data, concurrent callers. Each is solved by changing one assumption of the base design, not by discarding it."
-    },
-    {
-      "id": "nlogn-estimate",
-      "concept": "Complexity intuition",
-      "type": "integer",
-      "difficulty": 2,
-      "prompt": "Using log base 2, roughly how many millions of basic steps does an O(n log n) algorithm take for n = 10^6 (treat the constant as 1)?",
-      "answer": 20,
-      "tolerance": 1,
-      "unit": "million steps",
-      "explanation": "log2(10^6) is about 19.9, so n log n is about 2 * 10^7 steps, a fraction of a second at 10^8 simple operations per second. This is why n up to 10^6 usually allows O(n log n) but not O(n^2)."
+      ]
     }
   ]
 }

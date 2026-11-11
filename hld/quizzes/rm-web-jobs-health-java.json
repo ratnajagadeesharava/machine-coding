@@ -335,8 +335,8 @@
         },
         {
           "id": "e",
-          "text": "Leave Actuator's env and configprops values masked, which is the default since Boot 3.",
-          "why": "Since Boot 3 the show-values property defaults to NEVER, so values are hidden unless you opt in."
+          "text": "Leave Actuator's env and configprops values masked, which is the default in current Boot versions.",
+          "why": "The show-values property defaults to NEVER, so values are hidden unless you opt in."
         },
         {
           "id": "f",

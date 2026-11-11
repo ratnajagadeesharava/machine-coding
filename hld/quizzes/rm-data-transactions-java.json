@@ -367,7 +367,7 @@
         {
           "id": "b",
           "text": "False",
-          "why": "Spring's default rollback rule covers RuntimeException and Error."
+          "why": "Wrong: Spring's default rollback rule does cover RuntimeException and Error."
         }
       ],
       "correct": [

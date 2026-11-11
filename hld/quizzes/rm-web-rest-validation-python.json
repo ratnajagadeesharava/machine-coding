@@ -462,7 +462,7 @@
         {
           "id": "b",
           "text": "False",
-          "why": "The conversion is on by default because underscores in header names are problematic for many proxies."
+          "why": "Wrong: the conversion is on by default, because underscores in header names are problematic for many proxies."
         }
       ],
       "correct": [

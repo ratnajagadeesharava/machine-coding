@@ -208,7 +208,7 @@
         {
           "id": "b",
           "text": "False",
-          "why": "The defaults give a fixed ten-connection pool."
+          "why": "Wrong: the defaults do give a fixed ten-connection pool."
         }
       ],
       "correct": [

@@ -379,7 +379,7 @@
         {
           "id": "b",
           "text": "False",
-          "why": "The persistence context tracks managed entities and compares them with their loaded snapshot."
+          "why": "Wrong: the persistence context compares managed entities with their loaded snapshot and writes the difference."
         }
       ],
       "correct": [

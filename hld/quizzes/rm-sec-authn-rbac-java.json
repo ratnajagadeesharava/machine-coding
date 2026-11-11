@@ -445,12 +445,12 @@
       "options": [
         {
           "id": "a",
-          "text": "It records the algorithm, so old hashes keep verifying while new ones use a newer algorithm.",
+          "text": "It records the algorithm, so old hashes verify while new ones use a newer one.",
           "why": "Correct: the prefix selects the matching encoder on login."
         },
         {
           "id": "b",
-          "text": "It makes the hash unreadable to anyone who is without the application source code.",
+          "text": "It makes the stored hash unreadable to anyone who does not have the application source code.",
           "why": "The prefix is plain text and adds no secrecy."
         },
         {

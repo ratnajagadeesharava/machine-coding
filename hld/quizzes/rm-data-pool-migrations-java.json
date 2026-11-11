@@ -304,11 +304,11 @@
         },
         {
           "id": "r6",
-          "text": "alembic_version"
+          "text": "schema_migrations"
         },
         {
           "id": "r7",
-          "text": "schema_migrations"
+          "text": "migration_log"
         }
       ],
       "pairs": {
@@ -400,7 +400,7 @@
         {
           "id": "b",
           "text": "False",
-          "why": "Hikari has no overflow concept; waiting threads time out instead of growing the pool."
+          "why": "Wrong: Hikari has no overflow concept; waiting threads time out instead of growing the pool."
         }
       ],
       "correct": [

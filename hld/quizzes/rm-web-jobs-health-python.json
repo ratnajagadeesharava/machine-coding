@@ -312,7 +312,7 @@
         {
           "id": "b",
           "text": "False",
-          "why": "Late acknowledgement trades possible duplicates for fewer lost tasks."
+          "why": "Wrong: late acknowledgement keeps the message on the broker until the task finishes, so a crash causes redelivery."
         }
       ],
       "correct": [

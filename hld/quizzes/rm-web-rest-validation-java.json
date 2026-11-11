@@ -387,7 +387,7 @@
         {
           "id": "b",
           "text": "False",
-          "why": "The conversion failure is reported as a client error, not a missing route or a server error."
+          "why": "Wrong: the failure is neither a missing route (404) nor a server error (500); the client sent a bad value."
         }
       ],
       "correct": [

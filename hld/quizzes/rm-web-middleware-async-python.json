@@ -388,7 +388,7 @@
         {
           "id": "b",
           "text": "False",
-          "why": "The loop is single-threaded; a blocking call inside a coroutine stops all coroutines on it."
+          "why": "Wrong: the loop is single-threaded, so a blocking call inside a coroutine stops all coroutines on it."
         }
       ],
       "correct": [

@@ -359,7 +359,7 @@
         {
           "id": "b",
           "text": "False",
-          "why": "The identity map caches loaded objects by primary key for the life of the Session."
+          "why": "Wrong: the identity map caches loaded objects by primary key for the life of the Session, so no SQL is needed."
         }
       ],
       "correct": [
