@@ -1,0 +1,361 @@
+{
+  "id": "rm-rag-retrieval-eval-core",
+  "title": "RAG: retrieval metrics and Text-to-SQL vs RAG",
+  "topic": "Language-independent",
+  "language": "neutral",
+  "series": "core-rag",
+  "seriesTitle": "Core: RAG",
+  "seriesDescription": "Chunking, embeddings, hybrid search, reranking and retrieval metrics. JEE-Advanced style: integer, assertion-reason, matrix match, fill-in-the-blanks, short code and multi-correct questions.",
+  "seriesOrder": 2,
+  "description": "Compute recall@k, precision@k, MRR and nDCG from small ranked lists, diagnose retrieval failures, and decide between RAG and Text-to-SQL.",
+  "source": "Manning, Raghavan, Schutze: Introduction to Information Retrieval; Ragas docs; Liu et al., Lost in the Middle (2023); LangChain SQL docs; Pinecone learning centre",
+  "estimatedMinutes": 14,
+  "questions": [
+    {
+      "id": "mrr-calc",
+      "concept": "MRR",
+      "type": "integer",
+      "difficulty": 2,
+      "prompt": "Query 1 returns [d4, d1, d7, d2, d9] and its relevant set is {d1, d2, d5}. Query 2 returns [d3, d8, d5, d6, d1] and its relevant set is {d3}. Query 3 returns [d2, d4, d6, d8, d0] and its relevant set is {d9}. Compute the Mean Reciprocal Rank over the three queries, multiplied by 100.",
+      "answer": 50,
+      "explanation": "Reciprocal ranks: Query 1 first hit d1 at rank 2 gives 0.5; Query 2 hit at rank 1 gives 1; Query 3 never retrieves d9, so 0. MRR = (0.5 + 1 + 0)/3 = 0.5, i.e. 50."
+    },
+    {
+      "id": "precision-calc",
+      "concept": "Precision and recall",
+      "type": "integer",
+      "difficulty": 1,
+      "prompt": "Query 1 returns [d4, d1, d7, d2, d9] and its relevant set is {d1, d2, d5}. What is precision@5 for this query, as a percentage?",
+      "answer": 40,
+      "unit": "%",
+      "explanation": "Two of the five returned documents (d1 and d2) are relevant, so precision@5 = 2/5 = 40%. Recall@5 for the same query would be 2/3, because d5 was never retrieved."
+    },
+    {
+      "id": "ndcg-calc",
+      "concept": "nDCG",
+      "type": "integer",
+      "difficulty": 3,
+      "prompt": "A ranking has binary relevance [1, 0, 1] at positions 1, 2, 3 and the ideal ranking is [1, 1, 0]. With DCG = sum rel_i / log2(i + 1), compute nDCG@3 multiplied by 100, rounded to the nearest integer.",
+      "answer": 92,
+      "tolerance": 1,
+      "explanation": "DCG = 1/log2(2) + 0 + 1/log2(4) = 1 + 0.5 = 1.5. IDCG = 1 + 1/log2(3) = 1.631. nDCG = 1.5/1.631 = 0.92. The log discount punishes pushing a relevant document down."
+    },
+    {
+      "id": "mrr-limit",
+      "concept": "Retrieval metrics",
+      "type": "assertion",
+      "difficulty": 2,
+      "prompt": "Read the assertion (A) and the reason (R), then choose the correct option.",
+      "assertion": "MRR alone is a weak metric for questions whose answer needs several documents.",
+      "reason": "MRR uses only the rank of the first relevant result and ignores all others.",
+      "correct": [
+        "a"
+      ],
+      "whys": {
+        "a": "Correct: after the first hit, MRR is blind to whether the other needed documents were retrieved, so recall@k or nDCG is needed too.",
+        "b": "R is not just a side fact; it is exactly why MRR is weak here.",
+        "c": "R is true by definition of MRR.",
+        "d": "A is true for multi-hop or multi-document questions."
+      },
+      "explanation": "Pair MRR (how early is the first good hit) with recall@k (did we get everything we needed)."
+    },
+    {
+      "id": "recall-monotone",
+      "concept": "Precision and recall",
+      "type": "assertion",
+      "difficulty": 2,
+      "prompt": "Read the assertion (A) and the reason (R), then choose the correct option.",
+      "assertion": "Increasing k can lower recall@k for a fixed query.",
+      "reason": "Recall@k is the number of relevant documents in the top k divided by the total number of relevant documents.",
+      "correct": [
+        "d"
+      ],
+      "whys": {
+        "a": "A is false, so it cannot be explained by anything.",
+        "b": "A is false, so the pair is not both-true.",
+        "c": "R is true, so this option is wrong.",
+        "d": "Correct: A is false because a larger k can only add documents, so the numerator cannot shrink while the denominator is fixed. R is a true definition."
+      },
+      "explanation": "Recall@k is non-decreasing in k. Precision@k is the one that usually falls as k grows."
+    },
+    {
+      "id": "low-recall-fix",
+      "concept": "Fixing retrieval",
+      "type": "multi",
+      "difficulty": 2,
+      "prompt": "Recall@20 of your retriever is only 55% on the golden set. Which changes are plausible fixes? Select all that apply.",
+      "options": [
+        {
+          "id": "a",
+          "text": "Add BM25 hybrid search to catch exact terms and identifiers.",
+          "why": "Right: lexical matching recovers items that embeddings blur."
+        },
+        {
+          "id": "b",
+          "text": "Use structure-aware chunking so answers are not split across chunk boundaries.",
+          "why": "Right: bad boundaries are a frequent cause of missed answers."
+        },
+        {
+          "id": "c",
+          "text": "Switch to a more capable generation model.",
+          "why": "The generator cannot use documents that were never retrieved."
+        },
+        {
+          "id": "d",
+          "text": "Lower the generation temperature to 0.",
+          "why": "Temperature affects generation, not what the retriever returns."
+        }
+      ],
+      "correct": [
+        "a",
+        "b"
+      ],
+      "explanation": "Low recall points at the retriever or index: chunking, embeddings, hybrid, query rewriting, metadata filters. Fix generation only after recall is healthy."
+    },
+    {
+      "id": "failure-fix",
+      "concept": "Fixing retrieval",
+      "type": "matrix",
+      "difficulty": 2,
+      "prompt": "Match each retrieval symptom to the most targeted fix.",
+      "left": [
+        {
+          "id": "a",
+          "text": "Queries with exact SKUs and error codes miss"
+        },
+        {
+          "id": "b",
+          "text": "The right chunk is found but sits at rank 15"
+        },
+        {
+          "id": "c",
+          "text": "A follow-up like \"what about its price?\" retrieves junk"
+        },
+        {
+          "id": "d",
+          "text": "Users ask for \"invoices from Acme in 2024\" and results mix all customers"
+        },
+        {
+          "id": "e",
+          "text": "Pricing tables are cut in half across chunks"
+        }
+      ],
+      "right": [
+        {
+          "id": "p",
+          "text": "Hybrid search with BM25"
+        },
+        {
+          "id": "q",
+          "text": "Cross-encoder reranker"
+        },
+        {
+          "id": "r",
+          "text": "Rewrite the query using chat history"
+        },
+        {
+          "id": "s",
+          "text": "Metadata filters on customer and date"
+        },
+        {
+          "id": "t",
+          "text": "Table-aware or structure-aware chunking"
+        },
+        {
+          "id": "u",
+          "text": "Raise the LLM temperature"
+        }
+      ],
+      "pairs": {
+        "a": "p",
+        "b": "q",
+        "c": "r",
+        "d": "s",
+        "e": "t"
+      },
+      "explanation": "Name the symptom, then pick the stage to fix: query, index, retrieval, ranking, or generation."
+    },
+    {
+      "id": "high-recall",
+      "concept": "Fixing retrieval",
+      "type": "truefalse",
+      "difficulty": 2,
+      "prompt": "True or false: if recall@k is 100%, the RAG system is guaranteed to answer correctly.",
+      "options": [
+        {
+          "id": "a",
+          "text": "True",
+          "why": "Retrieval recall only says the evidence was retrieved."
+        },
+        {
+          "id": "b",
+          "text": "False",
+          "why": "Correct: the generator can still ignore, misread or bury the evidence (for example mid-context), so answer faithfulness must be measured separately."
+        }
+      ],
+      "correct": [
+        "b"
+      ],
+      "explanation": "Evaluate retrieval and generation separately: recall@k and nDCG for retrieval, faithfulness and answer relevance for generation."
+    },
+    {
+      "id": "metric-fill",
+      "concept": "Retrieval metrics",
+      "type": "fill",
+      "difficulty": 1,
+      "prompt": "Complete the metric definitions.",
+      "text": "{1} is the fraction of the relevant documents found in the top k, {2} averages the reciprocal rank of the first relevant hit, and {3} rewards relevant documents placed higher using a logarithmic discount.",
+      "blanks": {
+        "1": "Recall@k",
+        "2": "MRR",
+        "3": "nDCG"
+      },
+      "bank": [
+        "Recall@k",
+        "MRR",
+        "nDCG",
+        "BLEU",
+        "Perplexity"
+      ],
+      "explanation": "Use them together: recall@k for coverage, MRR for first-hit speed, nDCG for graded ordering quality."
+    },
+    {
+      "id": "sql-or-rag",
+      "concept": "Text-to-SQL vs RAG",
+      "type": "single",
+      "difficulty": 2,
+      "prompt": "A user asks: \"What was the total value of orders placed by EU customers last quarter?\" Which design fits best?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Text-to-SQL against a read-only replica with a validated, SELECT-only query.",
+          "why": "Right: exact aggregation over structured rows is what SQL is for."
+        },
+        {
+          "id": "b",
+          "text": "Embed every order row and let the LLM add up the top 20 hits itself, for any date range.",
+          "why": "A sample of rows cannot give a complete exact sum; the LLM would also be doing arithmetic."
+        },
+        {
+          "id": "c",
+          "text": "Fine-tune the LLM on last year's order table so it remembers every order total already.",
+          "why": "Fine-tuning is stale on arrival and cannot be exact or auditable."
+        },
+        {
+          "id": "d",
+          "text": "Retrieve the policy PDFs about order handling, then ask the LLM to estimate the revenue.",
+          "why": "Policy documents do not contain the transactional numbers."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Rule of thumb: structured, exact, aggregate or join questions go to SQL; unstructured, fuzzy, document-grounded questions go to RAG; many assistants route between both."
+    },
+    {
+      "id": "rag-better",
+      "concept": "Text-to-SQL vs RAG",
+      "type": "multi",
+      "difficulty": 2,
+      "prompt": "Which requests are better served by RAG over documents than by Text-to-SQL? Select all that apply.",
+      "options": [
+        {
+          "id": "a",
+          "text": "What does our refund policy say about digital goods?",
+          "why": "Right: the answer lives in prose and must be quoted from a source."
+        },
+        {
+          "id": "b",
+          "text": "Summarise the termination clauses in this contract.",
+          "why": "Right: unstructured text that needs grounded summarisation."
+        },
+        {
+          "id": "c",
+          "text": "Sum revenue by region for the last 90 days.",
+          "why": "Aggregation over rows is a SQL job, not a document-retrieval one."
+        },
+        {
+          "id": "d",
+          "text": "List customers who ordered both product A and product B.",
+          "why": "A join or intersection over structured data fits SQL."
+        }
+      ],
+      "correct": [
+        "a",
+        "b"
+      ],
+      "explanation": "A senior answer mentions routing, access control per source, and showing citations or the executed SQL for auditability."
+    },
+    {
+      "id": "schema-prompt",
+      "concept": "Text-to-SQL vs RAG",
+      "type": "assertion",
+      "difficulty": 3,
+      "prompt": "Read the assertion (A) and the reason (R), then choose the correct option.",
+      "assertion": "Including the table schema with column descriptions in a Text-to-SQL prompt improves query accuracy.",
+      "reason": "Every extra table in the prompt consumes tokens, so very large schemas raise cost and latency.",
+      "correct": [
+        "b"
+      ],
+      "whys": {
+        "a": "R is true but it is a cost fact; it does not explain why accuracy improves.",
+        "b": "Correct: schema context reduces hallucinated tables and columns (A true). The token-cost point (R) is also true but does not explain A; it is why big schemas need schema retrieval or pruning.",
+        "c": "R is true, so A-true-R-false is wrong.",
+        "d": "A is true; grounding on the real schema is standard practice."
+      },
+      "explanation": "For large warehouses retrieve only the relevant tables and example queries, then generate SQL."
+    },
+    {
+      "id": "router",
+      "concept": "Text-to-SQL vs RAG",
+      "type": "assertion",
+      "difficulty": 3,
+      "prompt": "Read the assertion (A) and the reason (R), then choose the correct option.",
+      "assertion": "A hybrid assistant can route each question to either a SQL tool or a document retriever.",
+      "reason": "A router that classifies questions is always correct, so routing needs no evaluation.",
+      "correct": [
+        "c"
+      ],
+      "whys": {
+        "a": "R is false, so it cannot explain A.",
+        "b": "R is false, not just unrelated.",
+        "c": "Correct: A is true (agentic routing is common), but routing errors are real and should be covered by the golden dataset.",
+        "d": "A is true, so this option is wrong."
+      },
+      "explanation": "Add routing accuracy as its own metric, and include ambiguous questions in the eval set."
+    },
+    {
+      "id": "mrr-sql",
+      "concept": "MRR",
+      "type": "code",
+      "difficulty": 3,
+      "prompt": "Tables results(query_id, doc_id, rank) hold the retrieved lists and gold(query_id, doc_id) holds the relevant documents. Write one SQL query that returns the Mean Reciprocal Rank over all queries in gold, counting a query with no relevant hit as 0.",
+      "language": "sql",
+      "checks": [
+        {
+          "label": "finds the best rank per query",
+          "pattern": "min\\s*\\(\\s*(\\w+\\.)?rank\\s*\\)"
+        },
+        {
+          "label": "takes 1 / rank",
+          "pattern": "1(\\.0)?\\s*/"
+        },
+        {
+          "label": "averages over all queries",
+          "pattern": "avg\\s*\\("
+        },
+        {
+          "label": "keeps queries with no hit",
+          "pattern": "left\\s+join|coalesce|ifnull"
+        },
+        {
+          "label": "matches results to gold documents",
+          "pattern": "gold"
+        }
+      ],
+      "model": "SELECT AVG(COALESCE(1.0 / h.first_rank, 0)) AS mrr\nFROM (SELECT DISTINCT query_id FROM gold) q\nLEFT JOIN (SELECT r.query_id, MIN(r.rank) AS first_rank\n           FROM results r\n           JOIN gold g ON g.query_id = r.query_id AND g.doc_id = r.doc_id\n           GROUP BY r.query_id) h ON h.query_id = q.query_id;",
+      "explanation": "The inner query finds the rank of the first relevant hit per query; the LEFT JOIN plus COALESCE turns a miss into 0 so it still counts in the average (otherwise MRR is inflated). Other shapes pass, for example a window function. On the three-query example from the integer question this returns 0.5.",
+      "starter": "SELECT "
+    }
+  ]
+}

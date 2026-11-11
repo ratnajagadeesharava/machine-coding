@@ -1,0 +1,412 @@
+{
+  "id": "rm-obs-slo-profiling-core",
+  "title": "SLOs, error budgets, burn rates and profiling",
+  "topic": "Language-independent",
+  "series": "core-observability",
+  "seriesTitle": "Core: observability and SRE",
+  "seriesDescription": "Logs, metrics, traces, SLOs, error budgets, burn rates and profiling. JEE-Advanced style: integer, assertion-reason, matrix match, fill-in-the-blanks, short code and multi-correct questions.",
+  "seriesOrder": 2,
+  "language": "neutral",
+  "description": "SLIs, SLOs and error budget arithmetic, multiwindow burn-rate alerts, Little's law capacity maths, and how to narrow down a slow endpoint with traces, flame graphs and off-CPU analysis.",
+  "source": "Google SRE Book (Service Level Objectives) and SRE Workbook (Alerting on SLOs); Brendan Gregg on flame graphs and off-CPU analysis; Prometheus documentation (querying); Little's law",
+  "estimatedMinutes": 18,
+  "questions": [
+    {
+      "id": "budget-seconds",
+      "concept": "Error budget",
+      "type": "integer",
+      "difficulty": 1,
+      "prompt": "An availability SLO of 99.9% is measured over a rolling 30-day window. How many seconds of full outage does the error budget allow?",
+      "answer": 2592,
+      "unit": "seconds",
+      "explanation": "30 days = 2,592,000 seconds. The budget is 0.1% of that, 2,592 seconds, which is 43.2 minutes."
+    },
+    {
+      "id": "nines",
+      "concept": "Error budget",
+      "type": "matrix",
+      "difficulty": 1,
+      "prompt": "Match each availability SLO to the downtime it allows over a 30-day window (43,200 minutes).",
+      "left": [
+        {
+          "id": "l1",
+          "text": "99%"
+        },
+        {
+          "id": "l2",
+          "text": "99.9%"
+        },
+        {
+          "id": "l3",
+          "text": "99.95%"
+        },
+        {
+          "id": "l4",
+          "text": "99.99%"
+        }
+      ],
+      "right": [
+        {
+          "id": "r1",
+          "text": "7.2 hours"
+        },
+        {
+          "id": "r2",
+          "text": "43.2 minutes"
+        },
+        {
+          "id": "r3",
+          "text": "21.6 minutes"
+        },
+        {
+          "id": "r4",
+          "text": "4.32 minutes"
+        },
+        {
+          "id": "r5",
+          "text": "2.16 minutes"
+        }
+      ],
+      "pairs": {
+        "l1": "r1",
+        "l2": "r2",
+        "l3": "r3",
+        "l4": "r4"
+      },
+      "explanation": "Budget = (1 - SLO) x 43,200 minutes. Each extra nine divides the budget by ten, which is why four nines is a very different engineering commitment from three."
+    },
+    {
+      "id": "burn-rate",
+      "concept": "Burn rate",
+      "type": "integer",
+      "difficulty": 2,
+      "prompt": "Your SLO is 99.9% of requests succeed. In the last hour 0.4% of requests failed. What is the burn rate (budget consumed relative to the sustainable pace)?",
+      "answer": 4,
+      "unit": "x",
+      "explanation": "Allowed error ratio is 0.1%. Observed 0.4% divided by 0.1% is a burn rate of 4: at this pace the 30-day budget is gone in 7.5 days."
+    },
+    {
+      "id": "burn-alert",
+      "concept": "Alerting",
+      "type": "single",
+      "difficulty": 3,
+      "prompt": "The Google SRE workbook example pages when the burn rate is at least 14.4 over 1 hour (and over 5 minutes). Why 14.4?",
+      "options": [
+        {
+          "id": "a",
+          "text": "It is the 99.9% SLO value rewritten as a multiplier for the alert.",
+          "why": "The SLO target does not appear in the multiplier; it comes from budget share and window."
+        },
+        {
+          "id": "b",
+          "text": "At that rate 2% of a 30-day budget is spent in one hour.",
+          "why": "Correct: 14.4 x 1 h / 720 h = 2 percent."
+        },
+        {
+          "id": "c",
+          "text": "It equals 24 hours divided by the 1.67 hour page window.",
+          "why": "That is a coincidence of arithmetic, not the derivation."
+        },
+        {
+          "id": "d",
+          "text": "It is an arbitrary vendor default with no maths behind it.",
+          "why": "The number is derived from the budget share per window."
+        }
+      ],
+      "correct": [
+        "b"
+      ],
+      "explanation": "The short second window (5 minutes) makes the alert reset quickly after the problem is fixed. Pair it with slower, lower-rate tickets (for example burn 1 over 3 days)."
+    },
+    {
+      "id": "burn-6h",
+      "concept": "Burn rate",
+      "type": "integer",
+      "difficulty": 2,
+      "prompt": "The SLO is 99.9 percent over 30 days (720 hours). The error ratio runs at a burn rate of 6 for 6 hours. What percentage of the 30-day error budget has been consumed?",
+      "answer": 5,
+      "unit": "%",
+      "explanation": "Budget consumed = burn rate x window / period = 6 x 6 / 720 = 0.05, i.e. 5 percent. This is the SRE workbook's second paging tier (6x over 6 hours)."
+    },
+    {
+      "id": "alert-tiers",
+      "concept": "Burn rate",
+      "type": "matrix",
+      "difficulty": 2,
+      "prompt": "Match each multiwindow burn-rate alert from the Google SRE workbook example (30-day SLO) with the share of the error budget it represents and the response.",
+      "left": [
+        {
+          "id": "l1",
+          "text": "Burn rate 14.4 over 1 hour"
+        },
+        {
+          "id": "l2",
+          "text": "Burn rate 6 over 6 hours"
+        },
+        {
+          "id": "l3",
+          "text": "Burn rate 1 over 3 days"
+        }
+      ],
+      "right": [
+        {
+          "id": "r1",
+          "text": "2 percent of the budget, page someone"
+        },
+        {
+          "id": "r2",
+          "text": "5 percent of the budget, page someone"
+        },
+        {
+          "id": "r3",
+          "text": "10 percent of the budget, open a ticket"
+        },
+        {
+          "id": "r4",
+          "text": "50 percent of the budget, ignore"
+        }
+      ],
+      "pairs": {
+        "l1": "r1",
+        "l2": "r2",
+        "l3": "r3"
+      },
+      "explanation": "Each row is budget consumed = burn rate x window / 720 h: 14.4 x 1/720 = 2%, 6 x 6/720 = 5%, 1 x 72/720 = 10%. Fast burns page, slow burns file a ticket."
+    },
+    {
+      "id": "promql-error-ratio",
+      "concept": "SLIs and SLOs",
+      "type": "code",
+      "difficulty": 3,
+      "prompt": "Write the PromQL expression for the 1 hour error ratio of an HTTP service: the rate of http_requests_total with a status label matching 5xx, divided by the rate of all http_requests_total, both summed over all series.",
+      "language": "promql",
+      "checks": [
+        {
+          "label": "sums the 5xx request rate",
+          "pattern": "sum\\s*\\(\\s*rate\\s*\\(\\s*http_requests_total\\s*\\{[^}]*status\\s*=~\\s*\"5\\.\\.\"[^}]*\\}\\s*\\[1h\\]"
+        },
+        {
+          "label": "divides by the total rate",
+          "pattern": "/\\s*sum\\s*\\(\\s*rate\\s*\\(\\s*http_requests_total\\s*\\[1h\\]"
+        }
+      ],
+      "model": "sum(rate(http_requests_total{status=~\"5..\"}[1h])) / sum(rate(http_requests_total[1h]))",
+      "explanation": "Divide the burn alert threshold by the allowed error ratio (for example error_ratio > 14.4 * 0.001). Sum the rates first and divide afterwards so that low-traffic series do not dominate. Other label spellings (code, status_code) work equally well."
+    },
+    {
+      "id": "littles-law",
+      "concept": "Capacity from latency",
+      "type": "integer",
+      "difficulty": 2,
+      "prompt": "An endpoint receives 200 requests per second and each request holds one DB connection for 250 ms on average. By Little's law, how many connections are in use on average?",
+      "answer": 50,
+      "unit": "connections",
+      "explanation": "L = lambda x W = 200 x 0.25 = 50. Size the pool with headroom above this, and remember that a slowdown raises W and therefore exhausts the pool."
+    },
+    {
+      "id": "serial-availability",
+      "concept": "Error budget",
+      "type": "integer",
+      "difficulty": 3,
+      "prompt": "A request needs two services in series, each with 99.9 percent availability and failing independently. What is the best-case combined availability in percent, to one decimal place?",
+      "answer": 99.8,
+      "tolerance": 0.05,
+      "unit": "%",
+      "explanation": "0.999 x 0.999 = 0.998001, about 99.8 percent. Dependencies in series multiply, so a service cannot promise a better SLO than the product of its hard dependencies unless it degrades gracefully."
+    },
+    {
+      "id": "symptom-alerts",
+      "concept": "Alerting",
+      "type": "assertion",
+      "difficulty": 2,
+      "prompt": "Read the assertion A and the reason R, then choose the correct relationship between them.",
+      "assertion": "Page on user-visible symptoms such as SLO burn rather than on causes such as high CPU.",
+      "reason": "Users only experience failures and latency, and a CPU spike may be harmless.",
+      "correct": [
+        "a"
+      ],
+      "whys": {
+        "a": "Correct: Symptom alerts map to user pain; a cause metric can fire with no user impact.",
+        "b": "Not this one: Both are true but R is not the reason A holds does not describe this pair; R is actually the reason or is false.",
+        "c": "Not this one: A is true while R is false does not describe this pair; check the truth of R again.",
+        "d": "Not this one: A is false while R is true does not describe this pair; check the truth of A again."
+      },
+      "explanation": "Cause metrics are still useful on dashboards for diagnosis, just not as the main paging signal."
+    },
+    {
+      "id": "budget-ship",
+      "concept": "Error budget",
+      "type": "assertion",
+      "difficulty": 2,
+      "prompt": "Read the assertion A and the reason R, then choose the correct relationship between them.",
+      "assertion": "A team with plenty of unspent error budget can ship riskier changes faster.",
+      "reason": "The error budget equals one minus the SLO target.",
+      "correct": [
+        "b"
+      ],
+      "whys": {
+        "a": "Not this one: Both A and R are true and R explains A does not describe this pair; R does not explain A.",
+        "b": "Correct: Both are true, but the formula alone does not say what to do with unspent budget; the policy of spending it does.",
+        "c": "Not this one: A is true while R is false does not describe this pair; check the truth of R again.",
+        "d": "Not this one: A is false while R is true does not describe this pair; check the truth of A again."
+      },
+      "explanation": "The budget turns reliability into a shared currency between product and operations."
+    },
+    {
+      "id": "hundred-percent",
+      "concept": "Error budget",
+      "type": "assertion",
+      "difficulty": 2,
+      "prompt": "Read the assertion A and the reason R, then choose the correct relationship between them.",
+      "assertion": "A 100% availability SLO is the safest target for a customer-facing API.",
+      "reason": "Every dependency (network, cloud zone, deploys) can fail, so zero downtime cannot be promised.",
+      "correct": [
+        "d"
+      ],
+      "whys": {
+        "a": "Not this one: Both A and R are true and R explains A does not describe this pair; R does not explain A.",
+        "b": "Not this one: Both are true but R is not the reason A holds does not describe this pair; R is actually the reason or is false.",
+        "c": "Not this one: A is true while R is false does not describe this pair; check the truth of R again.",
+        "d": "Correct: A is false: it leaves no budget for deploys and costs far more than users can perceive. R is true."
+      },
+      "explanation": "Pick the target users can actually notice and spend the remaining budget on change."
+    },
+    {
+      "id": "percentile-slo",
+      "concept": "SLIs and SLOs",
+      "type": "assertion",
+      "difficulty": 3,
+      "prompt": "Read the assertion A and the reason R, then choose the correct relationship between them.",
+      "assertion": "A latency SLO written on the 99th percentile describes user experience better than one written on the mean.",
+      "reason": "The arithmetic mean of a latency distribution always equals its median.",
+      "correct": [
+        "c"
+      ],
+      "whys": {
+        "a": "Not this one: Both A and R are true and R explains A does not describe this pair; R does not explain A.",
+        "b": "Not this one: Both are true but R is not the reason A holds does not describe this pair; R is actually the reason or is false.",
+        "c": "Correct: A is true because the mean hides the slow tail. R is false: a skewed distribution has a mean far above its median.",
+        "d": "Not this one: A is false while R is true does not describe this pair; check the truth of A again."
+      },
+      "explanation": "Report latency as the share of requests faster than a threshold (for example 99 percent under 300 ms) so it composes into a good-events ratio."
+    },
+    {
+      "id": "sli-shape",
+      "concept": "SLIs and SLOs",
+      "type": "single",
+      "difficulty": 1,
+      "prompt": "Which of these is a well-formed service level indicator (SLI) for an API?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Average CPU utilisation measured across the whole fleet of servers at once.",
+          "why": "CPU is a cause metric, not what users experience."
+        },
+        {
+          "id": "b",
+          "text": "Good events over valid events, such as fast non-5xx responses.",
+          "why": "Correct: a ratio of good to valid events maps directly to an SLO percentage."
+        },
+        {
+          "id": "c",
+          "text": "The number of pods that are currently running in the production cluster.",
+          "why": "Pod count describes capacity, not service quality."
+        },
+        {
+          "id": "d",
+          "text": "Mean time between production deployments, measured over the last quarter.",
+          "why": "Deployment frequency is a delivery metric, not a service level."
+        }
+      ],
+      "correct": [
+        "b"
+      ],
+      "explanation": "Pick the measurement point (load balancer or client), define 'good' (status and latency threshold) and 'valid' (exclude health checks and caller errors), then set the SLO target on that ratio."
+    },
+    {
+      "id": "flame-graph",
+      "concept": "Profiling",
+      "type": "fill",
+      "difficulty": 1,
+      "prompt": "Complete the flame graph sentences.",
+      "text": "In a flame graph the {1} of a frame shows its share of samples, and stack depth runs along the {2} axis.",
+      "blanks": {
+        "1": "width",
+        "2": "vertical"
+      },
+      "bank": [
+        "width",
+        "vertical",
+        "colour",
+        "horizontal"
+      ],
+      "explanation": "Colours are usually arbitrary; the horizontal order is alphabetical, not time."
+    },
+    {
+      "id": "profiling-order",
+      "concept": "Profiling",
+      "type": "single",
+      "difficulty": 2,
+      "prompt": "GET /reports is slow only in production. What is the best first step?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Look at a trace of a slow request to see which span dominates.",
+          "why": "Correct: a trace narrows the time to a stage before any tool is chosen."
+        },
+        {
+          "id": "b",
+          "text": "Rewrite the whole service logic in a faster language straight away.",
+          "why": "A rewrite without measurement may not touch the real bottleneck."
+        },
+        {
+          "id": "c",
+          "text": "Double the pod count and see whether it helps with the slow requests.",
+          "why": "Adding capacity does not help if the wait is in a lock, a query or a remote call."
+        },
+        {
+          "id": "d",
+          "text": "Turn on DEBUG logging for the entire production cluster at once.",
+          "why": "Mass debug logging adds load and noise without locating the stage."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Measure, narrow to a stage (DB, remote call, CPU, lock wait), then use the matching tool: EXPLAIN for SQL, a profiler for CPU, stack dumps for waiting."
+    },
+    {
+      "id": "low-cpu-slow",
+      "concept": "Profiling",
+      "type": "single",
+      "difficulty": 3,
+      "prompt": "p99 latency is 5 s but CPU sits at 15% and p50 is fine. A CPU profile shows nothing hot. What kind of problem do you suspect?",
+      "options": [
+        {
+          "id": "a",
+          "text": "A tight loop in business code burning cores for most requests.",
+          "why": "A hot loop would raise CPU use and show up in the profile."
+        },
+        {
+          "id": "b",
+          "text": "A JSON payload that is too small for the serializer to handle.",
+          "why": "Payload size cannot be too small to cause a multi-second wait."
+        },
+        {
+          "id": "c",
+          "text": "Time spent waiting off CPU: locks, pool queues, I/O or pauses.",
+          "why": "Correct: waiting does not show in a CPU profile."
+        },
+        {
+          "id": "d",
+          "text": "An overly verbose class name making stack traces hard to read.",
+          "why": "Naming affects readability, not latency."
+        }
+      ],
+      "correct": [
+        "c"
+      ],
+      "explanation": "Off-CPU time is invisible to a CPU profile. Wall-clock sampling and repeated stack dumps expose waiting; a saturated connection-pool queue is a frequent culprit."
+    }
+  ]
+}

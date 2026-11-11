@@ -1,0 +1,454 @@
+{
+  "id": "rm-lang-strings-memory-python",
+  "title": "Language core: strings, immutability and memory (Python)",
+  "topic": "Python",
+  "series": "python-strings-memory",
+  "seriesTitle": "Python: strings, memory and garbage collection",
+  "seriesOrder": 1,
+  "seriesDescription": "str immutability, reference counting, cyclic GC, __slots__, copies. JEE-Advanced style: integer, assertion-reason, matrix match, fill-in-the-blanks, short code and multi-correct questions.",
+  "language": "python",
+  "description": "str and tuple immutability, join vs repeated concatenation, shallow vs deep copy, mutable default arguments, __slots__, reference counting with the cyclic collector, and leak causes in long-running services.",
+  "source": "Python docs: data model, gc, copy, sys.getrefcount, functools.lru_cache, FAQ (mutable defaults); Real Python; Fluent Python (Ramalho); Toptal and GeeksforGeeks Python interview lists",
+  "estimatedMinutes": 17,
+  "questions": [
+    {
+      "id": "tuple-mutation",
+      "concept": "Mutable vs immutable strings",
+      "type": "single",
+      "difficulty": 3,
+      "prompt": "What does this Python print?\nt = (1, [2, 3])\ntry:\n    t[1] += [4]\nexcept TypeError:\n    print(\"err\", t)\nWhat is the output?",
+      "options": [
+        {
+          "id": "a",
+          "text": "err (1, [2, 3])",
+          "why": "The list was extended in place before the failing re-assignment to the tuple slot."
+        },
+        {
+          "id": "b",
+          "text": "err (1, [2, 3, 4])",
+          "why": "Correct: += mutates the inner list, then trying to store it back into the tuple raises TypeError."
+        },
+        {
+          "id": "c",
+          "text": "(1, [2, 3, 4]) with no error line",
+          "why": "Item assignment on a tuple always fails, even if the value is the same object."
+        },
+        {
+          "id": "d",
+          "text": "err (1, [2, 3, 4, 4])",
+          "why": "The list is extended once, not twice."
+        }
+      ],
+      "correct": [
+        "b"
+      ],
+      "explanation": "A tuple is immutable in its references, not in the objects it refers to. This is why a tuple containing a list is not hashable. (Verified by running it.)"
+    },
+    {
+      "id": "join-vs-concat",
+      "concept": "Mutable vs immutable strings",
+      "type": "single",
+      "difficulty": 2,
+      "prompt": "What is the idiomatic way to concatenate a list of 100,000 small strings named parts in Python?",
+      "options": [
+        {
+          "id": "a",
+          "text": "\"\".join(parts) in one pass",
+          "why": "Correct: it computes the total size once and copies each piece once, so it is linear."
+        },
+        {
+          "id": "b",
+          "text": "sum(parts, \"\")",
+          "why": "sum rejects strings on purpose and raises TypeError telling you to use \"\".join."
+        },
+        {
+          "id": "c",
+          "text": "result = \"\"\nfor p in parts: result += p",
+          "why": "Each += may copy the whole string so far; CPython sometimes optimises it, but it is not guaranteed on other implementations."
+        },
+        {
+          "id": "d",
+          "text": "functools.reduce(lambda a, b: a + b, parts)",
+          "why": "Equivalent to the repeated + loop, creating many intermediate strings."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "str is immutable, so building by repeated + is potentially quadratic. Use \"\".join(...), io.StringIO, or a list as the builder. (sum with strings verified to raise TypeError.)"
+    },
+    {
+      "id": "slots-effect",
+      "concept": "Python memory",
+      "type": "single",
+      "difficulty": 2,
+      "prompt": "What happens when this Python code runs?\nclass S:\n    __slots__ = (\"x\", \"y\")\ns = S()\ns.z = 1\nWhat is the outcome?",
+      "options": [
+        {
+          "id": "a",
+          "text": "It works; z is stored in the instance __dict__",
+          "why": "A class with __slots__ has no per-instance __dict__ (unless \"__dict__\" is listed)."
+        },
+        {
+          "id": "b",
+          "text": "AttributeError is raised",
+          "why": "Correct: only the declared slots can be assigned, which also saves memory per instance."
+        },
+        {
+          "id": "c",
+          "text": "It is silently ignored",
+          "why": "Python raises instead of ignoring unknown attribute writes here."
+        },
+        {
+          "id": "d",
+          "text": "TypeError is raised at class definition",
+          "why": "The class defines fine; the error only appears on the illegal assignment."
+        }
+      ],
+      "correct": [
+        "b"
+      ],
+      "explanation": "__slots__ replaces the per-instance dict with fixed storage, cutting memory for millions of small objects. Drawbacks: no dynamic attributes, subclassing and multiple inheritance caveats, no weakrefs unless \"__weakref__\" is a slot. (Verified by running it.)"
+    },
+    {
+      "id": "refcount-cycles",
+      "concept": "Python memory",
+      "type": "assertion",
+      "difficulty": 3,
+      "prompt": "Read the assertion (A) and the reason (R), then choose the option that fits.",
+      "assertion": "In CPython, reference counting alone is enough to free objects that reference each other in a cycle.",
+      "reason": "CPython has a separate cyclic garbage collector for container objects.",
+      "correct": [
+        "d"
+      ],
+      "whys": {
+        "a": "A is false, so it cannot be explained.",
+        "b": "A is false.",
+        "c": "R is true, so c is wrong.",
+        "d": "Correct: a cycle keeps every count above zero, so A is false; that is exactly why the gc module exists (R is true)."
+      },
+      "explanation": "Refcounting frees most objects immediately and deterministically; the cyclic GC (generations 0-2) cleans up cycles later. Use weakref to avoid cycles in caches and observers."
+    },
+    {
+      "id": "mutable-default-arg",
+      "concept": "Python memory",
+      "type": "integer",
+      "difficulty": 2,
+      "prompt": "Consider this Python code.\n\ndef add(x, acc=[]):\n    acc.append(x)\n    return len(acc)\n\nadd(1); add(2)\nprint(add(3))\n\nWhat number is printed?",
+      "answer": 3,
+      "tolerance": 0,
+      "explanation": "The default list is created once when the def statement runs and is shared by every call that omits acc, so after three calls it holds three items. Fix with acc=None and create the list inside the function. Verified by running it.",
+      "unit": "items"
+    },
+    {
+      "id": "shallow-vs-deep-copy",
+      "concept": "Python memory",
+      "type": "single",
+      "difficulty": 3,
+      "prompt": "What does this Python code print?\n\nimport copy\na = [[1], [2]]\nb = copy.copy(a)\nc = copy.deepcopy(a)\na[0].append(9)\nprint(b[0], c[0])\n\nWhat is the output?",
+      "options": [
+        {
+          "id": "a",
+          "text": "[1, 9] [1]",
+          "why": "Correct: copy.copy duplicates only the outer list, so b[0] is still the same inner list as a[0]; deepcopy cloned the inner lists too."
+        },
+        {
+          "id": "b",
+          "text": "[1] [1]",
+          "why": "Wrong: a shallow copy shares the inner objects, so the append through a[0] is visible through b[0]."
+        },
+        {
+          "id": "c",
+          "text": "[1, 9] [1, 9]",
+          "why": "Wrong: deepcopy recursively copies the inner lists, so c is unaffected by later changes to a."
+        },
+        {
+          "id": "d",
+          "text": "[1] [1, 9]",
+          "why": "Wrong: this reverses the two behaviours; the shallow copy is the one that still aliases the inner list."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "list(a), a[:] and a.copy() are all shallow. Use copy.deepcopy for nested mutable data. Verified by running it."
+    },
+    {
+      "id": "python-memory",
+      "concept": "Python memory",
+      "type": "matrix",
+      "difficulty": 2,
+      "prompt": "Match each Python memory feature with its description.",
+      "left": [
+        {
+          "id": "a",
+          "text": "Reference counting"
+        },
+        {
+          "id": "b",
+          "text": "Cyclic garbage collector (gc module)"
+        },
+        {
+          "id": "c",
+          "text": "__slots__"
+        },
+        {
+          "id": "d",
+          "text": "sys.intern"
+        },
+        {
+          "id": "e",
+          "text": "id()"
+        }
+      ],
+      "right": [
+        {
+          "id": "p",
+          "text": "Frees an object the moment its count drops to zero"
+        },
+        {
+          "id": "q",
+          "text": "Finds unreachable reference cycles among container objects"
+        },
+        {
+          "id": "r",
+          "text": "Replaces the per-instance __dict__ with fixed attributes to save memory"
+        },
+        {
+          "id": "s",
+          "text": "Keeps one shared copy of equal strings so identity checks are fast"
+        },
+        {
+          "id": "t",
+          "text": "Returns an integer identifying the object while it is alive"
+        },
+        {
+          "id": "u",
+          "text": "Compacts the heap after every function call"
+        }
+      ],
+      "pairs": {
+        "a": "p",
+        "b": "q",
+        "c": "r",
+        "d": "s",
+        "e": "t"
+      },
+      "explanation": "CPython frees most garbage immediately by counting references and uses the cyclic collector for cycles."
+    },
+    {
+      "id": "str-immutable-fill",
+      "concept": "Mutable vs immutable strings",
+      "type": "fill",
+      "difficulty": 1,
+      "prompt": "Complete the sentence about Python strings.",
+      "text": "A Python str is {1}, so s += x creates a new string each time; to build a large string efficiently, collect the parts in a list and call \"\".{2}() once; a list, unlike a str, is {3}.",
+      "blanks": {
+        "1": "immutable",
+        "2": "join",
+        "3": "mutable"
+      },
+      "bank": [
+        "immutable",
+        "join",
+        "mutable",
+        "append",
+        "hashable"
+      ],
+      "explanation": "Repeated concatenation can be quadratic in the worst case; join computes the final size once."
+    },
+    {
+      "id": "cycle-survivors",
+      "concept": "Reference counting",
+      "type": "integer",
+      "difficulty": 3,
+      "prompt": "Consider:\n\nclass Node:\n    def __init__(self): self.next = None\n\na, b, c = Node(), Node(), Node()\na.next = b\nb.next = c\nc.next = b\nb = None\nc = None\na.next = None\n\nWith the cyclic collector disabled, how many of the three objects still have a non-zero reference count even though no variable can reach them?",
+      "answer": 2,
+      "tolerance": 0,
+      "explanation": "The first node is still held by a. The other two reference each other, so each keeps a count of 1 and reference counting alone never frees them; the cyclic collector exists for this case."
+    },
+    {
+      "id": "str-dict-key",
+      "concept": "Mutable vs immutable strings",
+      "type": "assertion",
+      "difficulty": 2,
+      "prompt": "Read the assertion (A) and the reason (R), then choose the option that fits.",
+      "assertion": "A str can be used as a dict key, but a list cannot.",
+      "reason": "A str is immutable and hashable, whereas a list is mutable and unhashable.",
+      "correct": [
+        "a"
+      ],
+      "whys": {
+        "a": "Correct: immutability gives a stable hash, which is exactly what dict keys require.",
+        "b": "This option says both statements are true but R does not explain A, which does not match: immutability gives a stable hash, which is exactly what dict keys require.",
+        "c": "This option says A is true and R is false, which does not match: immutability gives a stable hash, which is exactly what dict keys require.",
+        "d": "This option says A is false and R is true, which does not match: immutability gives a stable hash, which is exactly what dict keys require."
+      },
+      "explanation": "Use a tuple when you need a sequence as a key."
+    },
+    {
+      "id": "tuple-immutable",
+      "concept": "Immutability",
+      "type": "assertion",
+      "difficulty": 2,
+      "prompt": "Read the assertion (A) and the reason (R), then choose the option that fits.",
+      "assertion": "A Python tuple is immutable.",
+      "reason": "A tuple can contain a mutable list as one of its items.",
+      "correct": [
+        "b"
+      ],
+      "whys": {
+        "a": "This option says both statements are true and R explains A, which does not match: Both are true, but the second is a caveat about the contents, not the reason a tuple cannot be re-bound item by item.",
+        "b": "Correct: Both are true, but the second is a caveat about the contents, not the reason a tuple cannot be re-bound item by item.",
+        "c": "This option says A is true and R is false, which does not match: Both are true, but the second is a caveat about the contents, not the reason a tuple cannot be re-bound item by item.",
+        "d": "This option says A is false and R is true, which does not match: Both are true, but the second is a caveat about the contents, not the reason a tuple cannot be re-bound item by item."
+      },
+      "explanation": "The tuple never changes which objects it holds; those objects may still change internally."
+    },
+    {
+      "id": "python-leaks",
+      "concept": "Memory leaks",
+      "type": "assertion",
+      "difficulty": 2,
+      "prompt": "Read the assertion (A) and the reason (R), then choose the option that fits.",
+      "assertion": "A Python program can leak memory even though it has automatic garbage collection.",
+      "reason": "The garbage collector frees every object that is still referenced from a module-level list.",
+      "correct": [
+        "c"
+      ],
+      "whys": {
+        "a": "This option says both statements are true and R explains A, which does not match: A is true (unbounded caches keep objects alive), but R is false: referenced objects are never freed.",
+        "b": "This option says both statements are true but R does not explain A, which does not match: A is true (unbounded caches keep objects alive), but R is false: referenced objects are never freed.",
+        "c": "Correct: A is true (unbounded caches keep objects alive), but R is false: referenced objects are never freed.",
+        "d": "This option says A is false and R is true, which does not match: A is true (unbounded caches keep objects alive), but R is false: referenced objects are never freed."
+      },
+      "explanation": "A leak in a managed language means objects stay reachable when they are no longer needed."
+    },
+    {
+      "id": "leak-causes-py",
+      "concept": "Memory leaks",
+      "type": "multi",
+      "difficulty": 2,
+      "prompt": "Select all common causes of memory growth in a long-running Python service.",
+      "options": [
+        {
+          "id": "a",
+          "text": "A module-level dict used as a cache with no size limit.",
+          "why": "Entries are never evicted, so memory grows with the number of keys."
+        },
+        {
+          "id": "b",
+          "text": "A cached function with an unbounded cache and many distinct arguments.",
+          "why": "Every distinct argument tuple stays cached forever."
+        },
+        {
+          "id": "c",
+          "text": "Callbacks registered on a long-lived object and never removed.",
+          "why": "The long-lived object keeps every listener alive."
+        },
+        {
+          "id": "d",
+          "text": "Local variables inside a function that has already returned.",
+          "why": "Those names disappear when the frame is released, so they are not a leak."
+        },
+        {
+          "id": "e",
+          "text": "Creating many short-lived objects in a loop.",
+          "why": "They are freed as soon as their references vanish."
+        }
+      ],
+      "correct": [
+        "a",
+        "b",
+        "c"
+      ],
+      "explanation": "Leaks come from objects kept reachable by long-lived containers, not from short-lived allocations."
+    },
+    {
+      "id": "join-numbers",
+      "concept": "Mutable vs immutable strings",
+      "type": "code",
+      "difficulty": 1,
+      "prompt": "Given an int n, write Python that builds the string \"0,1,2,...,n-1\" (no trailing comma) in a variable s, without repeated += on a string.",
+      "language": "python",
+      "checks": [
+        {
+          "label": "joins parts",
+          "pattern": "join\\("
+        },
+        {
+          "label": "converts numbers to str",
+          "pattern": "str\\("
+        },
+        {
+          "label": "iterates over range(n)",
+          "pattern": "range\\(\\s*n\\s*\\)"
+        }
+      ],
+      "model": "s = \",\".join(str(i) for i in range(n))",
+      "explanation": "map(str, range(n)) inside join works as well."
+    },
+    {
+      "id": "deepcopy-nested",
+      "concept": "Copying",
+      "type": "code",
+      "difficulty": 2,
+      "prompt": "Given a nested list a, write Python that makes b an independent deep copy so that changing b never affects a.",
+      "language": "python",
+      "checks": [
+        {
+          "label": "uses deepcopy",
+          "pattern": "deepcopy\\s*\\(\\s*a\\s*\\)"
+        }
+      ],
+      "model": "import copy\nb = copy.deepcopy(a)",
+      "explanation": "A shallow copy (a[:] or copy.copy) would still share the inner lists."
+    },
+    {
+      "id": "int-immutable",
+      "concept": "Mutable vs immutable strings",
+      "type": "truefalse",
+      "difficulty": 1,
+      "prompt": "Python int objects are immutable, so x += 1 rebinds the name x to a different object.",
+      "options": [
+        {
+          "id": "a",
+          "text": "True",
+          "why": "Correct: ints cannot change in place, so the name is rebound to the new value."
+        },
+        {
+          "id": "b",
+          "text": "False",
+          "why": "Ints are immutable; there is no in-place increment of an int object."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Immutable types include int, str, tuple and frozenset; list, dict and set are mutable."
+    },
+    {
+      "id": "list-assign-copy",
+      "concept": "Python memory",
+      "type": "truefalse",
+      "difficulty": 1,
+      "prompt": "After b = a for a list a, the name b refers to a separate copy of the list.",
+      "options": [
+        {
+          "id": "a",
+          "text": "True",
+          "why": "Assignment never copies; b is just a second name for the same list."
+        },
+        {
+          "id": "b",
+          "text": "False",
+          "why": "Correct: b = a binds another name to the same object, so changes through either name are visible through both."
+        }
+      ],
+      "correct": [
+        "b"
+      ],
+      "explanation": "Use a.copy(), a[:] or list(a) for a shallow copy."
+    }
+  ]
+}

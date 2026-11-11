@@ -1,0 +1,319 @@
+{
+  "id": "rm-rag-python",
+  "title": "RAG in Python: splitters, fusion and retrieval metrics",
+  "topic": "Python",
+  "language": "python",
+  "series": "python-rag-evals-safety",
+  "seriesTitle": "Python: RAG, evals and guardrails",
+  "seriesDescription": "Retrieval metrics, pytest eval gates and guardrail code in Python. JEE-Advanced style: integer, assertion-reason, matrix match, fill-in-the-blanks, short code and multi-correct questions.",
+  "seriesOrder": 1,
+  "description": "Python code for RAG: text splitters, reciprocal rank fusion, recall@k, MRR and nDCG functions, cosine similarity and the arithmetic of chunks and vectors.",
+  "source": "langchain-text-splitters 1.1 and NumPy run locally; Cormack et al. RRF paper (SIGIR 2009); Manning, Raghavan, Schutze: Introduction to Information Retrieval",
+  "estimatedMinutes": 18,
+  "questions": [
+    {
+      "id": "splitter-config",
+      "concept": "Chunking",
+      "type": "code",
+      "difficulty": 2,
+      "prompt": "Using LangChain, write Python that creates a RecursiveCharacterTextSplitter with chunk_size 800, chunk_overlap 100 and the separators paragraph break, newline, space, then empty string (in that order).",
+      "language": "python",
+      "starter": "from langchain_text_splitters import RecursiveCharacterTextSplitter\n",
+      "checks": [
+        {
+          "label": "uses RecursiveCharacterTextSplitter",
+          "pattern": "RecursiveCharacterTextSplitter\\s*\\("
+        },
+        {
+          "label": "chunk_size is 800",
+          "pattern": "chunk_size\\s*=\\s*800"
+        },
+        {
+          "label": "chunk_overlap is 100",
+          "pattern": "chunk_overlap\\s*=\\s*100"
+        },
+        {
+          "label": "lists separators from paragraph down to empty string",
+          "pattern": "separators\\s*=\\s*\\[\\s*[\"']\\\\n\\\\n[\"']\\s*,\\s*[\"']\\\\n[\"']\\s*,\\s*[\"'] [\"']\\s*,\\s*[\"']{2}\\s*\\]"
+        }
+      ],
+      "model": "splitter = RecursiveCharacterTextSplitter(\n    chunk_size=800,\n    chunk_overlap=100,\n    separators=[\"\\n\\n\", \"\\n\", \" \", \"\"],\n)\nchunks = splitter.split_text(text)",
+      "explanation": "By default the size is measured in characters (len), not tokens; use from_tiktoken_encoder to count tokens. chunk_overlap must be smaller than chunk_size or the splitter raises a ValueError. The separators list is also the default order."
+    },
+    {
+      "id": "rrf-fn",
+      "concept": "Hybrid search",
+      "type": "code",
+      "difficulty": 3,
+      "prompt": "Write a Python function rrf(rankings, k=60) where rankings is a list of ranked lists of document ids (best first). Return the document ids sorted by fused RRF score, highest first.",
+      "language": "python",
+      "starter": "def rrf(rankings, k=60):\n    ",
+      "checks": [
+        {
+          "label": "defines rrf",
+          "pattern": "def\\s+rrf\\s*\\("
+        },
+        {
+          "label": "adds 1/(k + rank) per list",
+          "pattern": "1(\\.0)?\\s*/\\s*\\(\\s*k\\s*\\+"
+        },
+        {
+          "label": "iterates with enumerate",
+          "pattern": "enumerate\\s*\\("
+        },
+        {
+          "label": "accumulates scores per document",
+          "pattern": "(scores|score|fused|total)\\w*\\s*\\["
+        },
+        {
+          "label": "sorts descending",
+          "pattern": "reverse\\s*=\\s*True|-\\s*\\w+(\\[|\\.get)|most_common"
+        }
+      ],
+      "model": "def rrf(rankings, k=60):\n    scores = {}\n    for ranking in rankings:\n        for rank, doc in enumerate(ranking, start=1):\n            scores[doc] = scores.get(doc, 0) + 1 / (k + rank)\n    return sorted(scores, key=scores.get, reverse=True)",
+      "explanation": "Other solutions pass (defaultdict, 0-based enumerate with k + rank + 1). Ties are broken arbitrarily unless you add a secondary key."
+    },
+    {
+      "id": "recall-mrr-fn",
+      "concept": "Metric implementation",
+      "type": "code",
+      "difficulty": 2,
+      "prompt": "Write two Python functions: recall_at_k(retrieved, relevant, k) returning the fraction of the relevant ids found in the first k retrieved ids, and mrr(runs) where runs is a list of (retrieved, relevant) pairs, returning the mean reciprocal rank of the first relevant hit (0 for a miss).",
+      "language": "python",
+      "starter": "def recall_at_k(retrieved, relevant, k):\n    ",
+      "checks": [
+        {
+          "label": "defines recall_at_k",
+          "pattern": "def\\s+recall_at_k\\s*\\("
+        },
+        {
+          "label": "slices the first k results",
+          "pattern": "\\[\\s*:\\s*k\\s*\\]"
+        },
+        {
+          "label": "divides by the number of relevant docs",
+          "pattern": "/\\s*len\\s*\\(\\s*(set\\s*\\(\\s*)?relevant"
+        },
+        {
+          "label": "defines mrr",
+          "pattern": "def\\s+(mrr|mean_reciprocal_rank)\\s*\\("
+        },
+        {
+          "label": "uses 1/rank",
+          "pattern": "1(\\.0)?\\s*/\\s*(\\(?\\s*)?(rank|i|idx|pos|r)"
+        }
+      ],
+      "model": "def recall_at_k(retrieved, relevant, k):\n    return len(set(retrieved[:k]) & set(relevant)) / len(relevant)\n\ndef mrr(runs):\n    total = 0.0\n    for retrieved, relevant in runs:\n        for rank, doc in enumerate(retrieved, start=1):\n            if doc in relevant:\n                total += 1 / rank\n                break\n    return total / len(runs)",
+      "explanation": "Other layouts pass (a generator with next(), 0-based enumerate with rank + 1). Guard against an empty relevant set in real code."
+    },
+    {
+      "id": "ndcg-fn",
+      "concept": "nDCG",
+      "type": "code",
+      "difficulty": 3,
+      "prompt": "Write a Python function ndcg_at_k(rels, k) where rels is the list of graded relevance scores of the retrieved documents in rank order. Use DCG = sum of rel / log2(position + 1) over the first k results and divide by the DCG of the ideal ordering (the same scores sorted best first).",
+      "language": "python",
+      "checks": [
+        {
+          "label": "defines ndcg_at_k",
+          "pattern": "def\\s+ndcg_at_k\\s*\\("
+        },
+        {
+          "label": "slices the first k",
+          "pattern": "\\[\\s*:\\s*k\\s*\\]"
+        },
+        {
+          "label": "discounts with log2",
+          "pattern": "log2\\s*\\("
+        },
+        {
+          "label": "builds the ideal ordering",
+          "pattern": "sorted\\s*\\([^)]*reverse\\s*=\\s*True|sorted\\s*\\(\\s*-|\\.sort\\s*\\(\\s*reverse\\s*=\\s*True"
+        },
+        {
+          "label": "divides DCG by the ideal DCG",
+          "pattern": "/"
+        }
+      ],
+      "model": "def ndcg_at_k(rels, k):\n    def dcg(r):\n        return sum(x / math.log2(i + 2) for i, x in enumerate(r[:k]))\n    ideal = dcg(sorted(rels, reverse=True))\n    return dcg(rels) / ideal if ideal else 0.0",
+      "explanation": "enumerate starts at 0, so the position is i + 1 and log2(position + 1) becomes log2(i + 2). I ran it: ndcg_at_k([1, 0, 1], 3) is 0.9197, the 92 from the earlier integer question. In a real evaluation the ideal list must come from all relevant documents, not only the retrieved ones, and an empty ideal needs the guard shown.",
+      "starter": "import math\n\ndef ndcg_at_k(rels, k):\n    "
+    },
+    {
+      "id": "cosine-fn",
+      "concept": "Embeddings and similarity",
+      "type": "code",
+      "difficulty": 2,
+      "prompt": "With NumPy imported as np, write cosine(a, b) for two equal-length lists of numbers: the dot product divided by the product of the two vector norms, returned as a float.",
+      "language": "python",
+      "checks": [
+        {
+          "label": "defines cosine",
+          "pattern": "def\\s+cosine\\s*\\("
+        },
+        {
+          "label": "computes a dot product",
+          "pattern": "np\\.dot\\s*\\(|@|\\.dot\\s*\\(|np\\.inner\\s*\\(|np\\.sum\\s*\\("
+        },
+        {
+          "label": "computes norms",
+          "pattern": "np\\.linalg\\.norm|np\\.sqrt|\\*\\*\\s*0?\\.5"
+        },
+        {
+          "label": "divides",
+          "pattern": "/"
+        }
+      ],
+      "model": "def cosine(a, b):\n    a = np.asarray(a, dtype=float)\n    b = np.asarray(b, dtype=float)\n    return float(a @ b / (np.linalg.norm(a) * np.linalg.norm(b)))",
+      "explanation": "I checked cosine([3, 4], [4, 3]) = 0.96. If both vectors are already L2-normalised the norms are 1 and the dot product alone is the cosine, which is why many vector stores use a dot-product index. A zero vector would divide by zero, so guard it in real code.",
+      "starter": "import numpy as np\n\ndef cosine(a, b):\n    "
+    },
+    {
+      "id": "window-count",
+      "concept": "Chunking",
+      "type": "integer",
+      "difficulty": 2,
+      "prompt": "A string text has 2,100 characters. How many chunks does [text[i:i + 500] for i in range(0, len(text), 400)] produce?",
+      "answer": 6,
+      "explanation": "range(0, 2100, 400) yields starts 0, 400, 800, 1200, 1600 and 2000, so there are 6 chunks. The last one holds only 100 characters, all of them already inside the previous chunk's overlap. I ran it; with a 2,000-character text the same code gives 5, so the last start can add a chunk that carries no new text.",
+      "unit": "chunks"
+    },
+    {
+      "id": "ndarray-bytes",
+      "concept": "Embeddings",
+      "type": "integer",
+      "difficulty": 2,
+      "prompt": "np.zeros((1000, 1536), dtype=np.float32).nbytes holds 1,000 embeddings of 1,536 dimensions. What number of bytes does it report?",
+      "answer": 6144000,
+      "explanation": "1,000 x 1,536 x 4 bytes (float32) = 6,144,000 bytes, about 6.1 MB, which I confirmed by running it. A million vectors is 1,000 times that, roughly 6.1 GB before any index overhead.",
+      "unit": "bytes"
+    },
+    {
+      "id": "rrf-sort-bug",
+      "concept": "Hybrid search",
+      "type": "single",
+      "difficulty": 2,
+      "prompt": "A teammate's reciprocal rank fusion ends with return sorted(scores, key=scores.get) and the worst documents come back first. What is the bug?",
+      "options": [
+        {
+          "id": "a",
+          "text": "sorted sorts ascending by default, so reverse=True is missing.",
+          "why": "Right: the key function is fine, but the default ascending order puts the lowest fused score first."
+        },
+        {
+          "id": "b",
+          "text": "scores.get is not allowed as a sort key, so the dictionary must be converted to a list.",
+          "why": "dict.get works as a key function and returns each document's score."
+        },
+        {
+          "id": "c",
+          "text": "The score should be multiplied by the rank, so higher ranks sort to the end of the list.",
+          "why": "RRF adds 1 / (k + rank) per list; multiplying by the rank would reverse the intent."
+        },
+        {
+          "id": "d",
+          "text": "sorted returns the scores themselves instead of the document ids in this call.",
+          "why": "Iterating a dict yields its keys, so the call returns document ids as intended."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "sorted(scores, key=scores.get, reverse=True) is the fix. A quick unit test with two tiny rankings catches this kind of ordering bug immediately."
+    },
+    {
+      "id": "norm-dot",
+      "concept": "Embeddings and similarity",
+      "type": "assertion",
+      "difficulty": 2,
+      "prompt": "Assertion and reason: read both statements and choose the right option.",
+      "assertion": "For two L2-normalised NumPy vectors a and b, the expression a @ b equals their cosine similarity.",
+      "reason": "The norm of a normalised vector is 1, so the denominator of the cosine formula is 1.",
+      "correct": [
+        "a"
+      ],
+      "whys": {
+        "a": "Both true, and R explains A: with both norms equal to 1 the formula cosine = a.b / (|a||b|) reduces to a.b.",
+        "b": "Not chosen: R is not a side fact; it is exactly why the formula simplifies.",
+        "c": "Not chosen: R is true, because normalising divides a vector by its length.",
+        "d": "Not chosen: A is true, so the dot product of unit vectors is the cosine."
+      },
+      "explanation": "I checked it: [3, 4]/5 dotted with [4, 3]/5 gives 0.96, the same as the cosine of the raw vectors."
+    },
+    {
+      "id": "splitter-methods",
+      "concept": "Text splitters",
+      "type": "fill",
+      "difficulty": 1,
+      "prompt": "Complete the sentence about LangChain text splitter methods.",
+      "text": "Call {1} to cut a plain string into a list of strings, {2} to split Document objects while copying their metadata to each chunk, and {3} to turn raw strings plus optional metadata into Document chunks.",
+      "blanks": {
+        "1": "split_text",
+        "2": "split_documents",
+        "3": "create_documents"
+      },
+      "bank": [
+        "split_text",
+        "split_documents",
+        "create_documents",
+        "from_documents",
+        "embed_documents"
+      ],
+      "explanation": "I ran all three on RecursiveCharacterTextSplitter. split_text loses metadata, split_documents keeps it, and create_documents accepts a list of strings with an optional list of metadata dictionaries."
+    },
+    {
+      "id": "splitter-classes",
+      "concept": "Text splitters",
+      "type": "matrix",
+      "difficulty": 2,
+      "prompt": "Match each langchain_text_splitters class with how it cuts text.",
+      "left": [
+        {
+          "id": "a",
+          "text": "CharacterTextSplitter"
+        },
+        {
+          "id": "b",
+          "text": "RecursiveCharacterTextSplitter"
+        },
+        {
+          "id": "c",
+          "text": "MarkdownHeaderTextSplitter"
+        },
+        {
+          "id": "d",
+          "text": "TokenTextSplitter"
+        }
+      ],
+      "right": [
+        {
+          "id": "p",
+          "text": "Splits on one separator string and then merges pieces up to chunk_size"
+        },
+        {
+          "id": "q",
+          "text": "Tries a list of separators in order until pieces fit"
+        },
+        {
+          "id": "r",
+          "text": "Cuts at # headings and records them as metadata"
+        },
+        {
+          "id": "s",
+          "text": "Cuts by the number of tokenizer tokens"
+        },
+        {
+          "id": "t",
+          "text": "Re-scores results with a cross-encoder"
+        }
+      ],
+      "pairs": {
+        "a": "p",
+        "b": "q",
+        "c": "r",
+        "d": "s"
+      },
+      "explanation": "All four classes exist in langchain_text_splitters 1.x (checked by importing them). Reranking is a retrieval-time step, not a splitter."
+    }
+  ]
+}

@@ -1,0 +1,575 @@
+{
+  "id": "rm-conc-theory-core",
+  "title": "Concurrency theory: deadlocks, visibility and pool sizing",
+  "topic": "Language-independent",
+  "language": "neutral",
+  "series": "core-concurrency-theory",
+  "seriesTitle": "Core: concurrency theory",
+  "seriesOrder": 1,
+  "seriesDescription": "Coffman conditions, lock ordering, Little and Amdahl laws, pool sizing. JEE-Advanced style: integer, assertion-reason, matrix match, fill-in-the-blanks, short code and multi-correct questions.",
+  "description": "Language-independent concurrency: the four deadlock conditions, lock ordering, liveness failures, happens-before, Little's law, Amdahl's law and thread-pool sizing arithmetic.",
+  "source": "Coffman et al., System Deadlocks (1971); Little, A Proof for the Queuing Formula (1961); Amdahl (1967); Herlihy and Shavit, The Art of Multiprocessor Programming; Goetz, Concurrency in Practice (sizing rule); operating-systems textbooks (Silberschatz, Tanenbaum)",
+  "estimatedMinutes": 18,
+  "questions": [
+    {
+      "id": "coffman",
+      "concept": "Deadlocks",
+      "type": "multi",
+      "difficulty": 2,
+      "prompt": "Select all conditions that must hold simultaneously for a deadlock to occur (the Coffman conditions).",
+      "options": [
+        {
+          "id": "a",
+          "text": "Mutual exclusion",
+          "why": "Correct: at least one resource can be held by only one thread at a time."
+        },
+        {
+          "id": "b",
+          "text": "Hold and wait",
+          "why": "Correct: a thread holds one resource while waiting for another."
+        },
+        {
+          "id": "c",
+          "text": "No preemption",
+          "why": "Correct: resources cannot be forcibly taken from a holder."
+        },
+        {
+          "id": "d",
+          "text": "Circular wait",
+          "why": "Correct: a cycle of threads each waits for a resource held by the next."
+        },
+        {
+          "id": "e",
+          "text": "Thread starvation",
+          "why": "Not required: starvation is about unfairness, not a cycle."
+        },
+        {
+          "id": "f",
+          "text": "Priority inversion",
+          "why": "Not required: it is a scheduling problem, not a deadlock condition."
+        }
+      ],
+      "correct": [
+        "a",
+        "b",
+        "c",
+        "d"
+      ],
+      "explanation": "Break any one condition and deadlock becomes impossible: a global lock order removes circular wait, acquiring everything at once or backing off on timeout removes hold-and-wait. The answer to \"how many conditions\" is 4."
+    },
+    {
+      "id": "failure-modes-match",
+      "concept": "Liveness failures",
+      "type": "matrix",
+      "difficulty": 2,
+      "prompt": "Match each situation with the name of the concurrency problem it describes.",
+      "left": [
+        {
+          "id": "l1",
+          "text": "Two workers each hold one lock and wait forever for the other's lock"
+        },
+        {
+          "id": "l2",
+          "text": "Two workers keep stepping aside for each other and never get past"
+        },
+        {
+          "id": "l3",
+          "text": "A low-priority job never gets the lock because busier jobs keep winning it"
+        },
+        {
+          "id": "l4",
+          "text": "Two workers update a shared total and one update is lost"
+        },
+        {
+          "id": "l5",
+          "text": "A high-priority job waits on a lock held by a low-priority job that is itself pre-empted"
+        }
+      ],
+      "right": [
+        {
+          "id": "r1",
+          "text": "Deadlock"
+        },
+        {
+          "id": "r2",
+          "text": "Livelock"
+        },
+        {
+          "id": "r3",
+          "text": "Starvation"
+        },
+        {
+          "id": "r4",
+          "text": "Race condition (lost update)"
+        },
+        {
+          "id": "r5",
+          "text": "Priority inversion"
+        },
+        {
+          "id": "r6",
+          "text": "Spurious wake-up"
+        }
+      ],
+      "pairs": {
+        "l1": "r1",
+        "l2": "r2",
+        "l3": "r3",
+        "l4": "r4",
+        "l5": "r5"
+      },
+      "explanation": "Deadlock and livelock both stop progress, but in a livelock the workers stay busy. Starvation is unfairness, a race is a correctness bug without waiting, and priority inversion is a scheduling interaction. Spurious wake-up is the distractor."
+    },
+    {
+      "id": "why-lock-order",
+      "concept": "Deadlocks",
+      "type": "single",
+      "difficulty": 2,
+      "prompt": "Every code path acquires lock A before lock B whenever it needs both. Why can that rule never produce a deadlock between those two locks?",
+      "options": [
+        {
+          "id": "a",
+          "text": "No worker can hold B while waiting for A, so a circular wait cannot form.",
+          "why": "Correct: a wait cycle needs one worker holding B and waiting for A, which the ordering forbids."
+        },
+        {
+          "id": "b",
+          "text": "Each worker gets exclusive access to both locks at the same instant, so nobody ever waits.",
+          "why": "Locks are still taken one after the other, so workers do wait."
+        },
+        {
+          "id": "c",
+          "text": "The system automatically revokes locks that a worker holds for too long.",
+          "why": "Ordering does nothing to revoke a held lock."
+        },
+        {
+          "id": "d",
+          "text": "Locks acquired in a fixed order are always shared rather than exclusive.",
+          "why": "The mode of the lock is unrelated to the order of acquisition."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Ordering breaks the circular-wait condition. Choose a total order that every path can compute, such as an account id, and apply it everywhere."
+    },
+    {
+      "id": "happens-before-concept",
+      "concept": "Memory visibility",
+      "type": "single",
+      "difficulty": 2,
+      "prompt": "Worker 1 writes data = 42 and then sets ready = true, with no lock or atomic operation involved. Worker 2 loops until it sees ready == true, then reads data. What is guaranteed?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Worker 2 reads 42, because data was written before ready.",
+          "why": "Program order in one worker is not visible order in another."
+        },
+        {
+          "id": "b",
+          "text": "Worker 2 never sees ready become true, as plain writes stay private forever.",
+          "why": "The write usually becomes visible eventually; the problem is the missing ordering."
+        },
+        {
+          "id": "c",
+          "text": "The program crashes with an error, because two workers touch shared data.",
+          "why": "Data races do not raise errors; they silently produce surprising values."
+        },
+        {
+          "id": "d",
+          "text": "Nothing: without an ordering edge, worker 2 may see ready but a stale data.",
+          "why": "Correct: compilers and CPUs may reorder or cache the writes, so visibility needs a happens-before edge."
+        }
+      ],
+      "correct": [
+        "d"
+      ],
+      "explanation": "Publish with a release/acquire pair: a lock, a volatile-style flag or an atomic with ordering. A happens-before edge makes everything written before it visible after it."
+    },
+    {
+      "id": "happens-before-fill",
+      "concept": "Memory visibility",
+      "type": "fill",
+      "difficulty": 2,
+      "prompt": "Complete the rule that makes shared writes visible.",
+      "text": "Releasing a lock happens-before every later {1} of that same lock, so everything written before the release is {2} to the next owner. Without such an edge, a program with unsynchronised accesses to shared data has a data {3}.",
+      "blanks": {
+        "1": "acquire",
+        "2": "visible",
+        "3": "race"
+      },
+      "bank": [
+        "acquire",
+        "visible",
+        "race",
+        "release",
+        "hidden",
+        "deadlock"
+      ],
+      "explanation": "The same idea applies to starting a worker, joining it, and handing work through a queue: each is an ordering edge that publishes earlier writes."
+    },
+    {
+      "id": "littles-law",
+      "concept": "Little's law",
+      "type": "integer",
+      "difficulty": 2,
+      "prompt": "A service receives 200 requests per second and each request spends 50 ms inside the system on average. By Little's law (L = arrival rate x time in system), how many requests are in flight on average?",
+      "answer": 10,
+      "tolerance": 0,
+      "unit": "requests",
+      "explanation": "L = 200/s x 0.05 s = 10 requests in flight. Size pools and connection limits from L, not from the peak request rate alone."
+    },
+    {
+      "id": "pool-size-core",
+      "concept": "Pool sizing",
+      "type": "integer",
+      "difficulty": 3,
+      "prompt": "Using the sizing rule workers = cores x (1 + wait time / compute time), how many workers suit an 8-core machine whose tasks spend 90 ms waiting on a remote service and 10 ms computing?",
+      "answer": 80,
+      "tolerance": 0,
+      "unit": "workers",
+      "explanation": "wait/compute = 90/10 = 9, so 8 x (1 + 9) = 80. For purely CPU-bound work use about the core count. The formula is a starting point; load test to confirm."
+    },
+    {
+      "id": "amdahl-limit",
+      "concept": "Scaling limits",
+      "type": "integer",
+      "difficulty": 2,
+      "prompt": "Half of a job's running time is strictly serial and the other half parallelises perfectly. By Amdahl's law, what is the largest overall speed-up any number of workers can reach?",
+      "answer": 2,
+      "tolerance": 0,
+      "unit": "times",
+      "explanation": "Speed-up = 1 / (serial + parallel / n). With serial = 0.5 and n growing without bound this tends to 1 / 0.5 = 2, so the serial half caps the gain."
+    },
+    {
+      "id": "backlog-growth",
+      "concept": "Little's law",
+      "type": "integer",
+      "difficulty": 3,
+      "prompt": "Requests arrive at 120 per second. A pool has 4 workers and each request takes 50 ms to serve. If arrivals stay at 120 per second, how many requests are waiting in the queue after 10 seconds, starting from an empty queue?",
+      "answer": 400,
+      "tolerance": 0,
+      "unit": "requests",
+      "explanation": "Each worker serves 20 requests per second, so 4 workers serve 80 per second. The backlog grows by 120 - 80 = 40 per second, or 400 after 10 seconds. Utilisation above 100% means an unbounded queue; bound it and shed load."
+    },
+    {
+      "id": "livelock-vs-deadlock",
+      "concept": "Liveness failures",
+      "type": "assertion",
+      "difficulty": 2,
+      "prompt": "Read the assertion (A) and the reason (R), then choose the correct option.",
+      "assertion": "In a livelock the participants keep running but make no useful progress.",
+      "reason": "In a livelock every participant is blocked permanently, waiting on a lock that another participant holds.",
+      "correct": [
+        "c"
+      ],
+      "whys": {
+        "a": "R is false, so it cannot explain A.",
+        "b": "R is false, so option b (both true) is wrong.",
+        "c": "Correct: A is true, since livelocked workers keep reacting to each other. R describes a deadlock, so R is false.",
+        "d": "A is true, so option d (A false) is wrong."
+      },
+      "explanation": "Typical livelock: two polite workers repeatedly release and retry in lockstep. Randomised back-off breaks the symmetry."
+    },
+    {
+      "id": "lock-order-prevents",
+      "concept": "Deadlocks",
+      "type": "assertion",
+      "difficulty": 2,
+      "prompt": "Read the assertion (A) and the reason (R), then choose the correct option.",
+      "assertion": "Acquiring locks in one global order prevents deadlock.",
+      "reason": "A global order removes the circular-wait condition, one of the four conditions that must all hold for a deadlock.",
+      "correct": [
+        "a"
+      ],
+      "whys": {
+        "a": "Correct: with no possible cycle of waiters, at least one Coffman condition always fails, and R names exactly the mechanism.",
+        "b": "R is the direct explanation of A, so option b understates it.",
+        "c": "R is true, so option c (R false) is wrong.",
+        "d": "A is true, so option d (A false) is wrong."
+      },
+      "explanation": "It does not prevent other liveness problems such as starvation, and it only works if every code path follows the order."
+    },
+    {
+      "id": "visibility-not-atomicity",
+      "concept": "Memory visibility",
+      "type": "assertion",
+      "difficulty": 3,
+      "prompt": "Read the assertion (A) and the reason (R), then choose the correct option.",
+      "assertion": "Making a shared counter immediately visible to every worker still does not make a read-modify-write on it safe.",
+      "reason": "Without an ordering edge, a write may sit in one core's cache or store buffer and be unseen by other cores.",
+      "correct": [
+        "b"
+      ],
+      "whys": {
+        "a": "R is true, but visibility is not the missing piece; the sequence itself is not atomic.",
+        "b": "Correct: both true, but R is about visibility only, while A is about atomicity: two workers can read the same value and both write back value + 1.",
+        "c": "R is a true statement about visibility, so option c (R false) is wrong.",
+        "d": "A is true, so option d (A false) is wrong."
+      },
+      "explanation": "Visibility, ordering and atomicity are three separate properties. A counter needs an atomic increment or a lock, not just a visible variable."
+    },
+    {
+      "id": "more-workers",
+      "concept": "Scaling limits",
+      "type": "assertion",
+      "difficulty": 2,
+      "prompt": "Read the assertion (A) and the reason (R), then choose the correct option.",
+      "assertion": "Adding more and more workers to a CPU-bound job always increases throughput.",
+      "reason": "Beyond the core count, extra workers add context-switch overhead and contend for shared resources.",
+      "correct": [
+        "d"
+      ],
+      "whys": {
+        "a": "A is false, so option a (A true) is wrong.",
+        "b": "A is false, so option b (both true) is wrong.",
+        "c": "R is true, so option c (R false) is wrong.",
+        "d": "Correct: A is false because throughput flattens and then drops past the core count, while R correctly names the reasons."
+      },
+      "explanation": "For I/O-bound work more workers help only while there are idle waits to overlap; measure rather than guess."
+    },
+    {
+      "id": "token-bucket-burst",
+      "concept": "Rate limiting",
+      "type": "assertion",
+      "difficulty": 2,
+      "prompt": "Read the assertion (A) and the reason (R), then choose the correct option.",
+      "assertion": "A token bucket with capacity 10 allows a burst of up to 10 requests at once, then roughly the refill rate.",
+      "reason": "A fixed-window counter resets to zero at every window boundary.",
+      "correct": [
+        "b"
+      ],
+      "whys": {
+        "a": "R describes a different algorithm, so it does not explain the token bucket's burst behaviour.",
+        "b": "Correct: both true, but R is about fixed windows and does not explain why a bucket allows bursts (stored tokens do).",
+        "c": "R is true, so c is wrong.",
+        "d": "A is true, so d is wrong."
+      },
+      "explanation": "Token bucket: burst up to capacity, long-run rate equals the refill rate. Fixed windows can allow double the rate across a boundary; sliding windows or buckets avoid that."
+    },
+    {
+      "id": "coffman-remedies",
+      "concept": "Deadlocks",
+      "type": "matrix",
+      "difficulty": 3,
+      "prompt": "Match each deadlock-prevention technique with the Coffman condition it breaks.",
+      "left": [
+        {
+          "id": "l1",
+          "text": "Always acquire locks in one global order"
+        },
+        {
+          "id": "l2",
+          "text": "Acquire every needed lock at once, or none"
+        },
+        {
+          "id": "l3",
+          "text": "Allow a lock request to time out so the holder gives up what it has"
+        },
+        {
+          "id": "l4",
+          "text": "Use copies of immutable data or lock-free structures instead of a lock"
+        }
+      ],
+      "right": [
+        {
+          "id": "r1",
+          "text": "Circular wait"
+        },
+        {
+          "id": "r2",
+          "text": "Hold and wait"
+        },
+        {
+          "id": "r3",
+          "text": "No preemption"
+        },
+        {
+          "id": "r4",
+          "text": "Mutual exclusion"
+        },
+        {
+          "id": "r5",
+          "text": "Bounded buffering"
+        }
+      ],
+      "pairs": {
+        "l1": "r1",
+        "l2": "r2",
+        "l3": "r3",
+        "l4": "r4"
+      },
+      "explanation": "Timeouts with back-off effectively add preemption: the requester releases its holdings and retries. Removing mutual exclusion is the hardest to apply, but immutable data and lock-free structures do it."
+    },
+    {
+      "id": "race-without-deadlock",
+      "concept": "Race conditions",
+      "type": "truefalse",
+      "difficulty": 1,
+      "prompt": "A program can contain a data race even if it never deadlocks.",
+      "options": [
+        {
+          "id": "a",
+          "text": "True",
+          "why": "Correct: a race is an unordered access to shared data, and nothing in it needs to wait on anything."
+        },
+        {
+          "id": "b",
+          "text": "False",
+          "why": "Races and deadlocks are independent problems; a program may have either, both or neither."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Deadlock is a liveness bug (nothing moves); a data race is a safety bug (wrong values). Fixing one does not fix the other."
+    },
+    {
+      "id": "threads-equal-speed",
+      "concept": "Scaling limits",
+      "type": "truefalse",
+      "difficulty": 2,
+      "prompt": "A server that doubles its worker count will always double its throughput.",
+      "options": [
+        {
+          "id": "a",
+          "text": "True",
+          "why": "Throughput scales only while the extra workers have spare cores, memory bandwidth and downstream capacity."
+        },
+        {
+          "id": "b",
+          "text": "False",
+          "why": "Correct: shared bottlenecks, the serial portion of the work and context-switch costs cap the gain."
+        }
+      ],
+      "correct": [
+        "b"
+      ],
+      "explanation": "Use Amdahl's law and Little's law to reason about the ceiling before adding capacity."
+    },
+    {
+      "id": "starvation-fix",
+      "concept": "Liveness failures",
+      "type": "single",
+      "difficulty": 3,
+      "prompt": "A background job never gets a lock because a stream of short interactive requests always grabs it first. Which change addresses this directly?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Add a global lock order so that locks are always acquired in sequence.",
+          "why": "Ordering prevents deadlock; the job is not in a cycle, just unlucky."
+        },
+        {
+          "id": "b",
+          "text": "Use a fair lock that grants waiters in arrival order, or age the job's priority.",
+          "why": "Correct: fairness or aging guarantees that a long-waiting request is eventually served."
+        },
+        {
+          "id": "c",
+          "text": "Make the interactive requests hold the lock for longer, so the job can see it free.",
+          "why": "Longer holds make starvation worse, not better."
+        },
+        {
+          "id": "d",
+          "text": "Raise the number of workers serving interactive requests to absorb the load.",
+          "why": "More competing workers give the job even fewer chances."
+        }
+      ],
+      "correct": [
+        "b"
+      ],
+      "explanation": "The cost of fairness is lower throughput, since lock hand-off is slower than barging. Use it where bounded waiting matters more than raw speed."
+    },
+    {
+      "id": "recheck-predicate",
+      "concept": "Condition waiting",
+      "type": "single",
+      "difficulty": 2,
+      "prompt": "A consumer sleeps until a shared queue becomes non-empty. After it is woken it must test the queue again in a loop instead of assuming an item is there. Why?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Another consumer may have taken the item first, and wake-ups can happen without a signal.",
+          "why": "Correct: the condition can be false again by the time the woken worker holds the lock."
+        },
+        {
+          "id": "b",
+          "text": "The signal tells the worker only how many items exist, not whether any exist.",
+          "why": "A signal carries no data; the problem is the changed state, not the missing count."
+        },
+        {
+          "id": "c",
+          "text": "Re-testing in a loop forces the waiting workers to wake up in arrival order.",
+          "why": "Looping does not affect wake-up order."
+        },
+        {
+          "id": "d",
+          "text": "A worker that does not loop is rejected by the lock, which raises an error.",
+          "why": "Locks do not inspect how you test your condition."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Always wait on a predicate in a loop. It also protects against signals that were sent before the worker started waiting."
+    },
+    {
+      "id": "transfer-lock-order",
+      "concept": "Deadlocks",
+      "type": "code",
+      "difficulty": 3,
+      "prompt": "In pseudocode, write transfer(from, to, amount) for two accounts that each have an id, a balance and a lock, so that two opposite transfers (A to B and B to A) can never deadlock. Lock the account with the smaller id first.",
+      "language": "pseudocode",
+      "checks": [
+        {
+          "label": "picks the smaller id as first",
+          "pattern": "<|>|smaller|lower|min|order|sort"
+        },
+        {
+          "label": "takes both locks",
+          "pattern": "lock[\\s\\S]*lock"
+        },
+        {
+          "label": "releases the locks",
+          "pattern": "unlock|release"
+        },
+        {
+          "label": "moves the money",
+          "pattern": "balance"
+        }
+      ],
+      "model": "function transfer(from, to, amount):\n  first  = (from.id < to.id) ? from : to\n  second = (first == from) ? to : from\n  lock(first)\n  lock(second)\n  from.balance = from.balance - amount\n  to.balance   = to.balance + amount\n  unlock(second)\n  unlock(first)",
+      "explanation": "The fixed order removes circular wait. Release in any order, ideally in a finally-style block so an error cannot leave a lock held. Ties on id need a tie-breaker, and transferring to the same account needs special handling.",
+      "starter": "function transfer(from, to, amount):\n  "
+    },
+    {
+      "id": "cas-increment-loop",
+      "concept": "Lock-free retry",
+      "type": "code",
+      "difficulty": 3,
+      "prompt": "In pseudocode, write increment(cell) for a counter without a lock, using an atomic compare_and_set(cell, expected, new) that returns true only if the cell still held expected.",
+      "language": "pseudocode",
+      "checks": [
+        {
+          "label": "retries in a loop",
+          "pattern": "loop|while|repeat|retry|do\\b"
+        },
+        {
+          "label": "reads the current value",
+          "pattern": "read|get|load|old|current"
+        },
+        {
+          "label": "uses compare and set",
+          "pattern": "compare[_\\s-]*and[_\\s-]*(set|swap)|\\bcas\\b"
+        },
+        {
+          "label": "writes old plus one",
+          "pattern": "\\+\\s*1"
+        }
+      ],
+      "model": "function increment(cell):\n  loop:\n    old = read(cell)\n    if compare_and_set(cell, old, old + 1):\n      return",
+      "explanation": "If another worker changed the cell between the read and the compare_and_set, the call fails and the loop re-reads. This is lock-free but not wait-free, and values that go A to B to A can fool a CAS (the ABA problem).",
+      "starter": "function increment(cell):\n  "
+    }
+  ]
+}

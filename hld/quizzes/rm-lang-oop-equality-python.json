@@ -1,0 +1,436 @@
+{
+  "id": "rm-lang-oop-equality-python",
+  "title": "Language core: OOP, equality and hashing (Python)",
+  "topic": "Python",
+  "series": "python-oop",
+  "seriesTitle": "Python: OOP and equality",
+  "seriesOrder": 1,
+  "seriesDescription": "ABCs, Protocols, dataclasses, composition, __eq__ and __hash__. JEE-Advanced style: integer, assertion-reason, matrix match, fill-in-the-blanks, short code and multi-correct questions.",
+  "language": "python",
+  "description": "ABC and Protocol, dataclasses, MRO and super(), composition over inheritance, class vs instance attributes, and the __eq__/__hash__ contract with its mutable-key traps.",
+  "source": "Python docs: abc, dataclasses, data model (__eq__, __hash__), typing.Protocol, the C3 method resolution order; Real Python; Fluent Python (Ramalho); Toptal and GeeksforGeeks Python interview lists",
+  "estimatedMinutes": 15,
+  "questions": [
+    {
+      "id": "abc-fill",
+      "concept": "Interfaces and abstract classes",
+      "type": "fill",
+      "difficulty": 1,
+      "prompt": "Complete the sentence about Python abstract base classes.",
+      "text": "A class that inherits from abc.ABC and leaves a method decorated with @{1} unimplemented raises {2} as soon as you try to instantiate it.",
+      "blanks": {
+        "1": "abstractmethod",
+        "2": "TypeError"
+      },
+      "bank": [
+        "abstractmethod",
+        "TypeError",
+        "NotImplementedError",
+        "staticmethod"
+      ],
+      "explanation": "The check happens at instantiation, not at class definition. NotImplementedError is what a plain base-class method raises by convention when you do not use ABC."
+    },
+    {
+      "id": "construct-purpose",
+      "concept": "Modern language constructs",
+      "type": "matrix",
+      "difficulty": 2,
+      "prompt": "Match each Python construct to what it is for.",
+      "left": [
+        {
+          "id": "a",
+          "text": "typing.Protocol"
+        },
+        {
+          "id": "b",
+          "text": "abc.ABC with @abstractmethod"
+        },
+        {
+          "id": "c",
+          "text": "@dataclass(frozen=True)"
+        },
+        {
+          "id": "d",
+          "text": "__slots__"
+        },
+        {
+          "id": "e",
+          "text": "typing.NamedTuple"
+        }
+      ],
+      "right": [
+        {
+          "id": "p",
+          "text": "Structural typing: any class with matching methods satisfies it for the type checker"
+        },
+        {
+          "id": "q",
+          "text": "Nominal base class: a subclass that skips an abstract method cannot be instantiated"
+        },
+        {
+          "id": "r",
+          "text": "Generates __init__, __eq__ and __hash__ and blocks attribute assignment"
+        },
+        {
+          "id": "s",
+          "text": "Removes the per-instance __dict__, saving memory and rejecting new attributes"
+        },
+        {
+          "id": "t",
+          "text": "Tuple subclass with named fields: immutable and unpackable"
+        },
+        {
+          "id": "u",
+          "text": "Automatically makes every attribute lazy-loaded"
+        }
+      ],
+      "pairs": {
+        "a": "p",
+        "b": "q",
+        "c": "r",
+        "d": "s",
+        "e": "t"
+      },
+      "explanation": "Protocol is for structural typing, ABC for enforced contracts, frozen dataclass for hashable value objects, __slots__ for compact instances."
+    },
+    {
+      "id": "composition-over-inheritance",
+      "concept": "Inheritance vs composition",
+      "type": "assertion",
+      "difficulty": 2,
+      "prompt": "Read the assertion (A) and the reason (R), then choose the option that fits.",
+      "assertion": "Inheritance couples a subclass to its superclass more tightly than composition couples a wrapper to a collaborator.",
+      "reason": "A subclass can depend on implementation details of the superclass, such as which overridable methods call each other.",
+      "correct": [
+        "a"
+      ],
+      "whys": {
+        "a": "Correct: the fragile base class problem is exactly this hidden dependence, which a wrapper that only uses the public API avoids.",
+        "b": "R is not merely true, it is the reason A holds.",
+        "c": "R is true: self-use of overridable methods is a documented source of bugs.",
+        "d": "A is true; The classic design guideline says to favour composition over inheritance."
+      },
+      "explanation": "Design for inheritance or prohibit it. Composition plus delegation (forwarding class) keeps the dependency to the public contract."
+    },
+    {
+      "id": "frozen-dataclass",
+      "concept": "Dataclasses",
+      "type": "code",
+      "difficulty": 2,
+      "prompt": "Write a Python frozen dataclass named Point with float fields x and y so that instances are immutable and hashable.",
+      "language": "python",
+      "starter": "from dataclasses import dataclass\n",
+      "checks": [
+        {
+          "label": "uses @dataclass with frozen=True",
+          "pattern": "@\\s*(dataclasses\\.)?dataclass\\s*\\(\\s*[^)]*frozen\\s*=\\s*True"
+        },
+        {
+          "label": "class is named Point",
+          "pattern": "class\\s+Point"
+        },
+        {
+          "label": "x is a float field",
+          "pattern": "x\\s*:\\s*float"
+        },
+        {
+          "label": "y is a float field",
+          "pattern": "y\\s*:\\s*float"
+        }
+      ],
+      "model": "from dataclasses import dataclass\n\n@dataclass(frozen=True)\nclass Point:\n    x: float\n    y: float",
+      "explanation": "frozen=True makes assignment raise FrozenInstanceError and, together with the default eq=True, generates __hash__ from the fields. A NamedTuple would also work but is not what the question asks."
+    },
+    {
+      "id": "protocol-explicit",
+      "concept": "Interfaces and abstract classes",
+      "type": "truefalse",
+      "difficulty": 2,
+      "prompt": "A class must explicitly inherit from a typing.Protocol to satisfy it for a static type checker such as mypy.",
+      "options": [
+        {
+          "id": "a",
+          "text": "True",
+          "why": "Protocols are structural: the base class is not required."
+        },
+        {
+          "id": "b",
+          "text": "False",
+          "why": "Correct: mypy checks the method signatures, so no inheritance is needed (only @runtime_checkable matters for isinstance)."
+        }
+      ],
+      "correct": [
+        "b"
+      ],
+      "explanation": "That is the difference between nominal (ABC) and structural (Protocol) typing, the Python counterpart of Go-style interfaces."
+    },
+    {
+      "id": "py-eq-unhashable",
+      "concept": "Equality and hashing",
+      "type": "truefalse",
+      "difficulty": 2,
+      "prompt": "In Python 3, a class that defines __eq__ but does not define __hash__ gets its __hash__ set to None, so its instances cannot be put in a set or used as dict keys.",
+      "options": [
+        {
+          "id": "a",
+          "text": "True",
+          "why": "Correct: defining __eq__ implicitly sets __hash__ = None, which is why {P(1)} raises TypeError."
+        },
+        {
+          "id": "b",
+          "text": "False",
+          "why": "Wrong: Python 3 does not keep the inherited identity hash once __eq__ is overridden, because equal objects must hash equally."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Python refuses to guess a hash consistent with your new equality. Add __hash__ over the same immutable fields, or use @dataclass(frozen=True). Verified by running it: set literal raises TypeError: unhashable type."
+    },
+    {
+      "id": "mro-diamond",
+      "concept": "Inheritance vs composition",
+      "type": "single",
+      "difficulty": 3,
+      "prompt": "What does this Python code print?\n\nclass A:\n    def who(self): return \"A\"\nclass B(A):\n    def who(self): return \"B\" + super().who()\nclass C(A):\n    def who(self): return \"C\" + super().who()\nclass D(B, C): pass\nprint(D().who())\n\nWhat is the output?",
+      "options": [
+        {
+          "id": "a",
+          "text": "BCA, following the C3 order D, B, C, A",
+          "why": "Correct: the C3 MRO of D is D, B, C, A and super() follows it, so B calls C, which calls A."
+        },
+        {
+          "id": "b",
+          "text": "BA, since super() goes to the declared parent",
+          "why": "Wrong: super() in B does not jump straight to its declared parent A; it goes to the next class in the instance MRO, which is C."
+        },
+        {
+          "id": "c",
+          "text": "BAC, since C runs after A finishes",
+          "why": "Wrong: A is the common base, so C3 linearisation places it after both B and C, never between them."
+        },
+        {
+          "id": "d",
+          "text": "TypeError, since the hierarchy is inconsistent",
+          "why": "Wrong: B and C list A consistently, so a valid linearisation exists and the class statement succeeds."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Python uses C3 linearisation (D.__mro__). Cooperative super() visits every class once in that order; this ordering removes the classic diamond ambiguity for classes."
+    },
+    {
+      "id": "dict-subclass-count",
+      "concept": "Inheritance vs composition",
+      "type": "integer",
+      "difficulty": 3,
+      "prompt": "A subclass of dict increments self.count inside __setitem__ before calling super().__setitem__. Then:\n\nd = CountingDict()\nd.update({\"a\": 1, \"b\": 2, \"c\": 3})\nd[\"d\"] = 4\n\nWhat is d.count at the end?",
+      "answer": 1,
+      "tolerance": 0,
+      "explanation": "CPython's dict.update does not call an overridden __setitem__, so only the final assignment is counted. Subclassing built-ins relies on implementation details; composition (wrap a dict and forward) avoids the trap."
+    },
+    {
+      "id": "identity-vs-equality",
+      "concept": "Equality and hashing",
+      "type": "integer",
+      "difficulty": 2,
+      "prompt": "Consider x = [1, 2]; y = x; z = [1, 2]. How many of these four expressions are True: x is y, x == z, x is z, x is not z?",
+      "answer": 3,
+      "tolerance": 0,
+      "explanation": "x is y is True (same object), x == z is True (equal values), x is z is False (different objects), x is not z is True. == compares values via __eq__, is compares identity."
+    },
+    {
+      "id": "eq-hash-point",
+      "concept": "Equality and hashing",
+      "type": "code",
+      "difficulty": 2,
+      "prompt": "Write a Python class Point with x and y whose instances are equal when x and y match and can be used as dict keys (define __eq__ and __hash__).",
+      "language": "python",
+      "checks": [
+        {
+          "label": "defines __eq__",
+          "pattern": "def\\s+__eq__"
+        },
+        {
+          "label": "defines __hash__",
+          "pattern": "def\\s+__hash__"
+        },
+        {
+          "label": "hashes the fields",
+          "pattern": "hash\\("
+        }
+      ],
+      "model": "class Point:\n    def __init__(self, x, y):\n        self.x, self.y = x, y\n    def __eq__(self, other):\n        return isinstance(other, Point) and (self.x, self.y) == (other.x, other.y)\n    def __hash__(self):\n        return hash((self.x, self.y))",
+      "explanation": "Objects that compare equal must hash equal; hash the same fields that __eq__ compares. A frozen dataclass does all of this for you."
+    },
+    {
+      "id": "mutable-key",
+      "concept": "Equality and hashing",
+      "type": "single",
+      "difficulty": 2,
+      "prompt": "What does this Python code do?\n\ncache = {}\nkey = [1, 2]\ncache[key] = \"v\"\nprint(len(cache))\n\nWhat is the outcome?",
+      "options": [
+        {
+          "id": "a",
+          "text": "TypeError: unhashable type: 'list'",
+          "why": "Correct: lists are mutable and define __eq__ without a stable hash, so they cannot be dict keys."
+        },
+        {
+          "id": "b",
+          "text": "It prints 1 because the list is stored as a key",
+          "why": "The assignment fails before anything is stored."
+        },
+        {
+          "id": "c",
+          "text": "It prints 0 because lists are ignored as keys",
+          "why": "Python never silently ignores a key; it raises instead."
+        },
+        {
+          "id": "d",
+          "text": "KeyError: [1, 2]",
+          "why": "KeyError is raised by a failed lookup, not by storing a key."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Use a tuple (immutable, hashable if its items are) when a sequence must be a key."
+    },
+    {
+      "id": "safe-keys",
+      "concept": "Equality and hashing",
+      "type": "multi",
+      "difficulty": 2,
+      "prompt": "Select all that can be used as dict keys.",
+      "options": [
+        {
+          "id": "a",
+          "text": "A str",
+          "why": "Strings are immutable and hashable."
+        },
+        {
+          "id": "b",
+          "text": "A tuple of two ints",
+          "why": "A tuple is hashable when all its items are."
+        },
+        {
+          "id": "c",
+          "text": "A frozenset",
+          "why": "frozenset is the immutable, hashable set."
+        },
+        {
+          "id": "d",
+          "text": "A list",
+          "why": "Lists are mutable and unhashable."
+        },
+        {
+          "id": "e",
+          "text": "A dict",
+          "why": "Dicts are mutable and unhashable."
+        },
+        {
+          "id": "f",
+          "text": "A tuple that contains a list",
+          "why": "Hashing a tuple hashes its items, so the inner list makes it unhashable."
+        }
+      ],
+      "correct": [
+        "a",
+        "b",
+        "c"
+      ],
+      "explanation": "Hashable means a stable hash for the object lifetime and a consistent __eq__; built-in immutable types qualify, containers only if everything inside does."
+    },
+    {
+      "id": "class-attr-shared",
+      "concept": "Inheritance vs composition",
+      "type": "single",
+      "difficulty": 3,
+      "prompt": "What does this Python code print?\n\nclass Cart:\n    items = []\n\na = Cart()\nb = Cart()\na.items.append(\"x\")\nprint(b.items)\n\nWhat is the output?",
+      "options": [
+        {
+          "id": "a",
+          "text": "['x'], because one list lives on the class and all instances share it",
+          "why": "Correct: items is one list stored on the class and shared by every instance."
+        },
+        {
+          "id": "b",
+          "text": "[], because b never appended anything to its own list",
+          "why": "It would be empty only if each instance had its own list created in __init__."
+        },
+        {
+          "id": "c",
+          "text": "AttributeError, since b has no items",
+          "why": "Lookup falls back from the instance to the class attribute."
+        },
+        {
+          "id": "d",
+          "text": "TypeError: cannot mutate a class attribute",
+          "why": "Class attributes can be mutated freely; the list is an ordinary object."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Create per-instance mutable state in __init__ (self.items = []), not as a class attribute."
+    },
+    {
+      "id": "default-hash",
+      "concept": "Equality and hashing",
+      "type": "assertion",
+      "difficulty": 3,
+      "prompt": "Read the assertion (A) and the reason (R), then choose the option that fits.",
+      "assertion": "Instances of a plain Python class are hashable by default.",
+      "reason": "Python derives the default hash from the values of all the instance attributes.",
+      "correct": [
+        "c"
+      ],
+      "whys": {
+        "a": "This option says both statements are true and R explains A, which does not match: A is true, but the default hash comes from the object identity, so R is false.",
+        "b": "This option says both statements are true but R does not explain A, which does not match: A is true, but the default hash comes from the object identity, so R is false.",
+        "c": "Correct: A is true, but the default hash comes from the object identity, so R is false.",
+        "d": "This option says A is false and R is true, which does not match: A is true, but the default hash comes from the object identity, so R is false."
+      },
+      "explanation": "The default __eq__ and __hash__ are identity-based. Defining __eq__ without __hash__ sets __hash__ to None."
+    },
+    {
+      "id": "frozen-dict-key",
+      "concept": "Dataclasses",
+      "type": "assertion",
+      "difficulty": 2,
+      "prompt": "Read the assertion (A) and the reason (R), then choose the option that fits.",
+      "assertion": "A dataclass declared with @dataclass(frozen=True) can be used as a dict key.",
+      "reason": "Assigning to an attribute of a frozen dataclass instance raises FrozenInstanceError.",
+      "correct": [
+        "b"
+      ],
+      "whys": {
+        "a": "This option says both statements are true and R explains A, which does not match: Both statements are true, but hashability comes from eq=True plus frozen=True generating __hash__, not from the error on assignment.",
+        "b": "Correct: Both statements are true, but hashability comes from eq=True plus frozen=True generating __hash__, not from the error on assignment.",
+        "c": "This option says A is true and R is false, which does not match: Both statements are true, but hashability comes from eq=True plus frozen=True generating __hash__, not from the error on assignment.",
+        "d": "This option says A is false and R is true, which does not match: Both statements are true, but hashability comes from eq=True plus frozen=True generating __hash__, not from the error on assignment."
+      },
+      "explanation": "Frozen plus eq makes the dataclass generate __hash__ from its fields."
+    },
+    {
+      "id": "frozen-hash",
+      "concept": "Equality and hashing",
+      "type": "assertion",
+      "difficulty": 3,
+      "prompt": "Read the assertion (A) and the reason (R), then choose the option that fits.",
+      "assertion": "A Python dataclass declared with @dataclass(frozen=True) is unhashable.",
+      "reason": "A dataclass with eq=True and frozen=False gets __hash__ set to None.",
+      "correct": [
+        "d"
+      ],
+      "whys": {
+        "a": "A is false, so this cannot be right.",
+        "b": "A is false.",
+        "c": "R is true, so option c is wrong.",
+        "d": "Correct: frozen=True with eq=True generates __hash__ from the fields, so A is false; R is true (the default mutable dataclass is unhashable)."
+      },
+      "explanation": "eq=True, frozen=False sets __hash__ to None; eq=True, frozen=True generates a field-based __hash__; unsafe_hash=True forces one."
+    }
+  ]
+}

@@ -1,0 +1,419 @@
+{
+  "id": "rm-lang-design-patterns-core",
+  "title": "Design patterns and SOLID (language-independent)",
+  "topic": "Language-independent",
+  "series": "core-design-patterns",
+  "seriesTitle": "Core: design patterns and SOLID",
+  "seriesOrder": 1,
+  "seriesDescription": "Pattern intents, SOLID and dependency inversion without any language specifics. JEE-Advanced style: integer, assertion-reason, matrix match, fill-in-the-blanks, short code and multi-correct questions.",
+  "language": "neutral",
+  "description": "Pattern intents, creational patterns, Strategy, Observer, Command with undo/redo, Proxy vs Adapter vs Decorator, dependency injection and the SOLID principles, with the classic traps.",
+  "source": "Gang of Four; Robert C. Martin: SOLID; Refactoring.Guru; Head First Design Patterns; GeeksforGeeks design pattern interview list",
+  "estimatedMinutes": 16,
+  "questions": [
+    {
+      "id": "pattern-intent",
+      "concept": "Pattern selection",
+      "type": "matrix",
+      "difficulty": 1,
+      "prompt": "Match each design pattern with its intent.",
+      "left": [
+        {
+          "id": "a",
+          "text": "Singleton"
+        },
+        {
+          "id": "b",
+          "text": "Factory Method"
+        },
+        {
+          "id": "c",
+          "text": "Builder"
+        },
+        {
+          "id": "d",
+          "text": "Strategy"
+        },
+        {
+          "id": "e",
+          "text": "Observer"
+        },
+        {
+          "id": "f",
+          "text": "Command"
+        }
+      ],
+      "right": [
+        {
+          "id": "p",
+          "text": "Exactly one instance with a global access point"
+        },
+        {
+          "id": "q",
+          "text": "Defer to a method or subclass to decide which concrete class to create"
+        },
+        {
+          "id": "r",
+          "text": "Construct a complex object step by step, often with many optional parts"
+        },
+        {
+          "id": "s",
+          "text": "Interchangeable algorithms behind one interface, chosen at runtime"
+        },
+        {
+          "id": "t",
+          "text": "One-to-many notification when a subject changes state"
+        },
+        {
+          "id": "u",
+          "text": "Wrap a request as an object so it can be queued, logged or undone"
+        },
+        {
+          "id": "v",
+          "text": "Convert the interface of one class into another that clients expect"
+        }
+      ],
+      "pairs": {
+        "a": "p",
+        "b": "q",
+        "c": "r",
+        "d": "s",
+        "e": "t",
+        "f": "u"
+      },
+      "explanation": "Each pattern has a recognisable everyday example: a runtime object (singleton), a static creation helper (factory), a string builder (builder), a comparator (strategy), event listeners (observer) and an undo stack (command)."
+    },
+    {
+      "id": "strategy-swap",
+      "concept": "Strategy",
+      "type": "assertion",
+      "difficulty": 1,
+      "prompt": "Read the assertion (A) and the reason (R), then choose the option that fits.",
+      "assertion": "The Strategy pattern lets a program swap algorithms at runtime without long if/else chains.",
+      "reason": "The context object holds a reference to a strategy interface and delegates the work to it.",
+      "correct": [
+        "a"
+      ],
+      "whys": {
+        "a": "Correct: delegation to an interface-typed field is the mechanism that makes swapping possible.",
+        "b": "R is the explanation of A, not an unrelated fact.",
+        "c": "R is true.",
+        "d": "A is true."
+      },
+      "explanation": "Typical interview example: payment methods or pricing rules. In most languages a function or lambda can play the strategy."
+    },
+    {
+      "id": "abstract-factory-families",
+      "concept": "Pattern selection",
+      "type": "assertion",
+      "difficulty": 2,
+      "prompt": "Read the assertion (A) and the reason (R), then choose the option that fits.",
+      "assertion": "Abstract Factory is the right pattern when a program must create families of related objects that are meant to be used together, such as widgets for one UI theme.",
+      "reason": "Factory Method defers the choice of the concrete class to a subclass.",
+      "correct": [
+        "b"
+      ],
+      "whys": {
+        "a": "Not chosen: R is true but it describes a different pattern, so it does not explain A.",
+        "b": "Correct: both statements are true, but R describes Factory Method, which is a related yet separate pattern (Abstract Factory is often built from several factory methods).",
+        "c": "Not chosen: R is a true statement about Factory Method.",
+        "d": "Not chosen: A is true, because creating consistent product families is the stated intent of Abstract Factory."
+      },
+      "explanation": "Remember: Factory Method = one product, subclass decides; Abstract Factory = a family of products from one factory object; Builder = step-by-step construction."
+    },
+    {
+      "id": "proxy-pattern",
+      "concept": "Pattern selection",
+      "type": "single",
+      "difficulty": 3,
+      "prompt": "A class implements the same interface as a heavy ImageLoader, creates the real loader only on first use and checks the caller permissions before delegating. Which pattern is this?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Proxy",
+          "why": "Correct: same interface, controls access to the real subject (lazy creation plus protection)."
+        },
+        {
+          "id": "b",
+          "text": "Adapter",
+          "why": "Wrong: an adapter converts one interface into a different one the client expects; here the interface stays the same."
+        },
+        {
+          "id": "c",
+          "text": "Facade",
+          "why": "Wrong: a facade offers a new simplified interface to a whole subsystem, not a stand-in for one object."
+        },
+        {
+          "id": "d",
+          "text": "Composite",
+          "why": "Wrong: composite lets clients treat a tree of parts and wholes uniformly, which is unrelated to lazy access control."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "A decorator adds behaviour that the client chose, while a proxy controls access and decides when the real object is created. Lazy loading and access-control layers are typical proxies."
+    },
+    {
+      "id": "manual-di",
+      "concept": "Decorators and DI",
+      "type": "fill",
+      "difficulty": 1,
+      "prompt": "Complete the dependency injection sentence.",
+      "text": "Instead of creating collaborators with {1} inside a class, pass them in through the constructor (constructor {2}); tests then supply a {3} or fake.",
+      "blanks": {
+        "1": "new",
+        "2": "injection",
+        "3": "mock"
+      },
+      "bank": [
+        "new",
+        "injection",
+        "mock",
+        "static",
+        "singleton"
+      ],
+      "explanation": "Manual DI is just wiring objects in a main function or a composition root. Container frameworks automate the lookup, but the principle (depend on abstractions, receive them from outside) is the same."
+    },
+    {
+      "id": "solid-principles",
+      "concept": "Pattern selection",
+      "type": "matrix",
+      "difficulty": 1,
+      "prompt": "Match each SOLID principle with its meaning.",
+      "left": [
+        {
+          "id": "a",
+          "text": "Single Responsibility"
+        },
+        {
+          "id": "b",
+          "text": "Open/Closed"
+        },
+        {
+          "id": "c",
+          "text": "Liskov Substitution"
+        },
+        {
+          "id": "d",
+          "text": "Interface Segregation"
+        },
+        {
+          "id": "e",
+          "text": "Dependency Inversion"
+        }
+      ],
+      "right": [
+        {
+          "id": "p",
+          "text": "A class should have one reason to change"
+        },
+        {
+          "id": "q",
+          "text": "Add behaviour by extension, not by editing tested code"
+        },
+        {
+          "id": "r",
+          "text": "Subtypes must be usable wherever the base type is expected without breaking callers"
+        },
+        {
+          "id": "s",
+          "text": "Prefer several small client-specific interfaces over one fat interface"
+        },
+        {
+          "id": "t",
+          "text": "High-level modules depend on abstractions, not on concrete low-level classes"
+        },
+        {
+          "id": "u",
+          "text": "Every class must be declared final"
+        }
+      ],
+      "pairs": {
+        "a": "p",
+        "b": "q",
+        "c": "r",
+        "d": "s",
+        "e": "t"
+      },
+      "explanation": "A rectangle/square subclass that breaks setWidth is the usual Liskov example; constructor injection is the usual way to apply Dependency Inversion."
+    },
+    {
+      "id": "undo-stack-size",
+      "concept": "Command pattern",
+      "type": "integer",
+      "difficulty": 3,
+      "prompt": "An editor keeps an undo stack and a redo stack. The user executes commands A, B, C, D, E, then does undo, undo, redo, and finally executes a new command F. How many commands are on the undo stack at the end?",
+      "answer": 5,
+      "explanation": "After A-E: undo has 5. Two undos move E and D to redo (undo = A,B,C). Redo moves D back (undo = A,B,C,D, redo = E). Executing F pushes it and clears the redo stack: undo = A,B,C,D,F = 5 and redo = 0."
+    },
+    {
+      "id": "lapsed-listener",
+      "concept": "Observer",
+      "type": "assertion",
+      "difficulty": 3,
+      "prompt": "Read the assertion (A) and the reason (R), then choose the option that fits.",
+      "assertion": "An Observer implementation that holds strong references to its listeners can cause a memory leak.",
+      "reason": "Listeners are garbage collected automatically as soon as they leave their local scope, even while they are still registered.",
+      "correct": [
+        "c"
+      ],
+      "whys": {
+        "a": "R is false, so it cannot explain A.",
+        "b": "R is false.",
+        "c": "Correct: A is true (the lapsed listener problem); R is false, because a registered listener is still reachable from the subject.",
+        "d": "A is true."
+      },
+      "explanation": "Always provide an unsubscribe operation, or hold listeners through weak references so the subject does not keep them alive."
+    },
+    {
+      "id": "dip-meaning",
+      "concept": "SOLID",
+      "type": "assertion",
+      "difficulty": 2,
+      "prompt": "Read the assertion (A) and the reason (R), then choose the option that fits.",
+      "assertion": "The Dependency Inversion Principle says high-level modules should create their low-level dependencies directly.",
+      "reason": "Both high-level and low-level modules should depend on abstractions rather than on each other's details.",
+      "correct": [
+        "d"
+      ],
+      "whys": {
+        "a": "This option says both statements are true and R explains A, which does not match: A is false: inversion means depending on abstractions that are supplied from outside; R is the correct statement of the principle.",
+        "b": "This option says both statements are true but R does not explain A, which does not match: A is false: inversion means depending on abstractions that are supplied from outside; R is the correct statement of the principle.",
+        "c": "This option says A is true and R is false, which does not match: A is false: inversion means depending on abstractions that are supplied from outside; R is the correct statement of the principle.",
+        "d": "Correct: A is false: inversion means depending on abstractions that are supplied from outside; R is the correct statement of the principle."
+      },
+      "explanation": "Inject an interface (constructor injection) so the high-level policy does not know the concrete detail."
+    },
+    {
+      "id": "adapter-choice",
+      "concept": "Pattern selection",
+      "type": "single",
+      "difficulty": 2,
+      "prompt": "A legacy component exposes fetchAll(), but your code is written against a Repository interface that declares list(). You want to reuse the legacy component without changing it. Which pattern fits?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Adapter",
+          "why": "Correct: an adapter converts one interface into the one the client expects."
+        },
+        {
+          "id": "b",
+          "text": "Facade",
+          "why": "A facade simplifies a large subsystem behind a smaller interface; it does not translate one interface into another."
+        },
+        {
+          "id": "c",
+          "text": "Singleton",
+          "why": "Singleton restricts instances and says nothing about interface conversion."
+        },
+        {
+          "id": "d",
+          "text": "Observer",
+          "why": "Observer notifies subscribers of changes; it does not reconcile mismatched interfaces."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Adapter changes the interface, Decorator keeps it and adds behaviour, Proxy keeps it and controls access."
+    },
+    {
+      "id": "creational-patterns",
+      "concept": "Pattern selection",
+      "type": "multi",
+      "difficulty": 1,
+      "prompt": "Select all creational design patterns.",
+      "options": [
+        {
+          "id": "a",
+          "text": "Singleton",
+          "why": "It controls how and how many instances are created."
+        },
+        {
+          "id": "b",
+          "text": "Factory Method",
+          "why": "It decides which concrete class to instantiate."
+        },
+        {
+          "id": "c",
+          "text": "Builder",
+          "why": "It constructs a complex object step by step."
+        },
+        {
+          "id": "d",
+          "text": "Observer",
+          "why": "It is behavioural: it notifies dependents of state changes."
+        },
+        {
+          "id": "e",
+          "text": "Adapter",
+          "why": "It is structural: it converts one interface into another."
+        }
+      ],
+      "correct": [
+        "a",
+        "b",
+        "c"
+      ],
+      "explanation": "Creational patterns deal with object creation, structural ones with composition, behavioural ones with interaction."
+    },
+    {
+      "id": "decorator-vs-proxy",
+      "concept": "Pattern selection",
+      "type": "truefalse",
+      "difficulty": 3,
+      "prompt": "Decorator and Proxy often have the same structure, wrapping an object behind the same interface, and differ mainly in intent.",
+      "options": [
+        {
+          "id": "a",
+          "text": "True",
+          "why": "Correct: a decorator adds behaviour, a proxy controls access, yet both implement the wrapped type's interface."
+        },
+        {
+          "id": "b",
+          "text": "False",
+          "why": "Their class diagrams are almost identical; the intent is what distinguishes them."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Name the intent in an interview: add behaviour (Decorator) versus guard, defer or remote access (Proxy)."
+    },
+    {
+      "id": "observer-calls",
+      "concept": "Observer",
+      "type": "integer",
+      "difficulty": 2,
+      "prompt": "A subject keeps its observers in a plain list with no duplicate check. Observer A subscribes twice, B subscribes once and C subscribes once. Then B unsubscribes (removing one entry) and the subject publishes 2 events. How many notification calls are made in total?",
+      "answer": 6,
+      "tolerance": 0,
+      "explanation": "After the changes the list holds A, A, C, which is 3 calls per event, so 2 events make 6 calls."
+    },
+    {
+      "id": "undo-pseudocode",
+      "concept": "Command",
+      "type": "code",
+      "difficulty": 2,
+      "prompt": "Write pseudocode for undo() in an editor that keeps a stack named history of executed commands and a stack named redo: it must reverse the most recent command and make it available for redo.",
+      "language": "pseudocode",
+      "checks": [
+        {
+          "label": "pops the last command from history",
+          "pattern": "pop"
+        },
+        {
+          "label": "calls the command's undo",
+          "pattern": "undo\\s*\\("
+        },
+        {
+          "label": "pushes it onto the redo stack",
+          "pattern": "push"
+        }
+      ],
+      "model": "undo():\n  if history is empty: return\n  cmd = history.pop()\n  cmd.undo()\n  redo.push(cmd)",
+      "explanation": "Redo does the reverse: pop from redo, execute, push to history. Executing a brand-new command clears the redo stack."
+    }
+  ]
+}

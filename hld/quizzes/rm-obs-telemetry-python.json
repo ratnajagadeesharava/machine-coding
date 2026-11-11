@@ -1,0 +1,431 @@
+{
+  "id": "rm-obs-telemetry-python",
+  "title": "Observability in Python: structlog, contextvars, prometheus_client and profiling",
+  "topic": "Python",
+  "series": "python-observability-security-testing",
+  "seriesTitle": "Python: observability, security and testing",
+  "seriesDescription": "Prometheus and tracing, JWT and FastAPI auth, pytest and mocks. JEE-Advanced style: integer, assertion-reason, matrix match, fill-in-the-blanks, short code and multi-correct questions.",
+  "seriesOrder": 1,
+  "language": "python",
+  "description": "Correlation ids with ContextVar and structlog, prometheus_client metrics and multiprocess mode, OpenTelemetry auto-instrumentation, and finding slow code with py-spy and cProfile.",
+  "source": "Python documentation (contextvars, logging, cProfile); structlog documentation (contextvars); prometheus_client documentation (metric types, multiprocess mode); OpenTelemetry Python documentation; py-spy README",
+  "estimatedMinutes": 22,
+  "questions": [
+    {
+      "id": "py-contextvar",
+      "concept": "Correlation id",
+      "type": "code",
+      "difficulty": 2,
+      "prompt": "In a FastAPI app, write a ContextVar named request_id and an HTTP middleware that sets it from the x-request-id header (or a new uuid4 string) for the duration of the request and resets it afterwards.",
+      "language": "python",
+      "starter": "from contextvars import ContextVar\nfrom uuid import uuid4\n",
+      "checks": [
+        {
+          "label": "declares a ContextVar",
+          "pattern": "contextvar\\("
+        },
+        {
+          "label": "reads the header or makes a uuid4",
+          "pattern": "(x-request-id|uuid4\\()"
+        },
+        {
+          "label": "calls call_next",
+          "pattern": "call_next\\("
+        },
+        {
+          "label": "resets in finally",
+          "pattern": "finally\\s*:[\\s\\S]*(\\.reset\\(|\\.set\\()"
+        }
+      ],
+      "model": "request_id = ContextVar(\"request_id\", default=\"-\")\n\n@app.middleware(\"http\")\nasync def correlate(request, call_next):\n    token = request_id.set(request.headers.get(\"x-request-id\") or str(uuid4()))\n    try:\n        return await call_next(request)\n    finally:\n        request_id.reset(token)",
+      "explanation": "ContextVar values follow asyncio tasks, unlike threading.local, so every log call in the request can read request_id.get() from a logging.Filter. Using structlog.contextvars.bind_contextvars is an equally good answer."
+    },
+    {
+      "id": "log-filter",
+      "concept": "Logging with logging module",
+      "type": "code",
+      "difficulty": 3,
+      "prompt": "Write a logging.Filter subclass named RequestIdFilter whose filter method copies request_id.get() onto record.request_id and lets every record through.",
+      "language": "python",
+      "checks": [
+        {
+          "label": "subclasses logging.Filter",
+          "pattern": "class\\s+RequestIdFilter\\s*\\(\\s*logging\\.Filter\\s*\\)"
+        },
+        {
+          "label": "defines filter(self, record)",
+          "pattern": "def\\s+filter\\s*\\(\\s*self\\s*,\\s*record"
+        },
+        {
+          "label": "copies the context value",
+          "pattern": "record\\.request_id\\s*=\\s*request_id\\.get\\(\\s*\\)"
+        },
+        {
+          "label": "returns True",
+          "pattern": "return\\s+True"
+        }
+      ],
+      "model": "class RequestIdFilter(logging.Filter):\n    def filter(self, record):\n        record.request_id = request_id.get()\n        return True",
+      "explanation": "Attach it to a handler (handler.addFilter(RequestIdFilter())) and reference %(request_id)s in the format string. Filters on a handler run for every record that handler emits, including records from other loggers."
+    },
+    {
+      "id": "structlog-config",
+      "concept": "Correlation id",
+      "type": "code",
+      "difficulty": 2,
+      "prompt": "Configure structlog so that values bound with structlog.contextvars appear in every event and events are rendered as JSON, then bind request_id=\"r-1\" for the current context.",
+      "language": "python",
+      "starter": "import structlog\n",
+      "checks": [
+        {
+          "label": "merges context variables",
+          "pattern": "merge_contextvars"
+        },
+        {
+          "label": "renders JSON",
+          "pattern": "JSONRenderer"
+        },
+        {
+          "label": "binds request_id",
+          "pattern": "bind_contextvars\\(\\s*request_id\\s*=\\s*[\"']r-1[\"']"
+        }
+      ],
+      "model": "structlog.configure(processors=[structlog.contextvars.merge_contextvars, structlog.processors.JSONRenderer()])\nstructlog.contextvars.bind_contextvars(request_id=\"r-1\")",
+      "explanation": "Verified with structlog: a later log.info(\"hello\", x=1) prints {\"x\": 1, \"event\": \"hello\", \"request_id\": \"r-1\"}. Call clear_contextvars() at the start of each request so values never leak between requests."
+    },
+    {
+      "id": "ctx-task-copy",
+      "concept": "Correlation id",
+      "type": "assertion",
+      "difficulty": 3,
+      "prompt": "Read the assertion A and the reason R, then choose the correct relationship between them.",
+      "assertion": "A ContextVar set inside one asyncio request task is not visible to another request task running at the same time.",
+      "reason": "Each asyncio task runs in its own copy of the context taken when the task was created.",
+      "correct": [
+        "a"
+      ],
+      "whys": {
+        "a": "Correct: Task-local copies isolate the values, which is why ContextVar works for per-request data in async code.",
+        "b": "Not this one: Both are true but R is not the reason A holds does not describe this pair; R is actually the reason or is false.",
+        "c": "Not this one: A is true while R is false does not describe this pair; check the truth of R again.",
+        "d": "Not this one: A is false while R is true does not describe this pair; check the truth of A again."
+      },
+      "explanation": "A task created with asyncio.create_task copies the context at creation, so it sees the parent value set earlier but its own later changes stay private."
+    },
+    {
+      "id": "ctx-reset",
+      "concept": "Correlation id",
+      "type": "assertion",
+      "difficulty": 2,
+      "prompt": "Read the assertion A and the reason R, then choose the correct relationship between them.",
+      "assertion": "ContextVar.reset(token) restores the value the variable had before the matching set() call.",
+      "reason": "The contextvars module was added to the standard library in Python 3.7.",
+      "correct": [
+        "b"
+      ],
+      "whys": {
+        "a": "Not this one: Both A and R are true and R explains A does not describe this pair; R does not explain A.",
+        "b": "Correct: Both are true, but the module's release version does not explain how reset works; the token records the previous value.",
+        "c": "Not this one: A is true while R is false does not describe this pair; check the truth of R again.",
+        "d": "Not this one: A is false while R is true does not describe this pair; check the truth of A again."
+      },
+      "explanation": "Always reset in a finally block so an exception cannot leave a stale value behind."
+    },
+    {
+      "id": "prom-client",
+      "concept": "Metric types",
+      "type": "code",
+      "difficulty": 2,
+      "prompt": "With prometheus_client, define a Counter http_requests_total with labels method and status and a Histogram http_request_seconds, then record one GET that returned 200 taking the time of handle().",
+      "language": "python",
+      "starter": "from prometheus_client import Counter, Histogram\n",
+      "checks": [
+        {
+          "label": "defines a Counter",
+          "pattern": "counter\\("
+        },
+        {
+          "label": "defines a Histogram",
+          "pattern": "histogram\\("
+        },
+        {
+          "label": "increments with labels",
+          "pattern": "\\.labels\\([\\s\\S]*\\)\\.inc\\("
+        },
+        {
+          "label": "records the duration",
+          "pattern": "(\\.observe\\(|\\.time\\(\\))"
+        }
+      ],
+      "model": "REQS = Counter(\"http_requests_total\", \"Requests\", [\"method\", \"status\"])\nLAT = Histogram(\"http_request_seconds\", \"Latency\")\nREQS.labels(\"GET\", \"200\").inc()\nwith LAT.time():\n    handle()",
+      "explanation": "Labels must come from a small closed set. observe(seconds) is the explicit alternative to the timer context manager."
+    },
+    {
+      "id": "prom-types",
+      "concept": "Metric types",
+      "type": "matrix",
+      "difficulty": 1,
+      "prompt": "Match each prometheus_client metric class with what it records.",
+      "left": [
+        {
+          "id": "l1",
+          "text": "Counter"
+        },
+        {
+          "id": "l2",
+          "text": "Gauge"
+        },
+        {
+          "id": "l3",
+          "text": "Histogram"
+        },
+        {
+          "id": "l4",
+          "text": "Summary"
+        }
+      ],
+      "right": [
+        {
+          "id": "r1",
+          "text": "A total that only increases and resets on restart"
+        },
+        {
+          "id": "r2",
+          "text": "A value that can go up and down, such as in-flight requests"
+        },
+        {
+          "id": "r3",
+          "text": "Observations counted into buckets so percentiles can be estimated"
+        },
+        {
+          "id": "r4",
+          "text": "A running count and sum of observations"
+        },
+        {
+          "id": "r5",
+          "text": "A free-text event with a timestamp"
+        }
+      ],
+      "pairs": {
+        "l1": "r1",
+        "l2": "r2",
+        "l3": "r3",
+        "l4": "r4"
+      },
+      "explanation": "The Python Summary exposes only _count and _sum, with no quantiles, so use a Histogram when you need percentiles across instances."
+    },
+    {
+      "id": "counter-name",
+      "concept": "Metric types",
+      "type": "single",
+      "difficulty": 2,
+      "prompt": "Which series name does prometheus_client expose for Counter(\"jobs_done\", \"Jobs finished\") after one inc()?",
+      "options": [
+        {
+          "id": "a",
+          "text": "jobs_done",
+          "why": "The bare name is used for gauges, not counters."
+        },
+        {
+          "id": "b",
+          "text": "jobs_done_bucket",
+          "why": "The _bucket suffix belongs to histograms."
+        },
+        {
+          "id": "c",
+          "text": "jobs_done_count",
+          "why": "The _count suffix belongs to histograms and summaries."
+        },
+        {
+          "id": "d",
+          "text": "jobs_done_total",
+          "why": "Correct: the client appends _total to counter names (checked against prometheus_client 0.26)."
+        }
+      ],
+      "correct": [
+        "d"
+      ],
+      "explanation": "A jobs_done_created series with the creation timestamp is exported too. Name counters without the suffix in code, query them with it in PromQL."
+    },
+    {
+      "id": "histogram-default-buckets",
+      "concept": "Metric types",
+      "type": "integer",
+      "difficulty": 3,
+      "prompt": "prometheus_client's Histogram uses 14 default finite bucket boundaries from 0.005 to 10 seconds. How many le bucket series does one Histogram expose per label combination, including +Inf?",
+      "answer": 15,
+      "unit": "series",
+      "explanation": "The 14 finite boundaries plus the cumulative +Inf bucket give 15 (checked by exposing a histogram with the default buckets). Choose buckets around your SLO threshold instead of keeping the defaults when latency targets are far from them."
+    },
+    {
+      "id": "multiproc-metrics",
+      "concept": "Metric types",
+      "type": "assertion",
+      "difficulty": 3,
+      "prompt": "Read the assertion A and the reason R, then choose the correct relationship between them.",
+      "assertion": "With four uvicorn worker processes and default prometheus_client settings, one scrape returns the combined totals of all four workers.",
+      "reason": "Each worker process keeps its metrics in its own memory, so a scrape sees only the worker that answers it.",
+      "correct": [
+        "d"
+      ],
+      "whys": {
+        "a": "Not this one: Both A and R are true and R explains A does not describe this pair; R does not explain A.",
+        "b": "Not this one: Both are true but R is not the reason A holds does not describe this pair; R is actually the reason or is false.",
+        "c": "Not this one: A is true while R is false does not describe this pair; check the truth of R again.",
+        "d": "Correct: A is false: each scrape reflects one worker only. R is true and is the cause."
+      },
+      "explanation": "Use multiprocess mode (the PROMETHEUS_MULTIPROC_DIR environment variable and MultiProcessCollector) or one process per container so scrapes see complete data."
+    },
+    {
+      "id": "histogram-cumulative",
+      "concept": "Histograms",
+      "type": "assertion",
+      "difficulty": 3,
+      "prompt": "Read the assertion A and the reason R, then choose the correct relationship between them.",
+      "assertion": "In a prometheus_client Histogram the bucket le=\"1.0\" also counts observations of 0.3 seconds.",
+      "reason": "Bucket counters are reset to zero each time Prometheus scrapes them.",
+      "correct": [
+        "c"
+      ],
+      "whys": {
+        "a": "Not this one: Both A and R are true and R explains A does not describe this pair; R does not explain A.",
+        "b": "Not this one: Both are true but R is not the reason A holds does not describe this pair; R is actually the reason or is false.",
+        "c": "Correct: A is true because buckets are cumulative. R is false: counters keep growing until the process restarts.",
+        "d": "Not this one: A is false while R is true does not describe this pair; check the truth of A again."
+      },
+      "explanation": "The cumulative design is what makes buckets additive across instances and what histogram_quantile relies on."
+    },
+    {
+      "id": "otel-instrument",
+      "concept": "Distributed tracing",
+      "type": "code",
+      "difficulty": 2,
+      "prompt": "Write the shell command that starts the ASGI app main:app with uvicorn under OpenTelemetry auto-instrumentation, naming the service orders through the OTEL_SERVICE_NAME environment variable.",
+      "language": "shell",
+      "checks": [
+        {
+          "label": "sets the service name",
+          "pattern": "OTEL_SERVICE_NAME=orders"
+        },
+        {
+          "label": "wraps with opentelemetry-instrument",
+          "pattern": "opentelemetry-instrument"
+        },
+        {
+          "label": "runs uvicorn main:app",
+          "pattern": "uvicorn\\s+main:app"
+        }
+      ],
+      "model": "OTEL_SERVICE_NAME=orders opentelemetry-instrument uvicorn main:app",
+      "explanation": "Install opentelemetry-distro and run opentelemetry-bootstrap -a install to add instrumentation packages for the libraries in use. The --service_name option is an equivalent way to set the name. Do not combine auto-instrumentation with the uvicorn --reload option."
+    },
+    {
+      "id": "py-spy",
+      "concept": "Profiling",
+      "type": "code",
+      "difficulty": 2,
+      "prompt": "Write the shell command that records a 30 second flame graph of the running Python process 4321 to flame.svg with py-spy, without restarting it.",
+      "language": "shell",
+      "checks": [
+        {
+          "label": "records with py-spy",
+          "pattern": "py-spy\\s+record"
+        },
+        {
+          "label": "targets pid 4321",
+          "pattern": "(--pid|-p)\\s+4321"
+        },
+        {
+          "label": "writes flame.svg",
+          "pattern": "(-o|--output)[\\s=]+flame\\.svg"
+        },
+        {
+          "label": "lasts 30 seconds",
+          "pattern": "(--duration|-d)\\s+30"
+        }
+      ],
+      "model": "py-spy record -o flame.svg --pid 4321 --duration 30",
+      "explanation": "py-spy is a sampling profiler that reads the process memory, so it needs ptrace permission (often root). py-spy dump --pid prints the current stacks, like a thread dump."
+    },
+    {
+      "id": "cprofile",
+      "concept": "Profiling",
+      "type": "code",
+      "difficulty": 2,
+      "prompt": "Write Python that profiles a call to handle() with cProfile and prints the results sorted by cumulative time.",
+      "language": "python",
+      "checks": [
+        {
+          "label": "uses cProfile",
+          "pattern": "cprofile"
+        },
+        {
+          "label": "profiles handle()",
+          "pattern": "handle\\("
+        },
+        {
+          "label": "sorts by cumulative time",
+          "pattern": "(cumulative|cumtime)"
+        }
+      ],
+      "model": "import cProfile\ncProfile.run(\"handle()\", sort=\"cumulative\")",
+      "explanation": "pstats.Stats(profile).sort_stats(\"cumulative\").print_stats(20) also works. cProfile traces every call, so overhead is higher than py-spy sampling; use it in development or on a copy of the workload."
+    },
+    {
+      "id": "blocking-in-async",
+      "concept": "Profiling",
+      "type": "single",
+      "difficulty": 3,
+      "prompt": "An async FastAPI handler calls the blocking requests.get() directly. Under load p99 climbs while CPU stays low, and py-spy dump shows the main thread inside a socket read. What is happening?",
+      "options": [
+        {
+          "id": "a",
+          "text": "The garbage collector pauses every request for as long as the socket read lasts.",
+          "why": "Garbage collection does not wait on sockets."
+        },
+        {
+          "id": "b",
+          "text": "The blocking call stalls the event loop so other requests wait.",
+          "why": "Correct: one thread runs the loop, and a blocking call freezes all coroutines."
+        },
+        {
+          "id": "c",
+          "text": "The uvicorn access log is flushed to disk synchronously once for every single request.",
+          "why": "A flush would appear as a write, not a socket read, and is rarely the bottleneck."
+        },
+        {
+          "id": "d",
+          "text": "The Prometheus client is holding a global lock and thereby serialising all route handlers.",
+          "why": "Metric updates are short and do not hold sockets."
+        }
+      ],
+      "correct": [
+        "b"
+      ],
+      "explanation": "Use an async client such as httpx.AsyncClient, or run the blocking call in a thread with asyncio.to_thread (or declare the route with plain def so FastAPI uses its thread pool)."
+    },
+    {
+      "id": "cprofile-prod",
+      "concept": "Profiling",
+      "type": "truefalse",
+      "difficulty": 2,
+      "prompt": "True or false: cProfile has such low overhead that it is the best choice for always-on profiling of a production service.",
+      "options": [
+        {
+          "id": "a",
+          "text": "True",
+          "why": "cProfile hooks every function call and return, which slows programs noticeably."
+        },
+        {
+          "id": "b",
+          "text": "False",
+          "why": "Correct: a deterministic profiler adds overhead proportional to call count."
+        }
+      ],
+      "correct": [
+        "b"
+      ],
+      "explanation": "Prefer a sampling profiler such as py-spy for production, and cProfile for local runs or a replay of the workload."
+    }
+  ]
+}

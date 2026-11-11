@@ -1,0 +1,562 @@
+{
+  "id": "rm-web-http-api-core",
+  "title": "Web APIs: status codes, pagination, idempotency and versioning",
+  "topic": "Language-independent",
+  "language": "neutral",
+  "description": "HTTP status-code choice, offset versus cursor pagination, idempotency keys, conditional requests, API versioning with deprecation headers, and GraphQL execution rules.",
+  "source": "RFC 9110 (HTTP semantics, conditional requests); RFC 9745 (Deprecation header) and RFC 8594 (Sunset); GraphQL specification (execution); Stripe idempotency documentation; Use The Index, Luke (keyset pagination); PostgreSQL documentation (INSERT ... ON CONFLICT)",
+  "series": "core-web-and-data-concepts",
+  "seriesTitle": "Core: HTTP, API and data-access concepts",
+  "seriesDescription": "Status codes, pagination, idempotency, probes, secrets, pool arithmetic, isolation and N+1 as SQL. JEE-Advanced style: integer, assertion-reason, matrix match, fill-in-the-blanks, short code and multi-correct questions.",
+  "seriesOrder": 1,
+  "estimatedMinutes": 16,
+  "questions": [
+    {
+      "id": "status-matrix-1",
+      "concept": "HTTP status codes",
+      "type": "matrix",
+      "difficulty": 1,
+      "prompt": "Match each situation with the most appropriate HTTP status code.",
+      "left": [
+        {
+          "id": "l1",
+          "text": "POST created a new order"
+        },
+        {
+          "id": "l2",
+          "text": "Signup rejected: the e-mail already exists (unique constraint)"
+        },
+        {
+          "id": "l3",
+          "text": "DELETE succeeded and there is nothing to return"
+        },
+        {
+          "id": "l4",
+          "text": "Valid login, but the user may not access the admin area"
+        },
+        {
+          "id": "l5",
+          "text": "Request has no or an invalid credential"
+        }
+      ],
+      "right": [
+        {
+          "id": "r1",
+          "text": "201"
+        },
+        {
+          "id": "r2",
+          "text": "409"
+        },
+        {
+          "id": "r3",
+          "text": "204"
+        },
+        {
+          "id": "r4",
+          "text": "403"
+        },
+        {
+          "id": "r5",
+          "text": "401"
+        },
+        {
+          "id": "r6",
+          "text": "400"
+        },
+        {
+          "id": "r7",
+          "text": "422"
+        }
+      ],
+      "pairs": {
+        "l1": "r1",
+        "l2": "r2",
+        "l3": "r3",
+        "l4": "r4",
+        "l5": "r5"
+      },
+      "explanation": "201 Created (with a Location header), 409 Conflict for state conflicts such as duplicates, 204 No Content, 403 Forbidden for authenticated-but-not-allowed and 401 Unauthorized for missing or bad credentials. 422 is for well-formed but semantically invalid bodies."
+    },
+    {
+      "id": "status-matrix-2",
+      "concept": "HTTP status codes",
+      "type": "matrix",
+      "difficulty": 2,
+      "prompt": "Match each API situation with the most appropriate HTTP status code.",
+      "left": [
+        {
+          "id": "l1",
+          "text": "Job queued; result will be available later"
+        },
+        {
+          "id": "l2",
+          "text": "Client exceeded its rate limit"
+        },
+        {
+          "id": "l3",
+          "text": "If-Match ETag no longer matches (optimistic locking)"
+        },
+        {
+          "id": "l4",
+          "text": "DELETE sent to a read-only collection endpoint"
+        },
+        {
+          "id": "l5",
+          "text": "Resource was removed on purpose and will not return"
+        }
+      ],
+      "right": [
+        {
+          "id": "r1",
+          "text": "202"
+        },
+        {
+          "id": "r2",
+          "text": "429"
+        },
+        {
+          "id": "r3",
+          "text": "412"
+        },
+        {
+          "id": "r4",
+          "text": "405"
+        },
+        {
+          "id": "r5",
+          "text": "410"
+        },
+        {
+          "id": "r6",
+          "text": "409"
+        },
+        {
+          "id": "r7",
+          "text": "415"
+        }
+      ],
+      "pairs": {
+        "l1": "r1",
+        "l2": "r2",
+        "l3": "r3",
+        "l4": "r4",
+        "l5": "r5"
+      },
+      "explanation": "202 Accepted, 429 Too Many Requests (with Retry-After), 412 Precondition Failed, 405 Method Not Allowed (with Allow), 410 Gone. 409 is for state conflicts and 415 for an unsupported Content-Type."
+    },
+    {
+      "id": "offset-math",
+      "concept": "Pagination",
+      "type": "integer",
+      "difficulty": 1,
+      "prompt": "A list API takes zero-based page numbers and a page size, and translates them to SQL as OFFSET = page x size. A client asks for page 3 with size 20. How many rows does the database skip before returning the page?",
+      "answer": 60,
+      "tolerance": 0,
+      "unit": "rows",
+      "explanation": "offset = 3 x 20 = 60, which is the fourth page. Off-by-one errors between zero-based and one-based page numbers are a classic bug, so document which one the API uses."
+    },
+    {
+      "id": "keyset-sql",
+      "concept": "Pagination",
+      "type": "code",
+      "difficulty": 3,
+      "prompt": "Table posts(id, created_at, title). Write SQL that returns the next page, newest first, after the cursor (:last_created_at, :last_id). Fetch 21 rows (page size 20 plus one to detect a next page) with a deterministic tiebreaker.",
+      "language": "sql",
+      "starter": "SELECT ",
+      "checks": [
+        {
+          "label": "orders by created_at DESC, id DESC",
+          "pattern": "order\\s+by\\s+created_at\\s+desc\\s*,\\s*id\\s+desc"
+        },
+        {
+          "label": "filters with a keyset condition on (created_at, id)",
+          "pattern": "\\(\\s*created_at\\s*,\\s*id\\s*\\)\\s*<|created_at\\s*<[\\s\\S]*id\\s*<"
+        },
+        {
+          "label": "limits the result",
+          "pattern": "limit\\s+(\\d+|:\\w+|\\?|\\$\\d+)"
+        }
+      ],
+      "model": "SELECT id, created_at, title FROM posts\nWHERE (created_at, id) < (:last_created_at, :last_id)\nORDER BY created_at DESC, id DESC\nLIMIT 21;",
+      "explanation": "Keyset (cursor) pagination is stable under inserts and uses an index on (created_at, id). The expanded form created_at < :c OR (created_at = :c AND id < :i) is equally valid."
+    },
+    {
+      "id": "offset-deep-pages",
+      "concept": "Pagination",
+      "type": "assertion",
+      "difficulty": 2,
+      "prompt": "Judge the assertion and the reason.",
+      "assertion": "Offset pagination (LIMIT 20 OFFSET 100000) gets slower the deeper the client pages.",
+      "reason": "The database must walk past and discard all skipped rows before returning the page.",
+      "correct": [
+        "a"
+      ],
+      "whys": {
+        "a": "Correct: cost grows with the offset, which is why cursor/keyset pagination is preferred for feeds.",
+        "b": "Wrong: R is the cause.",
+        "c": "Wrong: R is true.",
+        "d": "Wrong: A is true."
+      },
+      "explanation": "Deep offsets are O(offset). Offsets also drift when rows are inserted or deleted between requests."
+    },
+    {
+      "id": "cursor-opaque",
+      "concept": "Pagination",
+      "type": "assertion",
+      "difficulty": 2,
+      "prompt": "Judge the assertion and the reason.",
+      "assertion": "Cursor pagination returns consistent pages while new rows are inserted during paging.",
+      "reason": "Cursors are usually encoded as opaque base64 tokens.",
+      "correct": [
+        "b"
+      ],
+      "whys": {
+        "a": "Wrong: encoding is cosmetic and does not provide stability.",
+        "b": "Correct: stability comes from anchoring on a key value (not a row count); opaque encoding is a true but unrelated API-design choice.",
+        "c": "Wrong: R is true.",
+        "d": "Wrong: A is true."
+      },
+      "explanation": "Opaque cursors let you change the underlying sort keys without breaking clients."
+    },
+    {
+      "id": "put-vs-post",
+      "concept": "Idempotency",
+      "type": "assertion",
+      "difficulty": 2,
+      "prompt": "Judge the assertion and the reason.",
+      "assertion": "HTTP PUT is idempotent.",
+      "reason": "HTTP POST is idempotent by specification, so retrying it is always safe.",
+      "correct": [
+        "c"
+      ],
+      "whys": {
+        "a": "Wrong: R is false.",
+        "b": "Wrong: R is not true.",
+        "c": "Correct: A is true (repeated PUT leaves the same state), R is false; POST is not idempotent, hence Idempotency-Key.",
+        "d": "Wrong: A is true."
+      },
+      "explanation": "Safe methods: GET, HEAD, OPTIONS. Idempotent: those plus PUT and DELETE. POST and PATCH are not guaranteed idempotent."
+    },
+    {
+      "id": "status-401-403",
+      "concept": "HTTP status codes",
+      "type": "assertion",
+      "difficulty": 2,
+      "prompt": "Judge the assertion and the reason.",
+      "assertion": "HTTP 401 is the right answer for a caller who is logged in but not allowed to use an endpoint.",
+      "reason": "HTTP 401 means the request lacks valid authentication credentials.",
+      "correct": [
+        "d"
+      ],
+      "whys": {
+        "a": "Wrong: A is false, so R cannot be explaining a true statement.",
+        "b": "Wrong: A is false.",
+        "c": "Wrong: A is false; R is true.",
+        "d": "Correct: a logged-in caller without permission gets 403 Forbidden. 401 is for missing or invalid credentials, which is exactly what R says."
+      },
+      "explanation": "401 means \"who are you?\" (the server may add WWW-Authenticate); 403 means \"I know who you are, and you may not\". Some APIs return 404 instead of 403 to avoid revealing that a resource exists."
+    },
+    {
+      "id": "backward-compatible",
+      "concept": "API versioning",
+      "type": "multi",
+      "difficulty": 3,
+      "prompt": "Select all that apply: which changes are backward compatible for existing JSON clients of v1?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Adding an optional field to a response.",
+          "why": "Tolerant readers ignore unknown fields."
+        },
+        {
+          "id": "b",
+          "text": "Adding a new endpoint.",
+          "why": "Existing callers never use it, so nothing breaks."
+        },
+        {
+          "id": "c",
+          "text": "Adding an optional query parameter with a default.",
+          "why": "Old requests behave as before."
+        },
+        {
+          "id": "d",
+          "text": "Renaming a response field from fullName to name.",
+          "why": "Old clients that read fullName break."
+        },
+        {
+          "id": "e",
+          "text": "Changing id from number to string.",
+          "why": "Typed clients fail to parse it."
+        },
+        {
+          "id": "f",
+          "text": "Making a previously optional request field required.",
+          "why": "Old requests now get rejected."
+        }
+      ],
+      "correct": [
+        "a",
+        "b",
+        "c"
+      ],
+      "explanation": "Additive changes are safe; renames, type changes, removals and tightened validation are breaking and need a new version or a deprecation period."
+    },
+    {
+      "id": "deprecation-headers",
+      "concept": "API versioning",
+      "type": "fill",
+      "difficulty": 2,
+      "prompt": "Fill in the HTTP deprecation vocabulary.",
+      "text": "A server announces an endpoint is deprecated with the {1} response header (RFC 9745), gives the date it will stop working in {2} (RFC 8594), and can point to migration docs using a {3} header with rel values.",
+      "blanks": {
+        "1": "Deprecation",
+        "2": "Sunset",
+        "3": "Link"
+      },
+      "bank": [
+        "Deprecation",
+        "Sunset",
+        "Link",
+        "Retry-After",
+        "Warning"
+      ],
+      "explanation": "Retry-After is for 429/503 and Warning is an obsolete caching header. Send these headers on old versions and log who still calls them before removal."
+    },
+    {
+      "id": "etag-304",
+      "concept": "HTTP caching",
+      "type": "single",
+      "difficulty": 2,
+      "prompt": "A client re-requests GET /products/7 with If-None-Match set to the ETag it stored earlier, and the product has not changed. Which response is correct?",
+      "options": [
+        {
+          "id": "a",
+          "text": "304 Not Modified with no body; the client reuses its cached copy.",
+          "why": "Correct: a matching If-None-Match on a GET gives 304, saving the transfer of the body."
+        },
+        {
+          "id": "b",
+          "text": "412 Precondition Failed, because the client sent a precondition header at all.",
+          "why": "412 is for If-Match style preconditions on unsafe requests; a matching If-None-Match on GET gives 304."
+        },
+        {
+          "id": "c",
+          "text": "204 No Content, because nothing changed since the last request.",
+          "why": "204 means success with an intentionally empty body, but it does not tell the client its cache is valid."
+        },
+        {
+          "id": "d",
+          "text": "200 OK with the full body again, since validators are only a hint meant for proxies.",
+          "why": "A server that honours validators answers 304; sending 200 would waste the bandwidth ETags exist to save."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Conditional GET: If-None-Match + ETag gives 304 when unchanged. The mirror image for writes is If-Match, where a mismatch yields 412 and enables optimistic concurrency over HTTP."
+    },
+    {
+      "id": "mutation-serial",
+      "concept": "GraphQL",
+      "type": "integer",
+      "difficulty": 3,
+      "prompt": "A GraphQL request contains three top-level mutation fields, m1, m2 and m3, and each resolver waits 100 ms on I/O. A spec-compliant server runs them one after another. Roughly how many milliseconds does the whole operation take?",
+      "answer": 300,
+      "tolerance": 0,
+      "explanation": "The GraphQL specification requires top-level mutation fields to execute serially, so 3 x 100 = 300 ms. Top-level query fields may run in parallel (about 100 ms). Serial order is what makes 'create then use' mutation lists predictable, and there is no rollback across them.",
+      "unit": "ms"
+    },
+    {
+      "id": "graphql-n-plus-1",
+      "concept": "GraphQL",
+      "type": "integer",
+      "difficulty": 3,
+      "prompt": "A GraphQL query lists 25 books and resolves author for each book. Each author resolver does its own SELECT, and the books list itself is one SELECT. How many SQL statements run in total?",
+      "answer": 26,
+      "tolerance": 0,
+      "explanation": "1 for the list plus 25 (one per book) is the N+1 problem. With a batching loader (the DataLoader pattern) the 25 author lookups collapse into one query, giving 2.",
+      "unit": "queries"
+    },
+    {
+      "id": "idempotency-retries",
+      "concept": "Idempotency",
+      "type": "integer",
+      "difficulty": 2,
+      "prompt": "A payments API stores the result of the first request for each Idempotency-Key and replays it for later requests with the same key. A client times out and sends the same POST with the same key 5 times in total. How many charges does the customer see?",
+      "answer": 1,
+      "tolerance": 0,
+      "unit": "charge",
+      "explanation": "The first request charges; the other four find the stored key and return the saved result. The check and the save must be atomic (a unique constraint on the key), otherwise two simultaneous retries can both charge."
+    },
+    {
+      "id": "idempotency-table-sql",
+      "concept": "Idempotency",
+      "type": "code",
+      "difficulty": 3,
+      "prompt": "Table idempotency_keys(key text primary key, response text). Write one PostgreSQL statement that records the key with its response only if the key is not already present, and silently does nothing when it is.",
+      "language": "sql",
+      "checks": [
+        {
+          "label": "inserts into idempotency_keys",
+          "pattern": "insert\\s+into\\s+idempotency_keys"
+        },
+        {
+          "label": "uses ON CONFLICT on the key",
+          "pattern": "on\\s+conflict\\s*\\(\\s*key\\s*\\)"
+        },
+        {
+          "label": "does nothing on conflict",
+          "pattern": "do\\s+nothing"
+        }
+      ],
+      "model": "INSERT INTO idempotency_keys (key, response)\nVALUES (:key, :response)\nON CONFLICT (key) DO NOTHING;",
+      "explanation": "The primary key makes the claim atomic: of two concurrent requests, exactly one insert succeeds (check the affected row count: 1 means \"you own this key\", 0 means \"replay the stored response\"). Other databases spell it INSERT IGNORE or MERGE.",
+      "starter": "INSERT INTO "
+    },
+    {
+      "id": "retry-after-429",
+      "concept": "HTTP status codes",
+      "type": "single",
+      "difficulty": 2,
+      "prompt": "A client receives 429 Too Many Requests with the header Retry-After: 30. What is the best behaviour?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Retry immediately with the same request, three times in a row, since the limit window may already have reset.",
+          "why": "Hammering a rate-limited endpoint keeps the limit exceeded and may extend the block."
+        },
+        {
+          "id": "b",
+          "text": "Wait at least 30 seconds, then retry, adding jitter and a retry cap.",
+          "why": "Correct: Retry-After tells the client the earliest sensible moment; jitter avoids a thundering herd."
+        },
+        {
+          "id": "c",
+          "text": "Treat it as a permanent failure and never call the API again.",
+          "why": "429 is temporary by definition; the limit resets."
+        },
+        {
+          "id": "d",
+          "text": "Switch to a different HTTP method so the limiter does not see it.",
+          "why": "Limits apply per client or key, not per method, so this only adds confusion."
+        }
+      ],
+      "correct": [
+        "b"
+      ],
+      "explanation": "Respect Retry-After, back off exponentially when it is absent, and cap the number of retries. Servers should also say which limit was hit."
+    },
+    {
+      "id": "put-patch-semantics",
+      "concept": "REST design",
+      "type": "single",
+      "difficulty": 2,
+      "prompt": "Which description of PUT versus PATCH on /users/7 matches HTTP semantics?",
+      "options": [
+        {
+          "id": "a",
+          "text": "PUT creates a brand-new user with a fresh id on every call, while PATCH updates the existing user in place.",
+          "why": "PUT to a known URL replaces or creates that one resource; it does not mint a new id per call."
+        },
+        {
+          "id": "b",
+          "text": "PUT replaces the whole representation; PATCH applies a partial change.",
+          "why": "Correct: PUT sends the complete new state; PATCH sends only the differences."
+        },
+        {
+          "id": "c",
+          "text": "PUT is safe and cacheable; PATCH is not.",
+          "why": "Neither is safe: both change state. Only GET, HEAD and OPTIONS are safe."
+        },
+        {
+          "id": "d",
+          "text": "PUT is for JSON bodies; PATCH is for form bodies.",
+          "why": "Neither method dictates the media type of the body."
+        }
+      ],
+      "correct": [
+        "b"
+      ],
+      "explanation": "PUT is idempotent by definition. PATCH is not guaranteed idempotent (for example an \"append item\" patch), which is why unsafe retries need an idempotency key."
+    },
+    {
+      "id": "cursor-pagination-facts",
+      "concept": "Pagination",
+      "type": "multi",
+      "difficulty": 3,
+      "prompt": "Select all that apply: which statements about keyset (cursor) pagination are correct?",
+      "options": [
+        {
+          "id": "a",
+          "text": "It needs a deterministic sort with a unique tiebreaker such as the primary key.",
+          "why": "Without a unique tiebreaker, rows that share the sort value can be skipped or repeated."
+        },
+        {
+          "id": "b",
+          "text": "It lets clients jump directly to page 500.",
+          "why": "Keyset pagination can only move forward or backward from a known cursor."
+        },
+        {
+          "id": "c",
+          "text": "Its cost per page stays roughly constant because an index seek starts at the cursor.",
+          "why": "The query seeks to the cursor value instead of scanning and discarding skipped rows."
+        },
+        {
+          "id": "d",
+          "text": "It always reports the exact total number of pages.",
+          "why": "A total needs a separate COUNT; the cursor alone does not give it."
+        },
+        {
+          "id": "e",
+          "text": "Pages stay stable when new rows are inserted at the head of the list.",
+          "why": "The cursor anchors on a key value, not on a row count."
+        },
+        {
+          "id": "f",
+          "text": "It works well with any ORDER BY, even on unindexed columns.",
+          "why": "Without a supporting index the database still sorts or scans a lot."
+        }
+      ],
+      "correct": [
+        "a",
+        "c",
+        "e"
+      ],
+      "explanation": "Choose offset for small admin tables where jumping to a page matters; choose keyset for feeds, exports and large tables."
+    },
+    {
+      "id": "conditional-write-412",
+      "concept": "HTTP caching",
+      "type": "single",
+      "difficulty": 3,
+      "prompt": "A client sends PUT /documents/9 with If-Match: \"v4\", but the stored ETag is now \"v5\". Which response fits best?",
+      "options": [
+        {
+          "id": "a",
+          "text": "412 Precondition Failed, and the client must re-fetch before editing again.",
+          "why": "Correct: If-Match turns the PUT into a compare-and-set; a mismatch yields 412."
+        },
+        {
+          "id": "b",
+          "text": "304 Not Modified, because the document did not change as far as this particular client is concerned.",
+          "why": "304 answers conditional GET or HEAD requests, not writes."
+        },
+        {
+          "id": "c",
+          "text": "200 OK, and the server overwrites the document anyway.",
+          "why": "That is the lost-update bug If-Match exists to prevent."
+        },
+        {
+          "id": "d",
+          "text": "404 Not Found, because the version \"v4\" no longer exists.",
+          "why": "The document exists; only the precondition failed."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "This is optimistic concurrency over HTTP: ETag on read, If-Match on write. Some APIs use 409 Conflict instead, which is also defensible if documented."
+    }
+  ]
+}

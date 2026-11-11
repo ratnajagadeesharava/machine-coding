@@ -1,0 +1,466 @@
+{
+  "id": "rm-test-unit-integration-core",
+  "title": "Testing: test design, doubles, boundaries and the test pyramid",
+  "topic": "Language-independent",
+  "series": "core-testing",
+  "seriesTitle": "Core: testing",
+  "seriesDescription": "Test design, mocks versus fakes, integration and contract tests. JEE-Advanced style: integer, assertion-reason, matrix match, fill-in-the-blanks, short code and multi-correct questions.",
+  "seriesOrder": 1,
+  "language": "neutral",
+  "description": "Test-case design with boundaries and equivalence classes, test doubles, the test pyramid, contract tests, flaky-test causes, coverage and mutation scores, and short SQL and shell checks.",
+  "source": "Martin Fowler (TestDouble, TestPyramid, Mocks Aren't Stubs); Google Testing Blog (Flaky Tests); Pact documentation (consumer-driven contracts); Myers, The Art of Software Testing (boundary value analysis); Pitest and mutation testing literature",
+  "estimatedMinutes": 18,
+  "questions": [
+    {
+      "id": "boundary",
+      "concept": "Boundary values",
+      "type": "integer",
+      "difficulty": 2,
+      "prompt": "A form accepts ages from 18 to 65 inclusive. How many test inputs does classic two-value boundary value analysis use (one just outside and one on each boundary)?",
+      "answer": 4,
+      "unit": "inputs",
+      "explanation": "The values are 17, 18, 65 and 66: the two boundaries plus the neighbour just outside each. Add a typical value in the middle for the equivalence class if you want."
+    },
+    {
+      "id": "partitions",
+      "concept": "Equivalence classes",
+      "type": "integer",
+      "difficulty": 2,
+      "prompt": "The same form accepts ages from 18 to 65 inclusive and rejects everything else. Into how many equivalence classes does that split the integer inputs?",
+      "answer": 3,
+      "unit": "classes",
+      "explanation": "Below 18 (invalid), 18 to 65 (valid) and above 65 (invalid). One representative value from each class is enough to cover it, and boundaries then add the sharp edges."
+    },
+    {
+      "id": "edge-cases",
+      "concept": "Edge cases",
+      "type": "multi",
+      "difficulty": 2,
+      "prompt": "A function parseDate(\"dd/mm/yyyy\") returns a calendar date. Which inputs are worthwhile edge cases? Select all that apply.",
+      "options": [
+        {
+          "id": "a",
+          "text": "29/02/2024, a valid leap day.",
+          "why": "Correct: a special calendar case that must be accepted."
+        },
+        {
+          "id": "b",
+          "text": "29/02/2023, an impossible date.",
+          "why": "Correct: a well-formed string that must be rejected."
+        },
+        {
+          "id": "c",
+          "text": "An empty string and a missing value.",
+          "why": "Correct: absent input is a classic failure mode."
+        },
+        {
+          "id": "d",
+          "text": "15/06/2024, another ordinary date.",
+          "why": "It adds no new behaviour beyond the typical case already covered."
+        }
+      ],
+      "correct": [
+        "a",
+        "b",
+        "c"
+      ],
+      "explanation": "Edge cases come from boundaries, invalid input, empty values and special calendars."
+    },
+    {
+      "id": "test-doubles",
+      "concept": "Test doubles",
+      "type": "matrix",
+      "difficulty": 1,
+      "prompt": "Match each test double with its role.",
+      "left": [
+        {
+          "id": "l1",
+          "text": "Dummy"
+        },
+        {
+          "id": "l2",
+          "text": "Stub"
+        },
+        {
+          "id": "l3",
+          "text": "Spy"
+        },
+        {
+          "id": "l4",
+          "text": "Mock"
+        },
+        {
+          "id": "l5",
+          "text": "Fake"
+        }
+      ],
+      "right": [
+        {
+          "id": "r1",
+          "text": "Passed around to fill a parameter but never actually used"
+        },
+        {
+          "id": "r2",
+          "text": "Returns canned answers to calls made during the test"
+        },
+        {
+          "id": "r3",
+          "text": "A real or stub object that also records how it was called"
+        },
+        {
+          "id": "r4",
+          "text": "Pre-programmed with expectations that it verifies"
+        },
+        {
+          "id": "r5",
+          "text": "A working but simplified implementation, such as an in-memory database"
+        },
+        {
+          "id": "r6",
+          "text": "A copy of production data loaded for performance tests"
+        }
+      ],
+      "pairs": {
+        "l1": "r1",
+        "l2": "r2",
+        "l3": "r3",
+        "l4": "r4",
+        "l5": "r5"
+      },
+      "explanation": "The terms follow Gerard Meszaros and Martin Fowler. In everyday speech \"mock\" is often used for all of them."
+    },
+    {
+      "id": "aaa-fill",
+      "concept": "Test structure",
+      "type": "fill",
+      "difficulty": 1,
+      "prompt": "Complete the structure of a well-formed test.",
+      "text": "A test follows {1}, {2}, {3}: set up the inputs and state, run the code under test, then check the outcome.",
+      "blanks": {
+        "1": "Arrange",
+        "2": "Act",
+        "3": "Assert"
+      },
+      "bank": [
+        "Arrange",
+        "Act",
+        "Assert",
+        "Deploy",
+        "Mock"
+      ],
+      "explanation": "Keep one Act per test and assert on behaviour. Names such as given/when/then describe the same shape."
+    },
+    {
+      "id": "pyramid",
+      "concept": "Test strategy",
+      "type": "single",
+      "difficulty": 2,
+      "prompt": "Which mix of automated tests does the test pyramid recommend?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Mostly end-to-end browser tests with a small handful of unit tests.",
+          "why": "That is the inverted pyramid: slow, brittle and hard to diagnose."
+        },
+        {
+          "id": "b",
+          "text": "Many fast unit tests, fewer integration tests and only a few end-to-end tests.",
+          "why": "Correct: cheap, fast, precise tests at the base."
+        },
+        {
+          "id": "c",
+          "text": "Equal numbers of every kind of test, so each layer is covered the same.",
+          "why": "The cost and speed of the layers differ widely."
+        },
+        {
+          "id": "d",
+          "text": "Only manual testing before release, since automation is too expensive.",
+          "why": "Manual-only testing does not scale or catch regressions fast."
+        }
+      ],
+      "correct": [
+        "b"
+      ],
+      "explanation": "The shape follows cost and feedback speed. Modern variations (testing trophy, honeycomb) put more weight on integration tests for service architectures."
+    },
+    {
+      "id": "contract-test",
+      "concept": "Test strategy",
+      "type": "fill",
+      "difficulty": 2,
+      "prompt": "Complete the test strategy sentences.",
+      "text": "A consumer-driven {1} test (for example Pact) checks that a provider still honours what consumers rely on, without a full {2} environment, while tests of a pure function with plain inputs are {3} tests.",
+      "blanks": {
+        "1": "contract",
+        "2": "end-to-end",
+        "3": "unit"
+      },
+      "bank": [
+        "contract",
+        "end-to-end",
+        "unit",
+        "mutation",
+        "load",
+        "smoke"
+      ],
+      "explanation": "Contract tests catch breaking API changes early, which is what makes independent deployment of services safe."
+    },
+    {
+      "id": "flaky",
+      "concept": "Flaky tests",
+      "type": "single",
+      "difficulty": 3,
+      "prompt": "A test passes alone but fails in the full suite, and also fails near midnight. What is the most reliable cure for the time-related failure?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Add a two second sleep before the assertion so the clock ticks over.",
+          "why": "Sleeping makes the test slower and still depends on the real clock."
+        },
+        {
+          "id": "b",
+          "text": "Retry the test up to five times in the CI configuration.",
+          "why": "Retries hide the flake instead of fixing its cause."
+        },
+        {
+          "id": "c",
+          "text": "Inject a clock (or freeze time) so the test controls \"now\".",
+          "why": "Correct: removes the dependency on the real wall clock."
+        },
+        {
+          "id": "d",
+          "text": "Run the whole suite only during the daytime hours.",
+          "why": "Scheduling around the problem leaves the defect in place."
+        }
+      ],
+      "correct": [
+        "c"
+      ],
+      "explanation": "Flaky causes: shared state, ordering, time, randomness, concurrency and real network calls. Isolate each by injecting or seeding it."
+    },
+    {
+      "id": "shared-state",
+      "concept": "Flaky tests",
+      "type": "truefalse",
+      "difficulty": 2,
+      "prompt": "True or false: tests that share a mutable database without cleaning up after themselves can pass when run alone but fail in the full suite.",
+      "options": [
+        {
+          "id": "a",
+          "text": "True",
+          "why": "Correct: leftover rows from one test change the starting state of another."
+        },
+        {
+          "id": "b",
+          "text": "False",
+          "why": "Test order and leftover data are a common source of order-dependent failures."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Give each test its own data (transaction rollback, unique ids or a fresh container) so tests can run in any order and in parallel."
+    },
+    {
+      "id": "mutation-score",
+      "concept": "Test quality",
+      "type": "integer",
+      "difficulty": 2,
+      "prompt": "A mutation-testing tool creates 40 mutants of the code. The test suite fails (kills) 34 of them. What is the mutation score as a percentage, rounded to the nearest whole number?",
+      "answer": 85,
+      "unit": "%",
+      "explanation": "34 / 40 = 0.85, so 85 percent. The 6 surviving mutants point at behaviour that no test pins down, which line coverage alone cannot reveal."
+    },
+    {
+      "id": "combinations",
+      "concept": "Test design",
+      "type": "integer",
+      "difficulty": 1,
+      "prompt": "A feature must work on 3 browsers, 2 operating systems and 4 locales. How many configurations does the full cross product contain?",
+      "answer": 24,
+      "unit": "configurations",
+      "explanation": "3 x 2 x 4 = 24. Pairwise (all-pairs) testing covers every pair of values with far fewer cases, which is why it is used when the product grows quickly."
+    },
+    {
+      "id": "coverage",
+      "concept": "Test quality",
+      "type": "assertion",
+      "difficulty": 2,
+      "prompt": "Read the assertion A and the reason R, then choose the correct relationship between them.",
+      "assertion": "A test suite can reach 100% line coverage and still miss defects.",
+      "reason": "Coverage measures which lines were executed, not whether the tests assert anything useful about the results.",
+      "correct": [
+        "a"
+      ],
+      "whys": {
+        "a": "Correct: A line can run without any assertion checking its output, so coverage alone proves little.",
+        "b": "Not this one: Both are true but R is not the reason A holds does not describe this pair; R is actually the reason or is false.",
+        "c": "Not this one: A is true while R is false does not describe this pair; check the truth of R again.",
+        "d": "Not this one: A is false while R is true does not describe this pair; check the truth of A again."
+      },
+      "explanation": "Use coverage to find untested code, not as proof of quality. Mutation scores and review of assertions complement it."
+    },
+    {
+      "id": "mock-everything",
+      "concept": "Test doubles",
+      "type": "assertion",
+      "difficulty": 2,
+      "prompt": "Read the assertion A and the reason R, then choose the correct relationship between them.",
+      "assertion": "Replacing every collaborator with a mock in a test proves that the real components work together.",
+      "reason": "A mock only verifies interaction with a stand-in, not the behaviour of the real dependency.",
+      "correct": [
+        "d"
+      ],
+      "whys": {
+        "a": "Not this one: Both A and R are true and R explains A does not describe this pair; R does not explain A.",
+        "b": "Not this one: Both are true but R is not the reason A holds does not describe this pair; R is actually the reason or is false.",
+        "c": "Not this one: A is true while R is false does not describe this pair; check the truth of R again.",
+        "d": "Correct: A is false: the integration is never exercised. R is true and is exactly the gap."
+      },
+      "explanation": "Keep unit tests isolated with doubles, and add a small number of integration tests that use the real database, queue or HTTP client."
+    },
+    {
+      "id": "contract-vs-unit",
+      "concept": "Test strategy",
+      "type": "assertion",
+      "difficulty": 2,
+      "prompt": "Read the assertion A and the reason R, then choose the correct relationship between them.",
+      "assertion": "A consumer-driven contract test lets teams detect breaking API changes without running every service together.",
+      "reason": "Unit tests of pure functions run in milliseconds.",
+      "correct": [
+        "b"
+      ],
+      "whys": {
+        "a": "Not this one: Both A and R are true and R explains A does not describe this pair; R does not explain A.",
+        "b": "Correct: Both are true, but the speed of unit tests has nothing to do with how contract tests detect incompatibilities.",
+        "c": "Not this one: A is true while R is false does not describe this pair; check the truth of R again.",
+        "d": "Not this one: A is false while R is true does not describe this pair; check the truth of A again."
+      },
+      "explanation": "The contract is a recorded set of consumer expectations that the provider verifies in its own pipeline."
+    },
+    {
+      "id": "seeded-random",
+      "concept": "Flaky tests",
+      "type": "assertion",
+      "difficulty": 2,
+      "prompt": "Read the assertion A and the reason R, then choose the correct relationship between them.",
+      "assertion": "Any random generator used in a test should be seeded with a fixed value.",
+      "reason": "A seeded generator produces the same sequence on every run, so a failure can be reproduced.",
+      "correct": [
+        "a"
+      ],
+      "whys": {
+        "a": "Correct: Reproducibility is the point: a failing run can be repeated exactly.",
+        "b": "Not this one: Both are true but R is not the reason A holds does not describe this pair; R is actually the reason or is false.",
+        "c": "Not this one: A is true while R is false does not describe this pair; check the truth of R again.",
+        "d": "Not this one: A is false while R is true does not describe this pair; check the truth of A again."
+      },
+      "explanation": "For property-based testing, print the seed on failure so the failing case can be replayed."
+    },
+    {
+      "id": "test-order",
+      "concept": "Test design",
+      "type": "assertion",
+      "difficulty": 2,
+      "prompt": "Read the assertion A and the reason R, then choose the correct relationship between them.",
+      "assertion": "Tests should not depend on the order in which they run.",
+      "reason": "Test runners always execute tests in exactly the order in which they were written.",
+      "correct": [
+        "c"
+      ],
+      "whys": {
+        "a": "Not this one: Both A and R are true and R explains A does not describe this pair; R does not explain A.",
+        "b": "Not this one: Both are true but R is not the reason A holds does not describe this pair; R is actually the reason or is false.",
+        "c": "Correct: A is true because order dependence causes flaky suites. R is false: many runners shuffle or parallelise tests.",
+        "d": "Not this one: A is false while R is true does not describe this pair; check the truth of A again."
+      },
+      "explanation": "Run the suite in random order and in parallel in CI to expose hidden coupling between tests."
+    },
+    {
+      "id": "tdd-cycle",
+      "concept": "Test design",
+      "type": "single",
+      "difficulty": 1,
+      "prompt": "In test-driven development, what do you do right after writing a test and watching it fail (red)?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Rewrite the test until it passes without touching any production code.",
+          "why": "Weakening the test defeats its purpose."
+        },
+        {
+          "id": "b",
+          "text": "Delete the failing test and write a larger integration test instead.",
+          "why": "Skipping the small step abandons the cycle."
+        },
+        {
+          "id": "c",
+          "text": "Write the simplest code that makes the test pass (green).",
+          "why": "Correct: minimal code to go from red to green."
+        },
+        {
+          "id": "d",
+          "text": "Refactor the whole module before the first test has ever passed.",
+          "why": "Refactoring comes after green, with the test as a safety net."
+        }
+      ],
+      "correct": [
+        "c"
+      ],
+      "explanation": "Red, green, refactor. The failing test first proves the test can fail, so a later pass is meaningful."
+    },
+    {
+      "id": "sql-duplicates",
+      "concept": "Data tests",
+      "type": "code",
+      "difficulty": 2,
+      "prompt": "Write a SQL query that returns each email from the users table that appears more than once, together with its count. Use it as a data-quality test: it should return zero rows when the data is clean.",
+      "language": "sql",
+      "starter": "SELECT ",
+      "checks": [
+        {
+          "label": "groups by email",
+          "pattern": "group\\s+by\\s+email"
+        },
+        {
+          "label": "filters groups with more than one row",
+          "pattern": "having\\s+count\\s*\\(\\s*(\\*|1|email)\\s*\\)\\s*>\\s*1"
+        },
+        {
+          "label": "reads from users",
+          "pattern": "from\\s+users"
+        }
+      ],
+      "model": "SELECT email, count(*) FROM users GROUP BY email HAVING count(*) > 1;",
+      "explanation": "The same shape tests a uniqueness assumption before adding a UNIQUE constraint. Other valid forms use a window function or a self-join."
+    },
+    {
+      "id": "smoke-curl",
+      "concept": "Test strategy",
+      "type": "code",
+      "difficulty": 2,
+      "prompt": "Write a curl command for a smoke test that calls https://staging.example.com/health silently, fails the command on any HTTP error status, and gives up after 5 seconds.",
+      "language": "shell",
+      "checks": [
+        {
+          "label": "targets the health URL",
+          "pattern": "https://staging\\.example\\.com/health"
+        },
+        {
+          "label": "fails on HTTP errors",
+          "pattern": "(--fail|\\s-[a-zA-Z]*f)"
+        },
+        {
+          "label": "silent",
+          "pattern": "(--silent|\\s-[a-zA-Z]*s)"
+        },
+        {
+          "label": "5 second limit",
+          "pattern": "(--max-time|-m)\\s+5"
+        }
+      ],
+      "model": "curl --fail --silent --max-time 5 https://staging.example.com/health",
+      "explanation": "A non-zero exit code makes a CI step fail. Combine short flags as -fsS -m 5 if you want errors still printed (-S). Smoke tests check that the deployment is alive, not that every feature works."
+    }
+  ]
+}

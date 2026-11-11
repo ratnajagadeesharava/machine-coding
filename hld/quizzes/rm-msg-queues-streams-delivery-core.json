@@ -1,0 +1,553 @@
+{
+  "id": "rm-msg-queues-streams-delivery-core",
+  "title": "Queues vs streams, delivery guarantees and idempotent consumers",
+  "topic": "Language-independent",
+  "series": "core-messaging",
+  "seriesTitle": "Core: messaging",
+  "seriesDescription": "Kafka and RabbitMQ semantics, delivery guarantees, outbox, CDC, dead letters and sagas. JEE-Advanced style: integer, assertion-reason, matrix match, fill-in-the-blanks, short code and multi-correct questions.",
+  "seriesOrder": 1,
+  "language": "neutral",
+  "description": "RabbitMQ vs Kafka, partitions, consumer groups and offsets, durability settings, at-most/at-least/exactly-once and how to make consumers idempotent.",
+  "source": "Apache Kafka documentation (consumer, producer and topic configs, log compaction); RabbitMQ docs (acknowledgements, dead letter exchanges); Designing Data-Intensive Applications",
+  "estimatedMinutes": 18,
+  "questions": [
+    {
+      "id": "queue-vs-log",
+      "concept": "Queues vs streams",
+      "type": "single",
+      "difficulty": 2,
+      "prompt": "A new analytics service must be able to read the last 7 days of order events from the beginning, and later services will need the same. Which broker model fits?",
+      "options": [
+        {
+          "id": "a",
+          "text": "RabbitMQ classic queue: messages are removed from the queue once a consumer acks them.",
+          "why": "Acked messages are gone, so a later service cannot replay history."
+        },
+        {
+          "id": "b",
+          "text": "A transient in-memory topic with no persistence and no replay.",
+          "why": "Nothing is retained, so there is nothing to read from the beginning."
+        },
+        {
+          "id": "c",
+          "text": "A cron job polling the producer service for recent orders.",
+          "why": "Polling the producer couples services and loses events the producer no longer keeps."
+        },
+        {
+          "id": "d",
+          "text": "Kafka: a retained log, each group tracks its own offset.",
+          "why": "Correct: records stay after being read, so any group can replay from an earlier offset."
+        }
+      ],
+      "correct": [
+        "d"
+      ],
+      "explanation": "RabbitMQ is smart-broker routing and task distribution (exchanges, queues, per-message ack). Kafka is a dumb-broker, smart-consumer log with partitions, retention and offsets. RabbitMQ Streams exist too, but the classic queue consumes destructively."
+    },
+    {
+      "id": "kafka-terms",
+      "concept": "Kafka concepts",
+      "type": "matrix",
+      "difficulty": 1,
+      "prompt": "Match each Kafka concept with its meaning.",
+      "left": [
+        {
+          "id": "l1",
+          "text": "Partition"
+        },
+        {
+          "id": "l2",
+          "text": "Consumer group"
+        },
+        {
+          "id": "l3",
+          "text": "Offset"
+        },
+        {
+          "id": "l4",
+          "text": "ISR (in-sync replicas)"
+        }
+      ],
+      "right": [
+        {
+          "id": "r1",
+          "text": "An ordered, append-only slice of a topic"
+        },
+        {
+          "id": "r2",
+          "text": "Consumers that share the partitions of a topic, each partition owned by one member"
+        },
+        {
+          "id": "r3",
+          "text": "The position of a record within a partition"
+        },
+        {
+          "id": "r4",
+          "text": "Replicas that are caught up with the leader"
+        },
+        {
+          "id": "r5",
+          "text": "The key that decides the topic name"
+        }
+      ],
+      "pairs": {
+        "l1": "r1",
+        "l2": "r2",
+        "l3": "r3",
+        "l4": "r4"
+      },
+      "explanation": "Ordering is only guaranteed inside a partition. A partition is consumed by at most one consumer of a given group at a time."
+    },
+    {
+      "id": "group-consumers",
+      "concept": "Kafka consumer groups",
+      "type": "integer",
+      "difficulty": 2,
+      "prompt": "A topic has 6 partitions. A consumer group has 9 consumers subscribed. How many consumers are actively receiving records?",
+      "answer": 6,
+      "unit": "consumers",
+      "explanation": "One partition goes to at most one consumer per group, so 6 are active and 3 sit idle. To add parallelism beyond 6 you need more partitions."
+    },
+    {
+      "id": "consumer-lag",
+      "concept": "Kafka offsets",
+      "type": "integer",
+      "difficulty": 2,
+      "prompt": "For one partition the log end offset is 1500 and the group's committed offset is 1230 (the next record to read). What is the consumer lag in records?",
+      "answer": 270,
+      "unit": "records",
+      "explanation": "Lag = log end offset - committed offset = 1500 - 1230 = 270. Growing lag means consumers cannot keep up."
+    },
+    {
+      "id": "min-isr",
+      "concept": "Kafka durability",
+      "type": "integer",
+      "difficulty": 3,
+      "prompt": "A topic has replication factor 3 and min.insync.replicas = 2, and producers use acks=all. At most how many brokers holding the partition can be down while writes are still accepted?",
+      "answer": 1,
+      "unit": "broker",
+      "explanation": "acks=all needs the in-sync replica count to be at least 2, so with 3 replicas only 1 can be lost. Losing 2 makes the producer get a NotEnoughReplicas error, trading availability for durability."
+    },
+    {
+      "id": "create-topic-cli",
+      "concept": "Kafka durability",
+      "type": "code",
+      "difficulty": 2,
+      "prompt": "Write the kafka-topics.sh command that creates the topic orders on localhost:9092 with 6 partitions, replication factor 3 and the topic config min.insync.replicas=2.",
+      "language": "shell",
+      "checks": [
+        {
+          "label": "uses --create with the topic name",
+          "pattern": "--create[\\s\\S]*--topic\\s+orders|--topic\\s+orders[\\s\\S]*--create"
+        },
+        {
+          "label": "6 partitions",
+          "pattern": "--partitions\\s+6"
+        },
+        {
+          "label": "replication factor 3",
+          "pattern": "--replication-factor\\s+3"
+        },
+        {
+          "label": "sets min.insync.replicas=2",
+          "pattern": "--config\\s+min\\.insync\\.replicas=2"
+        }
+      ],
+      "model": "kafka-topics.sh --bootstrap-server localhost:9092 --create --topic orders --partitions 6 --replication-factor 3 --config min.insync.replicas=2",
+      "explanation": "Pair this topic config with producer acks=all. Other valid answers reorder the flags or use the .sh-less kafka-topics binary name. Replication factor 3 with min.insync.replicas 2 tolerates one broker failure without losing acknowledged writes."
+    },
+    {
+      "id": "delivery-fill",
+      "concept": "Delivery guarantees",
+      "type": "fill",
+      "difficulty": 2,
+      "prompt": "Complete the delivery semantics.",
+      "text": "Committing the offset {1} processing gives at-most-once and can lose messages; committing {2} processing gives at-least-once and can duplicate; Kafka transactions need consumers with isolation.level={3} to see only committed data.",
+      "blanks": {
+        "1": "before",
+        "2": "after",
+        "3": "read_committed"
+      },
+      "bank": [
+        "before",
+        "after",
+        "read_committed",
+        "read_uncommitted",
+        "during"
+      ],
+      "explanation": "Exactly-once in Kafka means idempotent producer plus transactions within Kafka (consume-transform-produce). Side effects outside Kafka still need idempotent handling."
+    },
+    {
+      "id": "delivery-failure",
+      "concept": "Delivery guarantees",
+      "type": "matrix",
+      "difficulty": 2,
+      "prompt": "Match each delivery semantic with what happens when the consumer crashes mid-flight.",
+      "left": [
+        {
+          "id": "l1",
+          "text": "At-most-once"
+        },
+        {
+          "id": "l2",
+          "text": "At-least-once"
+        },
+        {
+          "id": "l3",
+          "text": "Idempotent consumer on at-least-once"
+        }
+      ],
+      "right": [
+        {
+          "id": "r1",
+          "text": "The message may be lost because it was acknowledged before processing finished"
+        },
+        {
+          "id": "r2",
+          "text": "The message is redelivered, so it may be processed twice"
+        },
+        {
+          "id": "r3",
+          "text": "Redelivery happens but a dedup check makes the repeat harmless"
+        },
+        {
+          "id": "r4",
+          "text": "The broker blocks all other consumers until the crash is fixed"
+        }
+      ],
+      "pairs": {
+        "l1": "r1",
+        "l2": "r2",
+        "l3": "r3"
+      },
+      "explanation": "Effectively-once = at-least-once delivery plus idempotent processing. This is the pragmatic answer in interviews."
+    },
+    {
+      "id": "kafka-ordering",
+      "concept": "Kafka partitions",
+      "type": "multi",
+      "difficulty": 3,
+      "prompt": "Which statements about Kafka ordering and partitioning are correct? Select all that apply.",
+      "options": [
+        {
+          "id": "a",
+          "text": "Order is guaranteed only within a single partition.",
+          "why": "Correct: there is no ordering guarantee across partitions."
+        },
+        {
+          "id": "b",
+          "text": "Records with the same key go to the same partition while the partition count stays the same.",
+          "why": "Correct: the default partitioner hashes the key to a partition."
+        },
+        {
+          "id": "c",
+          "text": "Adding partitions to a keyed topic can change which partition an existing key maps to.",
+          "why": "Correct: the hash is taken modulo the partition count, so the mapping moves."
+        },
+        {
+          "id": "d",
+          "text": "Adding more consumers than partitions increases group throughput.",
+          "why": "Extra consumers beyond the partition count sit idle."
+        },
+        {
+          "id": "e",
+          "text": "A topic guarantees total ordering of all records.",
+          "why": "Only per-partition order is guaranteed."
+        }
+      ],
+      "correct": [
+        "a",
+        "b",
+        "c"
+      ],
+      "explanation": "Choose the key by the entity whose order matters (for example orderId) and over-provision partitions early."
+    },
+    {
+      "id": "ack-before-process",
+      "concept": "Acknowledgement timing",
+      "type": "assertion",
+      "difficulty": 3,
+      "prompt": "Read the assertion A and the reason R, then choose the correct relationship between them.",
+      "assertion": "A worker that acknowledges a queued task before running it can lose the task if the worker crashes mid-run.",
+      "reason": "Once a message is acknowledged the broker deletes it, so nothing is left to redeliver when the worker dies.",
+      "correct": [
+        "a"
+      ],
+      "whys": {
+        "a": "Correct: The ack removes the only copy, so a crash after the ack but before completion loses the work.",
+        "b": "Not this one: Both are true but R is not the reason A holds does not describe this pair; R is actually the reason or is false.",
+        "c": "Not this one: A is true while R is false does not describe this pair; check the truth of R again.",
+        "d": "Not this one: A is false while R is true does not describe this pair; check the truth of A again."
+      },
+      "explanation": "Acknowledging after completion gives at-least-once, so the task must then be idempotent. A worker killed by the operating system (for example out of memory) needs the broker to notice the lost connection before it redelivers."
+    },
+    {
+      "id": "rabbit-ack-redelivery",
+      "concept": "Queues vs streams",
+      "type": "assertion",
+      "difficulty": 2,
+      "prompt": "Read the assertion A and the reason R, then choose the correct relationship between them.",
+      "assertion": "In RabbitMQ a message that has been acknowledged with basic.ack is redelivered if the consumer then crashes.",
+      "reason": "An ack tells the broker the message may be removed from the queue.",
+      "correct": [
+        "d"
+      ],
+      "whys": {
+        "a": "Not this one: Both A and R are true and R explains A does not describe this pair; R does not explain A.",
+        "b": "Not this one: Both are true but R is not the reason A holds does not describe this pair; R is actually the reason or is false.",
+        "c": "Not this one: A is true while R is false does not describe this pair; check the truth of R again.",
+        "d": "Correct: A is false: after the ack the broker no longer holds the message. R is true and is exactly why it is not redelivered."
+      },
+      "explanation": "Unacked messages are requeued when the channel closes. Ack after processing, not on receipt, unless you accept loss."
+    },
+    {
+      "id": "partition-limit",
+      "concept": "Kafka consumer groups",
+      "type": "assertion",
+      "difficulty": 2,
+      "prompt": "Read the assertion A and the reason R, then choose the correct relationship between them.",
+      "assertion": "A consumer group cannot have more active consumers than the topic has partitions.",
+      "reason": "Kafka retains records after they have been read.",
+      "correct": [
+        "b"
+      ],
+      "whys": {
+        "a": "Not this one: Both A and R are true and R explains A does not describe this pair; R does not explain A.",
+        "b": "Correct: Both are true, but retention does not cause the limit: the one-owner-per-partition rule does.",
+        "c": "Not this one: A is true while R is false does not describe this pair; check the truth of R again.",
+        "d": "Not this one: A is false while R is true does not describe this pair; check the truth of A again."
+      },
+      "explanation": "The one-owner-per-partition rule preserves ordering within a partition. Retention is what makes replay and extra groups possible."
+    },
+    {
+      "id": "keyed-topic-order",
+      "concept": "Kafka partitions",
+      "type": "assertion",
+      "difficulty": 3,
+      "prompt": "Read the assertion A and the reason R, then choose the correct relationship between them.",
+      "assertion": "With an idempotent producer (the default since Kafka 3.0), records with the same key are always read in the order they were sent, provided the partition count does not change.",
+      "reason": "Kafka guarantees a global order across all partitions of a topic.",
+      "correct": [
+        "c"
+      ],
+      "whys": {
+        "a": "Not this one: Both A and R are true and R explains A does not describe this pair; R does not explain A.",
+        "b": "Not this one: Both are true but R is not the reason A holds does not describe this pair; R is actually the reason or is false.",
+        "c": "Correct: A is true because the key pins the records to one partition, but R is false: there is no cross-partition order.",
+        "d": "Not this one: A is false while R is true does not describe this pair; check the truth of A again."
+      },
+      "explanation": "Without idempotence, retries with several in-flight requests could reorder records; idempotent producers keep order with up to 5 in-flight requests per connection."
+    },
+    {
+      "id": "compaction",
+      "concept": "Kafka concepts",
+      "type": "assertion",
+      "difficulty": 3,
+      "prompt": "Read the assertion A and the reason R, then choose the correct relationship between them.",
+      "assertion": "A Kafka topic with cleanup.policy=compact keeps at least the latest record for every key.",
+      "reason": "Compaction deletes every record older than the retention period regardless of its key.",
+      "correct": [
+        "c"
+      ],
+      "whys": {
+        "a": "Not this one: Both A and R are true and R explains A does not describe this pair; R does not explain A.",
+        "b": "Not this one: Both are true but R is not the reason A holds does not describe this pair; R is actually the reason or is false.",
+        "c": "Correct: A is true. R describes cleanup.policy=delete, not compaction.",
+        "d": "Not this one: A is false while R is true does not describe this pair; check the truth of A again."
+      },
+      "explanation": "Compaction suits changelog or state topics (latest value per entity). Age-based removal is cleanup.policy=delete; both can be combined as compact,delete."
+    },
+    {
+      "id": "acks-all-durability",
+      "concept": "Kafka durability",
+      "type": "assertion",
+      "difficulty": 3,
+      "prompt": "Read the assertion A and the reason R, then choose the correct relationship between them.",
+      "assertion": "With replication factor 3, min.insync.replicas=2 and acks=all, an acknowledged write survives the loss of one broker.",
+      "reason": "The partition leader only acknowledges once at least 2 in-sync replicas have the record.",
+      "correct": [
+        "a"
+      ],
+      "whys": {
+        "a": "Correct: The acknowledgement implies two copies exist, so one broker can be lost without losing the record.",
+        "b": "Not this one: Both are true but R is not the reason A holds does not describe this pair; R is actually the reason or is false.",
+        "c": "Not this one: A is true while R is false does not describe this pair; check the truth of R again.",
+        "d": "Not this one: A is false while R is true does not describe this pair; check the truth of A again."
+      },
+      "explanation": "Unclean leader election (unclean.leader.election.enable=true) would break the guarantee, which is why it stays off for durable topics."
+    },
+    {
+      "id": "dedup-insert",
+      "concept": "Idempotent consumers",
+      "type": "code",
+      "difficulty": 2,
+      "prompt": "Table processed_messages(message_id text primary key). Write a PostgreSQL statement that records message id 'evt-42' and does nothing if it was already recorded.",
+      "language": "sql",
+      "checks": [
+        {
+          "label": "inserts into processed_messages",
+          "pattern": "insert\\s+into\\s+processed_messages"
+        },
+        {
+          "label": "handles the conflict",
+          "pattern": "on\\s+conflict"
+        },
+        {
+          "label": "does nothing on duplicate",
+          "pattern": "do\\s+nothing"
+        }
+      ],
+      "model": "INSERT INTO processed_messages (message_id) VALUES ('evt-42') ON CONFLICT (message_id) DO NOTHING;",
+      "explanation": "Run it in the same transaction as the business side effect and check the affected row count: 0 rows means a duplicate, so skip the work. Other valid shapes: catch the unique violation, or use INSERT ... WHERE NOT EXISTS."
+    },
+    {
+      "id": "dedup-key",
+      "concept": "Idempotent consumers",
+      "type": "single",
+      "difficulty": 3,
+      "prompt": "Which is the most reliable deduplication key for an idempotent consumer?",
+      "options": [
+        {
+          "id": "a",
+          "text": "A new UUID generated by the consumer each time a delivery arrives.",
+          "why": "A fresh id per delivery makes every redelivery look new."
+        },
+        {
+          "id": "b",
+          "text": "A producer-assigned event id stored with the effect.",
+          "why": "Correct: the same event keeps the same id across redeliveries and retries."
+        },
+        {
+          "id": "c",
+          "text": "The consumer's receive timestamp in milliseconds since epoch.",
+          "why": "Each redelivery arrives at a different time, so it never matches."
+        },
+        {
+          "id": "d",
+          "text": "A hash of the full message including the retry-attempt header.",
+          "why": "The retry header changes between attempts, so the hash differs."
+        }
+      ],
+      "correct": [
+        "b"
+      ],
+      "explanation": "Exactly-once delivery over an unreliable network is not achievable; an ack can be lost after the work is done. Dedup with a unique constraint on the event id in the same transaction as the effect."
+    },
+    {
+      "id": "poll-interval",
+      "concept": "Kafka consumer groups",
+      "type": "single",
+      "difficulty": 3,
+      "prompt": "With default settings, a Kafka consumer takes 6 minutes to process each batch returned by poll(). The group keeps rebalancing and its offsets are never committed. What is the most likely cause?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Processing exceeds max.poll.interval.ms (default 5 minutes), so the consumer is evicted from the group.",
+          "why": "Correct: no poll within the interval makes the coordinator remove the member."
+        },
+        {
+          "id": "b",
+          "text": "heartbeat.interval.ms of 3 seconds is too short, so heartbeats overload the coordinator.",
+          "why": "Three-second heartbeats are the normal default and cheap."
+        },
+        {
+          "id": "c",
+          "text": "session.timeout.ms of 45 seconds expires because processing blocks the heartbeat thread.",
+          "why": "Heartbeats run on a background thread, so slow processing does not stop them."
+        },
+        {
+          "id": "d",
+          "text": "The topic has more partitions than the group has consumers.",
+          "why": "That just gives some consumers several partitions; it does not cause rebalances."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Fixes: lower max.poll.records, raise max.poll.interval.ms, or hand slow work to another thread (and pause the partitions). Defaults per the Kafka docs: max.poll.interval.ms 300000, session.timeout.ms 45000 (3.0+), heartbeat.interval.ms 3000."
+    },
+    {
+      "id": "offset-reset",
+      "concept": "Kafka offsets",
+      "type": "single",
+      "difficulty": 2,
+      "prompt": "A brand-new consumer group subscribes to an existing topic with no committed offsets and auto.offset.reset left at its default. Where does it start reading?",
+      "options": [
+        {
+          "id": "a",
+          "text": "At the end of each partition, seeing only records produced after it joins.",
+          "why": "Correct: the default is latest."
+        },
+        {
+          "id": "b",
+          "text": "At the first retained record of each partition, replaying all stored history.",
+          "why": "That is auto.offset.reset=earliest, not the default."
+        },
+        {
+          "id": "c",
+          "text": "Nowhere: it raises an error and refuses to start.",
+          "why": "An error only happens with auto.offset.reset=none."
+        },
+        {
+          "id": "d",
+          "text": "At offset 0 of each partition, even if older segments were already deleted.",
+          "why": "Offset 0 may no longer exist; earliest means the first retained offset."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Classic trap: a new group with the default misses everything produced before it started. Use earliest for replay or backfill groups, and remember the setting applies only when no valid committed offset exists."
+    },
+    {
+      "id": "rabbit-dlx-causes",
+      "concept": "Queues vs streams",
+      "type": "multi",
+      "difficulty": 3,
+      "prompt": "In RabbitMQ a queue has a dead-letter exchange configured. Which events cause a message to be dead-lettered? Select all that apply.",
+      "options": [
+        {
+          "id": "a",
+          "text": "A consumer rejects it with basic.nack or basic.reject and requeue=false.",
+          "why": "Correct: a rejected message that is not requeued is dead-lettered."
+        },
+        {
+          "id": "b",
+          "text": "Its per-message or per-queue TTL expires while it waits in the queue.",
+          "why": "Correct: expiry dead-letters the message."
+        },
+        {
+          "id": "c",
+          "text": "The queue has a maximum length and the message is dropped from the head to make room.",
+          "why": "Correct: overflow from the head dead-letters the oldest message (default overflow behaviour)."
+        },
+        {
+          "id": "d",
+          "text": "A consumer acknowledges it with basic.ack after processing.",
+          "why": "An ack simply removes the message; nothing is dead-lettered."
+        },
+        {
+          "id": "e",
+          "text": "The publisher receives a confirm for it.",
+          "why": "A publisher confirm is just broker acknowledgement of receipt."
+        }
+      ],
+      "correct": [
+        "a",
+        "b",
+        "c"
+      ],
+      "explanation": "Quorum queues add a fourth cause: exceeding the delivery limit. The x-death header records the reason, queue and count, which is what a retry-with-delay topology reads."
+    },
+    {
+      "id": "partition-sizing",
+      "concept": "Kafka partitions",
+      "type": "integer",
+      "difficulty": 3,
+      "prompt": "You need 100 MB/s of throughput. One partition sustains about 10 MB/s for producers and 20 MB/s for a consumer. What is the minimum number of partitions that satisfies both?",
+      "answer": 10,
+      "unit": "partitions",
+      "explanation": "Producers need 100/10 = 10 partitions and consumers need 100/20 = 5. Take the larger: 10. Add headroom for growth because partitions can be added later but remapping keyed ordering is painful."
+    }
+  ]
+}

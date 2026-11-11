@@ -1,0 +1,487 @@
+{
+  "id": "rm-sec-authn-rbac-python",
+  "title": "Security in Python: PyJWT, FastAPI dependencies, hashing and injection defences",
+  "topic": "Python",
+  "series": "python-observability-security-testing",
+  "seriesTitle": "Python: observability, security and testing",
+  "seriesDescription": "Prometheus and tracing, JWT and FastAPI auth, pytest and mocks. JEE-Advanced style: integer, assertion-reason, matrix match, fill-in-the-blanks, short code and multi-correct questions.",
+  "seriesOrder": 2,
+  "language": "python",
+  "description": "PyJWT encoding and verification, FastAPI OAuth2 bearer dependencies and role checks, CORS, password hashing with argon2, secrets, parameterised queries and command injection.",
+  "source": "PyJWT documentation (decode, encode, algorithms, leeway); FastAPI documentation (Security, OAuth2, dependencies, CORS); argon2-cffi documentation; Python documentation (secrets, hmac, subprocess, sqlite3); SQLAlchemy documentation (text and bound parameters); OWASP cheat sheets",
+  "estimatedMinutes": 24,
+  "questions": [
+    {
+      "id": "pyjwt-decode",
+      "concept": "JWT verification",
+      "type": "code",
+      "difficulty": 2,
+      "prompt": "Using PyJWT, verify token with the variable public_key: allow only RS256, require the audience \"orders-api\" and the issuer \"https://auth.example.com\", and assign the claims to claims.",
+      "language": "python",
+      "checks": [
+        {
+          "label": "calls jwt.decode",
+          "pattern": "jwt\\.decode\\("
+        },
+        {
+          "label": "pins the algorithm list",
+          "pattern": "algorithms\\s*=\\s*\\["
+        },
+        {
+          "label": "checks the audience",
+          "pattern": "audience\\s*=\\s*[\"']orders-api[\"']"
+        },
+        {
+          "label": "checks the issuer",
+          "pattern": "issuer\\s*=\\s*[\"']https://auth\\.example\\.com[\"']"
+        }
+      ],
+      "model": "claims = jwt.decode(\n    token, public_key,\n    algorithms=[\"RS256\"],\n    audience=\"orders-api\",\n    issuer=\"https://auth.example.com\",\n)",
+      "explanation": "jwt.decode validates exp and nbf by default. Passing algorithms is mandatory in PyJWT 2.x precisely to block alg=none and algorithm-confusion attacks. Verified against PyJWT 2.14 with a generated RSA key."
+    },
+    {
+      "id": "pyjwt-encode",
+      "concept": "JWT claims",
+      "type": "code",
+      "difficulty": 2,
+      "prompt": "Using PyJWT, create an RS256 access token for subject user_id that expires 15 minutes from now (use a timezone-aware UTC time), signed with private_key, and assign it to token.",
+      "language": "python",
+      "starter": "import jwt\nfrom datetime import datetime, timedelta, timezone\n",
+      "checks": [
+        {
+          "label": "calls jwt.encode",
+          "pattern": "jwt\\.encode\\("
+        },
+        {
+          "label": "sets sub from user_id",
+          "pattern": "[\"']sub[\"']\\s*:\\s*user_id"
+        },
+        {
+          "label": "expires in 15 minutes",
+          "pattern": "timedelta\\s*\\(\\s*minutes\\s*=\\s*15\\s*\\)"
+        },
+        {
+          "label": "signs with RS256",
+          "pattern": "algorithm\\s*=\\s*[\"']RS256[\"']"
+        }
+      ],
+      "model": "token = jwt.encode(\n    {\"sub\": user_id, \"exp\": datetime.now(timezone.utc) + timedelta(minutes=15)},\n    private_key,\n    algorithm=\"RS256\",\n)",
+      "explanation": "PyJWT converts datetime values for exp, iat and nbf into seconds since the epoch. Add iss and aud claims, and a kid header (headers={\"kid\": ...}) when you rotate keys."
+    },
+    {
+      "id": "current-user",
+      "concept": "FastAPI security",
+      "type": "code",
+      "difficulty": 3,
+      "prompt": "Write a FastAPI dependency get_current_user(token) that takes the token from oauth2_scheme, decodes it with jwt.decode (key public_key, RS256 only), raises HTTPException 401 with the header WWW-Authenticate: Bearer when jwt.InvalidTokenError occurs, and otherwise returns claims[\"sub\"].",
+      "language": "python",
+      "checks": [
+        {
+          "label": "depends on oauth2_scheme",
+          "pattern": "depends\\(\\s*oauth2_scheme"
+        },
+        {
+          "label": "decodes and pins RS256",
+          "pattern": "jwt\\.decode\\([\\s\\S]*algorithms\\s*=\\s*\\[\\s*[\"']RS256[\"']"
+        },
+        {
+          "label": "catches InvalidTokenError",
+          "pattern": "except\\s+jwt\\.(InvalidTokenError|PyJWTError)"
+        },
+        {
+          "label": "returns 401 with Bearer challenge",
+          "pattern": "401[\\s\\S]*www-authenticate[\\s\\S]*bearer"
+        },
+        {
+          "label": "returns the subject",
+          "pattern": "return\\s+claims\\[\\s*[\"']sub[\"']\\s*\\]"
+        }
+      ],
+      "model": "def get_current_user(token: str = Depends(oauth2_scheme)):\n    try:\n        claims = jwt.decode(token, public_key, algorithms=[\"RS256\"])\n    except jwt.InvalidTokenError:\n        raise HTTPException(status_code=401, detail=\"Invalid token\", headers={\"WWW-Authenticate\": \"Bearer\"})\n    return claims[\"sub\"]",
+      "explanation": "OAuth2PasswordBearer only extracts the token and returns 401 when the header is missing; the decoding is your job (verified with FastAPI TestClient). ExpiredSignatureError is a subclass of InvalidTokenError, so one except clause covers expiry too."
+    },
+    {
+      "id": "bearer-validates",
+      "concept": "FastAPI security",
+      "type": "truefalse",
+      "difficulty": 2,
+      "prompt": "True or false: in FastAPI, OAuth2PasswordBearer validates the JWT signature and expiry for you.",
+      "options": [
+        {
+          "id": "a",
+          "text": "True",
+          "why": "The class only reads the Authorization header."
+        },
+        {
+          "id": "b",
+          "text": "False",
+          "why": "Correct: it extracts the token string; verification happens in your dependency."
+        }
+      ],
+      "correct": [
+        "b"
+      ],
+      "explanation": "Typical shape: token = Depends(oauth2_scheme), then jwt.decode inside get_current_user, raising 401 on failure."
+    },
+    {
+      "id": "fastapi-role",
+      "concept": "RBAC",
+      "type": "code",
+      "difficulty": 2,
+      "prompt": "Write a FastAPI dependency factory require_role(role) that depends on get_current_user, raises HTTPException 403 when role is not in user.roles, and otherwise returns the user.",
+      "language": "python",
+      "checks": [
+        {
+          "label": "defines require_role",
+          "pattern": "def\\s+require_role\\("
+        },
+        {
+          "label": "depends on get_current_user",
+          "pattern": "depends\\(\\s*get_current_user"
+        },
+        {
+          "label": "raises 403",
+          "pattern": "httpexception\\([^)]*(403|http_403)"
+        },
+        {
+          "label": "returns the user",
+          "pattern": "return\\s+user"
+        }
+      ],
+      "model": "def require_role(role: str):\n    def checker(user=Depends(get_current_user)):\n        if role not in user.roles:\n            raise HTTPException(status_code=403)\n        return user\n    return checker",
+      "explanation": "Use it as @router.delete(\"/x\", dependencies=[Depends(require_role(\"admin\"))]). A closure-returning dependency is the idiom; a class with __call__ is an alternative."
+    },
+    {
+      "id": "fastapi-security-tools",
+      "concept": "FastAPI security",
+      "type": "matrix",
+      "difficulty": 1,
+      "prompt": "Match each FastAPI security helper with what it does.",
+      "left": [
+        {
+          "id": "l1",
+          "text": "OAuth2PasswordBearer"
+        },
+        {
+          "id": "l2",
+          "text": "HTTPBearer"
+        },
+        {
+          "id": "l3",
+          "text": "Security(dep, scopes=[...])"
+        },
+        {
+          "id": "l4",
+          "text": "CORSMiddleware"
+        }
+      ],
+      "right": [
+        {
+          "id": "r1",
+          "text": "Reads the bearer token from the Authorization header and documents the token URL"
+        },
+        {
+          "id": "r2",
+          "text": "Reads a bearer credential without implying a login form"
+        },
+        {
+          "id": "r3",
+          "text": "Like Depends but also declares the OAuth2 scopes the route needs"
+        },
+        {
+          "id": "r4",
+          "text": "Adds cross-origin response headers for browsers"
+        },
+        {
+          "id": "r5",
+          "text": "Verifies JWT signatures automatically"
+        }
+      ],
+      "pairs": {
+        "l1": "r1",
+        "l2": "r2",
+        "l3": "r3",
+        "l4": "r4"
+      },
+      "explanation": "None of the helpers verifies a JWT; verification is code you write (or a library you call) inside the dependency."
+    },
+    {
+      "id": "verify-signature-off",
+      "concept": "JWT verification",
+      "type": "assertion",
+      "difficulty": 2,
+      "prompt": "Read the assertion A and the reason R, then choose the correct relationship between them.",
+      "assertion": "Calling jwt.decode(token, options={\"verify_signature\": False}) is safe for authenticating incoming requests.",
+      "reason": "With that option PyJWT returns the claims without checking the signature at all.",
+      "correct": [
+        "d"
+      ],
+      "whys": {
+        "a": "Not this one: Both A and R are true and R explains A does not describe this pair; R does not explain A.",
+        "b": "Not this one: Both are true but R is not the reason A holds does not describe this pair; R is actually the reason or is false.",
+        "c": "Not this one: A is true while R is false does not describe this pair; check the truth of R again.",
+        "d": "Correct: A is false: an attacker could forge any claims. R is true and is exactly the danger."
+      },
+      "explanation": "Use that option only for inspection, such as reading the kid header or claims in logs, never for access decisions."
+    },
+    {
+      "id": "exp-default",
+      "concept": "JWT verification",
+      "type": "assertion",
+      "difficulty": 2,
+      "prompt": "Read the assertion A and the reason R, then choose the correct relationship between them.",
+      "assertion": "PyJWT rejects an expired token by default when decoding with a key and algorithms.",
+      "reason": "You must pass options={\"verify_exp\": True} to enable the expiry check.",
+      "correct": [
+        "c"
+      ],
+      "whys": {
+        "a": "Not this one: Both A and R are true and R explains A does not describe this pair; R does not explain A.",
+        "b": "Not this one: Both are true but R is not the reason A holds does not describe this pair; R is actually the reason or is false.",
+        "c": "Correct: A is true. R is false: the exp check is on by default and ExpiredSignatureError is raised.",
+        "d": "Not this one: A is false while R is true does not describe this pair; check the truth of A again."
+      },
+      "explanation": "Allow small clock drift with leeway=10 (seconds) instead of disabling the check. A token 8 seconds past exp decodes with leeway=10 and fails without it (verified)."
+    },
+    {
+      "id": "leeway",
+      "concept": "JWT verification",
+      "type": "integer",
+      "difficulty": 2,
+      "prompt": "A service verifies with jwt.decode(..., leeway=10). A token expired 8 seconds ago. How many more seconds, counting from now, will this call still accept it?",
+      "answer": 2,
+      "unit": "seconds",
+      "explanation": "The token is accepted until exp + leeway = 10 seconds after expiry. 8 seconds have passed, so 10 - 8 = 2 seconds remain."
+    },
+    {
+      "id": "argon2",
+      "concept": "Password storage",
+      "type": "code",
+      "difficulty": 2,
+      "prompt": "Using argon2-cffi, create a PasswordHasher named ph, hash the string password into hashed, and verify it with ph.verify.",
+      "language": "python",
+      "starter": "from argon2 import PasswordHasher\n",
+      "checks": [
+        {
+          "label": "creates a PasswordHasher",
+          "pattern": "ph\\s*=\\s*PasswordHasher\\s*\\(\\s*\\)"
+        },
+        {
+          "label": "hashes the password",
+          "pattern": "hashed\\s*=\\s*ph\\.hash\\s*\\(\\s*password\\s*\\)"
+        },
+        {
+          "label": "verifies against the hash",
+          "pattern": "ph\\.verify\\s*\\(\\s*hashed\\s*,\\s*password\\s*\\)"
+        }
+      ],
+      "model": "ph = PasswordHasher()\nhashed = ph.hash(password)\nph.verify(hashed, password)",
+      "explanation": "verify raises VerifyMismatchError on a wrong password instead of returning False, so catch it. The hash string embeds the algorithm, parameters and salt (it starts with $argon2id$), and ph.check_needs_rehash(hashed) tells you when to upgrade it after login."
+    },
+    {
+      "id": "secrets-token",
+      "concept": "Secrets and tokens",
+      "type": "code",
+      "difficulty": 1,
+      "prompt": "Write the Python statement that creates an unguessable URL-safe refresh token from 32 random bytes using the secrets module and stores it in refresh.",
+      "language": "python",
+      "starter": "import secrets\n",
+      "checks": [
+        {
+          "label": "uses secrets.token_urlsafe",
+          "pattern": "refresh\\s*=\\s*secrets\\.token_urlsafe\\s*\\("
+        },
+        {
+          "label": "asks for 32 bytes",
+          "pattern": "token_urlsafe\\s*\\(\\s*32\\s*\\)"
+        }
+      ],
+      "model": "refresh = secrets.token_urlsafe(32)",
+      "explanation": "Never use the random module for tokens: it is not cryptographically secure. Store only a hash of the token server-side."
+    },
+    {
+      "id": "token-urlsafe-length",
+      "concept": "Secrets and tokens",
+      "type": "integer",
+      "difficulty": 3,
+      "prompt": "secrets.token_urlsafe(32) encodes 32 random bytes with URL-safe base64 and no padding. How many characters long is the returned string?",
+      "answer": 43,
+      "unit": "characters",
+      "explanation": "32 bytes = 256 bits; base64 uses 6 bits per character, and ceil(256 / 6) = 43. Checked by calling the function. Hex encoding of the same bytes would be 64 characters."
+    },
+    {
+      "id": "compare-digest",
+      "concept": "Secrets and tokens",
+      "type": "assertion",
+      "difficulty": 3,
+      "prompt": "Read the assertion A and the reason R, then choose the correct relationship between them.",
+      "assertion": "Webhook signatures and API tokens should be compared with hmac.compare_digest rather than ==.",
+      "reason": "The == operator on strings can return as soon as it finds the first differing character, so response time can leak how much of a guess was right.",
+      "correct": [
+        "a"
+      ],
+      "whys": {
+        "a": "Correct: compare_digest takes constant time for equal-length inputs, closing the timing side channel.",
+        "b": "Not this one: Both are true but R is not the reason A holds does not describe this pair; R is actually the reason or is false.",
+        "c": "Not this one: A is true while R is false does not describe this pair; check the truth of R again.",
+        "d": "Not this one: A is false while R is true does not describe this pair; check the truth of A again."
+      },
+      "explanation": "Compute the expected value with hmac.new(secret, body, \"sha256\").hexdigest() and compare it to the header with compare_digest."
+    },
+    {
+      "id": "rotation-secrets",
+      "concept": "Refresh tokens",
+      "type": "assertion",
+      "difficulty": 2,
+      "prompt": "Read the assertion A and the reason R, then choose the correct relationship between them.",
+      "assertion": "Rotating refresh tokens limits a stolen token to a single use.",
+      "reason": "The secrets module draws its random values from the operating system's secure random source.",
+      "correct": [
+        "b"
+      ],
+      "whys": {
+        "a": "Not this one: Both A and R are true and R explains A does not describe this pair; R does not explain A.",
+        "b": "Correct: Both are true, but the random source does not explain why rotation limits a stolen token; one-time use does.",
+        "c": "Not this one: A is true while R is false does not describe this pair; check the truth of R again.",
+        "d": "Not this one: A is false while R is true does not describe this pair; check the truth of A again."
+      },
+      "explanation": "Pair rotation with reuse detection: presenting an already used token revokes the whole family."
+    },
+    {
+      "id": "sqlite-param",
+      "concept": "SQL injection",
+      "type": "code",
+      "difficulty": 2,
+      "prompt": "Using the DB-API with sqlite3 (cursor cur), run the query SELECT * FROM users WHERE email = <email> safely with the variable email and assign cur.fetchone() to row.",
+      "language": "python",
+      "checks": [
+        {
+          "label": "executes with a placeholder",
+          "pattern": "cur\\.execute\\("
+        },
+        {
+          "label": "placeholder in the SQL",
+          "pattern": "(\\?|%s|:email)"
+        },
+        {
+          "label": "passes email as a parameter",
+          "pattern": "(,\\s*\\(\\s*email\\s*,\\s*\\)|,\\s*\\[\\s*email|,\\s*\\{\\s*['\"]email['\"])"
+        },
+        {
+          "label": "fetches one row",
+          "pattern": "fetchone\\(\\)"
+        }
+      ],
+      "model": "cur.execute(\"SELECT * FROM users WHERE email = ?\", (email,))\nrow = cur.fetchone()",
+      "explanation": "The one-element tuple needs the trailing comma. psycopg and mysql drivers use %s, sqlite3 uses ?. Never use f-strings to build SQL."
+    },
+    {
+      "id": "sqlalchemy-text",
+      "concept": "SQL injection",
+      "type": "code",
+      "difficulty": 2,
+      "prompt": "Using SQLAlchemy, execute text(\"SELECT * FROM users WHERE email = :email\") on the session with the variable email bound as a parameter, and assign the first row to row.",
+      "language": "python",
+      "starter": "from sqlalchemy import text\n",
+      "checks": [
+        {
+          "label": "wraps SQL in text()",
+          "pattern": "text\\s*\\(\\s*[\"']select[^\"']*:email"
+        },
+        {
+          "label": "binds email as a parameter dict",
+          "pattern": "session\\.execute\\([\\s\\S]*\\{\\s*[\"']email[\"']\\s*:\\s*email\\s*\\}"
+        },
+        {
+          "label": "takes the first row",
+          "pattern": "\\.first\\(\\)|\\.fetchone\\(\\)|\\.one\\(\\)"
+        }
+      ],
+      "model": "row = session.execute(text(\"SELECT * FROM users WHERE email = :email\"), {\"email\": email}).first()",
+      "explanation": "The :name placeholders are bound by the driver, so the value is data, not SQL. Interpolating email with an f-string into text() would reintroduce injection. The ORM query API binds values automatically."
+    },
+    {
+      "id": "shell-injection",
+      "concept": "Command injection",
+      "type": "single",
+      "difficulty": 2,
+      "prompt": "A service must run the external tool convert on a filename that comes from an upload. Which call is safest?",
+      "options": [
+        {
+          "id": "a",
+          "text": "subprocess.run(f\"convert {filename} out.png\", shell=True), after checking the file extension.",
+          "why": "A shell parses metacharacters such as ; and $() hidden in the name."
+        },
+        {
+          "id": "b",
+          "text": "os.system(\"convert \" + filename + \" out.png\") because it is the shortest form available.",
+          "why": "os.system always goes through a shell."
+        },
+        {
+          "id": "c",
+          "text": "subprocess.run(\"convert \" + filename, shell=True) inside a try block that logs the exception.",
+          "why": "Logging errors does not stop the injection from running."
+        },
+        {
+          "id": "d",
+          "text": "subprocess.run([\"convert\", filename, \"out.png\"], check=True) with the default shell setting.",
+          "why": "Correct: an argument list is not parsed by a shell."
+        }
+      ],
+      "correct": [
+        "d"
+      ],
+      "explanation": "Also validate or generate the filename yourself, and run external tools with least privilege and a timeout."
+    },
+    {
+      "id": "pyjwt-fill",
+      "concept": "JWT verification",
+      "type": "fill",
+      "difficulty": 2,
+      "prompt": "Complete the PyJWT verification call.",
+      "text": "jwt.decode(token, key, {1}=[\"RS256\"], {2}=\"orders-api\", {3}=\"https://auth.example.com\") rejects tokens signed with another algorithm, issued for another audience, or issued by another party.",
+      "blanks": {
+        "1": "algorithms",
+        "2": "audience",
+        "3": "issuer"
+      },
+      "bank": [
+        "algorithms",
+        "audience",
+        "issuer",
+        "subject",
+        "leeway"
+      ],
+      "explanation": "Each of the three checks closes a different attack: algorithm confusion, token replay across services and tokens from an untrusted issuer."
+    },
+    {
+      "id": "cors-middleware",
+      "concept": "CORS",
+      "type": "code",
+      "difficulty": 2,
+      "prompt": "Add Starlette's CORSMiddleware to the FastAPI app app so that only https://app.example.com may call it from a browser, with GET and POST methods and credentials allowed.",
+      "language": "python",
+      "starter": "from fastapi.middleware.cors import CORSMiddleware\n",
+      "checks": [
+        {
+          "label": "adds the middleware",
+          "pattern": "app\\.add_middleware\\(\\s*CORSMiddleware"
+        },
+        {
+          "label": "lists the app origin",
+          "pattern": "allow_origins\\s*=\\s*\\[\\s*[\"']https://app\\.example\\.com[\"']\\s*\\]"
+        },
+        {
+          "label": "lists GET and POST",
+          "pattern": "allow_methods\\s*=\\s*\\[[^\\]]*GET[^\\]]*POST"
+        },
+        {
+          "label": "allows credentials",
+          "pattern": "allow_credentials\\s*=\\s*True"
+        }
+      ],
+      "model": "app.add_middleware(\n    CORSMiddleware,\n    allow_origins=[\"https://app.example.com\"],\n    allow_methods=[\"GET\", \"POST\"],\n    allow_credentials=True,\n)",
+      "explanation": "With credentials, browsers reject a wildcard origin, so list origins explicitly. CORS is enforced by the browser only; keep server-side authentication on every route."
+    }
+  ]
+}

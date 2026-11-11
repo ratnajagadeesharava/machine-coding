@@ -1,3 +1,7 @@
 node_modules/
 .env
 *.log
+# quiz progress: commit data/progress.db on YOUR OWN branch only (never on main); SQLite side files are never needed
+data/*.db-journal
+data/*.db-wal
+data/*.db-shm

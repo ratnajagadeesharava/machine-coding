@@ -1,0 +1,469 @@
+{
+  "id": "rm-final-sap-relay-core",
+  "title": "Final checks: SAP S/4HANA migration testing and Amazon Relay logistics",
+  "topic": "Language-independent",
+  "language": "neutral",
+  "series": "core-company-domains",
+  "seriesTitle": "Core: company domains",
+  "seriesDescription": "SAP S/4HANA migration, Amazon Relay and trip tracking, network digital twins, cloud-platform themes. JEE-Advanced style: integer, assertion-reason, matrix match, fill-in-the-blanks, short code and multi-correct questions.",
+  "seriesOrder": 1,
+  "description": "Company-domain concepts: S/4HANA data migration, reconciliation and test automation with a business knowledge graph, plus middle-mile logistics, tendering, load boards, ETA and event-driven trip tracking.",
+  "source": "SAP Help Portal and SAP Community (S/4HANA Migration Cockpit: direct transfer, staging tables, simulation; Business Partner approach); Amazon Relay site and blog (load board, Post A Truck); FMCSA hours-of-service summary and visor card; Kafka documentation; general ERP migration practice",
+  "estimatedMinutes": 15,
+  "questions": [
+    {
+      "id": "sap-approaches",
+      "concept": "S/4HANA migration",
+      "type": "matrix",
+      "difficulty": 1,
+      "prompt": "Match each S/4HANA transition term to its meaning.",
+      "left": [
+        {
+          "id": "a",
+          "text": "Greenfield"
+        },
+        {
+          "id": "b",
+          "text": "Brownfield (system conversion)"
+        },
+        {
+          "id": "c",
+          "text": "Selective data transition"
+        },
+        {
+          "id": "d",
+          "text": "Migration cockpit"
+        },
+        {
+          "id": "e",
+          "text": "Staging tables"
+        }
+      ],
+      "right": [
+        {
+          "id": "p",
+          "text": "New implementation: you set up a fresh system and migrate chosen data"
+        },
+        {
+          "id": "q",
+          "text": "Convert the existing ECC system in place, keeping its configuration and data"
+        },
+        {
+          "id": "r",
+          "text": "Hybrid approach that moves selected data or company codes into a new or converted system"
+        },
+        {
+          "id": "s",
+          "text": "SAP tool that loads data through predefined migration objects"
+        },
+        {
+          "id": "t",
+          "text": "Intermediate tables where source data is placed and checked before it is loaded"
+        },
+        {
+          "id": "u",
+          "text": "Real-time replication of every database transaction"
+        }
+      ],
+      "pairs": {
+        "a": "p",
+        "b": "q",
+        "c": "r",
+        "d": "s",
+        "e": "t"
+      },
+      "explanation": "Interviewers expect you to link the approach to testing scope: greenfield needs heavy data migration validation, brownfield needs heavy regression testing."
+    },
+    {
+      "id": "rows-unaccounted",
+      "concept": "Reconciliation",
+      "type": "integer",
+      "difficulty": 2,
+      "prompt": "A migration run reads 1,250,000 source rows. 3,500 are rejected by validation and 1,246,000 are loaded into S/4HANA. How many rows are unaccounted for?",
+      "answer": 500,
+      "unit": "rows",
+      "explanation": "1,250,000 - 3,500 - 1,246,000 = 500. Every source row must end up loaded, rejected (with a reason) or deliberately excluded; any remainder is a defect to investigate."
+    },
+    {
+      "id": "bp-count",
+      "concept": "S/4HANA migration",
+      "type": "integer",
+      "difficulty": 3,
+      "prompt": "A legacy system has 10,000 customers and 2,000 vendors, of which 500 are the same organisation (both customer and vendor). In S/4HANA, customers and vendors are created as Business Partners; one partner can hold both roles. How many Business Partners should you expect if the 500 are merged into one each?",
+      "answer": 11500,
+      "unit": "partners",
+      "explanation": "10,000 + 2,000 - 500 = 11,500. In S/4HANA the Business Partner is the leading object for customer and vendor master data, so duplicates should be matched and merged during migration."
+    },
+    {
+      "id": "bp-roles",
+      "concept": "S/4HANA migration",
+      "type": "assertion",
+      "difficulty": 2,
+      "prompt": "Read the assertion (A) and the reason (R), then choose the correct option.",
+      "assertion": "In S/4HANA, customer and vendor master data are maintained through the Business Partner.",
+      "reason": "One Business Partner can hold several roles, such as customer and supplier, which avoids duplicate master records.",
+      "correct": [
+        "a"
+      ],
+      "whys": {
+        "a": "Correct: the Business Partner is the single central record and roles describe how it is used.",
+        "b": "R is the mechanism behind A.",
+        "c": "R is true.",
+        "d": "A is true."
+      },
+      "explanation": "Expect questions on customer/vendor integration (CVI) and how legacy duplicates are matched before migration."
+    },
+    {
+      "id": "simulate",
+      "concept": "S/4HANA migration",
+      "type": "assertion",
+      "difficulty": 2,
+      "prompt": "Read the assertion (A) and the reason (R), then choose the correct option.",
+      "assertion": "The migration cockpit can simulate a migration to validate data before it is actually posted.",
+      "reason": "Migration objects can be filled from templates or from staging tables.",
+      "correct": [
+        "b"
+      ],
+      "whys": {
+        "a": "R is true but concerns data input, not simulation.",
+        "b": "Correct: both statements are true but independent; simulation checks the data against the target rules without creating records.",
+        "c": "R is true.",
+        "d": "A is true."
+      },
+      "explanation": "Run simulation repeatedly to burn down data-quality errors before the real load."
+    },
+    {
+      "id": "counts-enough",
+      "concept": "Reconciliation",
+      "type": "assertion",
+      "difficulty": 3,
+      "prompt": "Read the assertion (A) and the reason (R), then choose the correct option.",
+      "assertion": "If the source and target row counts are equal, the migration is correct.",
+      "reason": "Counts can match even when values were mapped incorrectly or records were swapped.",
+      "correct": [
+        "d"
+      ],
+      "whys": {
+        "a": "A is false.",
+        "b": "A is false.",
+        "c": "R is true, so this option is wrong.",
+        "d": "Correct: A is false, R is true. Reconcile also control totals (amounts, balances) and sampled or hashed field values."
+      },
+      "explanation": "A layered check: counts, then totals per key (for example per company code), then field-level comparison on samples or full hashes."
+    },
+    {
+      "id": "mock-cutover",
+      "concept": "S/4HANA migration",
+      "type": "assertion",
+      "difficulty": 2,
+      "prompt": "Read the assertion (A) and the reason (R), then choose the correct option.",
+      "assertion": "Mock cutover runs rehearse timing and uncover data-quality issues before go-live.",
+      "reason": "A mock cutover permanently replaces the production system.",
+      "correct": [
+        "c"
+      ],
+      "whys": {
+        "a": "R is false, so it cannot explain A.",
+        "b": "R is false.",
+        "c": "Correct: A is true; R is false because a mock cutover runs in a non-production system, with the real cutover reserved for go-live.",
+        "d": "A is true."
+      },
+      "explanation": "Measure each mock run: duration per object, rejected rows, and reconciliation differences. Trends show readiness."
+    },
+    {
+      "id": "recon-sql",
+      "concept": "Reconciliation",
+      "type": "code",
+      "difficulty": 3,
+      "prompt": "Tables legacy_gl(company_code, amount) and s4_gl(company_code, amount) hold the general ledger amounts before and after migration. Write one SQL query that returns each company_code whose total amount differs between the two tables, including codes that exist in only one table.",
+      "language": "sql",
+      "starter": "SELECT ",
+      "checks": [
+        {
+          "label": "aggregates with SUM(amount)",
+          "pattern": "sum\\s*\\(\\s*(\\w+\\.)?(-\\s*)?amount"
+        },
+        {
+          "label": "groups by company_code",
+          "pattern": "group\\s+by\\s+[^;]*company_code"
+        },
+        {
+          "label": "combines both tables",
+          "pattern": "(union\\s+all|union|join|except)"
+        },
+        {
+          "label": "filters to differences",
+          "pattern": "(<>|!=|is\\s+distinct\\s+from|having|except)"
+        }
+      ],
+      "model": "SELECT company_code, SUM(amount) AS diff\nFROM (SELECT company_code, amount FROM legacy_gl\n      UNION ALL\n      SELECT company_code, -amount FROM s4_gl) t\nGROUP BY company_code\nHAVING SUM(amount) <> 0;",
+      "explanation": "Other solutions pass: a FULL OUTER JOIN of two grouped subqueries with COALESCE, or EXCEPT in both directions. The UNION ALL with negated amounts handles codes that exist on one side only. Floating-point amounts should be compared with a tolerance or use DECIMAL."
+    },
+    {
+      "id": "knowledge-graph",
+      "concept": "Knowledge graph",
+      "type": "single",
+      "difficulty": 2,
+      "prompt": "Why model business objects (customer, material, plant, open order) as a knowledge graph in a migration test programme?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Relationships are queryable, so you can trace which open orders break if a material fails to migrate.",
+          "why": "Right: lineage and impact analysis follow edges instead of ad hoc joins."
+        },
+        {
+          "id": "b",
+          "text": "A graph replaces the need for reconciliation because the relationships themselves prove that the data is right.",
+          "why": "Relationships help trace issues but do not replace counts, totals and value checks."
+        },
+        {
+          "id": "c",
+          "text": "Graphs store data faster than relational databases for every kind of bulk load.",
+          "why": "Bulk loading is not the main benefit and graphs are not universally faster."
+        },
+        {
+          "id": "d",
+          "text": "It lets testers skip defining migration objects because the graph infers the mapping itself.",
+          "why": "Mapping rules still have to be defined and approved."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Nodes are business entities and rules; edges are dependencies and lineage. Use it to choose test scope, sequence loads (customers before orders) and explain failures."
+    },
+    {
+      "id": "test-automation",
+      "concept": "Test automation",
+      "type": "multi",
+      "difficulty": 2,
+      "prompt": "Which practices make data migration tests reliable in a repeatable mock cycle? Select all that apply.",
+      "options": [
+        {
+          "id": "a",
+          "text": "Automate source-to-target comparisons per migration object so every mock run is checked the same way.",
+          "why": "Right: repeatability and speed matter when you rehearse many times."
+        },
+        {
+          "id": "b",
+          "text": "Make loads re-runnable and idempotent, with reset scripts for the target.",
+          "why": "Right: a failed mock must be rerunnable without manual cleanup."
+        },
+        {
+          "id": "c",
+          "text": "Rely on a few manual spot checks in the SAP GUI after each load.",
+          "why": "Spot checks miss systematic errors and do not scale to millions of rows."
+        },
+        {
+          "id": "d",
+          "text": "Test only clean records and leave out historical data with known defects.",
+          "why": "Dirty and edge-case data is exactly where migrations fail."
+        }
+      ],
+      "correct": [
+        "a",
+        "b"
+      ],
+      "explanation": "Add a data-quality dashboard: rejected rows by reason, reconciliation status by object and trend by mock run."
+    },
+    {
+      "id": "recon-fill",
+      "concept": "Reconciliation",
+      "type": "fill",
+      "difficulty": 1,
+      "prompt": "Complete the validation description.",
+      "text": "Data migration validation compares {1} counts, control {2} such as amounts and balances, and sampled field-level {3} between the legacy system and S/4HANA.",
+      "blanks": {
+        "1": "row",
+        "2": "totals",
+        "3": "values"
+      },
+      "bank": [
+        "row",
+        "totals",
+        "values",
+        "screenshots",
+        "logins"
+      ],
+      "explanation": "Row counts catch loss, totals catch value drift, field-level checks catch mapping errors."
+    },
+    {
+      "id": "relay-terms",
+      "concept": "Logistics concepts",
+      "type": "matrix",
+      "difficulty": 2,
+      "prompt": "Match each middle-mile logistics term to its meaning.",
+      "left": [
+        {
+          "id": "a",
+          "text": "Tender"
+        },
+        {
+          "id": "b",
+          "text": "Load board"
+        },
+        {
+          "id": "c",
+          "text": "Post a truck"
+        },
+        {
+          "id": "d",
+          "text": "Geofence event"
+        },
+        {
+          "id": "e",
+          "text": "Spot vs contract"
+        }
+      ],
+      "right": [
+        {
+          "id": "p",
+          "text": "A shipper offers a load to a carrier, who may accept or reject it"
+        },
+        {
+          "id": "q",
+          "text": "A marketplace where carriers browse and book available loads"
+        },
+        {
+          "id": "r",
+          "text": "A carrier advertises where and when a truck is free so matching loads can be booked"
+        },
+        {
+          "id": "s",
+          "text": "An arrival or departure event raised when a GPS position crosses a facility boundary"
+        },
+        {
+          "id": "t",
+          "text": "One-off loads at current market rates versus committed capacity at agreed rates"
+        },
+        {
+          "id": "u",
+          "text": "A weigh station inspection"
+        }
+      ],
+      "pairs": {
+        "a": "p",
+        "b": "q",
+        "c": "r",
+        "d": "s",
+        "e": "t"
+      },
+      "explanation": "Middle-mile means freight moving between facilities such as fulfilment centres, sort centres and delivery stations, rather than to the final customer."
+    },
+    {
+      "id": "hos-hours",
+      "concept": "Trip tracking",
+      "type": "integer",
+      "difficulty": 2,
+      "prompt": "US rules limit a property-carrying driver to 11 hours of driving after 10 consecutive hours off duty. A driver has already driven 8 hours. How many more driving hours remain, ignoring other limits?",
+      "answer": 3,
+      "unit": "hours",
+      "explanation": "11 - 8 = 3. A tracking and ETA system must account for such limits: an ETA that needs 6 more driving hours implies a mandatory rest stop, so the ETA is later than distance divided by speed."
+    },
+    {
+      "id": "tracking-design",
+      "concept": "Trip tracking",
+      "type": "single",
+      "difficulty": 3,
+      "prompt": "GPS and status events for trucks are published to a Kafka topic for ETA computation. Which design keeps each trip's events in order and the ETA correct?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Key messages by trip id, make consumers idempotent, and order by event time.",
+          "why": "Right: one partition per key keeps order; dedupe and event time absorb retries and late data."
+        },
+        {
+          "id": "b",
+          "text": "Use a random key so load spreads evenly, then sort globally at query time in the UI.",
+          "why": "Random keys lose per-trip ordering in the stream and make stateful processing hard."
+        },
+        {
+          "id": "c",
+          "text": "Use a single partition for the entire topic and a single consumer to guarantee strict ordering.",
+          "why": "It would order everything but cannot scale to a large fleet."
+        },
+        {
+          "id": "d",
+          "text": "Disable retries in the producer so that duplicates can never appear in the topic at all.",
+          "why": "Without retries events can be lost; the correct fix is idempotent handling."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Kafka orders messages only within a partition. Add a geofence service for arrival and departure events and recompute the ETA from the latest position, speed and driver hours."
+    },
+    {
+      "id": "hos-window",
+      "concept": "Trip tracking",
+      "type": "integer",
+      "difficulty": 3,
+      "prompt": "A property-carrying driver comes on duty at 06:00 after 10 hours off and, ignoring the sleeper-berth split rule, takes a 3-hour off-duty break during the day. At which hour of the day (24-hour clock) does the 14-hour window end?",
+      "answer": 20,
+      "explanation": "06:00 + 14 hours = 20:00. Off-duty time inside the window does not extend it (FMCSA summary), so the break does not push the cutoff to 23:00. An ETA service must apply both the 11-hour driving limit and this 14-hour window, plus the 30-minute break rule.",
+      "unit": "o'clock"
+    },
+    {
+      "id": "cockpit-approach",
+      "concept": "S/4HANA migration",
+      "type": "single",
+      "difficulty": 2,
+      "prompt": "Customer master data sits in a non-SAP legacy billing system that exports CSV files. Which Migration Cockpit approach fits?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Fill migration templates or staging tables from the files, then simulate and load.",
+          "why": "Right: staging tables or file templates are the route for non-SAP sources."
+        },
+        {
+          "id": "b",
+          "text": "Direct transfer, because it reads the CSV files straight from the legacy file server.",
+          "why": "Direct transfer reads from a connected SAP source system, not from arbitrary files."
+        },
+        {
+          "id": "c",
+          "text": "Selective data transition, because it converts the legacy billing system in place.",
+          "why": "That is a project approach for SAP systems, not a loading method for CSV data."
+        },
+        {
+          "id": "d",
+          "text": "Real-time database replication, because the cockpit subscribes to the billing system's log.",
+          "why": "The cockpit is a batch load tool and does not consume database logs."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Rule of thumb: SAP-to-SAP data can use direct transfer (where released for your scope), anything else goes through files or staging tables. Always simulate before the real load."
+    },
+    {
+      "id": "event-dedupe",
+      "concept": "Trip tracking",
+      "type": "code",
+      "difficulty": 3,
+      "prompt": "Tracking events arrive duplicated and out of order. Table trip_state(trip_id PRIMARY KEY, ts, lat, lon) keeps only the latest position per trip. Write a PostgreSQL upsert for one event ($1 trip_id, $2 ts, $3 lat, $4 lon) that never replaces a row with an older or equal ts.",
+      "language": "sql",
+      "checks": [
+        {
+          "label": "inserts into trip_state",
+          "pattern": "insert\\s+into\\s+trip_state"
+        },
+        {
+          "label": "upserts on trip_id",
+          "pattern": "on\\s+conflict\\s*\\(\\s*trip_id\\s*\\)"
+        },
+        {
+          "label": "updates on conflict",
+          "pattern": "do\\s+update\\s+set"
+        },
+        {
+          "label": "only when the new ts is newer",
+          "pattern": "where[\\s\\S]*excluded\\.ts\\s*>\\s*(trip_state\\.)?ts|where[\\s\\S]*trip_state\\.ts\\s*<\\s*excluded\\.ts"
+        }
+      ],
+      "model": "INSERT INTO trip_state (trip_id, ts, lat, lon)\nVALUES ($1, $2, $3, $4)\nON CONFLICT (trip_id) DO UPDATE\n  SET ts = EXCLUDED.ts, lat = EXCLUDED.lat, lon = EXCLUDED.lon\n  WHERE EXCLUDED.ts > trip_state.ts;",
+      "explanation": "The WHERE on the DO UPDATE branch gives last-writer-wins by event time: a duplicate (equal ts) and a late arrival (older ts) both change nothing, so the consumer is idempotent and order-insensitive. Other shapes pass, for example a stored procedure that compares first. With at-least-once, unordered feeds, dedupe plus event-time ordering are the two core tricks.",
+      "starter": "INSERT "
+    }
+  ]
+}

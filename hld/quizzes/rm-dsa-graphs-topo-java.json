@@ -1,0 +1,374 @@
+{
+  "id": "rm-dsa-graphs-topo-java",
+  "title": "DSA in Java: graphs, BFS/DFS and topological sort",
+  "topic": "Java",
+  "series": "java-dsa-fundamentals",
+  "seriesTitle": "Java: DSA fundamentals",
+  "seriesDescription": "Hashing, windows, stacks, binary search, lists, trees, heaps and graphs with Java code. JEE-Advanced style: integer, assertion-reason, matrix match, fill-in-the-blanks, short code and multi-correct questions.",
+  "seriesOrder": 4,
+  "language": "java",
+  "description": "Java graph code: adjacency lists, grid DFS, Kahn's algorithm with ArrayDeque, cloning with a HashMap, and the identity-equality trap of int[] keys.",
+  "source": "Oracle Java documentation (ArrayDeque, Collections.nCopies, arrays, StackOverflowError); LeetCode problem set; NeetCode roadmap; Cracking the Coding Interview",
+  "estimatedMinutes": 20,
+  "questions": [
+    {
+      "id": "adj-list",
+      "concept": "Graph representation",
+      "type": "code",
+      "difficulty": 1,
+      "prompt": "Write a Java method List<List<Integer>> buildGraph(int n, int[][] edges) that returns an adjacency list for an undirected graph with vertices 0..n-1.",
+      "language": "java",
+      "starter": "static List<List<Integer>> buildGraph(int n, int[][] edges) {\n  \n}",
+      "checks": [
+        {
+          "label": "creates one list per vertex",
+          "pattern": "new\\s+ArrayList|computeIfAbsent"
+        },
+        {
+          "label": "loops over the edges",
+          "pattern": "for\\s*\\(\\s*int\\s*\\[\\s*\\]\\s*\\w+\\s*:\\s*edges|for\\s*\\([^)]*edges"
+        },
+        {
+          "label": "adds both directions for an undirected edge",
+          "pattern": "(\\.add\\([\\s\\S]*){3}|computeIfAbsent[\\s\\S]*computeIfAbsent"
+        },
+        {
+          "label": "returns the structure",
+          "pattern": "return\\s+\\w+"
+        }
+      ],
+      "model": "static List<List<Integer>> buildGraph(int n, int[][] edges) {\n  List<List<Integer>> adj = new ArrayList<>();\n  for (int i = 0; i < n; i++) adj.add(new ArrayList<>());\n  for (int[] e : edges) {\n    adj.get(e[0]).add(e[1]);\n    adj.get(e[1]).add(e[0]);\n  }\n  return adj;\n}",
+      "explanation": "Create each inner list separately in a loop. Collections.nCopies(n, new ArrayList<>()) would put the same list in every slot."
+    },
+    {
+      "id": "islands",
+      "concept": "Graphs",
+      "type": "code",
+      "difficulty": 2,
+      "prompt": "Write a Java method int numIslands(char[][] grid) counting the 4-directionally connected groups of '1' (land) in a grid of '1' and '0'. You may modify the grid.",
+      "language": "java",
+      "starter": "static int numIslands(char[][] grid) {\n  \n}",
+      "checks": [
+        {
+          "label": "scans every cell with nested loops",
+          "pattern": "for\\s*\\([^)]*\\)[\\s\\S]*for\\s*\\([^)]*\\)"
+        },
+        {
+          "label": "starts a search only from land",
+          "pattern": "'1'"
+        },
+        {
+          "label": "marks visited cells by sinking the land or with a visited array",
+          "pattern": "=\\s*'0'|visited|seen"
+        },
+        {
+          "label": "explores the four neighbours with a bounds check",
+          "pattern": "[+-]\\s*1[\\s\\S]*[+-]\\s*1"
+        },
+        {
+          "label": "increments a counter once per island",
+          "pattern": "\\+\\+|\\+=\\s*1"
+        }
+      ],
+      "model": "static int numIslands(char[][] grid) {\n  int count = 0;\n  for (int r = 0; r < grid.length; r++)\n    for (int c = 0; c < grid[0].length; c++)\n      if (grid[r][c] == '1') { count++; sink(grid, r, c); }\n  return count;\n}\nstatic void sink(char[][] g, int r, int c) {\n  if (r < 0 || c < 0 || r >= g.length || c >= g[0].length || g[r][c] != '1') return;\n  g[r][c] = '0';\n  sink(g, r + 1, c); sink(g, r - 1, c); sink(g, r, c + 1); sink(g, r, c - 1);\n}",
+      "explanation": "Sinking visited land acts as the visited set, so no extra memory is needed beyond the recursion. For very large grids use an explicit ArrayDeque to avoid StackOverflowError."
+    },
+    {
+      "id": "kahn",
+      "concept": "Topological sort",
+      "type": "code",
+      "difficulty": 3,
+      "prompt": "Write a Java method boolean canFinish(int n, int[][] prerequisites) where each pair {a, b} means course b must be taken before a. Return true if all n courses can be finished (no cycle), using Kahn's algorithm with in-degrees and an ArrayDeque.",
+      "language": "java",
+      "starter": "static boolean canFinish(int n, int[][] prerequisites) {\n  \n}",
+      "checks": [
+        {
+          "label": "builds an adjacency list and in-degree counts",
+          "pattern": "indeg|inDeg|indegree|in_deg"
+        },
+        {
+          "label": "seeds a queue with the zero in-degree nodes",
+          "pattern": "ArrayDeque|Queue|Deque"
+        },
+        {
+          "label": "polls a node and decrements the in-degree of its neighbours",
+          "pattern": "--|-=\\s*1"
+        },
+        {
+          "label": "enqueues a neighbour when its in-degree reaches zero",
+          "pattern": "==\\s*0"
+        },
+        {
+          "label": "compares the processed count with n",
+          "pattern": "==\\s*n|!=\\s*n|<\\s*n|>=\\s*n"
+        }
+      ],
+      "model": "static boolean canFinish(int n, int[][] prerequisites) {\n  List<List<Integer>> adj = new ArrayList<>();\n  for (int i = 0; i < n; i++) adj.add(new ArrayList<>());\n  int[] indeg = new int[n];\n  for (int[] p : prerequisites) { adj.get(p[1]).add(p[0]); indeg[p[0]]++; }\n  Deque<Integer> q = new ArrayDeque<>();\n  for (int i = 0; i < n; i++) if (indeg[i] == 0) q.offer(i);\n  int done = 0;\n  while (!q.isEmpty()) {\n    int u = q.poll();\n    done++;\n    for (int v : adj.get(u)) if (--indeg[v] == 0) q.offer(v);\n  }\n  return done == n;\n}",
+      "explanation": "Nodes on a cycle never reach in-degree zero, so fewer than n nodes are processed. The same loop yields the topological order if you record each polled node."
+    },
+    {
+      "id": "clone-graph",
+      "concept": "Clone graph",
+      "type": "code",
+      "difficulty": 3,
+      "prompt": "Write a Java method Node cloneGraph(Node node) that deep-copies a connected undirected graph (Node has int val and List<Node> neighbors, with a constructor Node(int val)). Use a HashMap from original to copy.",
+      "language": "java",
+      "starter": "static Node cloneGraph(Node node) {\n  \n}",
+      "checks": [
+        {
+          "label": "returns null for a null input",
+          "pattern": "==\\s*null"
+        },
+        {
+          "label": "uses a map from original node to copy",
+          "pattern": "Map\\s*<\\s*Node\\s*,\\s*Node\\s*>"
+        },
+        {
+          "label": "creates each copy only once",
+          "pattern": "containsKey|get\\(|computeIfAbsent|putIfAbsent"
+        },
+        {
+          "label": "recurses or loops over neighbors",
+          "pattern": "neighbors"
+        },
+        {
+          "label": "returns the copy of the start node",
+          "pattern": "return\\s+\\w+"
+        }
+      ],
+      "model": "static Node cloneGraph(Node node) {\n  if (node == null) return null;\n  return copy(node, new HashMap<>());\n}\nstatic Node copy(Node n, Map<Node, Node> seen) {\n  if (seen.containsKey(n)) return seen.get(n);\n  Node c = new Node(n.val);\n  seen.put(n, c);\n  for (Node nb : n.neighbors) c.neighbors.add(copy(nb, seen));\n  return c;\n}",
+      "explanation": "Register the copy in the map before recursing into the neighbours, otherwise a cycle recurses forever. A BFS version works the same way."
+    },
+    {
+      "id": "graph-structures",
+      "concept": "Graph representation",
+      "type": "matrix",
+      "difficulty": 1,
+      "prompt": "Match each Java structure with its role in graph algorithms.",
+      "left": [
+        {
+          "id": "a",
+          "text": "ArrayDeque<Integer>"
+        },
+        {
+          "id": "b",
+          "text": "boolean[] visited"
+        },
+        {
+          "id": "c",
+          "text": "List<List<Integer>>"
+        },
+        {
+          "id": "d",
+          "text": "PriorityQueue<int[]>"
+        },
+        {
+          "id": "e",
+          "text": "Map<Node, Node>"
+        }
+      ],
+      "right": [
+        {
+          "id": "p",
+          "text": "The BFS queue (and Kahn's ready queue)"
+        },
+        {
+          "id": "q",
+          "text": "Constant-time visited marks for vertices numbered 0..n-1"
+        },
+        {
+          "id": "r",
+          "text": "An adjacency list for sparse graphs"
+        },
+        {
+          "id": "s",
+          "text": "The frontier of Dijkstra's algorithm, ordered by distance"
+        },
+        {
+          "id": "t",
+          "text": "Original-to-copy lookup while cloning a graph"
+        },
+        {
+          "id": "u",
+          "text": "A dense adjacency matrix"
+        }
+      ],
+      "pairs": {
+        "a": "p",
+        "b": "q",
+        "c": "r",
+        "d": "s",
+        "e": "t"
+      },
+      "explanation": "Choosing the structure is half of a graph answer: array-backed marks for dense integer ids, hash maps when nodes are objects, and a priority queue when edges have weights."
+    },
+    {
+      "id": "bfs-fill",
+      "concept": "Graphs",
+      "type": "fill",
+      "difficulty": 1,
+      "prompt": "Complete the BFS description.",
+      "text": "With Queue<Integer> q = new ArrayDeque<>(), BFS enqueues with q.{1}(v) and dequeues with q.{2}(); it runs in O(V + E) on an adjacency list, and marks a node visited when it is {3} so it is never queued twice.",
+      "blanks": {
+        "1": "offer",
+        "2": "poll",
+        "3": "enqueued"
+      },
+      "bank": [
+        "offer",
+        "poll",
+        "peek",
+        "push",
+        "enqueued",
+        "dequeued"
+      ],
+      "explanation": "offer adds at the tail and poll removes from the head. Marking at dequeue time lets the same node sit in the queue many times."
+    },
+    {
+      "id": "deque-ops",
+      "concept": "Stack and deque",
+      "type": "integer",
+      "difficulty": 2,
+      "prompt": "An ArrayDeque<Integer> d receives d.offer(1), d.offer(2), d.offer(3), d.push(4), d.pollLast(), d.poll(), d.push(5) in that order. What does d.peekLast() return?",
+      "answer": 2,
+      "tolerance": 0,
+      "explanation": "After the offers the deque is [1, 2, 3]; push(4) gives [4, 1, 2, 3]; pollLast removes 3; poll removes 4, leaving [1, 2]; push(5) gives [5, 1, 2]. The last element is 2. I ran it to confirm."
+    },
+    {
+      "id": "int-array-key",
+      "concept": "Graphs",
+      "type": "assertion",
+      "difficulty": 3,
+      "prompt": "Evaluate the assertion and the reason.",
+      "assertion": "A HashSet<int[]> used as a visited set for grid cells will not recognise a cell that was added before.",
+      "reason": "Java arrays use identity-based equals and hashCode, so two int[] with the same contents are different keys.",
+      "correct": [
+        "a"
+      ],
+      "whys": {
+        "a": "Correct: contains(new int[]{1, 2}) is false even after add(new int[]{1, 2}); encode the cell as r * cols + c, a List<Integer> or a record instead.",
+        "b": "R is exactly the reason, so it does explain A.",
+        "c": "R is true, so c is wrong.",
+        "d": "A is true, so d is wrong."
+      },
+      "explanation": "I ran the example and contains returned false. This is a frequent source of infinite BFS loops in grid problems."
+    },
+    {
+      "id": "kahn-complexity",
+      "concept": "Topological sort",
+      "type": "assertion",
+      "difficulty": 2,
+      "prompt": "Evaluate the assertion and the reason.",
+      "assertion": "Kahn's algorithm with an ArrayDeque and adjacency lists runs in O(V + E).",
+      "reason": "ArrayDeque offer and poll take O(1) amortised time.",
+      "correct": [
+        "b"
+      ],
+      "whys": {
+        "a": "R only covers the queue operations, not the edge relaxations that make the total V + E.",
+        "b": "Correct: both are true, but R explains only the queue cost; the bound also needs each vertex and edge to be handled once.",
+        "c": "R is true, so c is wrong.",
+        "d": "A is true, so d is wrong."
+      },
+      "explanation": "Each vertex is queued once (V queue operations) and each edge decrements one in-degree (E steps), giving O(V + E)."
+    },
+    {
+      "id": "boolean-vs-set",
+      "concept": "Graph representation",
+      "type": "assertion",
+      "difficulty": 3,
+      "prompt": "Evaluate the assertion and the reason.",
+      "assertion": "For vertices numbered 0..n-1, a HashSet<Integer> is a faster visited structure than a boolean[].",
+      "reason": "HashSet lookups take O(1) time on average.",
+      "correct": [
+        "d"
+      ],
+      "whys": {
+        "a": "A is false, so no explanation can hold.",
+        "b": "A is false, so both-true options are out.",
+        "c": "R is true, so c is wrong.",
+        "d": "Correct: R is true but a boolean[] is faster still (direct indexing, no boxing or hashing), so A is false."
+      },
+      "explanation": "Use a primitive array when ids are small integers; use a HashSet or HashMap only when nodes are objects or the id range is huge."
+    },
+    {
+      "id": "adj-shared",
+      "concept": "Graph representation",
+      "type": "single",
+      "difficulty": 2,
+      "prompt": "Which Java statement builds a broken adjacency list in which every vertex shares the same inner list?",
+      "options": [
+        {
+          "id": "a",
+          "text": "new ArrayList<>(Collections.nCopies(n, new ArrayList<Integer>()))",
+          "why": "Correct: nCopies repeats one object reference n times, so adding an edge for one vertex appears for all."
+        },
+        {
+          "id": "b",
+          "text": "Stream.generate(ArrayList<Integer>::new).limit(n).collect(Collectors.toList())",
+          "why": "This calls the constructor for each element, so the lists are independent."
+        },
+        {
+          "id": "c",
+          "text": "A loop that calls adj.add(new ArrayList<>()) n times",
+          "why": "Each iteration creates a fresh list, so this is the safe standard form."
+        },
+        {
+          "id": "d",
+          "text": "new HashMap<Integer, List<Integer>>() filled with computeIfAbsent",
+          "why": "computeIfAbsent creates a fresh list per key, so there is no sharing."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "I ran the nCopies version: after adding to vertex 0, printing three vertices gave [[1], [1], [1]]. Always create the inner lists in a loop."
+    },
+    {
+      "id": "stack-overflow",
+      "concept": "DFS recursion limits",
+      "type": "truefalse",
+      "difficulty": 2,
+      "prompt": "A recursive DFS over a path graph with 100,000 nodes can throw StackOverflowError on a default Java thread stack, so an explicit stack is safer for deep graphs.",
+      "options": [
+        {
+          "id": "a",
+          "text": "True",
+          "why": "Correct: each frame uses stack space and the default stack holds only some thousands to tens of thousands of frames."
+        },
+        {
+          "id": "b",
+          "text": "False",
+          "why": "The default stack is limited; very deep recursion does overflow."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Convert deep DFS to an iterative version with ArrayDeque, or run it on a thread created with a larger stack size."
+    },
+    {
+      "id": "int-array-default",
+      "concept": "Graph representation",
+      "type": "truefalse",
+      "difficulty": 1,
+      "prompt": "A new int[n] used for in-degrees starts with every element equal to -1 in Java, so it has to be filled with zeros first.",
+      "options": [
+        {
+          "id": "a",
+          "text": "True",
+          "why": "Java does not choose -1 for you."
+        },
+        {
+          "id": "b",
+          "text": "False",
+          "why": "Correct: numeric arrays start at 0, which is exactly what a counter array needs."
+        }
+      ],
+      "correct": [
+        "b"
+      ],
+      "explanation": "Boolean arrays start false and object arrays start null, so new boolean[n] is a ready visited array."
+    }
+  ]
+}

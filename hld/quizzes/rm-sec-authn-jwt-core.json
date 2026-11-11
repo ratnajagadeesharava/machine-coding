@@ -1,0 +1,510 @@
+{
+  "id": "rm-sec-authn-jwt-core",
+  "title": "AuthN, sessions, OAuth and JWT",
+  "topic": "Language-independent",
+  "series": "core-security",
+  "seriesTitle": "Core: security",
+  "seriesDescription": "AuthN and AuthZ, JWT, OAuth, RBAC, OWASP and LLM risks. JEE-Advanced style: integer, assertion-reason, matrix match, fill-in-the-blanks, short code and multi-correct questions.",
+  "seriesOrder": 1,
+  "language": "neutral",
+  "description": "Authentication versus authorisation, sessions versus JWT, refresh-token rotation and revocation, decoding and validating JWT claims (exp, aud, kid, alg=none), and OAuth 2.0 grant types.",
+  "source": "RFC 7519 (JWT), RFC 7515 (JWS), RFC 6749 and RFC 7636 (OAuth 2.0, PKCE), RFC 9700 (OAuth security best current practice), OWASP JWT and Session Management cheat sheets, OWASP Password Storage cheat sheet",
+  "estimatedMinutes": 20,
+  "questions": [
+    {
+      "id": "401-403",
+      "concept": "AuthN vs AuthZ",
+      "type": "single",
+      "difficulty": 1,
+      "prompt": "A caller sends a valid token for user Alice and requests DELETE /admin/users/7. Alice is not an admin. Which response is correct?",
+      "options": [
+        {
+          "id": "a",
+          "text": "403 Forbidden, because she is authenticated but not authorised.",
+          "why": "Correct: identity is known, permission is missing."
+        },
+        {
+          "id": "b",
+          "text": "401 Unauthorized, because the user lacks the required admin role.",
+          "why": "401 means authentication is missing or invalid, not insufficient rights."
+        },
+        {
+          "id": "c",
+          "text": "200 OK with an empty body, to hide the endpoint.",
+          "why": "A success status for a refused action misleads clients and monitoring."
+        },
+        {
+          "id": "d",
+          "text": "500 Internal Server Error, because the check failed.",
+          "why": "A denied request is a client-side condition, not a server fault."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "AuthN answers who are you; AuthZ answers what may you do. Some teams return 404 for resources whose existence should stay hidden."
+    },
+    {
+      "id": "jwt-claims",
+      "concept": "JWT claims",
+      "type": "matrix",
+      "difficulty": 1,
+      "prompt": "Match each registered JWT claim to what it carries.",
+      "left": [
+        {
+          "id": "l1",
+          "text": "iss"
+        },
+        {
+          "id": "l2",
+          "text": "sub"
+        },
+        {
+          "id": "l3",
+          "text": "aud"
+        },
+        {
+          "id": "l4",
+          "text": "exp"
+        },
+        {
+          "id": "l5",
+          "text": "nbf"
+        },
+        {
+          "id": "l6",
+          "text": "jti"
+        }
+      ],
+      "right": [
+        {
+          "id": "r1",
+          "text": "Who issued the token"
+        },
+        {
+          "id": "r2",
+          "text": "The subject, usually a user id"
+        },
+        {
+          "id": "r3",
+          "text": "The intended recipients"
+        },
+        {
+          "id": "r4",
+          "text": "Time after which the token must be rejected"
+        },
+        {
+          "id": "r5",
+          "text": "Time before which the token must not be accepted"
+        },
+        {
+          "id": "r6",
+          "text": "A unique token id, useful for denylists"
+        },
+        {
+          "id": "r7",
+          "text": "The signing algorithm"
+        }
+      ],
+      "pairs": {
+        "l1": "r1",
+        "l2": "r2",
+        "l3": "r3",
+        "l4": "r4",
+        "l5": "r5",
+        "l6": "r6"
+      },
+      "explanation": "The signing algorithm lives in the JOSE header (alg), not in the claims. exp, nbf and iat are seconds since the Unix epoch."
+    },
+    {
+      "id": "jwt-header-json",
+      "concept": "JWT claims",
+      "type": "code",
+      "difficulty": 1,
+      "prompt": "Write the JSON header of a JWT signed with RS256 whose signing key is identified by the key id \"key-2024\".",
+      "language": "json",
+      "checks": [
+        {
+          "label": "alg is RS256",
+          "pattern": "\"alg\"\\s*:\\s*\"RS256\""
+        },
+        {
+          "label": "kid is key-2024",
+          "pattern": "\"kid\"\\s*:\\s*\"key-2024\""
+        }
+      ],
+      "model": "{\"alg\": \"RS256\", \"typ\": \"JWT\", \"kid\": \"key-2024\"}",
+      "explanation": "The kid header lets the verifier pick the right public key from the issuer's JWKS during key rotation. typ is optional. The header is base64url encoded, never encrypted."
+    },
+    {
+      "id": "jwt-parts",
+      "concept": "JWT claims",
+      "type": "integer",
+      "difficulty": 1,
+      "prompt": "A compact signed JWT is written as header, payload and signature joined by a separator character. How many separator characters (dots) does it contain?",
+      "answer": 2,
+      "unit": "dots",
+      "explanation": "Three parts need two dots: header.payload.signature. A compact encrypted token (JWE) has five parts and therefore four dots."
+    },
+    {
+      "id": "token-window",
+      "concept": "JWT claims",
+      "type": "integer",
+      "difficulty": 2,
+      "prompt": "A token payload decodes to {\"sub\":\"u7\",\"iat\":1700000000,\"nbf\":1700000060,\"exp\":1700003600}. For how many seconds is the token valid (from nbf to exp), ignoring clock leeway?",
+      "answer": 3540,
+      "unit": "seconds",
+      "explanation": "exp minus nbf = 1,700,003,600 - 1,700,000,060 = 3,540. Note that this is less than the 3,600 seconds between iat and exp."
+    },
+    {
+      "id": "revocation-gap",
+      "concept": "Revocation",
+      "type": "integer",
+      "difficulty": 2,
+      "prompt": "Access tokens are valid for 15 minutes and resource servers verify only the signature and exp. A user's account is disabled at the worst possible moment. For how many seconds can a stolen token still be accepted?",
+      "answer": 900,
+      "unit": "seconds",
+      "explanation": "Without a denylist or introspection, a stateless token remains valid until exp. Worst case is a token issued just before the disable: 15 x 60 = 900 seconds."
+    },
+    {
+      "id": "refresh-token-length",
+      "concept": "Refresh tokens",
+      "type": "integer",
+      "difficulty": 2,
+      "prompt": "A refresh token is 32 random bytes written as lowercase hexadecimal. How many characters long is it?",
+      "answer": 64,
+      "unit": "characters",
+      "explanation": "Each byte becomes two hex characters: 32 x 2 = 64. That is 256 bits of entropy, enough to be unguessable, so a fast hash such as SHA-256 is enough when storing it."
+    },
+    {
+      "id": "hash-refresh",
+      "concept": "Refresh tokens",
+      "type": "assertion",
+      "difficulty": 2,
+      "prompt": "Read the assertion A and the reason R, then choose the correct relationship between them.",
+      "assertion": "Refresh tokens should be stored hashed in the database, like passwords (but with a fast hash).",
+      "reason": "A database leak would otherwise give the attacker working refresh tokens.",
+      "correct": [
+        "a"
+      ],
+      "whys": {
+        "a": "Correct: Hashing means a leaked table cannot be replayed as live tokens.",
+        "b": "Not this one: Both are true but R is not the reason A holds does not describe this pair; R is actually the reason or is false.",
+        "c": "Not this one: A is true while R is false does not describe this pair; check the truth of R again.",
+        "d": "Not this one: A is false while R is true does not describe this pair; check the truth of A again."
+      },
+      "explanation": "A random 256-bit token needs no slow password hash; SHA-256 is enough because it cannot be guessed from a dictionary."
+    },
+    {
+      "id": "sessions-jwt",
+      "concept": "Sessions vs JWT",
+      "type": "assertion",
+      "difficulty": 2,
+      "prompt": "Read the assertion A and the reason R, then choose the correct relationship between them.",
+      "assertion": "A server-side session store lets you end a session immediately.",
+      "reason": "JWTs may be signed with HMAC or RSA.",
+      "correct": [
+        "b"
+      ],
+      "whys": {
+        "a": "Not this one: Both A and R are true and R explains A does not describe this pair; R does not explain A.",
+        "b": "Correct: Both are true, but the signing algorithm is unrelated to revocation; the server-side lookup is.",
+        "c": "Not this one: A is true while R is false does not describe this pair; check the truth of R again.",
+        "d": "Not this one: A is false while R is true does not describe this pair; check the truth of A again."
+      },
+      "explanation": "Stateless JWTs trade instant revocation for no per-request lookup."
+    },
+    {
+      "id": "jwt-secrets",
+      "concept": "JWT pitfalls",
+      "type": "assertion",
+      "difficulty": 2,
+      "prompt": "Read the assertion A and the reason R, then choose the correct relationship between them.",
+      "assertion": "Never put secrets such as passwords in a JWT payload.",
+      "reason": "A signed JWT (JWS) encrypts the payload with the key so only the server can read it.",
+      "correct": [
+        "c"
+      ],
+      "whys": {
+        "a": "Not this one: Both A and R are true and R explains A does not describe this pair; R does not explain A.",
+        "b": "Not this one: Both are true but R is not the reason A holds does not describe this pair; R is actually the reason or is false.",
+        "c": "Correct: A is true. R is false: a signature protects integrity only, and anyone can base64-decode the payload.",
+        "d": "Not this one: A is false while R is true does not describe this pair; check the truth of A again."
+      },
+      "explanation": "Use JWE if the contents must be confidential, but the better rule is to keep sensitive data out of the token altogether."
+    },
+    {
+      "id": "hs256-public",
+      "concept": "JWT pitfalls",
+      "type": "assertion",
+      "difficulty": 3,
+      "prompt": "Read the assertion A and the reason R, then choose the correct relationship between them.",
+      "assertion": "A client holding only a public key can verify tokens signed with HS256.",
+      "reason": "RS256 uses an asymmetric key pair, so verifiers need only the public key.",
+      "correct": [
+        "d"
+      ],
+      "whys": {
+        "a": "Not this one: Both A and R are true and R explains A does not describe this pair; R does not explain A.",
+        "b": "Not this one: Both are true but R is not the reason A holds does not describe this pair; R is actually the reason or is false.",
+        "c": "Not this one: A is true while R is false does not describe this pair; check the truth of R again.",
+        "d": "Correct: A is false: HS256 uses a shared secret, so verifying requires the secret itself. R is true for RS256."
+      },
+      "explanation": "Algorithm confusion attacks exploit servers that accept an RS256 public key as an HS256 secret. Pin the algorithm."
+    },
+    {
+      "id": "check-aud",
+      "concept": "JWT validation",
+      "type": "assertion",
+      "difficulty": 3,
+      "prompt": "Read the assertion A and the reason R, then choose the correct relationship between them.",
+      "assertion": "A resource server must validate the aud claim of a JWT, not only the signature and exp.",
+      "reason": "Without an audience check, a token issued by the same authorisation server for service A would also be accepted by service B.",
+      "correct": [
+        "a"
+      ],
+      "whys": {
+        "a": "Correct: The audience check binds a token to its intended recipient.",
+        "b": "Not this one: Both are true but R is not the reason A holds does not describe this pair; R is actually the reason or is false.",
+        "c": "Not this one: A is true while R is false does not describe this pair; check the truth of R again.",
+        "d": "Not this one: A is false while R is true does not describe this pair; check the truth of A again."
+      },
+      "explanation": "Also pin iss, algorithms and token type. Audience-restricted tokens limit the blast radius of a token leaked from one service."
+    },
+    {
+      "id": "verify-rules",
+      "concept": "JWT verification",
+      "type": "fill",
+      "difficulty": 2,
+      "prompt": "Complete the rules for a JWT verifier.",
+      "text": "Accept only a pinned list of {1}, never trust alg=none, reject tokens past {2}, and select the verification key by the {3} header from the issuer's JWKS.",
+      "blanks": {
+        "1": "algorithms",
+        "2": "exp",
+        "3": "kid"
+      },
+      "bank": [
+        "algorithms",
+        "exp",
+        "kid",
+        "jti",
+        "typ",
+        "cookies"
+      ],
+      "explanation": "kid names which key signed the token, which makes key rotation possible without downtime."
+    },
+    {
+      "id": "token-storage",
+      "concept": "Sessions vs JWT",
+      "type": "single",
+      "difficulty": 3,
+      "prompt": "A single-page app must keep a long-lived refresh token in the browser. Which storage is safest against XSS theft?",
+      "options": [
+        {
+          "id": "a",
+          "text": "An HttpOnly, Secure, SameSite cookie scoped to the refresh path.",
+          "why": "Correct: scripts cannot read an HttpOnly cookie."
+        },
+        {
+          "id": "b",
+          "text": "localStorage, so that the token survives browser restarts easily.",
+          "why": "Any injected script can read localStorage."
+        },
+        {
+          "id": "c",
+          "text": "A global JavaScript variable named refreshToken on the window object.",
+          "why": "A global is reachable by every script on the page, including injected ones."
+        },
+        {
+          "id": "d",
+          "text": "A query parameter appended to every request URL by the client code.",
+          "why": "URLs end up in logs, history and referrers."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Keep access tokens in memory and refresh via the cookie. Cookies bring CSRF considerations, handled by SameSite and a CSRF token on the refresh endpoint."
+    },
+    {
+      "id": "revoke",
+      "concept": "Revocation",
+      "type": "multi",
+      "difficulty": 3,
+      "prompt": "Which are workable ways to revoke JWT-based access? Select all that apply.",
+      "options": [
+        {
+          "id": "a",
+          "text": "Keep a denylist of revoked jti values until their exp.",
+          "why": "Correct: the verifier checks the list on each request."
+        },
+        {
+          "id": "b",
+          "text": "Use short access-token TTLs and revoke the refresh token.",
+          "why": "Correct: access ends at the next refresh, within the TTL."
+        },
+        {
+          "id": "c",
+          "text": "Rotate the signing key, which invalidates every issued token.",
+          "why": "Correct: a blunt instrument that logs everyone out."
+        },
+        {
+          "id": "d",
+          "text": "Ask the client to delete its copy of the token.",
+          "why": "A stolen copy is outside the client's control."
+        },
+        {
+          "id": "e",
+          "text": "Edit exp in the token to a past time.",
+          "why": "Changing the payload breaks the signature and cannot recall issued copies."
+        }
+      ],
+      "correct": [
+        "a",
+        "b",
+        "c"
+      ],
+      "explanation": "Choose between a stateless design with a short TTL and a hybrid design that checks a revocation list or a per-user token version on each request."
+    },
+    {
+      "id": "reuse-detection",
+      "concept": "Refresh tokens",
+      "type": "single",
+      "difficulty": 3,
+      "prompt": "With refresh-token rotation, a refresh token that was already exchanged is presented again. What should the server do?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Issue a new pair, since the user probably retried.",
+          "why": "A silent reissue lets the thief keep a working session."
+        },
+        {
+          "id": "b",
+          "text": "Revoke the entire token family for that login and force re-authentication.",
+          "why": "Correct: reuse means the token was probably stolen."
+        },
+        {
+          "id": "c",
+          "text": "Ignore the request and keep both tokens active until they expire.",
+          "why": "Leaving both valid defeats the purpose of rotation."
+        },
+        {
+          "id": "d",
+          "text": "Extend the old token for another 24 hours to be generous.",
+          "why": "Extending a possibly stolen token helps the attacker."
+        }
+      ],
+      "correct": [
+        "b"
+      ],
+      "explanation": "Rotation limits a stolen refresh token to one use, and reuse detection turns the replay into an alarm."
+    },
+    {
+      "id": "spa-flow",
+      "concept": "OAuth 2.0",
+      "type": "single",
+      "difficulty": 2,
+      "prompt": "A browser single-page app must sign users in through an OAuth 2.0 / OpenID Connect provider. Which flow does current security guidance (RFC 9700, OAuth 2.1 draft) recommend?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Implicit flow, returning the access token in the URL fragment.",
+          "why": "The implicit flow exposes tokens in URLs and is deprecated."
+        },
+        {
+          "id": "b",
+          "text": "Resource owner password credentials, posting the user's password to the app.",
+          "why": "The app would handle the raw password, which the grant is meant to avoid."
+        },
+        {
+          "id": "c",
+          "text": "Authorization code flow with PKCE.",
+          "why": "Correct: PKCE protects the code exchange for public clients."
+        },
+        {
+          "id": "d",
+          "text": "Client credentials grant using a secret shipped in the JavaScript bundle.",
+          "why": "A secret in a public bundle is not secret, and the grant has no user."
+        }
+      ],
+      "correct": [
+        "c"
+      ],
+      "explanation": "PKCE is defined in RFC 7636; OAuth 2.1 requires it for all authorization-code clients and drops implicit and password grants. Keep tokens out of URLs and short-lived."
+    },
+    {
+      "id": "grant-match",
+      "concept": "OAuth 2.0",
+      "type": "matrix",
+      "difficulty": 1,
+      "prompt": "Match each OAuth 2.0 grant type with the situation it fits.",
+      "left": [
+        {
+          "id": "l1",
+          "text": "Authorization code + PKCE"
+        },
+        {
+          "id": "l2",
+          "text": "Client credentials"
+        },
+        {
+          "id": "l3",
+          "text": "Refresh token"
+        },
+        {
+          "id": "l4",
+          "text": "Device authorization"
+        }
+      ],
+      "right": [
+        {
+          "id": "r1",
+          "text": "A user signs in through a browser or mobile app"
+        },
+        {
+          "id": "r2",
+          "text": "A backend service calls another API as itself, with no user"
+        },
+        {
+          "id": "r3",
+          "text": "Getting a new access token without asking the user to log in again"
+        },
+        {
+          "id": "r4",
+          "text": "A TV or CLI with no browser shows a code the user enters on another device"
+        },
+        {
+          "id": "r5",
+          "text": "Sending the username and password straight to the API"
+        }
+      ],
+      "pairs": {
+        "l1": "r1",
+        "l2": "r2",
+        "l3": "r3",
+        "l4": "r4"
+      },
+      "explanation": "The last option is the password grant, which OAuth 2.1 removes. Match the grant to who the actor is (user, service, constrained device) and whether a browser is available."
+    },
+    {
+      "id": "bearer-curl",
+      "concept": "AuthN vs AuthZ",
+      "type": "code",
+      "difficulty": 1,
+      "prompt": "Write a curl command that sends a GET request to https://api.example.com/orders with the access token held in the shell variable TOKEN as an OAuth 2.0 bearer credential.",
+      "language": "shell",
+      "checks": [
+        {
+          "label": "calls the orders endpoint",
+          "pattern": "https://api\\.example\\.com/orders"
+        },
+        {
+          "label": "sends an Authorization header",
+          "pattern": "-H\\s+[\"']Authorization:\\s*Bearer\\s+\\$\\{?TOKEN\\}?[\"']"
+        }
+      ],
+      "model": "curl -H \"Authorization: Bearer $TOKEN\" https://api.example.com/orders",
+      "explanation": "Use double quotes so the shell expands $TOKEN. Never put the token in the URL: URLs are logged by proxies and servers. Using --header instead of -H is equally valid."
+    }
+  ]
+}

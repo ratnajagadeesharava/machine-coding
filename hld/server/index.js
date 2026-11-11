@@ -6,8 +6,10 @@ import { fileURLToPath } from 'node:url';
 import Anthropic from '@anthropic-ai/sdk';
 import { sanitizeBoard } from '../shared/board.js';
 import { AriaError, createAi, DEFAULT_MODEL, friendlyError, MODELS } from './ai.js';
+import { currentBranch } from './branch.js';
 import { loadEnvFile } from './env.js';
 import { createMockClient } from './mock.js';
+import { openProgress } from './progress.js';
 import { cleanInterviewQuestion } from './question.js';
 import { cleanQuestion, GEN_LIMITS, loadQuizzes, quizSummary } from './quiz.js';
 
@@ -113,7 +115,7 @@ function makeRateLimiter(limit, windowMs, now = () => Date.now()) {
 
 // config: { ai | null, questions, mode: 'live' | 'mock' | 'off', model, rateLimit }
 // `makeAi(key)` (optional) builds a client for a key the browser sends in the x-anthropic-key header.
-export function createServer({ ai, questions, quizzes = [], mode = 'off', model = DEFAULT_MODEL, rateLimit = 60, makeAi = null }) {
+export function createServer({ ai, questions, quizzes = [], mode = 'off', model = DEFAULT_MODEL, rateLimit = 60, makeAi = null, progress = null, branch = null }) {
   const KEY_RE = /^sk-ant-[A-Za-z0-9_-]{10,400}$/;
   const keyed = new Map();
   // The AI to use for this request: the server's own (env key / demo mode), else one built from the browser's key.
@@ -248,6 +250,29 @@ export function createServer({ ai, questions, quizzes = [], mode = 'off', model 
     }
   }
 
+  // Quiz progress in the SQLite file next to the code. Changing calls need the x-hld-progress header (a browser will not send it from another
+  // origin without a preflight, which this server never allows) and, when the browser says where it came from, the same host.
+  async function progressRoute(req, res, p) {
+    if (!progress) throw new HttpError(503, 'The progress database is not available.');
+    const info = () => ({ ...progress.read(), file: 'hld/data/progress.db', branch });
+    if (req.method === 'GET' && p === '/api/progress') return json(res, 200, info());
+    if (req.headers['x-hld-progress'] !== '1') throw new HttpError(403, 'Missing x-hld-progress header.');
+    const origin = req.headers.origin;
+    if (origin && new URL(origin).host !== req.headers.host) throw new HttpError(403, 'Cross-origin request refused.');
+    if (req.method === 'DELETE' && p === '/api/progress') return json(res, 200, { ...progress.reset(), file: 'hld/data/progress.db', branch });
+    if (req.method === 'POST' && p === '/api/progress/sync') {
+      const body = await readJson(req);
+      return json(res, 200, { ...progress.sync(body), file: 'hld/data/progress.db', branch });
+    }
+    const m = /^\/api\/progress\/([a-z]+)$/.exec(p);
+    if (req.method === 'PUT' && m) {
+      const body = await readJson(req);
+      try { progress.save(m[1], body.value); } catch (err) { throw new HttpError(400, err.message); }
+      return json(res, 200, { ok: true });
+    }
+    throw new HttpError(405, 'Method not allowed.');
+  }
+
   return http.createServer(async (req, res) => {
     try {
       const url = new URL(req.url, 'http://localhost');
@@ -265,6 +290,7 @@ export function createServer({ ai, questions, quizzes = [], mode = 'off', model 
           if (!quiz) throw new HttpError(404, 'Unknown quiz.');
           return json(res, 200, quiz);
         }
+        if (p === '/api/progress' || p.startsWith('/api/progress/')) return await progressRoute(req, res, p);
         if (req.method !== 'POST') throw new HttpError(405, 'Method not allowed.');
         if (p === '/api/quiz/explain') return await quizExplain(req, res);
         if (p === '/api/quiz/generate') return await quizGenerate(req, res);
@@ -310,12 +336,20 @@ function main() {
     mode = 'live';
   }
   const makeAi = (apiKey, chosen) => createAi({ client: new Anthropic({ apiKey: apiKey || env.ANTHROPIC_API_KEY }), model: chosen || model, effort: env.HLD_EFFORT || 'default' });
-  const server = createServer({ ai, questions, quizzes, mode, model: mode === 'mock' ? 'mock' : model, makeAi });
+  let progress = null;
+  try {
+    progress = openProgress(env.HLD_DB ? path.resolve(env.HLD_DB) : path.join(ROOT, 'data', 'progress.db'));
+  } catch (err) {
+    console.warn(`Progress database unavailable (${err.message}); quiz progress stays in the browser only.`);
+  }
+  const branch = currentBranch(ROOT);
+  const server = createServer({ ai, questions, quizzes, mode, model: mode === 'mock' ? 'mock' : model, makeAi, progress, branch });
   server.listen(port, host, () => {
     console.log(`HLD Room: http://${host === '0.0.0.0' ? 'localhost' : host}:${port}`);
     if (mode === 'live') console.log(`Aria is live (model ${model}).`);
     else if (mode === 'mock') console.log('Demo mode: Aria gives canned replies, no API calls are made.');
     else console.log('Aria is NOT connected: set ANTHROPIC_API_KEY in hld/.env (copy .env.example) or run "npm run demo".');
+    if (progress) console.log(`Quiz progress: hld/data/progress.db${branch ? ` (branch ${branch})` : ''}. Commit that file on your own branch to keep it.`);
     if (host !== '127.0.0.1' && host !== 'localhost') console.warn(`Warning: listening on ${host}. Anyone who can reach this port can spend your API key.`);
   });
 }

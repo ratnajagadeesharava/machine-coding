@@ -1,0 +1,366 @@
+{
+  "id": "rm-dsa2-shortest-paths-java",
+  "title": "Shortest paths in Java (PriorityQueue, ArrayDeque, int overflow)",
+  "topic": "Java",
+  "language": "java",
+  "series": "java-dsa-advanced",
+  "seriesTitle": "Java: DSA advanced",
+  "seriesDescription": "Shortest paths, union-find, tries, intervals, bits, dynamic programming, greedy and backtracking with Java code. JEE-Advanced style: integer, assertion-reason, matrix match, fill-in-the-blanks, short code and multi-correct questions.",
+  "seriesOrder": 1,
+  "description": "Dijkstra with PriorityQueue and lazy deletion, comparator and overflow pitfalls, 0-1 BFS with ArrayDeque, Bellman-Ford for K stops and Floyd-Warshall with int[] tables.",
+  "source": "Oracle Java PriorityQueue and ArrayDeque docs; JLS 4.2.2 (integer arithmetic) and 15.18; CLRS ch. 22-24; LeetCode Cheapest Flights Within K Stops, Network Delay Time",
+  "estimatedMinutes": 16,
+  "questions": [
+    {
+      "id": "dijkstra-java",
+      "concept": "Dijkstra",
+      "type": "code",
+      "difficulty": 2,
+      "prompt": "Write a Java method int[] dijkstra(List<int[]>[] g, int n, int src) where g[u] holds {v, weight} pairs with non-negative weights. Return the distance array (Integer.MAX_VALUE for unreachable nodes) using a PriorityQueue<int[]>.",
+      "explanation": "This is the lazy-deletion version: Java PriorityQueue has no decrease-key, so duplicates are pushed and stale ones skipped. Other correct variants (a visited[] array, a Node record) pass the intent. Time O(E log V). Note d + e[1] is safe because d is a popped, finite distance.",
+      "language": "java",
+      "starter": "static int[] dijkstra(List<int[]>[] g, int n, int src) {\n  \n}",
+      "checks": [
+        {
+          "label": "creates a PriorityQueue ordered by distance",
+          "pattern": "PriorityQueue\\s*<\\s*int\\s*\\[\\s*\\]\\s*>[\\s\\S]*(compar|a\\s*\\[\\s*\\d\\s*\\]\\s*-\\s*b\\s*\\[|->)"
+        },
+        {
+          "label": "initialises dist to a large value and dist[src] to 0",
+          "pattern": "(Arrays\\.fill|MAX_VALUE|INF)[\\s\\S]*dist\\s*\\[\\s*src\\s*\\]\\s*=\\s*0"
+        },
+        {
+          "label": "skips stale heap entries (d > dist[u])",
+          "pattern": "(d|top\\s*\\[\\s*0\\s*\\]|cur\\s*\\[\\s*0\\s*\\])\\s*>\\s*dist\\s*\\[|continue"
+        },
+        {
+          "label": "relaxes an edge when dist[u] + w improves dist[v]",
+          "pattern": "\\+\\s*[\\w\\[\\]]+\\s*<\\s*dist\\s*\\[|dist\\s*\\[\\s*\\w+\\s*\\]\\s*\\+\\s*[\\w\\[\\]]+\\s*<\\s*dist"
+        }
+      ],
+      "model": "static int[] dijkstra(List<int[]>[] g, int n, int src) {\n  int[] dist = new int[n];\n  Arrays.fill(dist, Integer.MAX_VALUE); dist[src] = 0;\n  PriorityQueue<int[]> pq = new PriorityQueue<>((a, b) -> Integer.compare(a[0], b[0]));\n  pq.add(new int[]{0, src});\n  while (!pq.isEmpty()) {\n    int[] top = pq.poll(); int d = top[0], u = top[1];\n    if (d > dist[u]) continue;\n    for (int[] e : g[u]) if (d + e[1] < dist[e[0]]) { dist[e[0]] = d + e[1]; pq.add(new int[]{dist[e[0]], e[0]}); }\n  }\n  return dist;\n}"
+    },
+    {
+      "id": "bf-java",
+      "concept": "Bellman-Ford with K stops",
+      "type": "code",
+      "difficulty": 3,
+      "prompt": "Write a Java method int cheapest(int n, int[][] flights, int src, int dst, int k) where each flight is {from, to, price}. Return the cheapest price using at most k stops, or -1 if impossible. Use Bellman-Ford rounds and avoid int overflow when adding to an 'infinite' distance.",
+      "explanation": "The clone matters: relaxing in place could chain several edges in one round and exceed the K-stop limit. Integer.MAX_VALUE / 2 plus a price cannot overflow, unlike Integer.MAX_VALUE + price. Time O(K * E). A heap-based search tracking (cost, node, stops) is also valid but would not satisfy these checks.",
+      "language": "java",
+      "starter": "static int cheapest(int n, int[][] flights, int src, int dst, int k) {\n  \n}",
+      "checks": [
+        {
+          "label": "runs k + 1 rounds (k stops = k + 1 edges)",
+          "pattern": "<=\\s*k\\b|k\\s*\\+\\s*1"
+        },
+        {
+          "label": "relaxes from a copy of the previous round",
+          "pattern": "clone\\s*\\(|Arrays\\.copyOf|new\\s+int\\s*\\[\\s*n\\s*\\]"
+        },
+        {
+          "label": "relaxes each edge with dist[from] + price",
+          "pattern": "dist\\s*\\[[^\\n]*\\]\\s*\\+"
+        },
+        {
+          "label": "uses an infinity that cannot overflow when a price is added",
+          "pattern": "MAX_VALUE\\s*/\\s*2|INF|\\d{6,}"
+        },
+        {
+          "label": "returns -1 when dst is unreachable",
+          "pattern": "-\\s*1"
+        }
+      ],
+      "model": "static int cheapest(int n, int[][] flights, int src, int dst, int k) {\n  int INF = Integer.MAX_VALUE / 2;\n  int[] dist = new int[n];\n  Arrays.fill(dist, INF); dist[src] = 0;\n  for (int i = 0; i <= k; i++) {\n    int[] nxt = dist.clone();\n    for (int[] f : flights)\n      if (dist[f[0]] + f[2] < nxt[f[1]]) nxt[f[1]] = dist[f[0]] + f[2];\n    dist = nxt;\n  }\n  return dist[dst] >= INF ? -1 : dist[dst];\n}"
+    },
+    {
+      "id": "floyd-java",
+      "concept": "Floyd-Warshall",
+      "type": "code",
+      "difficulty": 2,
+      "prompt": "Write a Java method int[][] floyd(int[][] dist) that updates an n x n matrix in place to all-pairs shortest distances and returns it. Missing edges hold INF = Integer.MAX_VALUE / 2 and the diagonal holds 0.",
+      "explanation": "O(n^3) time, O(1) extra space. The intermediate vertex k must be the outer loop. Using INF = MAX_VALUE / 2 keeps INF + INF from overflowing. It suits small dense graphs; for large sparse graphs run Dijkstra from each source.",
+      "language": "java",
+      "starter": "static int[][] floyd(int[][] dist) {\n  \n}",
+      "checks": [
+        {
+          "label": "three nested loops",
+          "pattern": "for[\\s\\S]*for[\\s\\S]*for"
+        },
+        {
+          "label": "tests a path through the middle vertex",
+          "pattern": "dist\\s*\\[\\s*\\w+\\s*\\]\\s*\\[\\s*\\w+\\s*\\]\\s*\\+\\s*dist\\s*\\[\\s*\\w+\\s*\\]\\s*\\[\\s*\\w+\\s*\\]"
+        },
+        {
+          "label": "keeps the smaller value",
+          "pattern": "Math\\.min\\s*\\(|<"
+        },
+        {
+          "label": "returns the table",
+          "pattern": "return"
+        }
+      ],
+      "model": "static int[][] floyd(int[][] dist) {\n  int n = dist.length;\n  for (int k = 0; k < n; k++)\n    for (int i = 0; i < n; i++)\n      for (int j = 0; j < n; j++)\n        if (dist[i][k] + dist[k][j] < dist[i][j]) dist[i][j] = dist[i][k] + dist[k][j];\n  return dist;\n}"
+    },
+    {
+      "id": "pq-pushes",
+      "concept": "Lazy deletion",
+      "type": "integer",
+      "difficulty": 2,
+      "prompt": "Directed edges A->B 4, A->C 1, C->B 2, C->D 8, B->D 5, D->E 3. Dijkstra from A uses a PriorityQueue with lazy deletion: one add for the source, then one add per successful relaxation. How many times is add called in total?",
+      "explanation": "Source (1), A relaxes B and C (3), C relaxes B to 3 and D to 9 (5), B relaxes D to 8 (6), D relaxes E (7). The stale entries (4,B) and (9,D) are popped and skipped. In general pushes are at most E + 1.",
+      "answer": 7,
+      "tolerance": 0,
+      "unit": "adds"
+    },
+    {
+      "id": "comparator-overflow",
+      "concept": "Comparators",
+      "type": "single",
+      "difficulty": 3,
+      "prompt": "Distances in a PriorityQueue<int[]> may be close to 2 billion, and entries are ordered by a[0] ascending. Which comparator is always correct?",
+      "explanation": "Subtraction comparators are a classic overflow bug. Integer.compare, Comparator.comparingInt(a -> a[0]) or Long.compare for long keys are safe.",
+      "options": [
+        {
+          "id": "a",
+          "text": "(a, b) -> Integer.compare(a[0], b[0])",
+          "why": "Correct: compare never overflows and returns the right sign."
+        },
+        {
+          "id": "b",
+          "text": "(a, b) -> a[0] - b[0], which wraps around when the two values are far apart",
+          "why": "The subtraction can overflow int and flip the sign, corrupting the heap order."
+        },
+        {
+          "id": "c",
+          "text": "(a, b) -> b[0] - a[0], so that the larger distance leaves the heap first",
+          "why": "This reverses the order, giving a max-heap, and also risks overflow."
+        },
+        {
+          "id": "d",
+          "text": "No comparator at all, because int[] arrays are naturally ordered by their first element",
+          "why": "Arrays do not implement Comparable; the first add throws ClassCastException."
+        }
+      ],
+      "correct": [
+        "a"
+      ]
+    },
+    {
+      "id": "pq-remove-cost",
+      "concept": "Lazy deletion",
+      "type": "truefalse",
+      "difficulty": 2,
+      "prompt": "True or false: PriorityQueue.remove(Object) runs in O(log n), so Dijkstra can simulate decrease-key by removing the old entry and adding the new one at no real cost.",
+      "explanation": "PriorityQueue.remove(Object) scans the backing array, then sifts. Lazy deletion (add a duplicate, skip stale on poll) keeps every operation O(log n).",
+      "options": [
+        {
+          "id": "a",
+          "text": "True",
+          "why": "remove(Object) first searches for the element, which is linear in the heap size."
+        },
+        {
+          "id": "b",
+          "text": "False",
+          "why": "Correct: the search makes remove(Object) O(n), so the trick turns Dijkstra into O(V * E) work."
+        }
+      ],
+      "correct": [
+        "b"
+      ]
+    },
+    {
+      "id": "deque-fill",
+      "concept": "0-1 BFS",
+      "type": "fill",
+      "difficulty": 1,
+      "prompt": "Complete the Java container choice for 0-1 BFS.",
+      "explanation": "ArrayDeque is the idiomatic double-ended queue in Java (faster than LinkedList and Stack). Front insertion for free moves keeps the deque ordered by distance, giving O(V + E).",
+      "text": "0-1 BFS keeps its frontier in an {1}: a neighbour reached by a weight-0 edge goes in with {2}, one reached by a weight-1 edge goes in with {3}.",
+      "blanks": {
+        "1": "ArrayDeque",
+        "2": "addFirst",
+        "3": "addLast"
+      },
+      "bank": [
+        "addLast",
+        "PriorityQueue",
+        "poll",
+        "ArrayDeque",
+        "addFirst"
+      ]
+    },
+    {
+      "id": "pq-iteration",
+      "concept": "PriorityQueue API",
+      "type": "assertion",
+      "difficulty": 3,
+      "prompt": "A developer prints a PriorityQueue<Integer> of the values 5, 1, 4, 2 with a for-each loop.",
+      "explanation": "To read in order, poll repeatedly (O(log n) each) or copy and sort. The iterator walks the underlying array in heap order.",
+      "assertion": "Iterating a PriorityQueue with a for-each loop visits the elements in ascending order.",
+      "reason": "A PriorityQueue is a binary heap in an array, which only guarantees that the head is the minimum.",
+      "correct": [
+        "d"
+      ],
+      "whys": {
+        "a": "A is false, so R cannot explain it.",
+        "b": "A is false.",
+        "c": "A is false, and R is true.",
+        "d": "Right: R is true and is exactly why A is false; only poll() returns elements in sorted order."
+      }
+    },
+    {
+      "id": "pq-needs-comparator",
+      "concept": "PriorityQueue API",
+      "type": "assertion",
+      "difficulty": 2,
+      "prompt": "You write new PriorityQueue<int[]>() and add two int[] entries.",
+      "explanation": "Always pass a comparator for array or custom-object entries, for example Comparator.comparingInt(a -> a[0]).",
+      "assertion": "A PriorityQueue<int[]> needs an explicit comparator.",
+      "reason": "int[] arrays implement Comparable, ordering themselves by their first element.",
+      "correct": [
+        "c"
+      ],
+      "whys": {
+        "a": "R is false, so it cannot explain A.",
+        "b": "R is false.",
+        "c": "Right: arrays are not Comparable, so without a comparator the second add throws ClassCastException; A is true and R is false.",
+        "d": "A is true."
+      }
+    },
+    {
+      "id": "pq-ops",
+      "concept": "PriorityQueue API",
+      "type": "assertion",
+      "difficulty": 2,
+      "prompt": "Consider the cost of PriorityQueue operations.",
+      "explanation": "Both facts feed the Dijkstra bound: up to E polls at O(log V) each, with peek used only for inspection.",
+      "assertion": "PriorityQueue.poll() runs in O(log n).",
+      "reason": "PriorityQueue.peek() runs in O(1).",
+      "correct": [
+        "b"
+      ],
+      "whys": {
+        "a": "Peek being O(1) does not explain why poll must sift.",
+        "b": "Right: both are true; poll must restore the heap by sifting, while peek just reads the head, and neither explains the other.",
+        "c": "R is true.",
+        "d": "A is true."
+      }
+    },
+    {
+      "id": "inf-overflow",
+      "concept": "Integer overflow",
+      "type": "assertion",
+      "difficulty": 3,
+      "prompt": "A student fills dist with Integer.MAX_VALUE and relaxes edges with dist[u] + w < dist[v] without checking reachability.",
+      "explanation": "Fix it by skipping unreachable nodes, using long, or choosing INF = MAX_VALUE / 2. Dijkstra avoids the problem because it only relaxes from popped, finite nodes.",
+      "assertion": "Using Integer.MAX_VALUE as infinity can break relaxation for an unreachable u.",
+      "reason": "Adding a positive weight to Integer.MAX_VALUE wraps around to a negative int.",
+      "correct": [
+        "a"
+      ],
+      "whys": {
+        "a": "Right: the wrapped negative sum looks smaller than dist[v], so a bogus distance is stored.",
+        "b": "R is the direct cause of A.",
+        "c": "A is true.",
+        "d": "R is true."
+      }
+    },
+    {
+      "id": "java-tools",
+      "concept": "Choosing a container",
+      "type": "matrix",
+      "difficulty": 2,
+      "prompt": "Match each shortest-path need with the Java construct that fits it.",
+      "explanation": "BFS needs FIFO (ArrayDeque), Dijkstra a min-heap, 0-1 BFS both ends of a deque. Switch to long when sums can pass Integer.MAX_VALUE. Stack is a legacy LIFO class and not a queue.",
+      "left": [
+        {
+          "id": "a",
+          "text": "FIFO frontier for BFS on an unweighted graph"
+        },
+        {
+          "id": "b",
+          "text": "Frontier ordered by distance in Dijkstra"
+        },
+        {
+          "id": "c",
+          "text": "Frontier for 0-1 BFS"
+        },
+        {
+          "id": "d",
+          "text": "Distances that may exceed about 2 billion"
+        },
+        {
+          "id": "e",
+          "text": "Overflow-safe ordering of two ints"
+        }
+      ],
+      "right": [
+        {
+          "id": "p",
+          "text": "ArrayDeque with addFirst and addLast"
+        },
+        {
+          "id": "q",
+          "text": "A long[] distance array"
+        },
+        {
+          "id": "r",
+          "text": "Integer.compare"
+        },
+        {
+          "id": "s",
+          "text": "Stack<Integer> used as a queue"
+        },
+        {
+          "id": "t",
+          "text": "ArrayDeque used with add and poll"
+        },
+        {
+          "id": "u",
+          "text": "PriorityQueue<int[]> with a comparator"
+        }
+      ],
+      "pairs": {
+        "a": "t",
+        "b": "u",
+        "c": "p",
+        "d": "q",
+        "e": "r"
+      }
+    },
+    {
+      "id": "stale-skip",
+      "concept": "Lazy deletion",
+      "type": "single",
+      "difficulty": 2,
+      "prompt": "After polling {d, u} from the PriorityQueue in lazy-deletion Dijkstra, which check prevents redoing work for outdated entries?",
+      "explanation": "Without the check the algorithm stays correct but can re-expand a node many times, degrading toward O(V * E) on dense graphs.",
+      "options": [
+        {
+          "id": "a",
+          "text": "if (d < dist[u]) continue;",
+          "why": "This skips exactly the valid entries and keeps the stale ones."
+        },
+        {
+          "id": "b",
+          "text": "if (d > dist[u]) continue;",
+          "why": "Correct: a larger d than the recorded best means a better entry was already processed."
+        },
+        {
+          "id": "c",
+          "text": "if (pq.contains(u)) continue;",
+          "why": "contains is linear and compares the wrong thing, an int[] by reference."
+        },
+        {
+          "id": "d",
+          "text": "if (dist[u] == Integer.MAX_VALUE) return;",
+          "why": "A polled node always has a finite distance, so this never triggers."
+        }
+      ],
+      "correct": [
+        "b"
+      ]
+    }
+  ]
+}

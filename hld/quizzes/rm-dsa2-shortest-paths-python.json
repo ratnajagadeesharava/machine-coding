@@ -1,0 +1,362 @@
+{
+  "id": "rm-dsa2-shortest-paths-python",
+  "title": "Shortest paths in Python (heapq, deque, inf)",
+  "topic": "Python",
+  "language": "python",
+  "series": "python-dsa-advanced",
+  "seriesTitle": "Python: DSA advanced",
+  "seriesDescription": "Shortest paths, union-find, tries, intervals, bits, dynamic programming, greedy and backtracking with Python code. JEE-Advanced style: integer, assertion-reason, matrix match, fill-in-the-blanks, short code and multi-correct questions.",
+  "seriesOrder": 1,
+  "description": "Dijkstra with heapq and lazy deletion, tuple tie-breaking pitfalls, 0-1 BFS with deque, Bellman-Ford for K stops and Floyd-Warshall on list-of-lists tables.",
+  "source": "Python heapq and collections.deque docs; CLRS ch. 22-24; cp-algorithms; LeetCode Cheapest Flights Within K Stops, Network Delay Time",
+  "estimatedMinutes": 16,
+  "questions": [
+    {
+      "id": "dijkstra-python",
+      "concept": "Dijkstra",
+      "type": "code",
+      "difficulty": 2,
+      "prompt": "Write a Python function dijkstra(g, src) where g[u] is a list of (v, weight) pairs with non-negative weights. Return the list of shortest distances from src (float('inf') for unreachable nodes) using heapq.",
+      "explanation": "This is the lazy-deletion version: heapq has no decrease-key, so duplicates are pushed and stale ones skipped. Other correct variants (a visited set, a dict for dist) pass the intent. Time O(E log V). float('inf') needs no overflow care because Python floats saturate at infinity.",
+      "language": "python",
+      "starter": "import heapq\n\ndef dijkstra(g, src):\n    ",
+      "checks": [
+        {
+          "label": "uses heapq push and pop on (distance, node) tuples",
+          "pattern": "heappush[\\s\\S]*heappop|heappop[\\s\\S]*heappush"
+        },
+        {
+          "label": "initialises dist to infinity and dist[src] to 0",
+          "pattern": "(inf|INF)[\\s\\S]*dist\\s*\\[\\s*src\\s*\\]\\s*=\\s*0"
+        },
+        {
+          "label": "skips stale heap entries (d > dist[u])",
+          "pattern": "d\\s*>\\s*dist\\s*\\[\\s*u\\s*\\]"
+        },
+        {
+          "label": "relaxes an edge when d + w improves dist[v]",
+          "pattern": "d\\s*\\+\\s*w\\s*<\\s*dist\\s*\\[\\s*v\\s*\\]|dist\\s*\\[\\s*u\\s*\\]\\s*\\+\\s*w"
+        }
+      ],
+      "model": "import heapq\n\ndef dijkstra(g, src):\n    dist = [float(\"inf\")] * len(g)\n    dist[src] = 0\n    pq = [(0, src)]\n    while pq:\n        d, u = heapq.heappop(pq)\n        if d > dist[u]:\n            continue\n        for v, w in g[u]:\n            if d + w < dist[v]:\n                dist[v] = d + w\n                heapq.heappush(pq, (dist[v], v))\n    return dist"
+    },
+    {
+      "id": "bf-python",
+      "concept": "Bellman-Ford with K stops",
+      "type": "code",
+      "difficulty": 3,
+      "prompt": "Write a Python function cheapest(n, flights, src, dst, k) where flights is a list of (u, v, w). Return the cheapest price using at most k stops, or -1 if impossible. Use Bellman-Ford rounds.",
+      "explanation": "The copy matters: relaxing in place could chain several edges in one round and exceed the K-stop limit. Time O(K * E). A BFS/heap solution tracking (cost, node, stops) is another valid approach, but it would not satisfy these Bellman-Ford checks.",
+      "language": "python",
+      "starter": "def cheapest(n, flights, src, dst, k):\n    ",
+      "checks": [
+        {
+          "label": "runs k + 1 rounds (k stops = k + 1 edges)",
+          "pattern": "range\\s*\\(\\s*k\\s*\\+\\s*1\\s*\\)|k\\s*\\+\\s*1"
+        },
+        {
+          "label": "relaxes from a copy of the previous round",
+          "pattern": "(\\[\\s*:\\s*\\]|\\.copy\\s*\\(|list\\s*\\(\\s*\\w+\\s*\\)|\\[\\s*\\w+\\s*for)"
+        },
+        {
+          "label": "relaxes each edge with dist[u] + w",
+          "pattern": "\\w+\\s*\\[\\s*u\\s*\\]\\s*\\+\\s*w"
+        },
+        {
+          "label": "returns -1 when dst is unreachable",
+          "pattern": "-\\s*1"
+        }
+      ],
+      "model": "def cheapest(n, flights, src, dst, k):\n    INF = float(\"inf\")\n    dist = [INF] * n; dist[src] = 0\n    for _ in range(k + 1):\n        nxt = dist[:]\n        for u, v, w in flights:\n            if dist[u] + w < nxt[v]: nxt[v] = dist[u] + w\n        dist = nxt\n    return -1 if dist[dst] == INF else dist[dst]"
+    },
+    {
+      "id": "floyd-python",
+      "concept": "Floyd-Warshall",
+      "type": "code",
+      "difficulty": 2,
+      "prompt": "Write a Python function floyd(dist) that updates an n x n matrix in place to all-pairs shortest distances (float('inf') where no edge, 0 on the diagonal) and returns it.",
+      "explanation": "O(n^3) time, O(1) extra space. The intermediate vertex k must be the outer loop. It suits small dense graphs (n up to a few hundred); for sparse large graphs run Dijkstra from each source.",
+      "language": "python",
+      "starter": "def floyd(dist):\n    ",
+      "checks": [
+        {
+          "label": "three nested loops",
+          "pattern": "for[\\s\\S]*for[\\s\\S]*for"
+        },
+        {
+          "label": "tests a path through the middle vertex",
+          "pattern": "\\w+\\s*\\[\\s*\\w+\\s*\\]\\s*\\[\\s*\\w+\\s*\\]\\s*\\+\\s*\\w+\\s*\\[\\s*\\w+\\s*\\]\\s*\\[\\s*\\w+\\s*\\]"
+        },
+        {
+          "label": "keeps the smaller value",
+          "pattern": "min\\s*\\(|<"
+        },
+        {
+          "label": "returns the table",
+          "pattern": "return"
+        }
+      ],
+      "model": "def floyd(dist):\n    n = len(dist)\n    for k in range(n):\n        for i in range(n):\n            for j in range(n):\n                if dist[i][k] + dist[k][j] < dist[i][j]:\n                    dist[i][j] = dist[i][k] + dist[k][j]\n    return dist"
+    },
+    {
+      "id": "pq-pushes",
+      "concept": "Lazy deletion",
+      "type": "integer",
+      "difficulty": 2,
+      "prompt": "Directed edges A->B 4, A->C 1, C->B 2, C->D 8, B->D 5, D->E 3. Dijkstra from A uses heapq with lazy deletion: one heappush for the source, then one per successful relaxation. How many times is heappush called in total?",
+      "explanation": "Source (1), A relaxes B and C (3), C relaxes B to 3 and D to 9 (5), B relaxes D to 8 (6), D relaxes E (7). The stale entries (4, B) and (9, D) are popped and skipped. In general pushes are at most E + 1.",
+      "answer": 7,
+      "tolerance": 0,
+      "unit": "pushes"
+    },
+    {
+      "id": "tuple-tiebreak",
+      "concept": "Heap entries",
+      "type": "single",
+      "difficulty": 3,
+      "prompt": "Heap entries are tuples (distance, node), where node is an instance of a plain class that defines no ordering methods. What can happen when two entries have the same distance?",
+      "explanation": "Fix: use integer node ids, or push (distance, counter, node) with a unique counter as tie-breaker, the pattern in the heapq documentation.",
+      "options": [
+        {
+          "id": "a",
+          "text": "Comparison moves on to the node objects and raises TypeError.",
+          "why": "Correct: tuples compare element by element, so equal first items force a comparison of the second."
+        },
+        {
+          "id": "b",
+          "text": "The heap silently keeps the insertion order for entries with equal distances.",
+          "why": "heapq is not stable and never records insertion order by itself."
+        },
+        {
+          "id": "c",
+          "text": "heapq sorts by the first tuple element only and ignores the rest.",
+          "why": "Tuples compare lexicographically; later elements are used whenever earlier ones tie."
+        },
+        {
+          "id": "d",
+          "text": "Entries with equal distances are merged into one entry to save memory.",
+          "why": "A heap never merges entries; both stay as separate items."
+        }
+      ],
+      "correct": [
+        "a"
+      ]
+    },
+    {
+      "id": "heapq-decrease",
+      "concept": "Lazy deletion",
+      "type": "truefalse",
+      "difficulty": 2,
+      "prompt": "True or false: heapq provides a decrease-key operation, so Dijkstra can update an existing entry in place.",
+      "explanation": "Removing an arbitrary item from the list is O(n) and breaks the heap invariant until re-heapified. Lazy deletion is the standard approach.",
+      "options": [
+        {
+          "id": "a",
+          "text": "True",
+          "why": "heapq only offers push, pop, pushpop, replace and heapify on a plain list."
+        },
+        {
+          "id": "b",
+          "text": "False",
+          "why": "Correct: there is no decrease-key; stale entries are skipped after popping."
+        }
+      ],
+      "correct": [
+        "b"
+      ]
+    },
+    {
+      "id": "deque-fill",
+      "concept": "0-1 BFS",
+      "type": "fill",
+      "difficulty": 1,
+      "prompt": "Complete the Python container choice for 0-1 BFS.",
+      "explanation": "collections.deque has O(1) operations at both ends (a list's insert(0, x) is O(n)). Front insertion for free moves keeps the deque ordered by distance, giving O(V + E).",
+      "text": "0-1 BFS keeps its frontier in a {1}: a neighbour reached by a weight-0 edge goes in with {2}, one reached by a weight-1 edge goes in with {3}.",
+      "blanks": {
+        "1": "deque",
+        "2": "appendleft",
+        "3": "append"
+      },
+      "bank": [
+        "append",
+        "heapq",
+        "pop",
+        "deque",
+        "appendleft"
+      ]
+    },
+    {
+      "id": "heap-iteration",
+      "concept": "heapq API",
+      "type": "assertion",
+      "difficulty": 3,
+      "prompt": "A developer prints a list h after calling heapq.heappush on the values 5, 1, 4, 2 in turn.",
+      "explanation": "To read in order, pop repeatedly or call sorted(h). The list layout is the implicit heap tree, not sorted order.",
+      "assertion": "Printing or iterating the list h shows the values in ascending order.",
+      "reason": "heapq stores a binary heap in a plain list, which only guarantees that h[0] is the smallest item.",
+      "correct": [
+        "d"
+      ],
+      "whys": {
+        "a": "A is false, so R cannot explain it.",
+        "b": "A is false.",
+        "c": "A is false, and R is true.",
+        "d": "Right: R is true and is exactly why A is false; only repeated heappop returns sorted order."
+      }
+    },
+    {
+      "id": "max-heap-trick",
+      "concept": "heapq API",
+      "type": "assertion",
+      "difficulty": 2,
+      "prompt": "You need a max-heap of distances using heapq.",
+      "explanation": "Negate numbers, or wrap them in a small class with reversed comparison. heapq.nlargest also exists for top-k queries.",
+      "assertion": "heapq is a min-heap only, so a max-heap is built by pushing negated keys.",
+      "reason": "heapq.heapify(list) takes O(n log n) time.",
+      "correct": [
+        "c"
+      ],
+      "whys": {
+        "a": "R is false, so it cannot explain A.",
+        "b": "R is false.",
+        "c": "Right: A is true, but heapify builds the heap bottom-up in O(n), so R is false.",
+        "d": "A is true."
+      }
+    },
+    {
+      "id": "heap-ops",
+      "concept": "heapq API",
+      "type": "assertion",
+      "difficulty": 2,
+      "prompt": "Consider the cost of heapq operations on a heap of n items.",
+      "explanation": "Both facts feed the Dijkstra bound: up to E pops at O(log V) each.",
+      "assertion": "heapq.heappop(h) runs in O(log n).",
+      "reason": "Reading the smallest item with h[0] runs in O(1).",
+      "correct": [
+        "b"
+      ],
+      "whys": {
+        "a": "Peeking at h[0] being O(1) does not explain why heappop must sift.",
+        "b": "Right: both are true; heappop must restore the heap by sifting, while h[0] is a plain index, and neither explains the other.",
+        "c": "R is true.",
+        "d": "A is true."
+      }
+    },
+    {
+      "id": "inf-float",
+      "concept": "Infinity values",
+      "type": "assertion",
+      "difficulty": 3,
+      "prompt": "A student sets dist = [float('inf')] * n and relaxes with dist[u] + w < dist[v] without checking reachability.",
+      "explanation": "Integers in Python never overflow either, so a large int sentinel works too; float('inf') just compares correctly with every number.",
+      "assertion": "Using float('inf') as the initial distance needs no overflow guard when u is unreachable.",
+      "reason": "In IEEE 754 floating point, infinity plus a finite number is still infinity.",
+      "correct": [
+        "a"
+      ],
+      "whys": {
+        "a": "Right: inf + w stays inf, which is never smaller than dist[v], so no bogus distance appears.",
+        "b": "R is the direct cause of A.",
+        "c": "A is true.",
+        "d": "R is true."
+      }
+    },
+    {
+      "id": "python-tools",
+      "concept": "Choosing a container",
+      "type": "matrix",
+      "difficulty": 2,
+      "prompt": "Match each shortest-path need with the Python construct that fits it.",
+      "explanation": "deque gives O(1) at both ends; heapq turns a list into a min-heap; defaultdict(list) saves the membership test. A list's pop(0) is O(n), so it is a poor queue.",
+      "left": [
+        {
+          "id": "a",
+          "text": "FIFO frontier for BFS on an unweighted graph"
+        },
+        {
+          "id": "b",
+          "text": "Frontier ordered by distance in Dijkstra"
+        },
+        {
+          "id": "c",
+          "text": "Frontier for 0-1 BFS"
+        },
+        {
+          "id": "d",
+          "text": "Adjacency lists without key checks"
+        },
+        {
+          "id": "e",
+          "text": "Distance for an unreachable node"
+        }
+      ],
+      "right": [
+        {
+          "id": "p",
+          "text": "collections.deque with appendleft and append"
+        },
+        {
+          "id": "q",
+          "text": "collections.defaultdict(list)"
+        },
+        {
+          "id": "r",
+          "text": "float('inf')"
+        },
+        {
+          "id": "s",
+          "text": "list.pop(0) used as a queue"
+        },
+        {
+          "id": "t",
+          "text": "collections.deque used with append and popleft"
+        },
+        {
+          "id": "u",
+          "text": "A list managed with heapq push and pop"
+        }
+      ],
+      "pairs": {
+        "a": "t",
+        "b": "u",
+        "c": "p",
+        "d": "q",
+        "e": "r"
+      }
+    },
+    {
+      "id": "stale-skip",
+      "concept": "Lazy deletion",
+      "type": "single",
+      "difficulty": 2,
+      "prompt": "After popping (d, u) from the heap in lazy-deletion Dijkstra, which check prevents redoing work for outdated entries?",
+      "explanation": "Without the check the algorithm stays correct but can re-expand a node many times, degrading toward O(V * E) on dense graphs.",
+      "options": [
+        {
+          "id": "a",
+          "text": "if d < dist[u]: continue",
+          "why": "This skips exactly the valid entries and keeps the stale ones."
+        },
+        {
+          "id": "b",
+          "text": "if d > dist[u]: continue",
+          "why": "Correct: a larger d than the recorded best means a better entry was already processed."
+        },
+        {
+          "id": "c",
+          "text": "if (d, u) in pq: continue",
+          "why": "Membership on a list is linear and the popped entry is no longer inside."
+        },
+        {
+          "id": "d",
+          "text": "if dist[u] == float('inf'): break",
+          "why": "A popped node always has a finite distance, so this never triggers."
+        }
+      ],
+      "correct": [
+        "b"
+      ]
+    }
+  ]
+}

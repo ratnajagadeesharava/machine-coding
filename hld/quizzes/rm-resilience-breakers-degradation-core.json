@@ -1,0 +1,381 @@
+{
+  "id": "rm-resilience-breakers-degradation-core",
+  "title": "Circuit breakers, bulkheads, rate limiters and graceful degradation",
+  "topic": "Language-independent",
+  "series": "core-resilience",
+  "seriesTitle": "Core: resilience",
+  "seriesDescription": "Timeouts, retries, backoff and jitter, circuit breakers, bulkheads and degradation. JEE-Advanced style: integer, assertion-reason, matrix match, fill-in-the-blanks, short code and multi-correct questions.",
+  "seriesOrder": 2,
+  "language": "neutral",
+  "description": "The circuit-breaker state machine and its thresholds, token-bucket arithmetic, bulkhead sizing with Little's law, rate-limit responses and designing safe fallbacks.",
+  "source": "Martin Fowler (CircuitBreaker); Release It! (Nygard); Google SRE Book (Handling Overload); Stripe engineering blog on rate limiters; nginx ngx_http_limit_req_module documentation",
+  "estimatedMinutes": 18,
+  "questions": [
+    {
+      "id": "breaker-states",
+      "concept": "Circuit breaker",
+      "type": "matrix",
+      "difficulty": 2,
+      "prompt": "Match each circuit-breaker state with its behaviour.",
+      "left": [
+        {
+          "id": "l1",
+          "text": "CLOSED"
+        },
+        {
+          "id": "l2",
+          "text": "OPEN"
+        },
+        {
+          "id": "l3",
+          "text": "HALF_OPEN"
+        }
+      ],
+      "right": [
+        {
+          "id": "r1",
+          "text": "Calls pass through and failures are counted"
+        },
+        {
+          "id": "r2",
+          "text": "Calls are rejected immediately without contacting the dependency"
+        },
+        {
+          "id": "r3",
+          "text": "A limited number of trial calls decide whether to close or reopen"
+        },
+        {
+          "id": "r4",
+          "text": "Calls are queued until the dependency recovers"
+        }
+      ],
+      "pairs": {
+        "l1": "r1",
+        "l2": "r2",
+        "l3": "r3"
+      },
+      "explanation": "CLOSED to OPEN when the failure (or slow-call) rate crosses the threshold; OPEN to HALF_OPEN after the wait duration; HALF_OPEN to CLOSED if trial calls succeed, else back to OPEN."
+    },
+    {
+      "id": "breaker-failures",
+      "concept": "Circuit breaker",
+      "type": "integer",
+      "difficulty": 2,
+      "prompt": "A count-based breaker has a window of 10 calls, a minimum of 10 calls before it evaluates, and a failure-rate threshold of 50 percent. After 10 calls, what is the smallest number of failed calls that opens the circuit?",
+      "answer": 5,
+      "unit": "failures",
+      "explanation": "The breaker opens when the failure rate is greater than or equal to the threshold: 5 of 10 is 50 percent. Fewer than the minimum number of calls never opens it."
+    },
+    {
+      "id": "half-open-trials",
+      "concept": "Circuit breaker",
+      "type": "integer",
+      "difficulty": 3,
+      "prompt": "A breaker is HALF_OPEN with 4 permitted trial calls and a failure-rate threshold of 50 percent. After the 4 trial calls, what is the largest number of failed trials for which the breaker still returns to CLOSED?",
+      "answer": 1,
+      "unit": "failures",
+      "explanation": "The breaker opens when the failure rate is greater than or equal to the threshold. 1 of 4 is 25 percent (closes), 2 of 4 is 50 percent (reopens), so at most 1."
+    },
+    {
+      "id": "token-bucket",
+      "concept": "Rate limiting",
+      "type": "integer",
+      "difficulty": 3,
+      "prompt": "A token bucket has capacity 10 and refills 2 tokens per second, and starts full. At t = 0 ten requests arrive and are all served. At t = 4 s, nine requests arrive at once. How many are served?",
+      "answer": 8,
+      "unit": "requests",
+      "explanation": "The bucket was empty at t = 0 and refills 2 x 4 = 8 tokens by t = 4 (below the cap of 10), so 8 of the 9 are served and 1 is rejected."
+    },
+    {
+      "id": "bulkhead-throughput",
+      "concept": "Bulkhead",
+      "type": "integer",
+      "difficulty": 3,
+      "prompt": "A bulkhead allows at most 10 concurrent calls to a dependency and each call takes 200 ms. By Little's law, what is the maximum throughput to that dependency in requests per second?",
+      "answer": 50,
+      "unit": "req/s",
+      "explanation": "Throughput = concurrency / latency = 10 / 0.2 = 50 per second. If latency rises to 1 s, the same bulkhead only allows 10 per second, which is the protective point."
+    },
+    {
+      "id": "limiter-algorithms",
+      "concept": "Rate limiting",
+      "type": "matrix",
+      "difficulty": 2,
+      "prompt": "Match each rate-limiting algorithm with its characteristic.",
+      "left": [
+        {
+          "id": "l1",
+          "text": "Token bucket"
+        },
+        {
+          "id": "l2",
+          "text": "Leaky bucket"
+        },
+        {
+          "id": "l3",
+          "text": "Fixed window counter"
+        },
+        {
+          "id": "l4",
+          "text": "Sliding window log"
+        }
+      ],
+      "right": [
+        {
+          "id": "r1",
+          "text": "Allows bursts up to the bucket size, then a steady refill rate"
+        },
+        {
+          "id": "r2",
+          "text": "Smooths traffic to a constant outflow rate"
+        },
+        {
+          "id": "r3",
+          "text": "Cheap but a client can send double the limit across a window boundary"
+        },
+        {
+          "id": "r4",
+          "text": "Stores a timestamp per request, exact but memory heavy"
+        },
+        {
+          "id": "r5",
+          "text": "Blocks every request after the first failure"
+        }
+      ],
+      "pairs": {
+        "l1": "r1",
+        "l2": "r2",
+        "l3": "r3",
+        "l4": "r4"
+      },
+      "explanation": "Fixed-window boundary burst: with 100 per minute, 100 requests at 0:59 and 100 at 1:01 make 200 in two seconds. Sliding window counters approximate the log cheaply."
+    },
+    {
+      "id": "nginx-limit-req",
+      "concept": "Rate limiting",
+      "type": "code",
+      "difficulty": 2,
+      "prompt": "Write the nginx configuration that defines a 10 MB shared zone named api keyed by client address allowing 5 requests per second, and applies it with a burst of 10 inside location /search.",
+      "language": "nginx",
+      "checks": [
+        {
+          "label": "defines the zone with the client address key",
+          "pattern": "limit_req_zone\\s+\\$binary_remote_addr\\s+zone=api:10m"
+        },
+        {
+          "label": "rate of 5 per second",
+          "pattern": "rate=5r/s"
+        },
+        {
+          "label": "applies the zone with burst 10",
+          "pattern": "limit_req\\s+zone=api\\s+burst=10"
+        }
+      ],
+      "model": "limit_req_zone $binary_remote_addr zone=api:10m rate=5r/s;\n\nlocation /search {\n    limit_req zone=api burst=10 nodelay;\n}",
+      "explanation": "limit_req_zone belongs in the http block. Without nodelay, burst requests are queued and released at the zone rate; with it they pass immediately and later ones are rejected (503 by default, 429 with limit_req_status 429)."
+    },
+    {
+      "id": "breaker-fail-fast",
+      "concept": "Circuit breaker",
+      "type": "assertion",
+      "difficulty": 2,
+      "prompt": "Read the assertion A and the reason R, then choose the correct relationship between them.",
+      "assertion": "A circuit breaker protects both the caller and a struggling dependency.",
+      "reason": "While the circuit is open, calls fail immediately instead of consuming caller threads and adding load to the dependency.",
+      "correct": [
+        "a"
+      ],
+      "whys": {
+        "a": "Correct: Failing fast frees the caller's resources and gives the dependency room to recover.",
+        "b": "Not this one: Both are true but R is not the reason A holds does not describe this pair; R is actually the reason or is false.",
+        "c": "Not this one: A is true while R is false does not describe this pair; check the truth of R again.",
+        "d": "Not this one: A is false while R is true does not describe this pair; check the truth of A again."
+      },
+      "explanation": "Pair the breaker with timeouts; without timeouts a breaker never sees a failure from a hung call."
+    },
+    {
+      "id": "token-bucket-burst",
+      "concept": "Rate limiting",
+      "type": "assertion",
+      "difficulty": 2,
+      "prompt": "Read the assertion A and the reason R, then choose the correct relationship between them.",
+      "assertion": "A token bucket permits a short burst of requests up to its capacity.",
+      "reason": "A leaky bucket sends requests to the backend at a constant rate.",
+      "correct": [
+        "b"
+      ],
+      "whys": {
+        "a": "Not this one: Both A and R are true and R explains A does not describe this pair; R does not explain A.",
+        "b": "Correct: Both are true, but the leaky bucket property is a different algorithm and does not explain the token-bucket burst.",
+        "c": "Not this one: A is true while R is false does not describe this pair; check the truth of R again.",
+        "d": "Not this one: A is false while R is true does not describe this pair; check the truth of A again."
+      },
+      "explanation": "Token bucket: bursty but bounded average. Leaky bucket: smooth output, queued excess. Stripe uses token buckets for request limiting."
+    },
+    {
+      "id": "per-client-limit",
+      "concept": "Rate limiting",
+      "type": "assertion",
+      "difficulty": 3,
+      "prompt": "Read the assertion A and the reason R, then choose the correct relationship between them.",
+      "assertion": "Rate limiting by API key rather than with one global limit stops a single noisy tenant from starving the others.",
+      "reason": "A single global limit treats every client separately, so it protects each of them equally.",
+      "correct": [
+        "c"
+      ],
+      "whys": {
+        "a": "Not this one: Both A and R are true and R explains A does not describe this pair; R does not explain A.",
+        "b": "Not this one: Both are true but R is not the reason A holds does not describe this pair; R is actually the reason or is false.",
+        "c": "Correct: A is true. R is false: a single global limit is shared, so one noisy client can consume it all.",
+        "d": "Not this one: A is false while R is true does not describe this pair; check the truth of A again."
+      },
+      "explanation": "Use layered limits: per key, per IP, per endpoint, plus a global safety limit and load shedding."
+    },
+    {
+      "id": "half-open",
+      "concept": "Circuit breaker",
+      "type": "assertion",
+      "difficulty": 3,
+      "prompt": "Read the assertion A and the reason R, then choose the correct relationship between them.",
+      "assertion": "In the HALF_OPEN state a circuit breaker lets all traffic through to test whether the dependency has recovered.",
+      "reason": "HALF_OPEN permits only a configured number of trial calls and decides to close or reopen from their results.",
+      "correct": [
+        "d"
+      ],
+      "whys": {
+        "a": "Not this one: Both A and R are true and R explains A does not describe this pair; R does not explain A.",
+        "b": "Not this one: Both are true but R is not the reason A holds does not describe this pair; R is actually the reason or is false.",
+        "c": "Not this one: A is true while R is false does not describe this pair; check the truth of R again.",
+        "d": "Correct: A is false: only a limited number of trial calls pass. R is true."
+      },
+      "explanation": "Letting everyone through at once could knock the recovering service over again."
+    },
+    {
+      "id": "degradation-fill",
+      "concept": "Graceful degradation",
+      "type": "fill",
+      "difficulty": 1,
+      "prompt": "Complete the graceful degradation tactics.",
+      "text": "When a dependency fails, return a {1} such as cached data, hide non-critical {2} behind flags, and use load {3} to drop low-priority requests under overload.",
+      "blanks": {
+        "1": "fallback",
+        "2": "features",
+        "3": "shedding"
+      },
+      "bank": [
+        "fallback",
+        "features",
+        "shedding",
+        "retries",
+        "sharding"
+      ],
+      "explanation": "Degrade in layers from stale data to reduced features to explicit errors, and tell the client when data is stale."
+    },
+    {
+      "id": "safe-fallbacks",
+      "concept": "Graceful degradation",
+      "type": "multi",
+      "difficulty": 3,
+      "prompt": "Which are sound degradation strategies when a dependency is down? Select all that apply.",
+      "options": [
+        {
+          "id": "a",
+          "text": "Serve the last known recommendations from cache and mark them stale.",
+          "why": "Correct: useful, honest and low risk."
+        },
+        {
+          "id": "b",
+          "text": "Hide the reviews widget while the reviews service is unavailable.",
+          "why": "Correct: a non-critical feature can disappear without breaking checkout."
+        },
+        {
+          "id": "c",
+          "text": "Queue the confirmation email and send it when the mail service returns.",
+          "why": "Correct: the work is deferred, not lost."
+        },
+        {
+          "id": "d",
+          "text": "Report a payment as successful when the gateway cannot be reached.",
+          "why": "This invents a business outcome and loses money or trust."
+        },
+        {
+          "id": "e",
+          "text": "Return an empty 200 for a failed balance lookup, with no signal.",
+          "why": "A silent empty answer looks like a real zero balance."
+        }
+      ],
+      "correct": [
+        "a",
+        "b",
+        "c"
+      ],
+      "explanation": "A good fallback is honest, safe for the business, and observable (metric and log every fallback so you notice)."
+    },
+    {
+      "id": "overload-response",
+      "concept": "Load shedding",
+      "type": "single",
+      "difficulty": 2,
+      "prompt": "A service must tell a client that exceeded its rate limit to slow down. Which response is the standard way?",
+      "options": [
+        {
+          "id": "a",
+          "text": "HTTP 200 with an error message in the response body, hiding the failure.",
+          "why": "A success status hides the failure from clients, proxies and monitoring."
+        },
+        {
+          "id": "b",
+          "text": "HTTP 429 Too Many Requests with a Retry-After header.",
+          "why": "Correct: 429 is the status defined for rate limiting."
+        },
+        {
+          "id": "c",
+          "text": "HTTP 404 Not Found, to make the endpoint look absent to the caller.",
+          "why": "A missing-resource status misleads clients and may be cached."
+        },
+        {
+          "id": "d",
+          "text": "HTTP 500 with no further hint, so that clients retry again very soon.",
+          "why": "A server error without guidance invites immediate retries."
+        }
+      ],
+      "correct": [
+        "b"
+      ],
+      "explanation": "Use 429 for per-client limits and 503 (also with Retry-After) when the whole service sheds load. Well-behaved clients honour Retry-After and add jitter."
+    },
+    {
+      "id": "breaker-needs-timeouts",
+      "concept": "Circuit breaker",
+      "type": "truefalse",
+      "difficulty": 2,
+      "prompt": "True or false: a circuit breaker will open on its own when a dependency hangs forever, even if the calls have no timeout.",
+      "options": [
+        {
+          "id": "a",
+          "text": "True",
+          "why": "A hung call never completes, so the breaker never records a failure."
+        },
+        {
+          "id": "b",
+          "text": "False",
+          "why": "Correct: failures are only counted when a call returns or times out."
+        }
+      ],
+      "correct": [
+        "b"
+      ],
+      "explanation": "Always set a timeout on the guarded call; a slow-call threshold also lets the breaker trip on latency, but it still needs the call to finish."
+    },
+    {
+      "id": "shed-capacity",
+      "concept": "Load shedding",
+      "type": "integer",
+      "difficulty": 3,
+      "prompt": "A service can handle 800 requests per second but receives 1,000. If it sheds the excess at the front door, what percentage of the traffic is rejected?",
+      "answer": 20,
+      "unit": "%",
+      "explanation": "200 of 1,000 requests are rejected: 20 percent. Shedding early keeps latency good for the admitted 80 percent; accepting everything would grow queues until all requests time out."
+    }
+  ]
+}

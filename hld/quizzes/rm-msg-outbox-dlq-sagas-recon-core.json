@@ -1,0 +1,439 @@
+{
+  "id": "rm-msg-outbox-dlq-sagas-recon-core",
+  "title": "Outbox, CDC, dead letters, sagas and reconciliation",
+  "topic": "Language-independent",
+  "series": "core-messaging",
+  "seriesTitle": "Core: messaging",
+  "seriesDescription": "Kafka and RabbitMQ semantics, delivery guarantees, outbox, CDC, dead letters and sagas. JEE-Advanced style: integer, assertion-reason, matrix match, fill-in-the-blanks, short code and multi-correct questions.",
+  "seriesOrder": 2,
+  "language": "neutral",
+  "description": "The dual-write problem and the transactional outbox, change data capture, retries and dead-letter queues, saga styles, and reconciling data across systems.",
+  "source": "microservices.io (transactional outbox, saga); Debezium documentation (outbox event router, PostgreSQL connector); Apache Kafka and RabbitMQ documentation; AWS Architecture Blog on retries and jitter",
+  "estimatedMinutes": 18,
+  "questions": [
+    {
+      "id": "dual-write",
+      "concept": "Outbox pattern",
+      "type": "single",
+      "difficulty": 1,
+      "prompt": "A service saves an order to PostgreSQL and then publishes OrderCreated to Kafka. The process crashes between the two steps. What is the root problem the outbox pattern solves?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Kafka cannot store messages larger than the single order row that was saved in the database.",
+          "why": "Message size limits are unrelated to the crash window."
+        },
+        {
+          "id": "b",
+          "text": "The database commit and the broker publish cannot be made one atomic action.",
+          "why": "Correct: two independent systems are updated with no shared transaction."
+        },
+        {
+          "id": "c",
+          "text": "PostgreSQL transactions cannot contain more than one insert statement before they must commit.",
+          "why": "A transaction can hold any number of statements."
+        },
+        {
+          "id": "d",
+          "text": "The consumer cannot deserialise the event after a crash.",
+          "why": "The failure is on the producing side, before anything is consumed."
+        }
+      ],
+      "correct": [
+        "b"
+      ],
+      "explanation": "Dual write = two independent systems updated without a shared transaction. Outbox writes the event to a table in the same local transaction, and a relay publishes it afterwards."
+    },
+    {
+      "id": "outbox-insert",
+      "concept": "Outbox pattern",
+      "type": "code",
+      "difficulty": 2,
+      "prompt": "Tables orders(id, customer_id, total) and outbox(id serial, aggregate_id, event_type, payload jsonb, published_at). In ONE transaction insert order 7 for customer 3 with total 99.50 and an outbox row of type OrderCreated for aggregate 7 with payload {\"orderId\": 7}. Write the SQL.",
+      "language": "sql",
+      "starter": "BEGIN;\n",
+      "checks": [
+        {
+          "label": "wraps both in a transaction",
+          "pattern": "(begin|start\\s+transaction)[\\s\\S]*commit"
+        },
+        {
+          "label": "inserts the order",
+          "pattern": "insert\\s+into\\s+orders"
+        },
+        {
+          "label": "inserts the outbox row",
+          "pattern": "insert\\s+into\\s+outbox"
+        },
+        {
+          "label": "uses the OrderCreated type",
+          "pattern": "ordercreated"
+        }
+      ],
+      "model": "BEGIN;\nINSERT INTO orders (id, customer_id, total) VALUES (7, 3, 99.50);\nINSERT INTO outbox (aggregate_id, event_type, payload) VALUES (7, 'OrderCreated', '{\"orderId\": 7}');\nCOMMIT;",
+      "explanation": "Either both rows are committed or neither is. Nothing is sent to the broker inside this transaction; a separate relay does that."
+    },
+    {
+      "id": "outbox-relay",
+      "concept": "Outbox pattern",
+      "type": "code",
+      "difficulty": 3,
+      "prompt": "A relay worker polls the outbox table. Write the query that selects up to 100 unpublished rows (published_at IS NULL) in id order, locking them so several relay instances never pick the same rows and do not block each other.",
+      "language": "sql",
+      "starter": "SELECT ",
+      "checks": [
+        {
+          "label": "reads from outbox",
+          "pattern": "from\\s+outbox"
+        },
+        {
+          "label": "filters unpublished rows",
+          "pattern": "published_at\\s+is\\s+null"
+        },
+        {
+          "label": "orders by id with a limit of 100",
+          "pattern": "order\\s+by\\s+id[\\s\\S]*limit\\s+100"
+        },
+        {
+          "label": "uses row locks that skip locked rows",
+          "pattern": "for\\s+update\\s+skip\\s+locked"
+        }
+      ],
+      "model": "SELECT * FROM outbox WHERE published_at IS NULL ORDER BY id LIMIT 100 FOR UPDATE SKIP LOCKED;",
+      "explanation": "After publishing, the relay sets published_at (or deletes the row) in the same transaction. A crash after publishing but before that update re-sends the event, which is why the delivery is at-least-once."
+    },
+    {
+      "id": "outbox-at-least-once",
+      "concept": "Outbox pattern",
+      "type": "assertion",
+      "difficulty": 3,
+      "prompt": "Read the assertion A and the reason R, then choose the correct relationship between them.",
+      "assertion": "The transactional outbox gives at-least-once, not exactly-once, delivery to the broker.",
+      "reason": "The relay can crash after publishing an event but before marking it as published, so it publishes the same event again on restart.",
+      "correct": [
+        "a"
+      ],
+      "whys": {
+        "a": "Correct: The crash window between publish and mark-as-published is exactly what produces duplicates.",
+        "b": "Not this one: Both are true but R is not the reason A holds does not describe this pair; R is actually the reason or is false.",
+        "c": "Not this one: A is true while R is false does not describe this pair; check the truth of R again.",
+        "d": "Not this one: A is false while R is true does not describe this pair; check the truth of A again."
+      },
+      "explanation": "Pair the outbox with an idempotent consumer keyed on the event id. A Debezium-based outbox has the same at-least-once property."
+    },
+    {
+      "id": "debezium-facts",
+      "concept": "Change data capture",
+      "type": "multi",
+      "difficulty": 3,
+      "prompt": "Which statements about Debezium and change data capture (CDC) are correct? Select all that apply.",
+      "options": [
+        {
+          "id": "a",
+          "text": "It reads the database transaction log rather than polling tables.",
+          "why": "Correct: log-based capture is the defining feature."
+        },
+        {
+          "id": "b",
+          "text": "An abandoned PostgreSQL replication slot can make WAL pile up and fill the disk.",
+          "why": "Correct: the server keeps WAL until the slot consumer confirms it."
+        },
+        {
+          "id": "c",
+          "text": "Debezium commonly runs as connectors on Kafka Connect.",
+          "why": "Correct: that is the standard deployment."
+        },
+        {
+          "id": "d",
+          "text": "It adds no load at all to the source database.",
+          "why": "Reading the log, snapshots and slots all cost something."
+        },
+        {
+          "id": "e",
+          "text": "It delivers every change exactly once under any failure.",
+          "why": "Connectors restart from a stored position, so duplicates are possible: at-least-once."
+        }
+      ],
+      "correct": [
+        "a",
+        "b",
+        "c"
+      ],
+      "explanation": "Debezium's outbox event router transformation turns outbox rows into events on a topic, so you avoid writing a polling relay yourself."
+    },
+    {
+      "id": "cdc-fill",
+      "concept": "Change data capture",
+      "type": "fill",
+      "difficulty": 1,
+      "prompt": "Complete the CDC description.",
+      "text": "Debezium streams row changes by reading the database {1}; for PostgreSQL this uses a logical replication {2}, and a stalled one makes the server keep {3} on disk.",
+      "blanks": {
+        "1": "transaction log",
+        "2": "slot",
+        "3": "WAL"
+      },
+      "bank": [
+        "transaction log",
+        "slot",
+        "WAL",
+        "snapshot",
+        "trigger"
+      ],
+      "explanation": "Compared with trigger-based capture and polling, log-based CDC sees every committed change in commit order with no changes to application queries."
+    },
+    {
+      "id": "event-router-fill",
+      "concept": "Change data capture",
+      "type": "fill",
+      "difficulty": 2,
+      "prompt": "Complete the Debezium outbox description.",
+      "text": "Debezium's outbox pattern support is the {1} single message transform, which routes each outbox row to a topic named from the {2} column by default and uses the {3} column as the Kafka message key.",
+      "blanks": {
+        "1": "EventRouter",
+        "2": "aggregatetype",
+        "3": "aggregateid"
+      },
+      "bank": [
+        "EventRouter",
+        "aggregatetype",
+        "aggregateid",
+        "payload",
+        "ExtractNewRecordState"
+      ],
+      "explanation": "The default topic pattern is outbox.event.<aggregatetype>. Keying by aggregateid keeps all events of one aggregate in one partition, hence in order. ExtractNewRecordState is a different Debezium transform that unwraps change events."
+    },
+    {
+      "id": "relay-ordering",
+      "concept": "Outbox pattern",
+      "type": "assertion",
+      "difficulty": 3,
+      "prompt": "Read the assertion A and the reason R, then choose the correct relationship between them.",
+      "assertion": "Running several outbox relays, each using FOR UPDATE SKIP LOCKED, can publish events of the same aggregate out of order.",
+      "reason": "SKIP LOCKED lets each relay take a different batch of rows, so a later batch can reach the broker before an earlier batch that another relay is still holding.",
+      "correct": [
+        "a"
+      ],
+      "whys": {
+        "a": "Correct: Relays working on different batches race, so a later event can overtake an earlier one.",
+        "b": "Not this one: Both are true but R is not the reason A holds does not describe this pair; R is actually the reason or is false.",
+        "c": "Not this one: A is true while R is false does not describe this pair; check the truth of R again.",
+        "d": "Not this one: A is false while R is true does not describe this pair; check the truth of A again."
+      },
+      "explanation": "If per-aggregate order matters, use one relay per partition of the outbox (shard by aggregate id) or log-based CDC, which reads the outbox in commit order."
+    },
+    {
+      "id": "backoff-total",
+      "concept": "Retries and dead letters",
+      "type": "integer",
+      "difficulty": 2,
+      "prompt": "A consumer retries a failing message 3 times after the first attempt, waiting 1 s, 2 s and 4 s before the retries (exponential, multiplier 2). Ignoring processing time, how many seconds pass between the first failure and the message being sent to the dead-letter queue?",
+      "answer": 7,
+      "unit": "s",
+      "explanation": "1 + 2 + 4 = 7 seconds of waiting. Retries block the partition in a simple Kafka consumer, so long backoff windows stall everything behind the message; non-blocking retry topics avoid this."
+    },
+    {
+      "id": "poison-message",
+      "concept": "Retries and dead letters",
+      "type": "single",
+      "difficulty": 3,
+      "prompt": "One malformed record on a Kafka partition throws on every attempt and blocks everything behind it. What is the standard remedy?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Retry the same record forever with a fixed pause, so the partition stays blocked until it succeeds.",
+          "why": "A permanently bad record never succeeds, so the partition is stuck for good."
+        },
+        {
+          "id": "b",
+          "text": "Retry a bounded number of times with backoff, then publish it to a dead-letter topic and move on.",
+          "why": "Correct: bounded retries limit the stall and the dead letter keeps the payload for diagnosis."
+        },
+        {
+          "id": "c",
+          "text": "Skip the record silently by committing past it, without storing the failed payload anywhere.",
+          "why": "Silent skipping loses data and hides the data-quality problem."
+        },
+        {
+          "id": "d",
+          "text": "Delete the whole partition and recreate the topic, accepting that every other record on it is lost.",
+          "why": "Destroying healthy data to remove one record is out of proportion."
+        }
+      ],
+      "correct": [
+        "b"
+      ],
+      "explanation": "Also distinguish retryable errors (timeouts) from non-retryable ones (deserialisation, validation), which should go straight to the dead-letter topic."
+    },
+    {
+      "id": "dlq-monitoring",
+      "concept": "Retries and dead letters",
+      "type": "assertion",
+      "difficulty": 2,
+      "prompt": "Read the assertion A and the reason R, then choose the correct relationship between them.",
+      "assertion": "A dead-letter queue needs alerting and a replay procedure, not just existence.",
+      "reason": "Kafka topics are append-only logs.",
+      "correct": [
+        "b"
+      ],
+      "whys": {
+        "a": "Not this one: Both A and R are true and R explains A does not describe this pair; R does not explain A.",
+        "b": "Correct: Both are true, but the append-only property is unrelated to why a DLQ needs operations around it.",
+        "c": "Not this one: A is true while R is false does not describe this pair; check the truth of R again.",
+        "d": "Not this one: A is false while R is true does not describe this pair; check the truth of A again."
+      },
+      "explanation": "Track DLQ depth and age, include the original topic, offset and error in headers, and make replay idempotent."
+    },
+    {
+      "id": "saga-terms",
+      "concept": "Sagas",
+      "type": "matrix",
+      "difficulty": 1,
+      "prompt": "Match each saga term with its meaning.",
+      "left": [
+        {
+          "id": "l1",
+          "text": "Choreography"
+        },
+        {
+          "id": "l2",
+          "text": "Orchestration"
+        },
+        {
+          "id": "l3",
+          "text": "Compensating transaction"
+        },
+        {
+          "id": "l4",
+          "text": "Pivot transaction"
+        }
+      ],
+      "right": [
+        {
+          "id": "r1",
+          "text": "Services react to each other's events with no central coordinator"
+        },
+        {
+          "id": "r2",
+          "text": "A coordinator tells each participant what to do next and tracks the state"
+        },
+        {
+          "id": "r3",
+          "text": "A business action that semantically undoes an earlier committed step"
+        },
+        {
+          "id": "r4",
+          "text": "The step after which the saga is committed to complete going forward"
+        },
+        {
+          "id": "r5",
+          "text": "A two-phase commit lock held across all services"
+        }
+      ],
+      "pairs": {
+        "l1": "r1",
+        "l2": "r2",
+        "l3": "r3",
+        "l4": "r4"
+      },
+      "explanation": "Choreography is simple for few steps but the flow is spread across services. Orchestration (Temporal, Step Functions, Camunda) centralises the flow and makes it easier to see and test."
+    },
+    {
+      "id": "saga-uncompensable",
+      "concept": "Sagas",
+      "type": "assertion",
+      "difficulty": 3,
+      "prompt": "Read the assertion A and the reason R, then choose the correct relationship between them.",
+      "assertion": "A saga step that already sent a confirmation email can be compensated by un-sending that email.",
+      "reason": "A compensation is a new forward business action (for example a correction email), not a database rollback.",
+      "correct": [
+        "d"
+      ],
+      "whys": {
+        "a": "Not this one: Both A and R are true and R explains A does not describe this pair; R does not explain A.",
+        "b": "Not this one: Both are true but R is not the reason A holds does not describe this pair; R is actually the reason or is false.",
+        "c": "Not this one: A is true while R is false does not describe this pair; check the truth of R again.",
+        "d": "Correct: A is false: sent emails cannot be unsent. R is true and explains why compensation means a new action."
+      },
+      "explanation": "Order saga steps so irreversible actions come last (after the pivot), and make every compensation idempotent and retryable."
+    },
+    {
+      "id": "saga-compensations",
+      "concept": "Sagas",
+      "type": "integer",
+      "difficulty": 2,
+      "prompt": "An order saga has 5 sequential local transactions T1..T5, each with a compensation. T4 fails and its own local transaction is rolled back. How many compensating transactions must the saga run?",
+      "answer": 3,
+      "unit": "compensations",
+      "explanation": "T1, T2 and T3 committed, so C3, C2 and C1 run in reverse order: 3. T4 never committed, so it needs no compensation (though its failure handling must be safe to repeat), and T5 never started."
+    },
+    {
+      "id": "ledger-only",
+      "concept": "Reconciliation",
+      "type": "integer",
+      "difficulty": 2,
+      "prompt": "Reconciling by transaction id: the ledger has 1,000 transactions, the bank statement has 998, and 4 bank transactions have no ledger match. How many ledger transactions have no match in the bank statement?",
+      "answer": 6,
+      "unit": "transactions",
+      "explanation": "Bank 998 = matched + 4 bank-only, so matched = 994. Ledger-only = 1,000 - 994 = 6."
+    },
+    {
+      "id": "tolerance-matches",
+      "concept": "Reconciliation",
+      "type": "integer",
+      "difficulty": 3,
+      "prompt": "Ledger amounts are 10.00, 20.00, 30.00 and 40.00. The matching bank amounts, in the same order, are 10.004, 20.02, 29.995 and 40.50. A pair matches if the absolute difference is at most 0.01. How many pairs match?",
+      "answer": 2,
+      "unit": "pairs",
+      "explanation": "Differences are 0.004, 0.02, 0.005 and 0.50. Only the first and third are within 0.01. Use decimals or integer cents in real code, never float equality."
+    },
+    {
+      "id": "reconcile-sql",
+      "concept": "Reconciliation",
+      "type": "code",
+      "difficulty": 3,
+      "prompt": "Tables ledger(txn_id, amount) and bank(txn_id, amount). Write one PostgreSQL query that returns every txn_id that is only in the ledger, only in the bank, or in both with amounts differing by more than 0.01.",
+      "language": "sql",
+      "starter": "SELECT ",
+      "checks": [
+        {
+          "label": "full outer join on txn_id",
+          "pattern": "full\\s+(outer\\s+)?join[\\s\\S]*txn_id"
+        },
+        {
+          "label": "detects one-sided rows",
+          "pattern": "is\\s+null"
+        },
+        {
+          "label": "compares amounts with abs",
+          "pattern": "abs\\s*\\("
+        },
+        {
+          "label": "uses the 0.01 tolerance",
+          "pattern": ">\\s*0\\.01"
+        }
+      ],
+      "model": "SELECT coalesce(l.txn_id, b.txn_id) AS txn_id\nFROM ledger l FULL OUTER JOIN bank b ON b.txn_id = l.txn_id\nWHERE l.txn_id IS NULL OR b.txn_id IS NULL OR abs(l.amount - b.amount) > 0.01;",
+      "explanation": "Other correct shapes use UNION of two anti-joins plus an inner join. Use numeric or integer cents for money, report all three buckets with counts and sums, and allow a grace window for late-arriving data before raising an alert."
+    },
+    {
+      "id": "late-data",
+      "concept": "Reconciliation",
+      "type": "assertion",
+      "difficulty": 3,
+      "prompt": "Read the assertion A and the reason R, then choose the correct relationship between them.",
+      "assertion": "A reconciliation job should wait out a grace window before alarming on a transaction missing from the bank file.",
+      "reason": "Bank settlements are always instantaneous.",
+      "correct": [
+        "c"
+      ],
+      "whys": {
+        "a": "Not this one: Both A and R are true and R explains A does not describe this pair; R does not explain A.",
+        "b": "Not this one: Both are true but R is not the reason A holds does not describe this pair; R is actually the reason or is false.",
+        "c": "Correct: A is true because settlement lags are normal, but R is false, which is exactly why the grace window exists.",
+        "d": "Not this one: A is false while R is true does not describe this pair; check the truth of A again."
+      },
+      "explanation": "Compare by event date, make the job re-runnable and idempotent so late records fix earlier mismatches, and track aging buckets for items that stay unmatched."
+    }
+  ]
+}

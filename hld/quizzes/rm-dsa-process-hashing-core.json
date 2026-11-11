@@ -1,0 +1,354 @@
+{
+  "id": "rm-dsa-process-hashing-core",
+  "title": "DSA core: interview routine, complexity and hashing",
+  "topic": "Language-independent",
+  "series": "core-dsa-fundamentals",
+  "seriesTitle": "Core: DSA fundamentals",
+  "seriesDescription": "Complexity and pattern reasoning for hashing, windows, stacks, lists, trees, heaps and graphs, in pseudocode. JEE-Advanced style: integer, assertion-reason, matrix match, fill-in-the-blanks, short code and multi-correct questions.",
+  "seriesOrder": 1,
+  "language": "neutral",
+  "description": "Language-independent reasoning for arrays and hashing: the interview routine, complexity analysis, prefix sums and choosing between hashing and sorting.",
+  "source": "LeetCode problem set and discuss; NeetCode roadmap; Cracking the Coding Interview; CLRS (hash tables, sorting)",
+  "estimatedMinutes": 18,
+  "questions": [
+    {
+      "id": "routine-steps",
+      "concept": "Interview routine",
+      "type": "matrix",
+      "difficulty": 1,
+      "prompt": "Match each step of the coding-interview routine with what you do in it.",
+      "left": [
+        {
+          "id": "a",
+          "text": "Clarify"
+        },
+        {
+          "id": "b",
+          "text": "Brute force"
+        },
+        {
+          "id": "c",
+          "text": "Dry run"
+        },
+        {
+          "id": "d",
+          "text": "Test cases"
+        },
+        {
+          "id": "e",
+          "text": "Complexity"
+        }
+      ],
+      "right": [
+        {
+          "id": "p",
+          "text": "Ask about input size, duplicates, negatives and what to return when no answer exists"
+        },
+        {
+          "id": "q",
+          "text": "State a simple correct baseline and its cost, so you always have a fallback"
+        },
+        {
+          "id": "r",
+          "text": "Trace the finished code by hand on a small example, tracking every variable"
+        },
+        {
+          "id": "s",
+          "text": "Try empty, single-element, all-equal and maximum-size inputs"
+        },
+        {
+          "id": "t",
+          "text": "Give time and space in terms of n and name the dominant term"
+        },
+        {
+          "id": "u",
+          "text": "Rewrite the solution in a second language"
+        }
+      ],
+      "pairs": {
+        "a": "p",
+        "b": "q",
+        "c": "r",
+        "d": "s",
+        "e": "t"
+      },
+      "explanation": "The order is clarify, brute force, better idea, code, dry run, test, complexity. Interviewers grade the routine as much as the final code; skipping the brute force and the dry run is the most common way to lose points."
+    },
+    {
+      "id": "routine-fill",
+      "concept": "Interview routine",
+      "type": "fill",
+      "difficulty": 1,
+      "prompt": "Complete the routine.",
+      "text": "First {1} the problem and constraints, then state a {2} solution with its cost, look for a better idea, write the code, and {3} it by hand on a small input before declaring it done.",
+      "blanks": {
+        "1": "clarify",
+        "2": "brute-force",
+        "3": "dry-run"
+      },
+      "bank": [
+        "clarify",
+        "brute-force",
+        "dry-run",
+        "memoise",
+        "optimise",
+        "compile"
+      ],
+      "explanation": "Constraints drive the target complexity: n up to 10^5 usually means O(n log n) or better, n up to 20 allows exponential search."
+    },
+    {
+      "id": "pair-count",
+      "concept": "Complexity analysis",
+      "type": "integer",
+      "difficulty": 1,
+      "prompt": "A brute-force two sum checks every pair i < j in an array of 10 elements. How many pair checks happen in the worst case?",
+      "answer": 45,
+      "tolerance": 0,
+      "explanation": "n(n-1)/2 = 10*9/2 = 45. That quadratic growth is why the brute force is too slow for n = 10^5 (about 5 billion pairs) and why you reach for a hash table.",
+      "unit": "checks"
+    },
+    {
+      "id": "sort-then-scan",
+      "concept": "Complexity analysis",
+      "type": "assertion",
+      "difficulty": 2,
+      "prompt": "Evaluate the assertion and the reason.",
+      "assertion": "Sorting an array and then finding a pair with a target sum using two pointers is O(n log n) overall.",
+      "reason": "The two-pointer scan itself is O(n), but sorting costs O(n log n) and dominates.",
+      "correct": [
+        "a"
+      ],
+      "whys": {
+        "a": "Correct: the total is the sum of the phases, and the largest term wins.",
+        "b": "Both are true, but R is exactly why the total is O(n log n), so it does explain A.",
+        "c": "A is true, so this cannot be the answer.",
+        "d": "A is true, so this cannot be the answer."
+      },
+      "explanation": "Add the phases and keep the dominant term: O(n log n) + O(n) = O(n log n)."
+    },
+    {
+      "id": "prefix-range",
+      "concept": "Prefix sums",
+      "type": "assertion",
+      "difficulty": 2,
+      "prompt": "Evaluate the assertion and the reason.",
+      "assertion": "After one O(n) pass, a prefix-sum array answers any range-sum query in O(1).",
+      "reason": "Arrays support O(1) random access by index.",
+      "correct": [
+        "b"
+      ],
+      "whys": {
+        "a": "R is true but it is not the reason: the O(1) comes from prefix[r+1] - prefix[l].",
+        "b": "Correct: both are true, but the real reason is the subtraction identity, not random access alone.",
+        "c": "A is true, so c is wrong.",
+        "d": "A is true, so d is wrong."
+      },
+      "explanation": "sum(l..r) = prefix[r+1] - prefix[l]. The same idea, with a hash table of earlier prefixes, solves \"subarray sum equals K\"."
+    },
+    {
+      "id": "anagram-key",
+      "concept": "Hashing patterns",
+      "type": "assertion",
+      "difficulty": 3,
+      "prompt": "Evaluate the assertion and the reason.",
+      "assertion": "Grouping anagrams by the sorted string key costs O(n * k log k) for n words of length k.",
+      "reason": "Sorting the k characters of one word takes O(k) time.",
+      "correct": [
+        "c"
+      ],
+      "whys": {
+        "a": "R is false, so this cannot be right.",
+        "b": "R is false, so no both-true option holds.",
+        "c": "Correct: A is true (n sorts of cost k log k) but sorting k characters takes O(k log k), not O(k).",
+        "d": "A is true, so d is wrong."
+      },
+      "explanation": "The alternative key is a 26-count signature, giving O(n * k) for lowercase words. Mention both."
+    },
+    {
+      "id": "hash-worst",
+      "concept": "Complexity analysis",
+      "type": "assertion",
+      "difficulty": 3,
+      "prompt": "Evaluate the assertion and the reason.",
+      "assertion": "A hash-table-based two sum is guaranteed O(n) time even in the worst case.",
+      "reason": "Hash table lookups and inserts take O(1) time on average.",
+      "correct": [
+        "d"
+      ],
+      "whys": {
+        "a": "A is not true as stated, so no explanation can hold.",
+        "b": "A is false, so both-true options are out.",
+        "c": "R is true, so option c cannot hold.",
+        "d": "Correct: O(1) is an average-case (expected) bound. With many collisions a lookup can degrade (to O(log n) with tree buckets, or O(n) with chains), so the worst case is not O(n)."
+      },
+      "explanation": "Say \"expected O(n)\" in an interview. It shows you know the difference between expected and worst-case hash costs."
+    },
+    {
+      "id": "prefix-fill",
+      "concept": "Prefix sums",
+      "type": "fill",
+      "difficulty": 2,
+      "prompt": "Complete the subarray-sum-equals-K recipe.",
+      "text": "Keep a running {1} sum; the number of earlier prefixes equal to {2} is how many subarrays end here; seed the table with prefix {3} seen once so subarrays starting at index 0 count.",
+      "blanks": {
+        "1": "prefix",
+        "2": "prefix - K",
+        "3": "0"
+      },
+      "bank": [
+        "prefix",
+        "prefix - K",
+        "0",
+        "prefix + K",
+        "1",
+        "window"
+      ],
+      "explanation": "Because values can be negative a sliding window does not work (extending the window does not monotonically grow the sum), so prefix sums with a frequency table are the standard answer."
+    },
+    {
+      "id": "subarray-k",
+      "concept": "Prefix sums",
+      "type": "integer",
+      "difficulty": 3,
+      "prompt": "How many contiguous subarrays of [3, 4, -3, 1, 2, -1, 2] sum to K = 3?",
+      "answer": 4,
+      "tolerance": 0,
+      "explanation": "They are [3], [4,-3,1,2,-1], [1,2] and [2,-1,2]. The prefix-sum table finds them in O(n); because of the negative numbers a sliding window would not work.",
+      "unit": "subarrays"
+    },
+    {
+      "id": "product-except-self",
+      "concept": "Prefix sums",
+      "type": "integer",
+      "difficulty": 1,
+      "prompt": "For nums = [2, 3, 4, 5], the product-except-self array has output[i] equal to the product of all other elements. What is output[1]?",
+      "answer": 40,
+      "tolerance": 0,
+      "explanation": "2 * 4 * 5 = 40. The O(n) solution without division multiplies a running prefix product on the way right and a running suffix product on the way back, using the output array itself, so extra space is O(1) besides the answer."
+    },
+    {
+      "id": "two-sum-pseudo",
+      "concept": "Two sum family",
+      "type": "code",
+      "difficulty": 2,
+      "prompt": "Write pseudocode for two sum: given a list nums and a number target, return the indices of two different elements that add up to target, in one pass using a lookup table from value to index.",
+      "language": "pseudocode",
+      "starter": "function twoSum(nums, target):\n    ",
+      "checks": [
+        {
+          "label": "creates an empty lookup table (map, dictionary or hash table)",
+          "pattern": "map|table|dict|seen|lookup|\\{\\s*\\}"
+        },
+        {
+          "label": "loops over the elements with their index",
+          "pattern": "for|loop|each|while"
+        },
+        {
+          "label": "computes the complement target - value",
+          "pattern": "target\\s*-\\s*\\w+"
+        },
+        {
+          "label": "checks the table for the complement before storing the current value",
+          "pattern": "in\\s+\\w+|contains|has|exists|get|lookup|found"
+        },
+        {
+          "label": "returns the pair of indices",
+          "pattern": "return"
+        }
+      ],
+      "model": "function twoSum(nums, target):\n    seen = empty map\n    for i from 0 to length(nums) - 1:\n        need = target - nums[i]\n        if need is in seen:\n            return [seen[need], i]\n        seen[nums[i]] = i\n    return no answer",
+      "explanation": "The order matters: look up the complement first, then store the current element, so an element is never paired with itself. Any readable pseudocode with those four moves is acceptable."
+    },
+    {
+      "id": "duplicates-choice",
+      "concept": "Algorithm choice",
+      "type": "single",
+      "difficulty": 2,
+      "prompt": "You must detect whether an array of 10^6 numbers has a duplicate, and the interviewer says extra memory is very tight. Which approach fits best?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Sort the array in place, then compare neighbours: O(n log n) time, O(1) extra space.",
+          "why": "Correct: it trades a log factor of time for almost no extra memory."
+        },
+        {
+          "id": "b",
+          "text": "Insert every number into a hash set: O(n) expected time but O(n) extra memory.",
+          "why": "Fast, but it spends exactly the memory the interviewer ruled out."
+        },
+        {
+          "id": "c",
+          "text": "Compare every pair of numbers: O(n^2) time, O(1) extra space.",
+          "why": "About 5 * 10^11 comparisons is far too slow for n = 10^6."
+        },
+        {
+          "id": "d",
+          "text": "Build a balanced search tree and check before each insert: O(n log n) with O(n) extra space.",
+          "why": "It is as slow as sorting and uses more memory than sorting in place."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "State the trade-off aloud: hash set for speed, sort for memory. Ask whether the input may be modified, because in-place sorting changes it."
+    },
+    {
+      "id": "duplicates-multi",
+      "concept": "Algorithm choice",
+      "type": "multi",
+      "difficulty": 2,
+      "prompt": "Which approaches to \"does the array contain a duplicate\" run in O(n log n) time or better? Select all that apply.",
+      "options": [
+        {
+          "id": "a",
+          "text": "Sort, then compare each element with its neighbour.",
+          "why": "Correct: sorting is O(n log n) and the scan is O(n)."
+        },
+        {
+          "id": "b",
+          "text": "Insert elements into a hash set and test membership before each insert.",
+          "why": "Correct: expected O(n) overall."
+        },
+        {
+          "id": "c",
+          "text": "Compare every pair of elements.",
+          "why": "False: that is O(n^2) comparisons."
+        },
+        {
+          "id": "d",
+          "text": "Insert elements into a balanced search tree, checking before each insert.",
+          "why": "Correct: n operations at O(log n) each."
+        }
+      ],
+      "correct": [
+        "a",
+        "b",
+        "d"
+      ],
+      "explanation": "Brute force is the fallback; the other three are the standard improvements with different memory profiles."
+    },
+    {
+      "id": "skip-brute",
+      "concept": "Interview routine",
+      "type": "truefalse",
+      "difficulty": 1,
+      "prompt": "In a coding interview you should skip the brute-force solution and go straight to the optimal one, because stating the brute force wastes time.",
+      "options": [
+        {
+          "id": "a",
+          "text": "True",
+          "why": "Interviewers expect a baseline first; skipping it hides your reasoning."
+        },
+        {
+          "id": "b",
+          "text": "False",
+          "why": "Correct: a stated brute force proves you understand the problem, gives a fallback, and often hints at the optimisation."
+        }
+      ],
+      "correct": [
+        "b"
+      ],
+      "explanation": "Say the brute force and its cost in a sentence or two, then improve it."
+    }
+  ]
+}

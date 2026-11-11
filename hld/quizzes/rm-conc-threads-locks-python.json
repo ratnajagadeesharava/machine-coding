@@ -1,0 +1,471 @@
+{
+  "id": "rm-conc-threads-locks-python",
+  "title": "Concurrency in Python: threads, locks and the GIL",
+  "topic": "Python",
+  "language": "python",
+  "series": "python-multithreading-asyncio",
+  "seriesTitle": "Python: threading, the GIL and asyncio",
+  "seriesOrder": 1,
+  "seriesDescription": "Threads, locks, the GIL, concurrent.futures, asyncio, queues and classic drills. JEE-Advanced style: integer, assertion-reason, matrix match, fill-in-the-blanks, short code and multi-correct questions.",
+  "description": "Thread lifecycle, GIL limits, Lock versus RLock, Event, Condition and Semaphore, atomicity of +=, check-then-act races, lazy initialisation and thread exceptions.",
+  "source": "Python docs: threading, GIL glossary, concurrent.futures; PEP 703 and PEP 779 (free-threaded CPython); Real Python threading guides; GeeksforGeeks; InterviewBit multithreading lists",
+  "estimatedMinutes": 16,
+  "questions": [
+    {
+      "id": "gil-io",
+      "concept": "GIL and threads",
+      "type": "truefalse",
+      "difficulty": 1,
+      "prompt": "In CPython, a thread that is blocked waiting on a network socket releases the GIL, so Python threads can overlap I/O waits and speed up I/O-bound programs.",
+      "options": [
+        {
+          "id": "a",
+          "text": "True",
+          "why": "Correct: blocking I/O calls release the GIL, so other threads run while one waits."
+        },
+        {
+          "id": "b",
+          "text": "False",
+          "why": "The GIL is released around blocking system calls, so threading does help I/O-bound code."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "The GIL only stops two threads executing Python bytecode at the same instant. Waiting on I/O is not executing bytecode, so threads still overlap waits. (Free-threaded CPython without a GIL, PEP 703, was experimental in 3.13 and became an officially supported but still optional separate build in 3.14 via PEP 779; the default build keeps the GIL.)"
+    },
+    {
+      "id": "cpu-bound-python",
+      "concept": "GIL and threads",
+      "type": "single",
+      "difficulty": 2,
+      "prompt": "A Python service must hash 4 GB of files on an 8-core machine using pure-Python-heavy CPU work. Which approach gives the best speed-up in standard CPython?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Split the files across a ProcessPoolExecutor with about 8 workers.",
+          "why": "Correct: each process has its own interpreter and its own GIL, so work runs on all cores."
+        },
+        {
+          "id": "b",
+          "text": "Start 8 threading.Thread workers, one per core, and join them all at the end.",
+          "why": "Threads share one GIL, so CPU-bound bytecode still runs on one core at a time."
+        },
+        {
+          "id": "c",
+          "text": "Run the hashing in 8 asyncio tasks gathered together on one event loop.",
+          "why": "asyncio is cooperative on a single thread; CPU work never yields, so it is no faster."
+        },
+        {
+          "id": "d",
+          "text": "Lower sys.setswitchinterval so threads swap more often.",
+          "why": "A shorter switch interval only adds overhead; it does not allow parallel bytecode execution."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "CPU-bound work needs processes (multiprocessing, ProcessPoolExecutor), a native extension that releases the GIL, or a free-threaded build. Note hashlib releases the GIL for large buffers, a nuance worth mentioning."
+    },
+    {
+      "id": "gil-not-atomic",
+      "concept": "GIL is not thread-safety",
+      "type": "assertion",
+      "difficulty": 2,
+      "prompt": "Read the assertion (A) and the reason (R), then choose the correct option.",
+      "assertion": "In CPython, several threads running counter += 1 on a shared int can lose updates even though the GIL exists.",
+      "reason": "The GIL can hand control to another thread between the bytecodes that load, add and store the value.",
+      "correct": [
+        "a"
+      ],
+      "whys": {
+        "a": "Correct: += compiles to separate load, add, store steps and a thread switch between them loses an update, which is exactly why the GIL does not make it safe.",
+        "b": "R is the actual mechanism behind A, so \"true but not the explanation\" understates it.",
+        "c": "R is true: bytecode-level switching between load, add and store is real, so R is not false.",
+        "d": "A is true, not false: GIL protects the interpreter internals, not your read-modify-write sequences."
+      },
+      "explanation": "The GIL protects CPython's internals. Compound operations such as +=, check-then-set on a dict, or append-after-length-check are not atomic. Use threading.Lock or a queue."
+    },
+    {
+      "id": "py-account-lock",
+      "concept": "Python Lock",
+      "type": "code",
+      "difficulty": 2,
+      "prompt": "Write a Python class Account with self.balance = 0, a threading.Lock stored on the instance, and a method withdraw(amount) that returns False if funds are insufficient and otherwise subtracts the amount and returns True. The check and the subtraction must be atomic.",
+      "language": "python",
+      "checks": [
+        {
+          "label": "creates a threading.Lock",
+          "pattern": "Lock\\s*\\("
+        },
+        {
+          "label": "holds the lock with 'with' (or acquire/release)",
+          "pattern": "with\\s+self\\.\\w+|\\.acquire\\("
+        },
+        {
+          "label": "defines withdraw",
+          "pattern": "def\\s+withdraw\\s*\\("
+        },
+        {
+          "label": "subtracts the amount",
+          "pattern": "-=\\s*amount|=\\s*self\\.balance\\s*-\\s*amount"
+        }
+      ],
+      "model": "import threading\n\nclass Account:\n    def __init__(self):\n        self.balance = 0\n        self._lock = threading.Lock()\n\n    def withdraw(self, amount):\n        with self._lock:\n            if self.balance < amount:\n                return False\n            self.balance -= amount\n            return True",
+      "explanation": "Checking the balance outside the lock and subtracting inside it is still a check-then-act race. Use a context manager so the lock is released on every return path and exception.",
+      "starter": "import threading\n\nclass Account:\n    "
+    },
+    {
+      "id": "py-check-then-act",
+      "concept": "Python thread-safety",
+      "type": "single",
+      "difficulty": 3,
+      "prompt": "Many threads run the code below against a shared dict cache. Which statement is accurate?\n\nif key not in cache:\n    cache[key] = compute(key)\nreturn cache[key]\n\nPick one.",
+      "options": [
+        {
+          "id": "a",
+          "text": "compute(key) can run twice for one key, as check and store are separate steps.",
+          "why": "Correct: two threads can both see the key missing and both compute; each dict operation is atomic but the sequence is not."
+        },
+        {
+          "id": "b",
+          "text": "It is safe, because every single dict operation is atomic under the GIL, so no lock is needed.",
+          "why": "Individual operations are atomic, but the two-step check-then-act is not."
+        },
+        {
+          "id": "c",
+          "text": "It raises RuntimeError: dictionary changed size during iteration, because cache is being modified.",
+          "why": "That error appears when iterating while mutating; there is no iteration here."
+        },
+        {
+          "id": "d",
+          "text": "It is safe as long as compute is a pure function without any side effects or shared state.",
+          "why": "Purity avoids wrong values but not duplicate work or the race itself."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Guard the whole sequence with a Lock (or use a per-key lock, or functools.lru_cache for pure functions). Check-then-act on a shared dict is the classic race."
+    },
+    {
+      "id": "lock-owner-semantics",
+      "concept": "Locks",
+      "type": "assertion",
+      "difficulty": 3,
+      "prompt": "Read the assertion (A) and the reason (R), then choose the option that fits.",
+      "assertion": "A Python threading.Lock can be released by a thread other than the one that acquired it.",
+      "reason": "A Python threading.RLock must be released by the thread that owns it.",
+      "correct": [
+        "b"
+      ],
+      "whys": {
+        "a": "Not chosen: both statements are true, but R describes the contrast case and does not explain why Lock has no owner.",
+        "b": "Correct: both are true (Lock is a plain binary semaphore-like primitive with no owner, RLock records its owner and a recursion count), but R is a contrast rather than the explanation. Verified by running it.",
+        "c": "Not chosen: R is true; releasing an RLock from another thread raises RuntimeError.",
+        "d": "Not chosen: A is true; another thread may call release() on a locked Lock."
+      },
+      "explanation": "Use RLock for re-entrant code (a thread may acquire it again); a second acquire() of a plain Lock by the same thread deadlocks. Verified by running it."
+    },
+    {
+      "id": "run-vs-start-py",
+      "concept": "Thread basics",
+      "type": "single",
+      "difficulty": 2,
+      "prompt": "What does this Python snippet print?\n\nthreading.Thread(target=lambda: print(threading.current_thread().name), name=\"worker\").run()\n\nWhat is printed?",
+      "options": [
+        {
+          "id": "a",
+          "text": "MainThread, because run() executes on the calling thread",
+          "why": "Correct: run() is an ordinary method call, so the target executes on the caller, the main thread (verified by running it)."
+        },
+        {
+          "id": "b",
+          "text": "worker, the name that was given to the thread you created",
+          "why": "The name belongs to a thread that was never started; run() does not create one."
+        },
+        {
+          "id": "c",
+          "text": "Thread-1, the default name given to every newly created thread",
+          "why": "Thread-1 is the default name only for a thread created without a name, and none starts here."
+        },
+        {
+          "id": "d",
+          "text": "Nothing, because the thread object was never started",
+          "why": "run() executes the body synchronously, so it prints before the statement finishes."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "start() creates the OS thread, which then calls run(). Calling run() yourself is a plain call, a favourite interview trap."
+    },
+    {
+      "id": "sync-primitives-match",
+      "concept": "Synchronisation primitives",
+      "type": "matrix",
+      "difficulty": 2,
+      "prompt": "Match each threading primitive with the behaviour that identifies it.",
+      "left": [
+        {
+          "id": "l1",
+          "text": "threading.Lock"
+        },
+        {
+          "id": "l2",
+          "text": "threading.RLock"
+        },
+        {
+          "id": "l3",
+          "text": "threading.Event"
+        },
+        {
+          "id": "l4",
+          "text": "threading.Condition"
+        },
+        {
+          "id": "l5",
+          "text": "threading.Semaphore(3)"
+        }
+      ],
+      "right": [
+        {
+          "id": "r1",
+          "text": "A second acquire() by the thread that already holds it blocks forever"
+        },
+        {
+          "id": "r2",
+          "text": "May be acquired again by its owner, tracked with a recursion count"
+        },
+        {
+          "id": "r3",
+          "text": "A flag that any number of threads can wait on until another thread sets it"
+        },
+        {
+          "id": "r4",
+          "text": "Lets threads wait for a predicate and be notified, always used with a lock"
+        },
+        {
+          "id": "r5",
+          "text": "Allows up to three threads inside the guarded section at once"
+        },
+        {
+          "id": "r6",
+          "text": "Runs a function in a separate worker process"
+        }
+      ],
+      "pairs": {
+        "l1": "r1",
+        "l2": "r2",
+        "l3": "r3",
+        "l4": "r4",
+        "l5": "r5"
+      },
+      "explanation": "Lock and RLock give mutual exclusion; Event is a broadcast flag; Condition adds wait/notify around shared state; Semaphore counts permits. Worker processes belong to multiprocessing."
+    },
+    {
+      "id": "lost-update-max",
+      "concept": "Visibility and atomics",
+      "type": "integer",
+      "difficulty": 2,
+      "prompt": "Four threads each execute counter += 1 250 times on a shared module-level int that starts at 0, with no lock. What is the largest final value that is possible?",
+      "answer": 1000,
+      "tolerance": 0,
+      "explanation": "Each increment adds at most 1, and there are 4 x 250 = 1000 increments, so 1000 is the upper bound. Lost updates only make the result smaller. The interview point: += is load, add, store, not atomic, even with a GIL."
+    },
+    {
+      "id": "py-counter-lock",
+      "concept": "Locks",
+      "type": "code",
+      "difficulty": 1,
+      "prompt": "Write a Python class Counter with self.count starting at 0, a method increment() and a method get(), made thread-safe with a threading.Lock.",
+      "language": "python",
+      "checks": [
+        {
+          "label": "creates a Lock",
+          "pattern": "Lock\\s*\\("
+        },
+        {
+          "label": "holds it with \"with\" (or acquire/release)",
+          "pattern": "with\\s+self\\.\\w+|\\.acquire\\s*\\("
+        },
+        {
+          "label": "defines increment and get",
+          "pattern": "def\\s+increment\\s*\\([\\s\\S]*def\\s+get\\s*\\("
+        },
+        {
+          "label": "adds one",
+          "pattern": "\\+=\\s*1|=\\s*self\\.count\\s*\\+\\s*1"
+        }
+      ],
+      "model": "import threading\n\nclass Counter:\n    def __init__(self):\n        self.count = 0\n        self._lock = threading.Lock()\n\n    def increment(self):\n        with self._lock:\n            self.count += 1\n\n    def get(self):\n        with self._lock:\n            return self.count",
+      "explanation": "Both methods use the same lock. Reading under the lock is optional for a plain int in CPython but keeps the class correct on free-threaded builds and for compound reads. An itertools.count or a queue is another style.",
+      "starter": "import threading\n\nclass Counter:\n    "
+    },
+    {
+      "id": "lock-acquire-timeout",
+      "concept": "Locks",
+      "type": "code",
+      "difficulty": 3,
+      "prompt": "Given a threading.Lock named lock, write a snippet that tries to acquire it for at most 1 second, runs do_work() only if it got the lock, and always releases it.",
+      "language": "python",
+      "checks": [
+        {
+          "label": "acquires with a timeout",
+          "pattern": "acquire\\s*\\([^)]*(timeout\\s*=\\s*1|True\\s*,\\s*1)"
+        },
+        {
+          "label": "uses try/finally",
+          "pattern": "try\\s*:[\\s\\S]*finally\\s*:"
+        },
+        {
+          "label": "releases the lock",
+          "pattern": "\\.release\\s*\\(\\s*\\)"
+        },
+        {
+          "label": "calls do_work",
+          "pattern": "do_work\\s*\\(\\s*\\)"
+        }
+      ],
+      "model": "if lock.acquire(timeout=1):\n    try:\n        do_work()\n    finally:\n        lock.release()",
+      "explanation": "acquire(timeout=1) returns False when it gives up. The try starts only after a successful acquire, otherwise you would release a lock you do not hold (RuntimeError). Plain \"with lock:\" cannot time out."
+    },
+    {
+      "id": "lock-vs-rlock",
+      "concept": "Locks",
+      "type": "multi",
+      "difficulty": 2,
+      "prompt": "Select all true statements about threading.Lock and threading.RLock.",
+      "options": [
+        {
+          "id": "a",
+          "text": "An RLock can be acquired again by the thread that already holds it without blocking",
+          "why": "Correct: it counts the recursion depth and is free again after the matching number of release() calls."
+        },
+        {
+          "id": "b",
+          "text": "A plain Lock acquired twice by the same thread blocks that thread forever",
+          "why": "Correct: Lock has no owner, so the second acquire waits for a release that never comes."
+        },
+        {
+          "id": "c",
+          "text": "lock.acquire(timeout=2) returns False if the lock was not obtained in time",
+          "why": "Correct: the return value tells you whether you hold the lock."
+        },
+        {
+          "id": "d",
+          "text": "A Lock is released automatically as soon as the thread holding it ends",
+          "why": "Wrong: a dead thread leaves the lock held; always release in finally or use with."
+        },
+        {
+          "id": "e",
+          "text": "An RLock may be released by any thread, not only by the one that acquired it",
+          "why": "Wrong: releasing an RLock you do not own raises RuntimeError."
+        }
+      ],
+      "correct": [
+        "a",
+        "b",
+        "c"
+      ],
+      "explanation": "Use RLock for code paths that re-enter (recursion, methods calling each other under the same lock); prefer a plain Lock otherwise because it is cheaper and catches accidental re-entry as a hang you can see."
+    },
+    {
+      "id": "lazy-init-race",
+      "concept": "Python thread-safety",
+      "type": "single",
+      "difficulty": 3,
+      "prompt": "This lazy initialiser is called from many threads.\n\n_inst = None\n_lock = threading.Lock()\ndef get_config():\n    global _inst\n    if _inst is None:\n        with _lock:\n            _inst = load_config()\n    return _inst\n\nWhich statement identifies the bug?",
+      "options": [
+        {
+          "id": "a",
+          "text": "The global statement gives every thread its own private copy of _inst, so sharing fails.",
+          "why": "Globals are shared by all threads; thread-local data needs threading.local."
+        },
+        {
+          "id": "b",
+          "text": "The with statement releases the lock before the assignment to _inst is executed.",
+          "why": "The lock is held for the whole indented block, including the assignment."
+        },
+        {
+          "id": "c",
+          "text": "No second check inside the lock, so several threads each run load_config.",
+          "why": "Correct: threads that passed the first test queue on the lock and then each run load_config; the last one wins."
+        },
+        {
+          "id": "d",
+          "text": "A Lock created at module level cannot be shared safely between several threads.",
+          "why": "A module-level lock is the normal way to share one."
+        }
+      ],
+      "correct": [
+        "c"
+      ],
+      "explanation": "Fix: re-test \"if _inst is None\" inside the with block (double-checked locking), or build the object at import time, or use functools.cache on a zero-argument function."
+    },
+    {
+      "id": "thread-lifecycle-fill",
+      "concept": "Thread basics",
+      "type": "fill",
+      "difficulty": 2,
+      "prompt": "Complete the sentences about the threading module.",
+      "text": "Calling {1}() runs the target in a new thread, while calling run() executes it on the caller. {2}() blocks the caller until that thread finishes. A thread created with {3}=True does not keep the interpreter alive at exit.",
+      "blanks": {
+        "1": "start",
+        "2": "join",
+        "3": "daemon"
+      },
+      "bank": [
+        "start",
+        "join",
+        "daemon",
+        "wait",
+        "kill",
+        "detach"
+      ],
+      "explanation": "A non-daemon thread keeps the process running until it ends; daemon threads are stopped abruptly at shutdown, so do not rely on them to flush data. There is no kill() for threads: signal them with an Event."
+    },
+    {
+      "id": "thread-exception-isolated",
+      "concept": "Thread basics",
+      "type": "assertion",
+      "difficulty": 2,
+      "prompt": "Read the assertion (A) and the reason (R), then choose the correct option.",
+      "assertion": "An exception that escapes a thread target does not propagate to the thread that started it.",
+      "reason": "Thread.join() re-raises the exception from the target in the calling thread.",
+      "correct": [
+        "c"
+      ],
+      "whys": {
+        "a": "R is false, so it cannot be the explanation.",
+        "b": "R is false, so option b (both true) is wrong.",
+        "c": "Correct: the traceback is printed by the thread excepthook and the main thread carries on (verified by running it); join() only waits, so R is false.",
+        "d": "A is true, so option d (A false) is wrong."
+      },
+      "explanation": "To get the exception back, catch it in the target and hand it over through a queue, or use ThreadPoolExecutor, whose Future.result() re-raises it."
+    },
+    {
+      "id": "sleep-holds-lock",
+      "concept": "Thread basics",
+      "type": "truefalse",
+      "difficulty": 1,
+      "prompt": "Calling time.sleep(1) inside a \"with lock:\" block releases the lock for that second so other threads can enter.",
+      "options": [
+        {
+          "id": "a",
+          "text": "True",
+          "why": "Wrong: sleep never releases any lock; other threads keep waiting."
+        },
+        {
+          "id": "b",
+          "text": "False",
+          "why": "Correct: sleeping while holding a lock keeps everyone else out for the whole second (verified: a non-blocking acquire fails meanwhile)."
+        }
+      ],
+      "correct": [
+        "b"
+      ],
+      "explanation": "Only Condition.wait() releases its lock while waiting. Never sleep or do I/O inside a critical section unless you must."
+    }
+  ]
+}

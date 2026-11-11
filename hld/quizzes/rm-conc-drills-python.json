@@ -1,0 +1,351 @@
+{
+  "id": "rm-conc-drills-python",
+  "title": "Concurrency in Python: code drills",
+  "topic": "Python",
+  "language": "python",
+  "series": "python-multithreading-asyncio",
+  "seriesTitle": "Python: threading, the GIL and asyncio",
+  "seriesOrder": 4,
+  "seriesDescription": "Threads, locks, the GIL, concurrent.futures, asyncio, queues and classic drills. JEE-Advanced style: integer, assertion-reason, matrix match, fill-in-the-blanks, short code and multi-correct questions.",
+  "description": "Write-the-code drills: producer-consumer with queue.Queue and asyncio.Queue, Condition-based buffer, thread-safe LRU cache, token-bucket rate limiter, odd/even printing and print-in-order.",
+  "source": "Python docs: queue, threading, collections, asyncio; Real Python; GeeksforGeeks; LeetCode concurrency problems (print in order, odd/even printing)",
+  "estimatedMinutes": 18,
+  "questions": [
+    {
+      "id": "blocked-producer-py",
+      "concept": "Producer-consumer",
+      "type": "integer",
+      "difficulty": 1,
+      "prompt": "A producer calls q.put(i, timeout=0.1) for i = 1..10 on a queue.Queue(maxsize=3) with no consumer running, ignoring queue.Full errors. How many put calls complete without raising?",
+      "answer": 3,
+      "tolerance": 0,
+      "unit": "calls",
+      "explanation": "The queue holds 3 items, so exactly 3 puts succeed and the other 7 time out and raise queue.Full (verified by running it). That blocking is the back-pressure that makes bounded queues safe."
+    },
+    {
+      "id": "py-queue-prod-cons",
+      "concept": "Producer-consumer",
+      "type": "code",
+      "difficulty": 2,
+      "prompt": "Using queue.Queue(maxsize=10) named q, write a Python producer function that puts the numbers 0..99 followed by None, and a consumer function that gets items until None, calling q.task_done() for every item it took.",
+      "language": "python",
+      "checks": [
+        {
+          "label": "producer puts items",
+          "pattern": "q\\.put\\s*\\("
+        },
+        {
+          "label": "consumer gets items",
+          "pattern": "q\\.get\\s*\\("
+        },
+        {
+          "label": "stops at the None sentinel",
+          "pattern": "None"
+        },
+        {
+          "label": "acknowledges with task_done",
+          "pattern": "task_done\\s*\\("
+        }
+      ],
+      "model": "def producer():\n    for i in range(100):\n        q.put(i)\n    q.put(None)\n\ndef consumer():\n    while True:\n        item = q.get()\n        try:\n            if item is None:\n                break\n            print(item)\n        finally:\n            q.task_done()",
+      "explanation": "queue.Queue is thread-safe with its own locks; put blocks when full. q.join() then waits until task_done has been called for every item. Run each function in a threading.Thread.",
+      "starter": "import queue\nq = queue.Queue(maxsize=10)\n"
+    },
+    {
+      "id": "asyncio-prod-cons",
+      "concept": "Producer-consumer",
+      "type": "code",
+      "difficulty": 3,
+      "prompt": "With asyncio.Queue(maxsize=10) named q, write async def producer() that awaits putting 0..99, and async def consumer() that loops forever awaiting q.get() and calling q.task_done(). Then write main() code that runs both, waits for the queue to drain with q.join() and cancels the consumer.",
+      "language": "python",
+      "checks": [
+        {
+          "label": "producer awaits q.put",
+          "pattern": "await\\s+q\\.put\\s*\\("
+        },
+        {
+          "label": "consumer awaits q.get and calls task_done",
+          "pattern": "await\\s+q\\.get\\s*\\([\\s\\S]*task_done\\s*\\("
+        },
+        {
+          "label": "uses q.join()",
+          "pattern": "q\\.join\\s*\\("
+        },
+        {
+          "label": "cancels the consumer task",
+          "pattern": "cancel\\s*\\("
+        }
+      ],
+      "model": "async def producer():\n    for i in range(100): await q.put(i)\n\nasync def consumer():\n    while True:\n        item = await q.get(); print(item); q.task_done()\n\nasync def main():\n    c = asyncio.create_task(consumer())\n    await producer()\n    await q.join()\n    c.cancel()",
+      "explanation": "Forgetting the await on put/get is the usual mistake: you get a never-awaited coroutine. The queue is not thread-safe; use it from one event loop.",
+      "starter": "q = asyncio.Queue(maxsize=10)\n"
+    },
+    {
+      "id": "while-not-if-py",
+      "concept": "Condition variables",
+      "type": "single",
+      "difficulty": 3,
+      "prompt": "In a bounded buffer built on threading.Condition, why should a consumer write \"while not self.items: self.cond.wait()\" rather than \"if not self.items: self.cond.wait()\"?",
+      "options": [
+        {
+          "id": "a",
+          "text": "The state may change before the woken thread runs, so it has to re-test the predicate.",
+          "why": "Nothing in the module requires a loop around wait()."
+        },
+        {
+          "id": "b",
+          "text": "wait() raises RuntimeError unless it is called from inside a loop body in the same method, always.",
+          "why": "Looping has no influence on fairness; it only re-tests the predicate."
+        },
+        {
+          "id": "c",
+          "text": "The loop makes the condition fair, so that waiting threads are woken strictly in arrival order.",
+          "why": "Correct: a woken thread must re-test, because the state can change before it re-acquires the lock, and wake-ups can be spurious."
+        },
+        {
+          "id": "d",
+          "text": "notify() will not wake any thread unless the guard in front of wait() is written as a loop.",
+          "why": "notify() wakes a waiter regardless of how the guard is written."
+        }
+      ],
+      "correct": [
+        "c"
+      ],
+      "explanation": "Condition.wait_for(predicate) packages the loop for you. Always re-check the predicate after any wake-up."
+    },
+    {
+      "id": "poison-pills-py",
+      "concept": "Producer-consumer",
+      "type": "integer",
+      "difficulty": 2,
+      "prompt": "One producer feeds a shared queue.Queue that 4 consumer threads read, and each consumer exits when it gets a None sentinel. How many None sentinels must the producer put after the last real item so that every consumer terminates?",
+      "answer": 4,
+      "tolerance": 0,
+      "unit": "sentinels",
+      "explanation": "A consumer that takes a sentinel exits and never takes another, so each consumer needs its own: 4. (Re-queueing one sentinel before exiting is the alternative.)"
+    },
+    {
+      "id": "py-lru-lock",
+      "concept": "LRU cache",
+      "type": "code",
+      "difficulty": 2,
+      "prompt": "Write a Python class LRU with __init__(self, cap), get(key) returning None on a miss, and put(key, value), using an OrderedDict and a threading.Lock. A hit and a put both mark the key most recent, and the oldest key is evicted when size exceeds cap.",
+      "language": "python",
+      "checks": [
+        {
+          "label": "uses OrderedDict",
+          "pattern": "OrderedDict\\s*\\("
+        },
+        {
+          "label": "guards with a Lock",
+          "pattern": "Lock\\s*\\("
+        },
+        {
+          "label": "marks recency with move_to_end",
+          "pattern": "move_to_end\\s*\\("
+        },
+        {
+          "label": "evicts with popitem(last=False)",
+          "pattern": "popitem\\s*\\(\\s*last\\s*=\\s*False\\s*\\)"
+        }
+      ],
+      "model": "class LRU:\n    def __init__(self, cap):\n        self.cap, self.d, self.lock = cap, OrderedDict(), threading.Lock()\n    def get(self, key):\n        with self.lock:\n            if key not in self.d: return None\n            self.d.move_to_end(key); return self.d[key]\n    def put(self, key, value):\n        with self.lock:\n            self.d[key] = value; self.d.move_to_end(key)\n            if len(self.d) > self.cap: self.d.popitem(last=False)",
+      "explanation": "Verified: the order after put a, put b, get a, put c is [a, c]. popitem(last=False) pops the oldest. functools.lru_cache is thread-safe for its own bookkeeping but cannot be inspected like this.",
+      "starter": "import threading\nfrom collections import OrderedDict\n\nclass LRU:\n    "
+    },
+    {
+      "id": "lru-ordereddict-fill",
+      "concept": "LRU cache",
+      "type": "fill",
+      "difficulty": 2,
+      "prompt": "Complete the recipe for a Python LRU cache built on collections.OrderedDict.",
+      "text": "Mark a key as most recently used with {1}(key), evict the oldest entry with popitem(last={2}), and guard both operations with a Lock used in a {3} statement.",
+      "blanks": {
+        "1": "move_to_end",
+        "2": "False",
+        "3": "with"
+      },
+      "bank": [
+        "move_to_end",
+        "False",
+        "with",
+        "True",
+        "pop_last",
+        "try"
+      ],
+      "explanation": "popitem(last=True) would pop the newest entry, which is a stack, not an LRU. functools.lru_cache gives the same policy for pure functions out of the box."
+    },
+    {
+      "id": "lru-get-lock-py",
+      "concept": "LRU cache",
+      "type": "assertion",
+      "difficulty": 3,
+      "prompt": "Read the assertion (A) and the reason (R), then choose the correct option.",
+      "assertion": "In an OrderedDict-based LRU cache, get() must take the same lock as put().",
+      "reason": "A cache hit calls move_to_end, which changes the recency order and therefore mutates the shared structure.",
+      "correct": [
+        "a"
+      ],
+      "whys": {
+        "a": "Correct: a hit is a write to the order, so reads cannot run unguarded or under a shared read lock.",
+        "b": "R is the direct cause of A, so calling it merely true understates the link.",
+        "c": "R is true, so option c (R false) is wrong.",
+        "d": "A is true, so option d (A false) is wrong."
+      },
+      "explanation": "This is why a read-write lock gives no gain for an LRU cache: every hit changes recency."
+    },
+    {
+      "id": "py-token-bucket",
+      "concept": "Rate limiter",
+      "type": "code",
+      "difficulty": 3,
+      "prompt": "Write a thread-safe Python class TokenBucket(cap, rate) where tokens start full and refill at rate tokens per second up to cap. allow() refills lazily from the elapsed time (time.monotonic), consumes one token if at least one is available and returns True, otherwise False.",
+      "language": "python",
+      "checks": [
+        {
+          "label": "uses a Lock",
+          "pattern": "Lock\\s*\\("
+        },
+        {
+          "label": "uses time.monotonic (or time.time/perf_counter)",
+          "pattern": "monotonic|time\\.time|perf_counter"
+        },
+        {
+          "label": "caps the refill with min()",
+          "pattern": "min\\s*\\("
+        },
+        {
+          "label": "consumes a token",
+          "pattern": "tokens\\s*-=\\s*1|tokens\\s*=\\s*self\\.tokens\\s*-\\s*1|-=\\s*1"
+        }
+      ],
+      "model": "class TokenBucket:\n    def __init__(self, cap, rate):\n        self.cap, self.rate, self.tokens = cap, rate, cap\n        self.last, self.lock = time.monotonic(), threading.Lock()\n    def allow(self):\n        with self.lock:\n            now = time.monotonic()\n            self.tokens = min(self.cap, self.tokens + (now - self.last) * self.rate)\n            self.last = now\n            if self.tokens >= 1:\n                self.tokens -= 1\n                return True\n            return False",
+      "explanation": "Verified: a bucket of 3 answers [True, True, True, False, False] for five instant calls. The lock matters because refill and consume are one read-modify-write.",
+      "starter": "import threading, time\n\nclass TokenBucket:\n    "
+    },
+    {
+      "id": "py-odd-even-sem",
+      "concept": "Odd-even printing",
+      "type": "code",
+      "difficulty": 2,
+      "prompt": "Two threads print 1..n alternately, odd numbers first. Semaphores sem_odd = Semaphore(1) and sem_even = Semaphore(0) already exist. Write odd(n) and even(n) so the output is 1 2 3 ... n in order.",
+      "language": "python",
+      "checks": [
+        {
+          "label": "odd() waits on sem_odd",
+          "pattern": "sem_odd\\.acquire\\s*\\("
+        },
+        {
+          "label": "odd() wakes sem_even",
+          "pattern": "sem_even\\.release\\s*\\("
+        },
+        {
+          "label": "even() waits on sem_even",
+          "pattern": "sem_even\\.acquire\\s*\\("
+        },
+        {
+          "label": "even() wakes sem_odd",
+          "pattern": "sem_odd\\.release\\s*\\("
+        },
+        {
+          "label": "steps by 2",
+          "pattern": "range\\s*\\([^)]*,\\s*2\\s*\\)"
+        }
+      ],
+      "model": "def odd(n):\n    for i in range(1, n + 1, 2):\n        sem_odd.acquire(); print(i); sem_even.release()\n\ndef even(n):\n    for i in range(2, n + 1, 2):\n        sem_even.acquire(); print(i); sem_odd.release()",
+      "explanation": "Verified for n = 9 with two threads. Each semaphore acts as a baton. A threading.Condition with a shared turn variable and wait_for is the alternative."
+    },
+    {
+      "id": "py-print-in-order",
+      "concept": "Thread ordering",
+      "type": "code",
+      "difficulty": 2,
+      "prompt": "Three threads run first(), second() and third() in an arbitrary start order, but the output must always be first, second, third. Using two threading.Event objects e1 and e2, write the three functions (each prints its own name).",
+      "language": "python",
+      "checks": [
+        {
+          "label": "waits on an Event",
+          "pattern": "\\.wait\\s*\\("
+        },
+        {
+          "label": "signals with set()",
+          "pattern": "\\.set\\s*\\("
+        },
+        {
+          "label": "defines the third function",
+          "pattern": "def\\s+third"
+        },
+        {
+          "label": "prints in each function",
+          "pattern": "print\\s*\\("
+        }
+      ],
+      "model": "def first():\n    print(\"first\"); e1.set()\n\ndef second():\n    e1.wait(); print(\"second\"); e2.set()\n\ndef third():\n    e2.wait(); print(\"third\")",
+      "explanation": "Each Event is a one-shot gate: later steps wait for the earlier signal. Verified with threads started in the order third, first, second. Two semaphores or a Condition with a turn variable also work.",
+      "starter": "import threading\ne1, e2 = threading.Event(), threading.Event()\n"
+    },
+    {
+      "id": "condition-buffer",
+      "concept": "Condition variables",
+      "type": "code",
+      "difficulty": 3,
+      "prompt": "Write a Python class Buffer(cap) holding a collections.deque and one threading.Condition. put(x) must wait while the buffer is full and take() must wait while it is empty; both wake the other side with notify_all.",
+      "language": "python",
+      "checks": [
+        {
+          "label": "uses a Condition",
+          "pattern": "Condition\\s*\\("
+        },
+        {
+          "label": "holds the condition with \"with\"",
+          "pattern": "with\\s+self\\.\\w+"
+        },
+        {
+          "label": "waits on a predicate (loop or wait_for)",
+          "pattern": "wait_for\\s*\\(|while[^\\n]*:\\s*\\n?\\s*self\\.\\w+\\.wait\\s*\\("
+        },
+        {
+          "label": "wakes others",
+          "pattern": "notify(_all)?\\s*\\("
+        },
+        {
+          "label": "handles full and empty",
+          "pattern": "cap[\\s\\S]*popleft|popleft[\\s\\S]*cap"
+        }
+      ],
+      "model": "import threading\nfrom collections import deque\n\nclass Buffer:\n    def __init__(self, cap):\n        self.q, self.cap = deque(), cap\n        self.cond = threading.Condition()\n\n    def put(self, x):\n        with self.cond:\n            self.cond.wait_for(lambda: len(self.q) < self.cap)\n            self.q.append(x)\n            self.cond.notify_all()\n\n    def take(self):\n        with self.cond:\n            self.cond.wait_for(lambda: self.q)\n            v = self.q.popleft()\n            self.cond.notify_all()\n            return v",
+      "explanation": "Verified with one producer and one consumer. wait_for re-tests the predicate after every wake-up, replacing the hand-written while loop; notify_all is safer than notify because producers and consumers share one wait set. queue.Queue already does all of this.",
+      "starter": "import threading\nfrom collections import deque\n\nclass Buffer:\n    "
+    },
+    {
+      "id": "lru-keys-left-py",
+      "concept": "LRU cache",
+      "type": "integer",
+      "difficulty": 2,
+      "prompt": "An LRU cache with capacity 3 receives put(1), put(2), put(3), get(1), put(4), put(5). What is the sum of the keys still cached?",
+      "answer": 10,
+      "tolerance": 0,
+      "unit": "sum",
+      "explanation": "get(1) makes the order 2, 3, 1; put(4) evicts 2; put(5) evicts 3, leaving 1, 4 and 5, so the sum is 10 (verified with an OrderedDict)."
+    },
+    {
+      "id": "condition-wait-lock",
+      "concept": "Condition variables",
+      "type": "assertion",
+      "difficulty": 2,
+      "prompt": "Read the assertion (A) and the reason (R), then choose the correct option.",
+      "assertion": "threading.Condition.wait() can be called by a thread that has not acquired the condition lock.",
+      "reason": "wait() releases the underlying lock while the thread sleeps and re-acquires it before returning.",
+      "correct": [
+        "d"
+      ],
+      "whys": {
+        "a": "A is false, so option a (A true) is wrong.",
+        "b": "A is false, so option b (both true) is wrong.",
+        "c": "R is true, so option c (R false) is wrong.",
+        "d": "Correct: calling wait() without holding the lock raises RuntimeError (\"cannot wait on un-acquired lock\", verified), while R correctly describes what wait() does with the lock."
+      },
+      "explanation": "Hold the condition (with cond:) around every wait and notify. The release-and-reacquire in wait() is what lets other threads change the state you are waiting for."
+    }
+  ]
+}

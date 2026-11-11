@@ -1,0 +1,573 @@
+{
+  "id": "rm-conc-pools-async-python",
+  "title": "Concurrency in Python: executors and asyncio",
+  "topic": "Python",
+  "language": "python",
+  "series": "python-multithreading-asyncio",
+  "seriesTitle": "Python: threading, the GIL and asyncio",
+  "seriesOrder": 2,
+  "seriesDescription": "Threads, locks, the GIL, concurrent.futures, asyncio, queues and classic drills. JEE-Advanced style: integer, assertion-reason, matrix match, fill-in-the-blanks, short code and multi-correct questions.",
+  "description": "ThreadPoolExecutor and ProcessPoolExecutor behaviour, Futures, shutdown, pickling limits, asyncio gather, timeouts, TaskGroup, to_thread and blocking the event loop.",
+  "source": "Python docs: asyncio, concurrent.futures, pickle; FastAPI docs; Real Python; Super Fast Python; Educative multithreading interview course",
+  "estimatedMinutes": 18,
+  "questions": [
+    {
+      "id": "default-workers",
+      "concept": "ThreadPoolExecutor behaviour",
+      "type": "integer",
+      "difficulty": 2,
+      "prompt": "Since Python 3.8, ThreadPoolExecutor() without max_workers uses min(32, os.cpu_count() + 4) workers. On a machine with 4 CPUs, how many worker threads can it start?",
+      "answer": 8,
+      "tolerance": 0,
+      "unit": "threads",
+      "explanation": "min(32, 4 + 4) = 8 (verified: ThreadPoolExecutor()._max_workers is 8 on a 4-CPU machine). The cap of 32 and the +4 suit I/O-bound work; threads are created lazily as tasks arrive."
+    },
+    {
+      "id": "queued-seconds",
+      "concept": "ThreadPoolExecutor behaviour",
+      "type": "integer",
+      "difficulty": 2,
+      "prompt": "A ThreadPoolExecutor(max_workers=2) receives 5 tasks that each sleep for 1 second. About how many seconds until all 5 finish?",
+      "answer": 3,
+      "tolerance": 0,
+      "unit": "seconds",
+      "explanation": "Two tasks run at a time: 2 + 2 + 1 tasks need 3 rounds of 1 second (measured about 1.5 s for 0.5 s tasks). The rest wait in the executor queue."
+    },
+    {
+      "id": "executors-match",
+      "concept": "Executors",
+      "type": "matrix",
+      "difficulty": 1,
+      "prompt": "Match each tool with its main characteristic.",
+      "left": [
+        {
+          "id": "l1",
+          "text": "ThreadPoolExecutor"
+        },
+        {
+          "id": "l2",
+          "text": "ProcessPoolExecutor"
+        },
+        {
+          "id": "l3",
+          "text": "asyncio.to_thread"
+        },
+        {
+          "id": "l4",
+          "text": "asyncio.gather"
+        },
+        {
+          "id": "l5",
+          "text": "asyncio.TaskGroup"
+        }
+      ],
+      "right": [
+        {
+          "id": "r1",
+          "text": "Reuses worker threads, best for blocking I/O"
+        },
+        {
+          "id": "r2",
+          "text": "Runs callables in separate processes, each with its own GIL"
+        },
+        {
+          "id": "r3",
+          "text": "Moves one blocking call off the event loop into a worker thread"
+        },
+        {
+          "id": "r4",
+          "text": "Runs awaitables concurrently and returns their results in argument order"
+        },
+        {
+          "id": "r5",
+          "text": "Structured scope (3.11+) that cancels sibling tasks when one fails"
+        },
+        {
+          "id": "r6",
+          "text": "Starts one new interpreter thread per awaited coroutine"
+        }
+      ],
+      "pairs": {
+        "l1": "r1",
+        "l2": "r2",
+        "l3": "r3",
+        "l4": "r4",
+        "l5": "r5"
+      },
+      "explanation": "Threads suit blocking I/O, processes suit CPU-bound work, and asyncio suits many concurrent waits on one thread. The last option is a distractor: coroutines never get their own thread."
+    },
+    {
+      "id": "pool-choice-fill",
+      "concept": "Executors",
+      "type": "fill",
+      "difficulty": 1,
+      "prompt": "Complete the guidance on picking a concurrency tool.",
+      "text": "Use {1} for blocking I/O such as HTTP calls, {2} for CPU-bound work that needs real parallelism, and {3} for very many concurrent waits on a single thread.",
+      "blanks": {
+        "1": "ThreadPoolExecutor",
+        "2": "ProcessPoolExecutor",
+        "3": "asyncio"
+      },
+      "bank": [
+        "ThreadPoolExecutor",
+        "ProcessPoolExecutor",
+        "asyncio",
+        "Lock",
+        "Semaphore"
+      ],
+      "explanation": "Processes avoid the GIL at the cost of pickling and start-up time. asyncio scales to tens of thousands of waiting tasks but every library on the hot path must be async-aware."
+    },
+    {
+      "id": "executor-shutdown-py",
+      "concept": "Executor shutdown",
+      "type": "code",
+      "difficulty": 2,
+      "prompt": "Given executor, a ThreadPoolExecutor, write the call that stops accepting tasks, cancels tasks that have not started yet, and waits for the running ones to finish.",
+      "language": "python",
+      "checks": [
+        {
+          "label": "calls shutdown",
+          "pattern": "\\.shutdown\\s*\\("
+        },
+        {
+          "label": "cancels pending futures",
+          "pattern": "cancel_futures\\s*=\\s*True"
+        },
+        {
+          "label": "waits for running tasks",
+          "pattern": "wait\\s*=\\s*True|shutdown\\s*\\(\\s*\\)|shutdown\\s*\\([^)]*cancel_futures"
+        }
+      ],
+      "model": "executor.shutdown(wait=True, cancel_futures=True)",
+      "explanation": "cancel_futures needs Python 3.9+. Without it, queued tasks still run. A \"with ThreadPoolExecutor() as ex:\" block calls shutdown(wait=True) on exit, so queued work completes."
+    },
+    {
+      "id": "submit-swallows-py",
+      "concept": "Futures",
+      "type": "single",
+      "difficulty": 2,
+      "prompt": "A task passed to executor.submit(...) raises ValueError and nobody ever calls result() on the returned Future. What happens?",
+      "options": [
+        {
+          "id": "a",
+          "text": "The exception is stored in the Future and silently lost.",
+          "why": "Correct: the worker catches the exception and records it on the Future; nothing is printed or raised."
+        },
+        {
+          "id": "b",
+          "text": "The worker thread prints the traceback and then dies.",
+          "why": "The worker survives and keeps serving other tasks; nothing is printed for submit()."
+        },
+        {
+          "id": "c",
+          "text": "The executor shuts down immediately and rejects later tasks.",
+          "why": "A failing task never shuts an executor down."
+        },
+        {
+          "id": "d",
+          "text": "The ValueError is re-raised in the thread that called submit.",
+          "why": "submit returns normally; failures surface only through result() or exception()."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Always read the result, check future.exception(), or add a done-callback that logs. executor.map re-raises when you reach the failed item."
+    },
+    {
+      "id": "map-order",
+      "concept": "concurrent.futures",
+      "type": "single",
+      "difficulty": 2,
+      "prompt": "What does this Python code print?\n\nwith ThreadPoolExecutor(3) as ex:\n    print(list(ex.map(work, [3, 1, 2])))\n\nwhere work(n) sleeps n tenths of a second and returns n.",
+      "options": [
+        {
+          "id": "a",
+          "text": "[3, 1, 2], following the input order",
+          "why": "Correct: map yields results in the order of the inputs, even though the 1 finishes first."
+        },
+        {
+          "id": "b",
+          "text": "[1, 2, 3], following the finish order",
+          "why": "That would be completion order, which is what as_completed gives, not map."
+        },
+        {
+          "id": "c",
+          "text": "[3, 2, 1], sorted from largest to smallest",
+          "why": "Nothing in map sorts results in descending order."
+        },
+        {
+          "id": "d",
+          "text": "It prints in random order depending on the scheduler.",
+          "why": "Result order from map is deterministic."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Executor.map preserves input order (blocking on the earliest unfinished result); use as_completed(futures) to process in completion order. Exceptions are raised when the result is reached."
+    },
+    {
+      "id": "executor-unbounded-queue",
+      "concept": "Executors",
+      "type": "assertion",
+      "difficulty": 2,
+      "prompt": "Read the assertion (A) and the reason (R), then choose the correct option.",
+      "assertion": "ThreadPoolExecutor can use ever more memory when tasks are submitted faster than they complete.",
+      "reason": "Its internal work queue has no size limit, so submit() never blocks or rejects.",
+      "correct": [
+        "a"
+      ],
+      "whys": {
+        "a": "Correct: the work queue is unbounded, so the backlog just grows while the workers stay at max_workers.",
+        "b": "R is the direct cause of A, so calling it unrelated understates the link.",
+        "c": "R is true, so option c (R false) is wrong.",
+        "d": "A is true: unbounded backlog is a real production failure, so option d is wrong."
+      },
+      "explanation": "Bound the backlog yourself with a Semaphore acquired before submit and released in a done-callback, or feed work through a bounded queue.Queue."
+    },
+    {
+      "id": "async-chain",
+      "concept": "asyncio",
+      "type": "code",
+      "difficulty": 2,
+      "prompt": "Assume coroutines fetch_user(uid) returning a user and fetch_orders(user) returning a list already exist. Write async def order_count(uid) that awaits the user, then the orders, returns how many orders there are, and returns 0 if anything fails.",
+      "language": "python",
+      "checks": [
+        {
+          "label": "awaits both calls in sequence",
+          "pattern": "await\\s+fetch_user\\s*\\([\\s\\S]*await\\s+fetch_orders\\s*\\("
+        },
+        {
+          "label": "returns the number of orders",
+          "pattern": "len\\s*\\("
+        },
+        {
+          "label": "handles failure with try/except",
+          "pattern": "try\\s*:[\\s\\S]*except"
+        },
+        {
+          "label": "falls back to 0",
+          "pattern": "return\\s+0"
+        }
+      ],
+      "model": "async def order_count(uid):\n    try:\n        user = await fetch_user(uid)\n        orders = await fetch_orders(user)\n        return len(orders)\n    except Exception:\n        return 0",
+      "explanation": "In async code a dependent step is just the next await; no flat-map is needed. Catching Exception (not BaseException) lets task cancellation propagate, which matters for timeouts.",
+      "starter": "async def order_count(uid):\n    "
+    },
+    {
+      "id": "never-awaited",
+      "concept": "asyncio",
+      "type": "single",
+      "difficulty": 2,
+      "prompt": "fetch_user is declared with async def. What does the statement result = fetch_user(1), written without await inside another coroutine, give you?",
+      "options": [
+        {
+          "id": "a",
+          "text": "A coroutine object; the body has not run yet.",
+          "why": "Correct: calling an async function only creates the coroutine; nothing executes until it is awaited or scheduled (verified: the type is coroutine)."
+        },
+        {
+          "id": "b",
+          "text": "The user, because the call runs the body to completion on the event loop.",
+          "why": "That needs await; without it the body never starts."
+        },
+        {
+          "id": "c",
+          "text": "A Future that is already scheduled on the loop and runs in the background.",
+          "why": "That would be asyncio.create_task(fetch_user(1)); a bare call schedules nothing."
+        },
+        {
+          "id": "d",
+          "text": "A thread handle for a new thread started to run the coroutine.",
+          "why": "No thread is created; coroutines run on the loop thread when awaited."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Python warns \"coroutine was never awaited\" when such an object is discarded. Await it, or wrap it with asyncio.create_task / TaskGroup when it should run concurrently."
+    },
+    {
+      "id": "future-exception-type",
+      "concept": "Futures",
+      "type": "single",
+      "difficulty": 3,
+      "prompt": "A function submitted to a ThreadPoolExecutor raises ValueError(\"x\"). What does this print?\n\nfut = ex.submit(fn)\ntry: fut.result()\nexcept Exception as e: print(type(e).__name__)\n\nWhat is printed?",
+      "options": [
+        {
+          "id": "a",
+          "text": "ExecutionError, a wrapper that adds the failing task details.",
+          "why": "concurrent.futures has no such wrapper class."
+        },
+        {
+          "id": "b",
+          "text": "RuntimeError, because the work happened in a different thread.",
+          "why": "Thread boundaries do not change the type of the stored exception."
+        },
+        {
+          "id": "c",
+          "text": "Nothing is printed, because errors in worker threads are never delivered.",
+          "why": "They are stored and delivered by result(), exception() and callbacks."
+        },
+        {
+          "id": "d",
+          "text": "ValueError, because result() re-raises the original exception.",
+          "why": "Correct: concurrent.futures re-raises the very exception object the task raised (verified by running it)."
+        }
+      ],
+      "correct": [
+        "d"
+      ],
+      "explanation": "fut.exception() returns the exception without raising it. With a process pool the exception is pickled across, so custom exception classes must be importable and picklable."
+    },
+    {
+      "id": "async-gather-timeout",
+      "concept": "asyncio",
+      "type": "code",
+      "difficulty": 3,
+      "prompt": "Write a Python coroutine fetch_all(urls) that calls the existing coroutine fetch(url) for every url concurrently and returns the list of results in input order, raising TimeoutError if the whole batch takes more than 2 seconds.",
+      "language": "python",
+      "checks": [
+        {
+          "label": "runs the coroutines concurrently with gather",
+          "pattern": "gather\\s*\\("
+        },
+        {
+          "label": "enforces a 2 second limit via wait_for or timeout",
+          "pattern": "wait_for\\s*\\(|asyncio\\.timeout\\s*\\(|timeout\\s*\\("
+        },
+        {
+          "label": "uses await",
+          "pattern": "await\\s"
+        },
+        {
+          "label": "unpacks the generated coroutines with *",
+          "pattern": "\\*\\s*[\\w(\\[]"
+        },
+        {
+          "label": "mentions 2 seconds",
+          "pattern": "\\b2(\\.0)?\\b"
+        }
+      ],
+      "model": "async def fetch_all(urls):\n    return await asyncio.wait_for(\n        asyncio.gather(*(fetch(u) for u in urls)), timeout=2)",
+      "explanation": "gather returns results in argument order. On Python 3.11+ async with asyncio.timeout(2): return await asyncio.gather(...) is an equivalent alternative. On timeout the gathered awaitables are cancelled.",
+      "starter": "async def fetch_all(urls):\n    "
+    },
+    {
+      "id": "gather-one-second",
+      "concept": "asyncio",
+      "type": "assertion",
+      "difficulty": 2,
+      "prompt": "Read the assertion (A) and the reason (R), then choose the correct option.",
+      "assertion": "Awaiting three asyncio.sleep(1) coroutines with asyncio.gather finishes in about 1 second.",
+      "reason": "The asyncio event loop starts one thread per coroutine so that they run in parallel.",
+      "correct": [
+        "c"
+      ],
+      "whys": {
+        "a": "A is true but R is false, so R cannot explain it.",
+        "b": "R is false, so option b is wrong.",
+        "c": "Correct: the sleeps overlap because the single-threaded loop switches at each await. There is one thread, so R is false.",
+        "d": "A is true, so option d is wrong."
+      },
+      "explanation": "asyncio is cooperative concurrency on one thread. A blocking call such as time.sleep(1) would serialise the three coroutines to about 3 seconds."
+    },
+    {
+      "id": "blocking-in-loop",
+      "concept": "asyncio",
+      "type": "multi",
+      "difficulty": 3,
+      "prompt": "A FastAPI endpoint declared with async def calls the blocking requests.get(...) and the service stalls under load. Select all valid fixes.",
+      "options": [
+        {
+          "id": "a",
+          "text": "Declare the endpoint with plain def so FastAPI runs it in its thread pool",
+          "why": "Correct: FastAPI runs sync endpoints in a worker thread, off the event loop."
+        },
+        {
+          "id": "b",
+          "text": "Use an async HTTP client such as httpx.AsyncClient with await",
+          "why": "Correct: it yields to the loop while waiting for the network."
+        },
+        {
+          "id": "c",
+          "text": "Wrap the call in await asyncio.to_thread(requests.get, url)",
+          "why": "Correct: the blocking call runs in a thread while the loop stays free."
+        },
+        {
+          "id": "d",
+          "text": "Add the async keyword to the helper that calls requests.get",
+          "why": "Wrong: async def does not make blocking code non-blocking; it still stalls the loop."
+        },
+        {
+          "id": "e",
+          "text": "Run the app with more asyncio tasks",
+          "why": "Wrong: more tasks on a blocked loop just wait behind it."
+        }
+      ],
+      "correct": [
+        "a",
+        "b",
+        "c"
+      ],
+      "explanation": "Rule: never block the event loop. Either stay async end to end, or push blocking work to a thread (to_thread, run_in_executor) or process pool."
+    },
+    {
+      "id": "async-cpu-bound",
+      "concept": "asyncio",
+      "type": "truefalse",
+      "difficulty": 2,
+      "prompt": "asyncio is a good fit for CPU-bound number crunching, because tasks are cheaper to create than threads.",
+      "options": [
+        {
+          "id": "a",
+          "text": "True",
+          "why": "Cheap tasks help waiting, not computing."
+        },
+        {
+          "id": "b",
+          "text": "False",
+          "why": "Correct: a task that computes without awaiting never yields, so it blocks the whole event loop and everything else on it."
+        }
+      ],
+      "correct": [
+        "b"
+      ],
+      "explanation": "Use ProcessPoolExecutor (via loop.run_in_executor) for CPU-bound work and keep the loop for I/O waits."
+    },
+    {
+      "id": "to-thread-offload",
+      "concept": "asyncio",
+      "type": "truefalse",
+      "difficulty": 1,
+      "prompt": "await asyncio.to_thread(func, arg) runs a blocking function in a worker thread so the event loop stays responsive.",
+      "options": [
+        {
+          "id": "a",
+          "text": "True",
+          "why": "Correct: the loop keeps serving other tasks while the thread blocks."
+        },
+        {
+          "id": "b",
+          "text": "False",
+          "why": "The function does run in a separate thread, so the loop is not blocked."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "to_thread (3.9+) uses the loop default thread pool and copies the current context. It helps blocking I/O; for CPU-bound work a process pool is the better fit."
+    },
+    {
+      "id": "gather-return-exceptions",
+      "concept": "asyncio",
+      "type": "single",
+      "difficulty": 3,
+      "prompt": "What does this Python code print?\n\nasync def ok(): await asyncio.sleep(0.1); return 1\nasync def bad(): raise ValueError(\"x\")\nasync def main():\n    print(await asyncio.gather(ok(), bad(), return_exceptions=True))\nasyncio.run(main())\n\nWhat is the output?",
+      "options": [
+        {
+          "id": "a",
+          "text": "[1, ValueError('x')]",
+          "why": "Correct: with return_exceptions=True failures are returned in the result list in argument order, and the other awaitables still finish."
+        },
+        {
+          "id": "b",
+          "text": "ValueError: x is raised and nothing is printed",
+          "why": "Wrong: that is the default behaviour (return_exceptions=False); here the exception is delivered as a value."
+        },
+        {
+          "id": "c",
+          "text": "[1]",
+          "why": "Wrong: results are never dropped; the failed slot holds the exception object."
+        },
+        {
+          "id": "d",
+          "text": "[ValueError('x'), 1]",
+          "why": "Wrong: gather keeps results in the order of its arguments, not in completion order."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "With the default False the first exception propagates to the awaiter while the other awaitables keep running; on Python 3.11+ asyncio.TaskGroup cancels the siblings instead. Verified by running it."
+    },
+    {
+      "id": "processpool-pickle",
+      "concept": "Executors",
+      "type": "single",
+      "difficulty": 2,
+      "prompt": "Why does executor.submit(lambda x: x * x, 3) fail with a PicklingError on a ProcessPoolExecutor, while a module-level def sq(x) works?",
+      "options": [
+        {
+          "id": "a",
+          "text": "The callable is pickled for another process, and a lambda has no importable name",
+          "why": "Correct: pickle stores functions by qualified name, which a lambda does not have. Verified by running it."
+        },
+        {
+          "id": "b",
+          "text": "Lambdas are forbidden from returning values across a thread boundary of any kind",
+          "why": "Wrong: lambdas return values normally; the limit comes from serialisation to a separate process, not from return values."
+        },
+        {
+          "id": "c",
+          "text": "The GIL forbids anonymous functions from running inside separate worker threads",
+          "why": "Wrong: ProcessPoolExecutor uses processes, and the GIL has no rule about function syntax."
+        },
+        {
+          "id": "d",
+          "text": "ProcessPoolExecutor only accepts built-in functions from the standard library",
+          "why": "Wrong: any picklable top-level function works, as the sq example shows."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Same rule for arguments and results: they must be picklable. ThreadPoolExecutor has no such limit because it shares memory."
+    },
+    {
+      "id": "taskgroup-cancels",
+      "concept": "asyncio",
+      "type": "single",
+      "difficulty": 3,
+      "prompt": "Inside \"async with asyncio.TaskGroup() as tg:\" one child task raises ValueError after 0.1 s while a sibling is awaiting asyncio.sleep(5). What happens to the sibling and to the group?",
+      "options": [
+        {
+          "id": "a",
+          "text": "The sibling keeps running until its sleep ends and the group then raises a bare ValueError.",
+          "why": "That resembles gather with default settings; a TaskGroup cancels siblings."
+        },
+        {
+          "id": "b",
+          "text": "The sibling is cancelled and the group silently swallows the ValueError.",
+          "why": "Errors are never swallowed; they leave the async with block."
+        },
+        {
+          "id": "c",
+          "text": "The sibling is cancelled and the group raises an ExceptionGroup containing the ValueError.",
+          "why": "Correct: structured concurrency cancels the remaining children, then reports the failures together (verified on Python 3.13)."
+        },
+        {
+          "id": "d",
+          "text": "The ValueError is ignored and the group finishes when the slowest child does.",
+          "why": "A failing child always fails the group."
+        }
+      ],
+      "correct": [
+        "c"
+      ],
+      "explanation": "Catch group errors with \"except* ValueError\". Prefer TaskGroup over bare create_task or gather when child tasks must not outlive a failure."
+    },
+    {
+      "id": "semaphore-batches",
+      "concept": "asyncio",
+      "type": "integer",
+      "difficulty": 3,
+      "prompt": "Ten coroutines each run \"async with sem: await asyncio.sleep(1)\" with sem = asyncio.Semaphore(5), and are started together with gather. About how many seconds until all finish?",
+      "answer": 2,
+      "tolerance": 0,
+      "unit": "seconds",
+      "explanation": "Only 5 can hold a permit at once: two waves of 1 second each (measured 2.0 s). A semaphore around the await is the standard way to cap concurrency."
+    }
+  ]
+}

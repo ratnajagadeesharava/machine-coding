@@ -1,0 +1,460 @@
+{
+  "id": "rm-db-schema-postgres-core",
+  "title": "Schema design, Postgres specifics and zero-downtime migrations",
+  "topic": "Language-independent",
+  "language": "neutral",
+  "series": "core-databases",
+  "seriesTitle": "Core: databases",
+  "seriesDescription": "Schema design and Postgres, scaling and multi-tenancy, MongoDB and Redis, consistency, warehouses and vector search. JEE-Advanced style: integer, assertion-reason, matrix match, fill-in-the-blanks, short code and multi-correct questions.",
+  "seriesOrder": 1,
+  "description": "Normal forms vs denormalisation, JSONB and GIN, CREATE INDEX CONCURRENTLY, replica lag, and the expand-and-contract recipe for changing a live schema.",
+  "source": "PostgreSQL 16 documentation (JSONB, CREATE INDEX, ALTER TABLE, partial indexes, partitioning); Use The Index, Luke; Designing Data-Intensive Applications; Stripe and GitHub engineering blogs on online migrations",
+  "estimatedMinutes": 15,
+  "questions": [
+    {
+      "id": "third-normal-form",
+      "concept": "Normalisation",
+      "type": "single",
+      "difficulty": 1,
+      "prompt": "A table order_items(order_id, product_id, product_name, qty) has key (order_id, product_id). product_name depends only on product_id. Which normal form does this violate, and what is the fix?",
+      "options": [
+        {
+          "id": "a",
+          "text": "2NF (partial dependency): move product_name into a products table keyed by product_id.",
+          "why": "Right: a non-key column depends on only part of the composite key, which is exactly the 2NF violation."
+        },
+        {
+          "id": "b",
+          "text": "1NF: split product_name into several columns.",
+          "why": "1NF is about atomic values and no repeating groups; product_name is already atomic."
+        },
+        {
+          "id": "c",
+          "text": "BCNF only: add a surrogate key and leave the data as is.",
+          "why": "A surrogate key does not remove the duplicated product_name; the partial dependency is still there."
+        },
+        {
+          "id": "d",
+          "text": "No violation: duplicated names are fine as long as an index exists.",
+          "why": "An index does not stop update anomalies when the name changes."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Partial dependency on part of a composite key = 2NF violation. Fix by moving the dependent column to the table keyed by the determinant. Interviewers then ask \"when would you deliberately undo this?\" (read-heavy snapshot of the name at purchase time)."
+    },
+    {
+      "id": "denorm-tradeoff",
+      "concept": "Denormalisation",
+      "type": "assertion",
+      "difficulty": 2,
+      "prompt": "Read the assertion A and the reason R, then choose the correct relationship between them.",
+      "assertion": "Copying customer_name into every row of orders speeds up the order list page but creates update anomalies.",
+      "reason": "The same fact is now stored in many places, so a change has to be applied to every copy or the copies disagree.",
+      "correct": [
+        "a"
+      ],
+      "whys": {
+        "a": "Correct: duplication is the cause of the anomaly, so R explains A.",
+        "b": "R is not just true, it is the direct mechanism of the anomaly.",
+        "c": "R is true, so A cannot be an A-true-R-false case.",
+        "d": "A is true; denormalisation does trade write complexity for read speed."
+      },
+      "explanation": "Denormalisation trades write cost and consistency risk for fewer joins. Keep the normalised source of truth and treat copies as derived. Some copies are correct on purpose, for example a price captured at order time."
+    },
+    {
+      "id": "normalisation-faster",
+      "concept": "Normalisation",
+      "type": "assertion",
+      "difficulty": 2,
+      "prompt": "Read the assertion A and the reason R, then choose the correct relationship between them.",
+      "assertion": "Normalising a schema always makes every query faster.",
+      "reason": "Normalisation removes redundancy, so an update touches one row instead of many.",
+      "correct": [
+        "d"
+      ],
+      "whys": {
+        "a": "A is not true, so no relationship can be \"R explains A\".",
+        "b": "A is false, so this cannot be a \"both true\" case.",
+        "c": "R is true, so the option claiming R is false is wrong.",
+        "d": "Correct: normalisation helps writes and integrity but often adds joins, so reads can get slower."
+      },
+      "explanation": "Normalisation optimises integrity and write simplicity. Reads that need several entities pay for joins, which is why read-heavy systems denormalise selectively."
+    },
+    {
+      "id": "normal-forms-fill",
+      "concept": "Normalisation",
+      "type": "fill",
+      "difficulty": 1,
+      "prompt": "Complete the definitions of the normal forms.",
+      "text": "Second normal form removes {1} dependencies on part of a composite key; third normal form removes {2} dependencies between non-key columns.",
+      "blanks": {
+        "1": "partial",
+        "2": "transitive"
+      },
+      "bank": [
+        "partial",
+        "transitive",
+        "multivalued",
+        "circular"
+      ],
+      "explanation": "Memory hook: 2NF = whole key, 3NF = nothing but the key. Partial = depends on part of the key; transitive = A -> B -> C where B is not a key."
+    },
+    {
+      "id": "jsonb-operators",
+      "concept": "JSONB",
+      "type": "matrix",
+      "difficulty": 2,
+      "prompt": "Match each PostgreSQL jsonb expression with what it produces or tests.",
+      "left": [
+        {
+          "id": "l1",
+          "text": "data -> 'tag'"
+        },
+        {
+          "id": "l2",
+          "text": "data ->> 'tag'"
+        },
+        {
+          "id": "l3",
+          "text": "data @> '{\"tag\": \"x\"}'"
+        },
+        {
+          "id": "l4",
+          "text": "data ? 'tag'"
+        }
+      ],
+      "right": [
+        {
+          "id": "r1",
+          "text": "The field as jsonb"
+        },
+        {
+          "id": "r2",
+          "text": "The field as text"
+        },
+        {
+          "id": "r3",
+          "text": "True if the left jsonb contains the right jsonb"
+        },
+        {
+          "id": "r4",
+          "text": "True if the string is a top-level key"
+        },
+        {
+          "id": "r5",
+          "text": "Removes the key from the document"
+        }
+      ],
+      "pairs": {
+        "l1": "r1",
+        "l2": "r2",
+        "l3": "r3",
+        "l4": "r4"
+      },
+      "explanation": "-> keeps the jsonb type (you can keep drilling), ->> returns text (for comparing or casting), @> is containment and is what a GIN index accelerates, ? tests for a top-level key. Removal is the - operator."
+    },
+    {
+      "id": "gin-for-containment",
+      "concept": "JSONB",
+      "type": "single",
+      "difficulty": 2,
+      "prompt": "A table events(id, payload jsonb) is queried with WHERE payload @> '{\"type\": \"refund\"}' and it is slow. Which index fits best?",
+      "options": [
+        {
+          "id": "a",
+          "text": "CREATE INDEX ON events USING gin (payload);",
+          "why": "Right: the default jsonb_ops GIN class supports @>, ?, ?| and ?&."
+        },
+        {
+          "id": "b",
+          "text": "CREATE INDEX ON events (payload);",
+          "why": "A btree on jsonb only helps equality and ordering of the whole document, not containment."
+        },
+        {
+          "id": "c",
+          "text": "CREATE INDEX ON events USING hash (id);",
+          "why": "It indexes a different column and a hash index cannot do containment anyway."
+        },
+        {
+          "id": "d",
+          "text": "CREATE INDEX ON events USING brin (payload);",
+          "why": "BRIN stores block ranges for naturally ordered data; it cannot answer containment."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "GIN for containment and key-exists. For one hot path, an expression btree such as ((payload->>'type')) is smaller and faster. jsonb_path_ops is a smaller GIN class that supports only @> and path operators."
+    },
+    {
+      "id": "jsonb-vs-json",
+      "concept": "JSONB",
+      "type": "assertion",
+      "difficulty": 3,
+      "prompt": "Read the assertion A and the reason R, then choose the correct relationship between them.",
+      "assertion": "The jsonb type collapses duplicate object keys, keeping the last value.",
+      "reason": "The json type stores an exact copy of the input text, including whitespace.",
+      "correct": [
+        "b"
+      ],
+      "whys": {
+        "a": "The whitespace behaviour of json does not explain how jsonb handles duplicates.",
+        "b": "Correct: both statements are true but about different types, so R does not explain A.",
+        "c": "R is true: json keeps the text as typed.",
+        "d": "A is true: jsonb discards duplicate keys, last one wins."
+      },
+      "explanation": "jsonb parses into a binary form: no whitespace, no key order preservation, no duplicate keys, but it is indexable and faster to query. Use json only when you must keep the exact text."
+    },
+    {
+      "id": "concurrent-index",
+      "concept": "CREATE INDEX CONCURRENTLY",
+      "type": "code",
+      "difficulty": 2,
+      "prompt": "Write the statement that builds an index named idx_orders_customer on orders(customer_id) without blocking writes to the table.",
+      "language": "sql",
+      "starter": "CREATE ",
+      "checks": [
+        {
+          "label": "uses CREATE INDEX CONCURRENTLY",
+          "pattern": "create\\s+index\\s+concurrently"
+        },
+        {
+          "label": "indexes the orders table",
+          "pattern": "on\\s+orders"
+        },
+        {
+          "label": "on the customer_id column",
+          "pattern": "\\(\\s*customer_id\\s*\\)"
+        }
+      ],
+      "model": "CREATE INDEX CONCURRENTLY idx_orders_customer ON orders (customer_id);",
+      "explanation": "Plain CREATE INDEX takes a SHARE lock that blocks writes. The concurrent form scans the table twice and lets writes continue. IF NOT EXISTS and USING btree are optional extras."
+    },
+    {
+      "id": "concurrently-facts",
+      "concept": "CREATE INDEX CONCURRENTLY",
+      "type": "multi",
+      "difficulty": 3,
+      "prompt": "Which statements about CREATE INDEX CONCURRENTLY in PostgreSQL are true? Select all that apply.",
+      "options": [
+        {
+          "id": "a",
+          "text": "It cannot run inside a transaction block.",
+          "why": "Right: it must be its own statement, so wrap-everything-in-a-transaction migration tools need a special case."
+        },
+        {
+          "id": "b",
+          "text": "If it fails it can leave an INVALID index that must be dropped.",
+          "why": "Right: check pg_index.indisvalid and drop and retry."
+        },
+        {
+          "id": "c",
+          "text": "Normal reads and writes on the table can continue while it builds.",
+          "why": "Right: it only takes a SHARE UPDATE EXCLUSIVE lock."
+        },
+        {
+          "id": "d",
+          "text": "It is faster than a plain CREATE INDEX on the same data.",
+          "why": "It does two scans and waits for old transactions, so it is slower."
+        },
+        {
+          "id": "e",
+          "text": "It takes an ACCESS EXCLUSIVE lock for the whole build.",
+          "why": "That would block reads too; the entire point is to avoid it."
+        }
+      ],
+      "correct": [
+        "a",
+        "b",
+        "c"
+      ],
+      "explanation": "Trade-off: slower and more fragile, but no write outage. Same applies to DROP INDEX CONCURRENTLY and REINDEX CONCURRENTLY."
+    },
+    {
+      "id": "replica-lag",
+      "concept": "Read replicas",
+      "type": "assertion",
+      "difficulty": 2,
+      "prompt": "Read the assertion A and the reason R, then choose the correct relationship between them.",
+      "assertion": "A read replica can return stale data right after a write to the primary.",
+      "reason": "PostgreSQL streaming replicas always apply changes synchronously before the primary acknowledges a commit.",
+      "correct": [
+        "c"
+      ],
+      "whys": {
+        "a": "R is false, so it cannot explain A.",
+        "b": "R is false, not merely unrelated.",
+        "c": "Correct: replication is asynchronous by default, so lag is possible; R is false.",
+        "d": "A is true, so the \"A false\" option is wrong."
+      },
+      "explanation": "Default streaming replication is asynchronous. Fix read-your-writes by reading from the primary for a short window after a write, by sticky sessions, or by waiting for an LSN."
+    },
+    {
+      "id": "backfill-batches",
+      "concept": "Zero-downtime migration",
+      "type": "integer",
+      "difficulty": 2,
+      "prompt": "A table has 10,000,000 rows. You backfill a new column with UPDATE ... WHERE id in a range, 5,000 rows per batch, committing after each batch. How many batches (transactions) are needed?",
+      "answer": 2000,
+      "tolerance": 0,
+      "unit": "batches",
+      "explanation": "10,000,000 / 5,000 = 2,000. Small batches keep locks short, limit replication lag and let you throttle between batches."
+    },
+    {
+      "id": "expand-contract-order",
+      "concept": "Zero-downtime migration",
+      "type": "single",
+      "difficulty": 3,
+      "prompt": "You must rename users.email to users.contact_email on a live system with rolling deploys. Which order is safe?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Add column, dual-write, backfill, switch reads, stop old writes, drop old column.",
+          "why": "Right: every step is compatible with both the old and the new app version."
+        },
+        {
+          "id": "b",
+          "text": "Run ALTER TABLE RENAME COLUMN in the migration, then deploy the new code afterwards.",
+          "why": "Old app instances still running will fail the moment the column disappears."
+        },
+        {
+          "id": "c",
+          "text": "Deploy the new code that reads contact_email first, then rename the column afterwards.",
+          "why": "The new code would query a column that does not exist yet."
+        },
+        {
+          "id": "d",
+          "text": "Drop email, add contact_email and restore the old values from a backup file.",
+          "why": "That loses data and causes downtime."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Expand and contract: expand (add), migrate (dual write plus backfill), switch reads, contract (drop). Each deploy must work against the schema before and after the migration."
+    },
+    {
+      "id": "expand-sql",
+      "concept": "Zero-downtime migration",
+      "type": "code",
+      "difficulty": 2,
+      "prompt": "Expand phase: write one statement that adds a nullable text column contact_email to the users table.",
+      "language": "sql",
+      "starter": "ALTER TABLE ",
+      "checks": [
+        {
+          "label": "alters the users table",
+          "pattern": "alter\\s+table\\s+(only\\s+)?users"
+        },
+        {
+          "label": "adds column contact_email",
+          "pattern": "add\\s+(column\\s+)?(if\\s+not\\s+exists\\s+)?contact_email"
+        },
+        {
+          "label": "of type text",
+          "pattern": "\\btext\\b"
+        },
+        {
+          "label": "does not make it NOT NULL",
+          "pattern": "^(?![\\s\\S]*not\\s+null)"
+        }
+      ],
+      "model": "ALTER TABLE users ADD COLUMN contact_email text;",
+      "explanation": "Adding a nullable column without a default is a catalog-only change in PostgreSQL. NOT NULL is added at the end via a NOT VALID check constraint, then VALIDATE, then SET NOT NULL."
+    },
+    {
+      "id": "backfill-sql",
+      "concept": "Zero-downtime migration",
+      "type": "code",
+      "difficulty": 2,
+      "prompt": "Backfill step: write an UPDATE that copies email into contact_email for rows with id from 1 to 5000 that are not yet filled.",
+      "language": "sql",
+      "starter": "UPDATE ",
+      "checks": [
+        {
+          "label": "updates users",
+          "pattern": "update\\s+users"
+        },
+        {
+          "label": "copies email into contact_email",
+          "pattern": "set\\s+contact_email\\s*=\\s*email"
+        },
+        {
+          "label": "limits to an id range",
+          "pattern": "id\\s*(between|>=|>|<=|<)"
+        },
+        {
+          "label": "skips rows already filled",
+          "pattern": "contact_email\\s+is\\s+null"
+        }
+      ],
+      "model": "UPDATE users SET contact_email = email WHERE contact_email IS NULL AND id BETWEEN 1 AND 5000;",
+      "explanation": "Idempotent, restartable batches are the point. A keyset loop (WHERE id > :last ORDER BY id LIMIT 5000) is an equally valid shape."
+    },
+    {
+      "id": "add-column-default",
+      "concept": "Zero-downtime migration",
+      "type": "assertion",
+      "difficulty": 3,
+      "prompt": "Read the assertion A and the reason R, then choose the correct relationship between them.",
+      "assertion": "In PostgreSQL 11 and later, ALTER TABLE t ADD COLUMN flag boolean NOT NULL DEFAULT false does not rewrite the table.",
+      "reason": "A constant default is stored in the catalog and applied when old rows are read, rather than written into every row.",
+      "correct": [
+        "a"
+      ],
+      "whys": {
+        "a": "Correct: the fast default is stored once and filled in on read, which explains the instant ALTER.",
+        "b": "R is the mechanism that makes A true.",
+        "c": "R is true.",
+        "d": "A is true for PostgreSQL 11+ with a non-volatile default."
+      },
+      "explanation": "Volatile defaults such as random() or clock_timestamp() still force a rewrite. Before version 11 any default rewrote the whole table under ACCESS EXCLUSIVE."
+    },
+    {
+      "id": "code-soft-delete-unique",
+      "concept": "Constraints",
+      "type": "code",
+      "difficulty": 3,
+      "prompt": "Table users(id, email, deleted_at) uses soft deletes. Write the statement that keeps email unique among live users only, so a deleted user's email can be reused.",
+      "language": "sql",
+      "checks": [
+        {
+          "label": "creates a UNIQUE index on users(email)",
+          "pattern": "create\\s+unique\\s+index[\\s\\S]*\\bon\\s+users\\s*(using\\s+btree\\s*)?\\(\\s*email\\s*\\)"
+        },
+        {
+          "label": "restricts it to deleted_at IS NULL",
+          "pattern": "where\\s+\\(?\\s*deleted_at\\s+is\\s+null"
+        }
+      ],
+      "model": "CREATE UNIQUE INDEX users_email_live ON users (email) WHERE deleted_at IS NULL;",
+      "explanation": "A partial unique index only indexes (and checks) rows matching its predicate; deleted rows are ignored. A plain UNIQUE constraint cannot carry a WHERE clause in PostgreSQL, so the index form is the answer. Verified on PostgreSQL 16."
+    },
+    {
+      "id": "code-range-partition",
+      "concept": "Partitioning",
+      "type": "code",
+      "difficulty": 3,
+      "prompt": "Write the PostgreSQL statements that create a table events(id bigint, created_at timestamptz) partitioned by range of created_at, and one partition events_2025 holding all of 2025.",
+      "language": "sql",
+      "checks": [
+        {
+          "label": "declares PARTITION BY RANGE (created_at)",
+          "pattern": "partition\\s+by\\s+range\\s*\\(\\s*created_at\\s*\\)"
+        },
+        {
+          "label": "creates the partition with PARTITION OF",
+          "pattern": "create\\s+table\\s+events_2025\\s+partition\\s+of\\s+events"
+        },
+        {
+          "label": "bounds FROM/TO covering 2025",
+          "pattern": "for\\s+values\\s+from\\s*\\(\\s*'2025-01-01[^']*'\\s*\\)\\s*to\\s*\\(\\s*'2026-01-01[^']*'\\s*\\)"
+        }
+      ],
+      "model": "CREATE TABLE events (id bigint, created_at timestamptz) PARTITION BY RANGE (created_at);\nCREATE TABLE events_2025 PARTITION OF events\n  FOR VALUES FROM ('2025-01-01') TO ('2026-01-01');",
+      "explanation": "Range bounds are inclusive at FROM and exclusive at TO, so consecutive partitions tile without overlap. Verified on PostgreSQL 16. Dropping or detaching an old partition is a cheap way to expire data; a primary key on a partitioned table must include the partition key."
+    }
+  ]
+}

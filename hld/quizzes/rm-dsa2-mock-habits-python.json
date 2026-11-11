@@ -1,0 +1,380 @@
+{
+  "id": "rm-dsa2-mock-habits-python",
+  "title": "Timed mock habits in Python (floor division, deque, recursion limits)",
+  "topic": "Python",
+  "language": "python",
+  "series": "python-dsa-advanced",
+  "seriesTitle": "Python: DSA advanced",
+  "seriesDescription": "Shortest paths, union-find, tries, intervals, bits, dynamic programming, greedy and backtracking with Python code. JEE-Advanced style: integer, assertion-reason, matrix match, fill-in-the-blanks, short code and multi-correct questions.",
+  "seriesOrder": 6,
+  "description": "Python-specific habits for the 25-minute round: floor division, identity versus equality, deque versus list.pop(0), recursion depth and edge-case tests.",
+  "source": "Python docs (data model, collections.deque, sys.setrecursionlimit, round); Fluent Python (Ramalho); Tech Interview Handbook",
+  "estimatedMinutes": 14,
+  "questions": [
+    {
+      "id": "floor-div",
+      "concept": "Integer arithmetic",
+      "type": "integer",
+      "difficulty": 2,
+      "prompt": "What does -7 // 2 evaluate to in Python?",
+      "explanation": "// is floor division: -7 / 2 = -3.5 rounds down to -4, not toward zero. The remainder follows: -7 % 2 is 1. Use int(-7 / 2) if you need truncation toward zero (-3).",
+      "answer": -4
+    },
+    {
+      "id": "big-square",
+      "concept": "Integer arithmetic",
+      "type": "integer",
+      "difficulty": 1,
+      "prompt": "In Python, what does 10**5 * 10**5 evaluate to?",
+      "explanation": "Python ints are arbitrary precision, so the product is exactly 10,000,000,000 with no overflow. The cost is speed, which is why n * n for n = 10^5 is still too slow as a loop count, even though it is a valid number.",
+      "answer": 10000000000
+    },
+    {
+      "id": "lower-bound-python",
+      "concept": "Binary search",
+      "type": "code",
+      "difficulty": 2,
+      "prompt": "Write a Python function lower_bound(a, target) that returns the first index i with a[i] >= target in a sorted list (len(a) if none), using a loop and a half-open range, without the bisect module.",
+      "explanation": "Python ints never overflow, so (lo + hi) // 2 is safe, unlike in fixed-width languages. In real code bisect.bisect_left does exactly this. The half-open range makes lo the answer with no fix-ups at the end.",
+      "language": "python",
+      "starter": "def lower_bound(a, target):\n    ",
+      "checks": [
+        {
+          "label": "keeps a half-open range lo..hi",
+          "pattern": "hi\\s*=\\s*len\\s*\\(\\s*a\\s*\\)|lo\\s*,\\s*hi\\s*=\\s*0\\s*,\\s*len"
+        },
+        {
+          "label": "computes the midpoint with integer division",
+          "pattern": "//\\s*2|>>\\s*1"
+        },
+        {
+          "label": "moves lo or hi depending on a[mid] < target",
+          "pattern": "a\\s*\\[\\s*mid\\s*\\]\\s*<\\s*target"
+        },
+        {
+          "label": "returns lo",
+          "pattern": "return\\s+lo"
+        }
+      ],
+      "model": "def lower_bound(a, target):\n    lo, hi = 0, len(a)\n    while lo < hi:\n        mid = (lo + hi) // 2\n        if a[mid] < target:\n            lo = mid + 1\n        else:\n            hi = mid\n    return lo"
+    },
+    {
+      "id": "own-asserts",
+      "concept": "Test cases",
+      "type": "code",
+      "difficulty": 2,
+      "prompt": "In Python, write three assert statements for merge(intervals) (which returns a list of [start, end] lists): an empty input, touching intervals [1,2] and [2,3], and a nested pair [1,10] and [2,3].",
+      "explanation": "Pick expected values you can verify by hand. Input order matters in the touching case: [2,3] first would test the sort as well. Frameworks like pytest.mark.parametrize group these, but plain asserts are fine in an interview.",
+      "language": "python",
+      "starter": "# merge(intervals) is already written\n",
+      "checks": [
+        {
+          "label": "has three asserts",
+          "pattern": "assert[\\s\\S]*assert[\\s\\S]*assert"
+        },
+        {
+          "label": "covers the empty input",
+          "pattern": "merge\\s*\\(\\s*\\[\\s*\\]\\s*\\)"
+        },
+        {
+          "label": "covers touching intervals [1,2],[2,3]",
+          "pattern": "\\[\\s*1\\s*,\\s*2\\s*\\]\\s*,\\s*\\[\\s*2\\s*,\\s*3\\s*\\]"
+        },
+        {
+          "label": "covers the nested pair [1,10],[2,3]",
+          "pattern": "\\[\\s*1\\s*,\\s*10\\s*\\]\\s*,\\s*\\[\\s*2\\s*,\\s*3\\s*\\]"
+        }
+      ],
+      "model": "assert merge([]) == []\nassert merge([[1, 2], [2, 3]]) == [[1, 3]]\nassert merge([[1, 10], [2, 3]]) == [[1, 10]]"
+    },
+    {
+      "id": "is-vs-eq",
+      "concept": "Equality traps",
+      "type": "truefalse",
+      "difficulty": 2,
+      "prompt": "True or false: using `is` to compare two integers, as in a is b, is a reliable way to test that they are equal.",
+      "explanation": "Small ints are cached by CPython as an implementation detail, so `is` can appear to work in tests and then fail on bigger values.",
+      "options": [
+        {
+          "id": "a",
+          "text": "True",
+          "why": "`is` tests object identity; equal large ints may be different objects, so the result can vary."
+        },
+        {
+          "id": "b",
+          "text": "False",
+          "why": "Correct: use == for values and reserve is for None and other singletons."
+        }
+      ],
+      "correct": [
+        "b"
+      ]
+    },
+    {
+      "id": "queue-choice",
+      "concept": "Collections",
+      "type": "single",
+      "difficulty": 1,
+      "prompt": "You need a FIFO queue for BFS in a Python interview solution. Which choice is the idiomatic one?",
+      "explanation": "Use deque for BFS and sliding windows; reserve queue.Queue for producer and consumer threads.",
+      "options": [
+        {
+          "id": "a",
+          "text": "collections.deque, using append and popleft.",
+          "why": "Correct: both ends are O(1) and it needs no lock."
+        },
+        {
+          "id": "b",
+          "text": "A list, using pop(0), because it is the simplest container.",
+          "why": "pop(0) shifts every remaining item, so each dequeue is O(n)."
+        },
+        {
+          "id": "c",
+          "text": "queue.Queue, because it is the standard queue class.",
+          "why": "It is built for thread communication and adds locking overhead."
+        },
+        {
+          "id": "d",
+          "text": "heapq, because a heap always returns the oldest item first.",
+          "why": "A heap returns the smallest item, not the oldest."
+        }
+      ],
+      "correct": [
+        "a"
+      ]
+    },
+    {
+      "id": "deep-dfs",
+      "concept": "Recursion limits",
+      "type": "single",
+      "difficulty": 3,
+      "prompt": "A recursive DFS on a path-shaped graph of 100,000 nodes raises RecursionError. What is the best response in an interview?",
+      "explanation": "Raising sys.setrecursionlimit is a quick patch but can crash the interpreter on very deep recursion; say both and prefer the explicit stack.",
+      "options": [
+        {
+          "id": "a",
+          "text": "Rewrite it with an explicit stack, which has no call-depth limit.",
+          "why": "Correct: the iterative form needs only heap memory."
+        },
+        {
+          "id": "b",
+          "text": "Catch RecursionError and return the partial result computed so far.",
+          "why": "A partial result is a wrong answer for most graph problems."
+        },
+        {
+          "id": "c",
+          "text": "Convert the adjacency lists to a dict, which recurses less deeply.",
+          "why": "The container type has no effect on call depth."
+        },
+        {
+          "id": "d",
+          "text": "Add lru_cache so each node is visited only once and the depth shrinks.",
+          "why": "Caching avoids repeated work but does not reduce the depth of a single chain."
+        }
+      ],
+      "correct": [
+        "a"
+      ]
+    },
+    {
+      "id": "python-edge-cases",
+      "concept": "Test cases",
+      "type": "multi",
+      "difficulty": 2,
+      "prompt": "A Python function returns the maximum subarray sum of a list. Select all that apply: which inputs belong in your own tests?",
+      "explanation": "Also try an empty list (agree on the expected behaviour) and alternating signs.",
+      "options": [
+        {
+          "id": "a",
+          "text": "A list with a single element.",
+          "why": "Correct: it checks initialisation of the running best."
+        },
+        {
+          "id": "b",
+          "text": "Only the sample from the problem statement.",
+          "why": "The sample rarely exercises initialisation or signs."
+        },
+        {
+          "id": "c",
+          "text": "A list where every element is negative.",
+          "why": "Correct: starting the best at 0 would wrongly return 0."
+        },
+        {
+          "id": "d",
+          "text": "A list containing zeros and repeated values.",
+          "why": "Correct: they probe the strictness of comparisons."
+        },
+        {
+          "id": "e",
+          "text": "A dictionary, since Python functions accept any type.",
+          "why": "The contract says list; testing other types is outside the spec."
+        }
+      ],
+      "correct": [
+        "a",
+        "c",
+        "d"
+      ]
+    },
+    {
+      "id": "python-trouble-spots",
+      "concept": "Python gotchas",
+      "type": "matrix",
+      "difficulty": 2,
+      "prompt": "Match each Python trouble spot in a timed round with the habit that avoids it.",
+      "explanation": "Each habit is a one-line fix you can say aloud: it shows the interviewer you know where Python bites.",
+      "left": [
+        {
+          "id": "a",
+          "text": "[[0] * n] * m shares one row"
+        },
+        {
+          "id": "b",
+          "text": "list.pop(0) used as a queue"
+        },
+        {
+          "id": "c",
+          "text": "Building a string with += in a loop"
+        },
+        {
+          "id": "d",
+          "text": "A mutable default argument like path=[]"
+        },
+        {
+          "id": "e",
+          "text": "Deep recursion hits the call limit"
+        }
+      ],
+      "right": [
+        {
+          "id": "p",
+          "text": "Collect pieces and use ''.join"
+        },
+        {
+          "id": "q",
+          "text": "Default to None and create the list inside"
+        },
+        {
+          "id": "r",
+          "text": "Use an explicit stack or iterate"
+        },
+        {
+          "id": "s",
+          "text": "Raise the memory limit"
+        },
+        {
+          "id": "t",
+          "text": "Build rows with a list comprehension"
+        },
+        {
+          "id": "u",
+          "text": "Use collections.deque and popleft"
+        }
+      ],
+      "pairs": {
+        "a": "t",
+        "b": "u",
+        "c": "p",
+        "d": "q",
+        "e": "r"
+      }
+    },
+    {
+      "id": "python-habits-fill",
+      "concept": "Python gotchas",
+      "type": "fill",
+      "difficulty": 1,
+      "prompt": "Complete the Python habits for a timed round.",
+      "explanation": "''.join avoids quadratic copying, deque gives O(1) popleft, and floor division rounds toward negative infinity (-7 // 2 is -4).",
+      "text": "Use {1} to build a string from pieces, a {2} for a queue, and remember that // rounds toward {3}.",
+      "blanks": {
+        "1": "''.join",
+        "2": "deque",
+        "3": "negative infinity"
+      },
+      "bank": [
+        "negative infinity",
+        "zero",
+        "a list",
+        "''.join",
+        "deque"
+      ]
+    },
+    {
+      "id": "pop-front",
+      "concept": "Collections",
+      "type": "assertion",
+      "difficulty": 2,
+      "prompt": "Using a Python list as a BFS queue.",
+      "explanation": "Use collections.deque.popleft() for O(1) dequeues.",
+      "assertion": "list.pop(0) takes O(n) time, so it is a poor queue for large inputs.",
+      "reason": "Removing the first item shifts every remaining item one position to the left.",
+      "correct": [
+        "a"
+      ],
+      "whys": {
+        "a": "Right: the shift is exactly why each pop(0) is linear.",
+        "b": "R is the direct cause of A.",
+        "c": "A is true.",
+        "d": "R is true."
+      }
+    },
+    {
+      "id": "stable-sorted",
+      "concept": "Collections",
+      "type": "assertion",
+      "difficulty": 2,
+      "prompt": "Sorting in Python.",
+      "explanation": "Stability lets you sort by a secondary key first and a primary key second.",
+      "assertion": "sorted(items, key=f) is a stable sort.",
+      "reason": "sorted returns a new list and leaves the original unchanged.",
+      "correct": [
+        "b"
+      ],
+      "whys": {
+        "a": "Returning a new list does not explain stability; the Timsort algorithm does.",
+        "b": "Right: both are true, but they are independent properties.",
+        "c": "R is true.",
+        "d": "A is true."
+      }
+    },
+    {
+      "id": "counter-order",
+      "concept": "Collections",
+      "type": "assertion",
+      "difficulty": 3,
+      "prompt": "Counting characters with collections.Counter.",
+      "explanation": "most_common(k) sorts, so it costs O(n log n) in the worst case, or O(n log k) with a heap.",
+      "assertion": "Counter(s) counts the occurrences of every character of s in O(n) time.",
+      "reason": "Counter always keeps its keys sorted by count.",
+      "correct": [
+        "c"
+      ],
+      "whys": {
+        "a": "R is false, so it cannot explain A.",
+        "b": "R is false.",
+        "c": "Right: A is true, but Counter keeps insertion order; only most_common() sorts by count, so R is false.",
+        "d": "A is true."
+      }
+    },
+    {
+      "id": "round-half",
+      "concept": "Integer arithmetic",
+      "type": "assertion",
+      "difficulty": 3,
+      "prompt": "Rounding in Python.",
+      "explanation": "For half-up rounding use int(x + 0.5) for non-negative x, or the decimal module.",
+      "assertion": "round(2.5) returns 3.",
+      "reason": "Python rounds halves to the nearest even number.",
+      "correct": [
+        "d"
+      ],
+      "whys": {
+        "a": "A is false, so R cannot explain it.",
+        "b": "A is false.",
+        "c": "A is false.",
+        "d": "Right: R is true and is why A is false; round(2.5) is 2 and round(3.5) is 4."
+      }
+    }
+  ]
+}

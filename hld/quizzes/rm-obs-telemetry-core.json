@@ -1,0 +1,390 @@
+{
+  "id": "rm-obs-telemetry-core",
+  "title": "Observability: logs, metrics and traces",
+  "topic": "Language-independent",
+  "series": "core-observability",
+  "seriesTitle": "Core: observability and SRE",
+  "seriesDescription": "Logs, metrics, traces, SLOs, error budgets, burn rates and profiling. JEE-Advanced style: integer, assertion-reason, matrix match, fill-in-the-blanks, short code and multi-correct questions.",
+  "seriesOrder": 1,
+  "language": "neutral",
+  "description": "The three signals, metric types and label cardinality, histograms and percentile maths, W3C trace context and sampling, and what good production logs look like.",
+  "source": "Prometheus documentation (metric types, histograms, naming); W3C Trace Context recommendation; OpenTelemetry specification; Google SRE Book (Monitoring Distributed Systems)",
+  "estimatedMinutes": 18,
+  "questions": [
+    {
+      "id": "which-signal",
+      "concept": "Three pillars",
+      "type": "single",
+      "difficulty": 1,
+      "prompt": "Checkout p99 jumped from 300 ms to 4 s. You want to know which downstream call inside one slow request ate the time. Which signal answers that most directly?",
+      "options": [
+        {
+          "id": "a",
+          "text": "A counter of total HTTP requests handled, broken down per route.",
+          "why": "A counter shows volume, not where one request spent its time."
+        },
+        {
+          "id": "b",
+          "text": "A gauge of memory used by the process over time.",
+          "why": "Memory use says nothing about a specific slow request."
+        },
+        {
+          "id": "c",
+          "text": "The application start-up log written at the last deployment.",
+          "why": "Start-up output predates the slow request entirely."
+        },
+        {
+          "id": "d",
+          "text": "A distributed trace of that slow request, with a span per call.",
+          "why": "Correct: spans show the time spent in each downstream call."
+        }
+      ],
+      "correct": [
+        "d"
+      ],
+      "explanation": "Metrics say that something is wrong, traces say where, and logs say why. Interviewers like that ordering."
+    },
+    {
+      "id": "metric-types",
+      "concept": "Metric types",
+      "type": "matrix",
+      "difficulty": 1,
+      "prompt": "Match each telemetry instrument to the thing it is meant to record.",
+      "left": [
+        {
+          "id": "l1",
+          "text": "Counter"
+        },
+        {
+          "id": "l2",
+          "text": "Gauge"
+        },
+        {
+          "id": "l3",
+          "text": "Histogram"
+        },
+        {
+          "id": "l4",
+          "text": "Span"
+        }
+      ],
+      "right": [
+        {
+          "id": "r1",
+          "text": "A value that only goes up, such as completed orders"
+        },
+        {
+          "id": "r2",
+          "text": "A value that rises and falls, such as items in a queue"
+        },
+        {
+          "id": "r3",
+          "text": "The distribution of request durations in buckets"
+        },
+        {
+          "id": "r4",
+          "text": "One timed operation inside a trace"
+        },
+        {
+          "id": "r5",
+          "text": "A free-text event with a timestamp"
+        }
+      ],
+      "pairs": {
+        "l1": "r1",
+        "l2": "r2",
+        "l3": "r3",
+        "l4": "r4"
+      },
+      "explanation": "Counters feed rate(); gauges are sampled snapshots; histograms let you compute percentiles; spans belong to tracing, not metrics."
+    },
+    {
+      "id": "series-count",
+      "concept": "Metric cardinality",
+      "type": "integer",
+      "difficulty": 2,
+      "prompt": "A counter http_requests_total has labels method (4 values), status (5 values) and route (25 values). Assume every combination occurs. Prometheus scrapes 10 instances and attaches an instance label to each series. How many time series does this one metric create?",
+      "answer": 5000,
+      "unit": "series",
+      "explanation": "4 x 5 x 25 = 500 combinations per instance, times 10 instances = 5,000. Adding a user_id label with 1,000 values would multiply that to 5,000,000, which is why unbounded ids never belong in labels."
+    },
+    {
+      "id": "histogram-agg",
+      "concept": "Metric types",
+      "type": "assertion",
+      "difficulty": 3,
+      "prompt": "Read the assertion A and the reason R, then choose the correct relationship between them.",
+      "assertion": "A Prometheus histogram can be used to estimate a fleet-wide p99 across many instances.",
+      "reason": "A summary exposes quantiles that were precomputed inside each client process.",
+      "correct": [
+        "b"
+      ],
+      "whys": {
+        "a": "Not this one: Both A and R are true and R explains A does not describe this pair; R does not explain A.",
+        "b": "Correct: Both are true, but precomputed summary quantiles are the reason you cannot aggregate summaries, not the reason histograms can be aggregated.",
+        "c": "Not this one: A is true while R is false does not describe this pair; check the truth of R again.",
+        "d": "Not this one: A is false while R is true does not describe this pair; check the truth of A again."
+      },
+      "explanation": "Bucket counters add across instances, then histogram_quantile estimates the percentile. Precomputed summary quantiles cannot be averaged into a correct fleet quantile."
+    },
+    {
+      "id": "traceparent",
+      "concept": "Distributed tracing",
+      "type": "assertion",
+      "difficulty": 2,
+      "prompt": "Read the assertion A and the reason R, then choose the correct relationship between them.",
+      "assertion": "The W3C traceparent header lets a trace continue across services written in different languages.",
+      "reason": "The traceparent header is understood only by one vendor's agent and is ignored by other SDKs.",
+      "correct": [
+        "c"
+      ],
+      "whys": {
+        "a": "Not this one: Both A and R are true and R explains A does not describe this pair; R does not explain A.",
+        "b": "Not this one: Both are true but R is not the reason A holds does not describe this pair; R is actually the reason or is false.",
+        "c": "Correct: A is true because the format is a vendor-neutral standard. R is false: any compliant library can read it.",
+        "d": "Not this one: A is false while R is true does not describe this pair; check the truth of A again."
+      },
+      "explanation": "traceparent carries version, trace id, parent span id and flags. That is the whole point of a standard."
+    },
+    {
+      "id": "log-bodies",
+      "concept": "Logging practice",
+      "type": "assertion",
+      "difficulty": 2,
+      "prompt": "Read the assertion A and the reason R, then choose the correct relationship between them.",
+      "assertion": "Logging complete request and response bodies at INFO is a safe default for debugging.",
+      "reason": "Logs are routinely shipped to shared platforms that many engineers and vendors can read.",
+      "correct": [
+        "d"
+      ],
+      "whys": {
+        "a": "Not this one: Both A and R are true and R explains A does not describe this pair; R does not explain A.",
+        "b": "Not this one: Both are true but R is not the reason A holds does not describe this pair; R is actually the reason or is false.",
+        "c": "Not this one: A is true while R is false does not describe this pair; check the truth of R again.",
+        "d": "Correct: A is false: bodies carry secrets and personal data. R is true and is exactly why bodies must not be logged by default."
+      },
+      "explanation": "Log identifiers and outcomes, redact secrets and personal data, and turn body logging on only briefly at DEBUG."
+    },
+    {
+      "id": "counter-rate",
+      "concept": "Metrics",
+      "type": "assertion",
+      "difficulty": 2,
+      "prompt": "Read the assertion A and the reason R, then choose the correct relationship between them.",
+      "assertion": "In PromQL you should chart rate(http_requests_total[5m]) rather than the raw counter value.",
+      "reason": "rate() compensates for counter resets, such as when a process restarts and its counter drops back to zero.",
+      "correct": [
+        "a"
+      ],
+      "whys": {
+        "a": "Correct: A raw counter only climbs and resets on restart; rate() turns it into a per-second value and handles the resets.",
+        "b": "Not this one: Both are true but R is not the reason A holds does not describe this pair; R is actually the reason or is false.",
+        "c": "Not this one: A is true while R is false does not describe this pair; check the truth of R again.",
+        "d": "Not this one: A is false while R is true does not describe this pair; check the truth of A again."
+      },
+      "explanation": "Apply rate() to each series first and then sum (sum(rate(x[5m]))), never rate(sum(x)): summing raw counters hides resets and breaks the result."
+    },
+    {
+      "id": "log-practice",
+      "concept": "Logging practice",
+      "type": "multi",
+      "difficulty": 2,
+      "prompt": "Which of these are good logging practices for a production API? Select all that apply.",
+      "options": [
+        {
+          "id": "a",
+          "text": "Emit structured JSON lines with a requestId field.",
+          "why": "Correct: structured, correlated lines can be filtered and joined."
+        },
+        {
+          "id": "b",
+          "text": "Return the correlation id to the caller in a response header.",
+          "why": "Correct: support can find the logs for a reported failure."
+        },
+        {
+          "id": "c",
+          "text": "Use log levels so noisy detail can be switched off.",
+          "why": "Correct: levels let you control volume and cost."
+        },
+        {
+          "id": "d",
+          "text": "Log the full Authorization header to help debugging.",
+          "why": "Credentials in logs leak to everyone with log access."
+        },
+        {
+          "id": "e",
+          "text": "Log inside tight loops at INFO for every item.",
+          "why": "Per-item INFO output floods storage and hides real signals."
+        }
+      ],
+      "correct": [
+        "a",
+        "b",
+        "c"
+      ],
+      "explanation": "Good logs are structured, correlated, level-aware and free of secrets."
+    },
+    {
+      "id": "sampling",
+      "concept": "Distributed tracing",
+      "type": "truefalse",
+      "difficulty": 3,
+      "prompt": "True or false: a tracer configured with 1% head sampling means 1% of requests produce log lines.",
+      "options": [
+        {
+          "id": "a",
+          "text": "True",
+          "why": "Head sampling decides which traces are recorded; it does not touch logging."
+        },
+        {
+          "id": "b",
+          "text": "False",
+          "why": "Correct: sampling applies to traces only, and head sampling at 1% also drops most error and slow traces."
+        }
+      ],
+      "correct": [
+        "b"
+      ],
+      "explanation": "Tail sampling (decide after the trace completes) lets you keep every error and slow trace, which head sampling at 1% would mostly drop."
+    },
+    {
+      "id": "fleet-quantile",
+      "concept": "Metrics",
+      "type": "single",
+      "difficulty": 3,
+      "prompt": "Each of 40 instances exposes a classic Prometheus histogram http_request_duration_seconds. Which query gives the fleet-wide p95 over 5 minutes?",
+      "options": [
+        {
+          "id": "a",
+          "text": "avg(http_request_duration_seconds{quantile=\"0.95\"})",
+          "why": "A classic histogram has no quantile label, and averaging quantiles is wrong anyway."
+        },
+        {
+          "id": "b",
+          "text": "histogram_quantile(0.95, sum by (le) (rate(http_request_duration_seconds_bucket[5m])))",
+          "why": "Correct: sum the bucket rates across instances by le, then take the quantile."
+        },
+        {
+          "id": "c",
+          "text": "sum(http_request_duration_seconds_sum) / sum(http_request_duration_seconds_count)",
+          "why": "That is the mean latency, not the 95th percentile."
+        },
+        {
+          "id": "d",
+          "text": "histogram_quantile(0.95, sum(rate(http_request_duration_seconds_bucket[5m])))",
+          "why": "Dropping the by (le) grouping removes the bucket boundaries the function needs."
+        }
+      ],
+      "correct": [
+        "b"
+      ],
+      "explanation": "Bucket boundaries limit accuracy: the estimate is interpolated inside a bucket, so place buckets around your SLO threshold."
+    },
+    {
+      "id": "label-choice",
+      "concept": "Metric cardinality",
+      "type": "single",
+      "difficulty": 2,
+      "prompt": "Which value is the safest to use as a label on a request-duration metric?",
+      "options": [
+        {
+          "id": "a",
+          "text": "The raw request path including the order id.",
+          "why": "Every distinct id creates a new time series, so cardinality explodes."
+        },
+        {
+          "id": "b",
+          "text": "The route template, such as /orders/{id}.",
+          "why": "Correct: a small bounded set of values per service."
+        },
+        {
+          "id": "c",
+          "text": "The user id of the caller.",
+          "why": "Users are unbounded and would multiply every series."
+        },
+        {
+          "id": "d",
+          "text": "The full text of the error message.",
+          "why": "Messages often embed ids or timestamps, so they are effectively unique."
+        }
+      ],
+      "correct": [
+        "b"
+      ],
+      "explanation": "Labels must come from small closed sets. Put high-cardinality identifiers in logs or trace attributes instead, where they cost far less."
+    },
+    {
+      "id": "promql-rate-by-route",
+      "concept": "Metrics",
+      "type": "code",
+      "difficulty": 2,
+      "prompt": "Write the PromQL query that shows requests per second over the last 5 minutes for http_requests_total, summed per route label.",
+      "language": "promql",
+      "checks": [
+        {
+          "label": "sums by route",
+          "pattern": "sum\\s*(by\\s*\\(\\s*route\\s*\\))?\\s*\\(?[\\s\\S]*route"
+        },
+        {
+          "label": "uses rate over 5 minutes",
+          "pattern": "rate\\s*\\(\\s*http_requests_total(\\{[^}]*\\})?\\s*\\[5m\\]\\s*\\)"
+        }
+      ],
+      "model": "sum by (route) (rate(http_requests_total[5m]))",
+      "explanation": "The by clause may also come after the parenthesis: sum(rate(http_requests_total[5m])) by (route). Apply rate() before sum, as the counter resets can only be handled per series."
+    },
+    {
+      "id": "traceparent-length",
+      "concept": "Distributed tracing",
+      "type": "integer",
+      "difficulty": 3,
+      "prompt": "A W3C traceparent value has the form version-traceid-parentid-flags, written in lowercase hex: 2 characters for the version, 32 for the trace id, 16 for the parent id and 2 for the flags, joined by hyphens. How many characters long is the whole header value?",
+      "answer": 55,
+      "unit": "characters",
+      "explanation": "2 + 32 + 16 + 2 = 52 hex characters plus 3 hyphens = 55. Example: 00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01."
+    },
+    {
+      "id": "otel-parts",
+      "concept": "Distributed tracing",
+      "type": "fill",
+      "difficulty": 1,
+      "prompt": "Complete the OpenTelemetry sentences.",
+      "text": "A trace is a tree of {1}. The {2} header carries the trace id between services. The {3} receives telemetry from services, processes it and exports it to backends.",
+      "blanks": {
+        "1": "spans",
+        "2": "traceparent",
+        "3": "collector"
+      },
+      "bank": [
+        "spans",
+        "traceparent",
+        "collector",
+        "metrics",
+        "baggage",
+        "sidecar"
+      ],
+      "explanation": "Spans are the nodes of the tree. Baggage is a different header that carries user-defined key/values."
+    },
+    {
+      "id": "log-volume",
+      "concept": "Logging practice",
+      "type": "integer",
+      "difficulty": 2,
+      "prompt": "A service handles 1,000 requests per second and writes 2 log lines of 500 bytes per request. How many decimal gigabytes of log are written per day (one decimal place; 1 GB = 10^9 bytes)?",
+      "answer": 86.4,
+      "tolerance": 0.1,
+      "unit": "GB/day",
+      "explanation": "1,000 x 2 x 500 = 1,000,000 bytes per second, times 86,400 seconds = 86.4 GB. Multiply by retention days and replicas to size the log store."
+    },
+    {
+      "id": "sampling-volume",
+      "concept": "Distributed tracing",
+      "type": "integer",
+      "difficulty": 2,
+      "prompt": "A gateway produces 2,000 traces per second and uses 5% head sampling. How many traces per second are stored?",
+      "answer": 100,
+      "unit": "traces/s",
+      "explanation": "2,000 x 0.05 = 100 per second. Probabilistic head sampling keeps cost flat but drops errors proportionally; tail sampling keeps the interesting traces at the price of buffering whole traces first."
+    }
+  ]
+}

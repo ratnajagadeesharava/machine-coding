@@ -10,12 +10,45 @@ const $ = (sel) => document.querySelector(sel);
 const STORE = 'hld-quiz:v1:';
 const QUICK_COUNT = 10;
 
+// Progress is kept in the SQLite file next to the code (see server/progress.js) when the server has it; localStorage stays as a local cache and as the
+// fallback when there is no database. DB.hold means "do not write to the database yet" while the browser's older progress waits to be synced.
+const DB = { on: false, hold: false, offer: false, branch: null, file: null, info: null };
+const REMOTE_KEYS = new Set(['attempts', 'history', 'custom', 'run', 'instant', 'limit']);
+const queued = new Map();
+let flushTimer = null;
+let saveFailed = false;
+
+async function dbFetch(method, path, body, keepalive = false) {
+  const res = await fetch(path, { method, keepalive, headers: { 'content-type': 'application/json', 'x-hld-progress': '1' }, body: body === undefined ? undefined : JSON.stringify(body) });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.error || `Request failed (${res.status}).`);
+  return data;
+}
+function flushSaves(keepalive = false) {
+  clearTimeout(flushTimer); flushTimer = null;
+  for (const [key, value] of queued) {
+    dbFetch('PUT', `/api/progress/${key}`, { value }, keepalive).then(() => { saveFailed = false; }).catch((err) => {
+      if (!saveFailed) { saveFailed = true; flash(`Could not save progress to the database: ${err.message} (kept in this browser).`); }
+    });
+  }
+  queued.clear();
+}
+function queueSave(key, value) {
+  queued.set(key, value);
+  if (!flushTimer) flushTimer = setTimeout(() => flushSaves(), 250);
+}
+window.addEventListener('pagehide', () => { if (queued.size) flushSaves(true); });
+
 const store = {
   get(key, fallback) {
     try { const v = JSON.parse(localStorage.getItem(STORE + key)); return v ?? fallback; } catch { return fallback; }
   },
-  set(key, value) {
+  setLocal(key, value) {
     try { localStorage.setItem(STORE + key, JSON.stringify(value)); } catch { /* storage unavailable: the page still works for this visit */ }
+  },
+  set(key, value) {
+    this.setLocal(key, value);
+    if (DB.on && !DB.hold && REMOTE_KEYS.has(key)) queueSave(key, value);
   },
 };
 
@@ -900,12 +933,89 @@ function renderBanner() {
   } else els.banner.hidden = true;
 }
 
+const validHistory = (list) => (Array.isArray(list) ? list : []).filter((r) => r && typeof r.title === 'string' && Number.isFinite(r.percent));
+const hasLocalProgress = () => Object.keys(store.get('attempts', {}) || {}).length > 0 || validHistory(store.get('history', [])).length > 0 || (store.get('custom', []) || []).length > 0;
+
+// Make the page state (and the local cache) equal to what the database holds.
+function applyInfo(info) {
+  DB.info = info;
+  S.attempts = info.attempts || {};
+  S.history = validHistory(info.history);
+  S.custom = (info.custom || []).filter((q) => validateQuiz(q).length === 0);
+  els.instant.checked = info.instant ?? true;
+  els.limit.checked = info.limit === true;
+  store.setLocal('attempts', S.attempts); store.setLocal('history', S.history); store.setLocal('custom', S.custom);
+  store.setLocal('instant', els.instant.checked); store.setLocal('limit', els.limit.checked);
+  store.setLocal('run', info.run ?? null);
+}
+
+async function loadDb() {
+  try {
+    const info = await dbFetch('GET', '/api/progress');
+    DB.on = true; DB.branch = info.branch; DB.file = info.file;
+    DB.offer = hasLocalProgress() && !store.get('synced', false);
+    DB.hold = DB.offer && info.empty; // the database is still empty: keep the browser's progress on screen until the user decides
+    if (!DB.hold) applyInfo(info); else DB.info = info;
+  } catch { DB.on = false; }
+  if (!DB.on || DB.hold) {
+    S.attempts = store.get('attempts', {});
+    S.history = validHistory(store.get('history', []));
+    els.instant.checked = store.get('instant', true);
+    els.limit.checked = store.get('limit', false) === true;
+    S.custom = (store.get('custom', []) || []).filter((q) => validateQuiz(q).length === 0);
+  }
+}
+
+async function syncNow() {
+  try {
+    const info = await dbFetch('POST', '/api/progress/sync', { attempts: store.get('attempts', {}), history: store.get('history', []), custom: store.get('custom', []) });
+    store.setLocal('synced', true);
+    DB.offer = false; DB.hold = false;
+    applyInfo(info);
+    renderCards(); renderHistory(); renderUpNext(); renderProgressBar();
+    flash(`Synced: the database now holds ${info.history.length} result${info.history.length === 1 ? '' : 's'} and ${Object.keys(info.attempts).length} quiz score${Object.keys(info.attempts).length === 1 ? '' : 's'}.`);
+  } catch (err) { flash(`Sync failed: ${err.message}`); }
+}
+function declineSync() {
+  store.setLocal('synced', true);
+  DB.offer = false;
+  if (DB.hold) { DB.hold = false; applyInfo(DB.info); renderCards(); renderHistory(); renderUpNext(); }
+  renderProgressBar();
+}
+async function resetAll() {
+  const where = DB.on ? 'the database (hld/data/progress.db) and this browser' : 'this browser';
+  if (!(await askConfirm(`Reset ALL quiz progress to zero in ${where}? Results, best scores, generated quizzes and any quiz in progress are deleted. This cannot be undone (tip: Export progress first).`, 'Reset everything'))) return;
+  try {
+    if (DB.on) { const info = await dbFetch('DELETE', '/api/progress'); DB.hold = false; applyInfo(info); }
+    else { S.attempts = {}; S.history = []; S.custom = []; for (const k of ['attempts', 'history', 'custom', 'run']) store.setLocal(k, k === 'attempts' ? {} : k === 'run' ? null : []); }
+    store.setLocal('synced', true);
+    DB.offer = false;
+    clearRun();
+    renderCards(); renderHistory(); renderUpNext(); renderProgressBar();
+    flash('All progress was reset to zero.');
+  } catch (err) { flash(`Reset failed: ${err.message}`); }
+}
+
+function renderProgressBar() {
+  const box = document.getElementById('progress-bar');
+  if (!box) return;
+  const kids = [];
+  if (DB.offer) {
+    kids.push(h('p', { class: 'pb-offer' }, h('b', { text: 'Progress found in this browser. ' }),
+      DB.info?.empty === false ? 'Merge it into the progress database?' : 'Save it into the progress database so it travels with your branch?',
+      h('span', { class: 'pb-actions' }, h('button', { class: 'btn small', type: 'button', text: 'Sync to database', onclick: syncNow }),
+        h('button', { class: 'btn ghost small', type: 'button', text: 'No thanks', onclick: declineSync }))));
+  }
+  kids.push(h('p', { class: 'pb-line' },
+    DB.on ? h('span', {}, 'Progress is saved in ', h('code', { text: DB.file || 'hld/data/progress.db' }), DB.branch ? [' on branch ', h('b', { text: DB.branch })] : '', '. Commit that file on your own branch to keep it.')
+      : h('span', { text: 'Progress is saved in this browser only (the progress database is not available).' }),
+    h('button', { class: 'btn ghost small danger', type: 'button', text: 'Reset all progress', onclick: resetAll })));
+  box.replaceChildren(...kids);
+  box.hidden = false;
+}
+
 async function init() {
-  S.attempts = store.get('attempts', {});
-  S.history = (store.get('history', []) || []).filter((r) => r && typeof r.title === 'string' && Number.isFinite(r.percent));
-  els.instant.checked = store.get('instant', true);
-  els.limit.checked = store.get('limit', false) === true;
-  S.custom = (store.get('custom', []) || []).filter((q) => validateQuiz(q).length === 0);
+  await loadDb();
   try {
     const [list, health] = await Promise.all([fetch('/api/quizzes').then((r) => r.json()), fetch('/api/health').then((r) => r.json())]);
     S.summaries = list;
@@ -915,6 +1025,7 @@ async function init() {
     els.banner.textContent = 'Could not reach the HLD Room server. Start it with "npm start" in the hld folder.';
   }
   renderBanner();
+  renderProgressBar();
   els.genBtn.title = S.health.ai === 'off' ? 'Needs the AI connection' : '';
   show('home');
   renderCards();

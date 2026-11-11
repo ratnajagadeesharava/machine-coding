@@ -1,0 +1,369 @@
+{
+  "id": "rm-safety-java",
+  "title": "Agent safety in Java: SQL guards, Bean Validation and retries",
+  "topic": "Java",
+  "language": "java",
+  "series": "java-rag-evals-safety",
+  "seriesTitle": "Java: RAG, evals and guardrails",
+  "seriesDescription": "Retrieval metrics, eval gates and guardrail code in Java. JEE-Advanced style: integer, assertion-reason, matrix match, fill-in-the-blanks, short code and multi-correct questions.",
+  "seriesOrder": 3,
+  "description": "Java code for LLM agent safety: a JSqlParser SELECT-only guard, Bean Validation of tool arguments, allow-listed tool dispatch, validate-and-retry loops, Resilience4j attempts and idempotent payments.",
+  "source": "JSqlParser 5.3, Hibernate Validator 9 and Resilience4j 2.3 run locally; OWASP Top 10 for LLM Applications 2025; Stripe idempotent requests docs",
+  "estimatedMinutes": 18,
+  "questions": [
+    {
+      "id": "jsqlparser-guard",
+      "concept": "SQL guard",
+      "type": "code",
+      "difficulty": 3,
+      "prompt": "Using JSqlParser, write static boolean isSelectOnly(String sql) for LLM-generated PostgreSQL. Return true only if the text parses (CCJSqlParserUtil.parseStatements) into exactly one statement that is a PlainSelect. Return false when parsing throws JSQLParserException.",
+      "language": "java",
+      "checks": [
+        {
+          "label": "defines isSelectOnly",
+          "pattern": "boolean\\s+isSelectOnly\\s*\\("
+        },
+        {
+          "label": "parses all statements",
+          "pattern": "CCJSqlParserUtil\\s*\\.\\s*parseStatements\\s*\\("
+        },
+        {
+          "label": "requires exactly one statement",
+          "pattern": "\\.size\\s*\\(\\s*\\)\\s*==\\s*1|\\.getStatements\\s*\\(\\s*\\)\\s*\\.size\\s*\\(\\s*\\)\\s*==\\s*1"
+        },
+        {
+          "label": "checks for PlainSelect",
+          "pattern": "instanceof\\s+PlainSelect"
+        },
+        {
+          "label": "catches the parser exception",
+          "pattern": "catch\\s*\\(\\s*JSQLParserException"
+        }
+      ],
+      "model": "static boolean isSelectOnly(String sql) {\n    try {\n        Statements statements = CCJSqlParserUtil.parseStatements(sql);\n        return statements.size() == 1 && statements.get(0) instanceof PlainSelect;\n    } catch (JSQLParserException e) {\n        return false;\n    }\n}",
+      "explanation": "I ran this on JSqlParser 5.3: SELECT 1 and a WITH query parse to one PlainSelect, SELECT 1; DROP TABLE t gives two statements, a UNION is a SetOperationList, and DELETE is a Delete. Real systems add more: SELECT ... INTO still parses as a PlainSelect but creates a table, so also use a read-only role, a statement timeout and a row limit.",
+      "starter": "static boolean isSelectOnly(String sql) {\n    "
+    },
+    {
+      "id": "guard-count",
+      "concept": "SQL guard",
+      "type": "integer",
+      "difficulty": 3,
+      "prompt": "A JSqlParser guard accepts SQL only if it parses into exactly one statement that is a PlainSelect. Of these five inputs, how many pass: (1) SELECT 1; (2) SELECT 1; DROP TABLE t; (3) WITH x AS (SELECT 1) SELECT * FROM x; (4) SELECT 1 UNION SELECT 2; (5) DELETE FROM t?",
+      "answer": 2,
+      "explanation": "Inputs 1 and 3 pass (a WITH clause hangs off the PlainSelect). Input 2 is two statements, input 4 parses to a SetOperationList, and input 5 to a Delete; I confirmed each with JSqlParser 5.3. A set operation is a common false rejection, so a production guard usually allows it explicitly.",
+      "unit": "inputs"
+    },
+    {
+      "id": "bean-validation",
+      "concept": "Schema validation",
+      "type": "code",
+      "difficulty": 2,
+      "prompt": "Write a Java record RefundArgs for an LLM tool call using Jakarta Bean Validation: orderId is a non-null String that must match ORD- followed by exactly six digits, and amount is a non-null BigDecimal greater than 0 and at most 500.",
+      "language": "java",
+      "checks": [
+        {
+          "label": "declares the record with both components",
+          "pattern": "record\\s+RefundArgs\\s*\\([\\s\\S]*String\\s+orderId[\\s\\S]*BigDecimal\\s+amount"
+        },
+        {
+          "label": "validates the order id pattern",
+          "pattern": "@Pattern\\s*\\(\\s*regexp\\s*=\\s*\"[^\"]*ORD-(\\[0-9\\]|\\\\\\\\d)\\{6\\}"
+        },
+        {
+          "label": "requires amount above 0",
+          "pattern": "@DecimalMin\\s*\\(\\s*value\\s*=\\s*\"0\"\\s*,\\s*inclusive\\s*=\\s*false\\s*\\)|@Positive"
+        },
+        {
+          "label": "limits amount to 500",
+          "pattern": "@DecimalMax\\s*\\(\\s*\"500\"\\s*\\)|@DecimalMax\\s*\\(\\s*value\\s*=\\s*\"500\""
+        },
+        {
+          "label": "rejects null",
+          "pattern": "@NotNull"
+        }
+      ],
+      "model": "record RefundArgs(\n    @NotNull @Pattern(regexp = \"ORD-\\\\d{6}\") String orderId,\n    @NotNull @DecimalMin(value = \"0\", inclusive = false) @DecimalMax(\"500\") BigDecimal amount) {}",
+      "explanation": "I validated instances with Hibernate Validator 9: ORD-12 with 600 gives 2 violations, 0 gives 1, 500 gives 0. @Positive plus @DecimalMax is equivalent. Validate before the tool runs and reject instead of coercing; the annotations do nothing until a Validator is called on the object."
+    },
+    {
+      "id": "retry-loop",
+      "concept": "Validate and retry",
+      "type": "code",
+      "difficulty": 2,
+      "prompt": "Write generateValid(String prompt, int maxAttempts) in Java. It calls llm.apply(prompt + hint) to get JSON text, parses it with mapper.readValue(text, Answer.class) (Jackson) and returns the Answer. When parsing throws JsonProcessingException it puts the error message into the hint for the next attempt. After maxAttempts failures it throws IllegalStateException.",
+      "language": "java",
+      "checks": [
+        {
+          "label": "loops up to maxAttempts",
+          "pattern": "for\\s*\\([^)]*<\\s*maxAttempts|while\\s*\\([^)]*maxAttempts"
+        },
+        {
+          "label": "parses with Jackson",
+          "pattern": "mapper\\s*\\.\\s*readValue\\s*\\(\\s*\\w+\\s*,\\s*Answer\\.class\\s*\\)"
+        },
+        {
+          "label": "catches the parse failure",
+          "pattern": "catch\\s*\\(\\s*JsonProcessingException"
+        },
+        {
+          "label": "feeds the error back",
+          "pattern": "getMessage\\s*\\(\\s*\\)"
+        },
+        {
+          "label": "throws after the last attempt",
+          "pattern": "throw\\s+new\\s+IllegalStateException"
+        }
+      ],
+      "model": "Answer generateValid(String prompt, int maxAttempts) {\n    String hint = \"\";\n    for (int attempt = 0; attempt < maxAttempts; attempt++) {\n        String text = llm.apply(prompt + hint);\n        try {\n            return mapper.readValue(text, Answer.class);\n        } catch (JsonProcessingException e) {\n            hint = \"\\nPrevious output was invalid: \" + e.getMessage();\n        }\n    }\n    throw new IllegalStateException(\"no valid output\");\n}",
+      "explanation": "Other loops pass. The essentials: a hard attempt limit, the validation error fed back to the model, and a deliberate failure path. Combine it with Bean Validation on the parsed record for business rules.",
+      "starter": "Answer generateValid(String prompt, int maxAttempts) {\n    "
+    },
+    {
+      "id": "idempotent-fn",
+      "concept": "Idempotent actions",
+      "type": "code",
+      "difficulty": 3,
+      "prompt": "RESULTS is a ConcurrentHashMap<String, PaymentResult>. Write PaymentResult processPayment(String key, long amount) that calls charge(amount) at most once per key, even when several threads call it with the same key at the same moment, and returns the stored result for repeats.",
+      "language": "java",
+      "checks": [
+        {
+          "label": "defines processPayment",
+          "pattern": "PaymentResult\\s+processPayment\\s*\\(\\s*String\\s+key\\s*,\\s*long\\s+amount\\s*\\)"
+        },
+        {
+          "label": "uses an atomic map operation",
+          "pattern": "RESULTS\\s*\\.\\s*computeIfAbsent\\s*\\(\\s*key|RESULTS\\s*\\.\\s*putIfAbsent\\s*\\(|RESULTS\\s*\\.\\s*merge\\s*\\("
+        },
+        {
+          "label": "calls charge(amount)",
+          "pattern": "charge\\s*\\(\\s*amount\\s*\\)"
+        }
+      ],
+      "model": "PaymentResult processPayment(String key, long amount) {\n    return RESULTS.computeIfAbsent(key, k -> charge(amount));\n}",
+      "explanation": "ConcurrentHashMap.computeIfAbsent runs the mapping function at most once per absent key, atomically, so two concurrent requests cannot both charge. A get-then-put sequence would have a race. In production the key and result live in a database with a unique constraint (or Redis SET NX), and the key is bound to the request payload."
+    },
+    {
+      "id": "allow-list-dispatch",
+      "concept": "Allow-lists",
+      "type": "code",
+      "difficulty": 2,
+      "prompt": "TOOLS is a Map<String, Function<Map<String, Object>, Object>> and ALLOWED is a Set<String>. Write Object callTool(String name, Map<String, Object> args) that throws SecurityException unless name is in ALLOWED, and otherwise calls the matching function with args and returns its result.",
+      "language": "java",
+      "checks": [
+        {
+          "label": "defines callTool",
+          "pattern": "Object\\s+callTool\\s*\\(\\s*String\\s+name\\s*,\\s*Map\\s*<[^>]*>\\s*args\\s*\\)"
+        },
+        {
+          "label": "checks the allow-list",
+          "pattern": "ALLOWED\\s*\\.\\s*contains\\s*\\(\\s*name\\s*\\)"
+        },
+        {
+          "label": "refuses with SecurityException",
+          "pattern": "throw\\s+new\\s+SecurityException"
+        },
+        {
+          "label": "invokes the function",
+          "pattern": "TOOLS\\s*\\.\\s*get\\s*\\(\\s*name\\s*\\)\\s*\\.\\s*apply\\s*\\(\\s*args\\s*\\)"
+        }
+      ],
+      "model": "Object callTool(String name, Map<String, Object> args) {\n    if (!ALLOWED.contains(name)) {\n        throw new SecurityException(\"tool not allowed: \" + name);\n    }\n    return TOOLS.get(name).apply(args);\n}",
+      "explanation": "Default deny: a name the model invents, or one in TOOLS that was never approved for this task, is refused before anything runs. Validate args against the tool's schema as well. A Set lookup is constant time, but the point is the policy."
+    },
+    {
+      "id": "violation-count",
+      "concept": "Schema validation",
+      "type": "integer",
+      "difficulty": 2,
+      "prompt": "RefundArgs requires orderId to match ORD- plus six digits and amount to be greater than 0 and at most 500. How many ConstraintViolations does validator.validate(new RefundArgs(\"ORD-12\", new BigDecimal(\"600\"))) return?",
+      "answer": 2,
+      "explanation": "Both fields fail: the order id pattern and the amount above 500, so the set holds 2 violations (I ran it with Hibernate Validator 9). Return all violation messages to the model at once so it can fix everything in one retry.",
+      "unit": "violations"
+    },
+    {
+      "id": "retry-attempts",
+      "concept": "Retries",
+      "type": "integer",
+      "difficulty": 2,
+      "prompt": "A Resilience4j Retry is configured with RetryConfig.custom().maxAttempts(4) and wraps a Supplier that always throws. How many times is the supplier executed before the exception reaches the caller?",
+      "answer": 4,
+      "explanation": "maxAttempts counts the first call, so 1 try + 3 retries = 4 executions (I counted with an AtomicInteger). Remember this when budgeting the worst-case cost of retrying a paid model call.",
+      "unit": "executions"
+    },
+    {
+      "id": "pattern-full-match",
+      "concept": "Schema validation",
+      "type": "assertion",
+      "difficulty": 2,
+      "prompt": "Assertion and reason: read both statements and choose the right option.",
+      "assertion": "@Pattern(regexp = \"ORD-\\\\d{6}\") on a String field rejects the value \"xORD-123456\" even though the regex has no ^ anchor.",
+      "reason": "Bean Validation requires the regular expression to match the entire value, not just a part of it.",
+      "correct": [
+        "a"
+      ],
+      "whys": {
+        "a": "Both true, and R explains A: the whole string must match, so the extra x makes it fail.",
+        "b": "Not chosen: R is the reason the unanchored pattern still rejects the value.",
+        "c": "Not chosen: R is true, since @Pattern uses a full match.",
+        "d": "Not chosen: A is true; I validated the value and got one violation."
+      },
+      "explanation": "I also checked that ORD-1234567 (seven digits) is rejected. Anchors are harmless but unnecessary with @Pattern."
+    },
+    {
+      "id": "parser-exception",
+      "concept": "SQL guard",
+      "type": "assertion",
+      "difficulty": 3,
+      "prompt": "Assertion and reason: read both statements and choose the right option.",
+      "assertion": "JSQLParserException is a checked exception, so a guard must either catch it or declare it.",
+      "reason": "SELECT * INTO new_t FROM t parses as a PlainSelect in JSqlParser 5.3.",
+      "correct": [
+        "b"
+      ],
+      "whys": {
+        "a": "Not chosen: the INTO example does not explain why the exception is checked.",
+        "b": "Both true, but R does not explain A: the exception is checked because it extends Exception; the INTO fact is about guard coverage.",
+        "c": "Not chosen: R is true; I parsed that statement and got a PlainSelect.",
+        "d": "Not chosen: A is true, the compiler enforces handling."
+      },
+      "explanation": "R matters for a different reason: a plain instanceof PlainSelect check lets a table-creating SELECT INTO through, so add a read-only role and block INTO explicitly."
+    },
+    {
+      "id": "compact-ctor",
+      "concept": "Schema validation",
+      "type": "assertion",
+      "difficulty": 3,
+      "prompt": "Assertion and reason: read both statements and choose the right option.",
+      "assertion": "A record's compact constructor can reject bad tool arguments without any validation library.",
+      "reason": "A record cannot declare a constructor.",
+      "correct": [
+        "c"
+      ],
+      "whys": {
+        "a": "Not chosen: R is false, so it cannot explain A.",
+        "b": "Not chosen: R is false, so the pair cannot both be true.",
+        "c": "A is true and R is false: records support compact constructors that can throw IllegalArgumentException.",
+        "d": "Not chosen: A is true, so this option is wrong."
+      },
+      "explanation": "A compact constructor is handy for invariants such as non-null and range checks; annotations plus a Validator scale better to many fields and to returning all errors at once."
+    },
+    {
+      "id": "empty-sql",
+      "concept": "SQL guard",
+      "type": "assertion",
+      "difficulty": 3,
+      "prompt": "Assertion and reason: read both statements and choose the right option.",
+      "assertion": "A guard that wraps CCJSqlParserUtil.parseStatements in catch (JSQLParserException e) always returns a boolean for every possible input string.",
+      "reason": "In JSqlParser 5.3, parseStatements(\"\") throws a NullPointerException instead of a JSQLParserException.",
+      "correct": [
+        "d"
+      ],
+      "whys": {
+        "a": "Not chosen: A is false, so it cannot be explained by R.",
+        "b": "Not chosen: A is false, so it cannot be true together with R.",
+        "c": "Not chosen: A is false, so this option is wrong.",
+        "d": "A is false: the empty string escapes the catch block because it throws a NullPointerException. R is true (I ran it)."
+      },
+      "explanation": "Reject null and blank input before parsing, or catch RuntimeException as well. This is a version-specific edge case, so test the empty and null inputs of any guard."
+    },
+    {
+      "id": "select-into-java",
+      "concept": "SQL guard",
+      "type": "truefalse",
+      "difficulty": 3,
+      "prompt": "True or false: a JSqlParser check that the single parsed statement is a PlainSelect is enough to guarantee that an LLM-generated PostgreSQL query cannot change data.",
+      "options": [
+        {
+          "id": "a",
+          "text": "True",
+          "why": "A PlainSelect does not prove read-only behaviour."
+        },
+        {
+          "id": "b",
+          "text": "False",
+          "why": "Right: SELECT * INTO new_t FROM t still parses as a PlainSelect yet creates a table, and functions such as pg_sleep run inside plain SELECTs."
+        }
+      ],
+      "correct": [
+        "b"
+      ],
+      "explanation": "Combine the parser guard with a read-only database role, a statement timeout and a row limit."
+    },
+    {
+      "id": "jsqlparser-types",
+      "concept": "SQL guard",
+      "type": "matrix",
+      "difficulty": 2,
+      "prompt": "Match each input to the class JSqlParser 5.3 returns for its statement.",
+      "left": [
+        {
+          "id": "a",
+          "text": "SELECT 1"
+        },
+        {
+          "id": "b",
+          "text": "SELECT 1 UNION SELECT 2"
+        },
+        {
+          "id": "c",
+          "text": "DELETE FROM t"
+        },
+        {
+          "id": "d",
+          "text": "DROP TABLE t"
+        }
+      ],
+      "right": [
+        {
+          "id": "p",
+          "text": "PlainSelect"
+        },
+        {
+          "id": "q",
+          "text": "SetOperationList"
+        },
+        {
+          "id": "r",
+          "text": "Delete"
+        },
+        {
+          "id": "s",
+          "text": "Drop"
+        },
+        {
+          "id": "t",
+          "text": "Insert"
+        }
+      ],
+      "pairs": {
+        "a": "p",
+        "b": "q",
+        "c": "r",
+        "d": "s"
+      },
+      "explanation": "I printed the class names from parseStatements. A guard that checks only for PlainSelect rejects the union by accident; list the types you accept."
+    },
+    {
+      "id": "validation-vocab",
+      "concept": "Schema validation",
+      "type": "fill",
+      "difficulty": 1,
+      "prompt": "Complete the Bean Validation sentence.",
+      "text": "Constraint annotations such as {1} only describe the rules; calling {2} on a Validator returns a Set of {3}, which is empty when the object is valid.",
+      "blanks": {
+        "1": "@Pattern",
+        "2": "validate",
+        "3": "ConstraintViolation"
+      },
+      "bank": [
+        "@Pattern",
+        "validate",
+        "ConstraintViolation",
+        "@Transactional",
+        "Exception"
+      ],
+      "explanation": "Reject the call when the set is not empty, and return the violation messages to the model so that it can correct its next attempt."
+    }
+  ]
+}

@@ -48,8 +48,15 @@ The **Quizzes** tab (`/quiz.html`) is for checking what you know between intervi
 
 ![Quiz question with explanations](docs/quiz.png)
 
-Your scores and generated quizzes live in the browser (localStorage). To add a quiz to the bundled set see
-[quizzes/AUTHORING.md](quizzes/AUTHORING.md).
+Your progress (finished attempts, best scores, generated quizzes and the quiz you are in the middle of) is saved in a **SQLite file that carries along with the
+code**: `hld/data/progress.db`. Commit that file on your own branch (for example `my-solutions`) and your progress travels with that branch; each branch has its
+own copy and `main` ships none. The Quizzes page shows the file and the branch it belongs to.
+
+- **Reset all progress** (bottom of the Quizzes page) empties every table: everything goes back to zero, in the database and in this browser.
+- **Sync from the browser:** if you used the quizzes before the database existed, the page offers once to copy the progress stored in your browser's localStorage
+  into the database (results from both places are merged, nothing is lost). Choose "No thanks" to start from zero instead.
+- Without the database (for example if the native `better-sqlite3` module could not be installed) the page falls back to localStorage as before.
+- Set `HLD_DB=/path/to/file.db` to keep the file somewhere else. More in [data/README.md](data/README.md).
 
 ## The three pieces
 

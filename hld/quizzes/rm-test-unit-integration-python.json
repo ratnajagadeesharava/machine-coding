@@ -1,0 +1,404 @@
+{
+  "id": "rm-test-unit-integration-python",
+  "title": "Testing in Python: pytest, fixtures, unittest.mock and FastAPI TestClient",
+  "topic": "Python",
+  "series": "python-observability-security-testing",
+  "seriesTitle": "Python: observability, security and testing",
+  "seriesDescription": "Prometheus and tracing, JWT and FastAPI auth, pytest and mocks. JEE-Advanced style: integer, assertion-reason, matrix match, fill-in-the-blanks, short code and multi-correct questions.",
+  "seriesOrder": 3,
+  "language": "python",
+  "description": "pytest fixtures, scopes and parametrisation, pytest.raises and monkeypatch, unittest.mock patching and autospec, FastAPI TestClient, dependency overrides and async tests.",
+  "source": "pytest documentation (fixtures, parametrize, monkeypatch, tmp_path); Python documentation (unittest.mock, where to patch); FastAPI documentation (Testing, dependency overrides, async tests); httpx documentation (ASGITransport); anyio documentation (pytest plugin)",
+  "estimatedMinutes": 24,
+  "questions": [
+    {
+      "id": "pytest-client",
+      "concept": "TestClient",
+      "type": "code",
+      "difficulty": 2,
+      "prompt": "Write a pytest function test_get_item using FastAPI's TestClient on app that requests /items/1, asserts a 200 status code and asserts the JSON id is 1.",
+      "language": "python",
+      "starter": "from fastapi.testclient import TestClient\n",
+      "checks": [
+        {
+          "label": "defines test_get_item",
+          "pattern": "def\\s+test_get_item\\("
+        },
+        {
+          "label": "uses TestClient",
+          "pattern": "testclient\\("
+        },
+        {
+          "label": "asserts status 200",
+          "pattern": "status_code\\s*==\\s*200"
+        },
+        {
+          "label": "asserts the id",
+          "pattern": "json\\(\\)\\[\\s*['\"]id['\"]\\s*\\]\\s*==\\s*1"
+        }
+      ],
+      "model": "def test_get_item():\n    client = TestClient(app)\n    r = client.get(\"/items/1\")\n    assert r.status_code == 200\n    assert r.json()[\"id\"] == 1",
+      "explanation": "No server is started: TestClient calls the ASGI app in-process. Use httpx.AsyncClient with ASGITransport for async tests, and app.dependency_overrides to swap the database dependency."
+    },
+    {
+      "id": "fixture-yield",
+      "concept": "pytest fixtures",
+      "type": "code",
+      "difficulty": 2,
+      "prompt": "Write a pytest fixture named conn that opens a connection with connect(), yields it to the test, and closes it afterwards.",
+      "language": "python",
+      "starter": "import pytest\n",
+      "checks": [
+        {
+          "label": "marks a fixture",
+          "pattern": "@pytest\\.fixture"
+        },
+        {
+          "label": "named conn",
+          "pattern": "def\\s+conn\\s*\\("
+        },
+        {
+          "label": "opens the connection",
+          "pattern": "=\\s*connect\\(\\)"
+        },
+        {
+          "label": "yields it",
+          "pattern": "yield\\s+\\w+"
+        },
+        {
+          "label": "closes after the yield",
+          "pattern": "yield[\\s\\S]*\\.close\\(\\)"
+        }
+      ],
+      "model": "@pytest.fixture\ndef conn():\n    c = connect()\n    yield c\n    c.close()",
+      "explanation": "Code after the yield is teardown and runs even when the test fails. A try/finally around the yield also works, and the scope argument (scope=\"module\") shares one connection for all tests in a module."
+    },
+    {
+      "id": "fixture-setups",
+      "concept": "pytest fixtures",
+      "type": "integer",
+      "difficulty": 2,
+      "prompt": "A function-scoped fixture db is requested by four plain tests and by one test parametrised with three values. How many times does the fixture run in a full session?",
+      "answer": 7,
+      "unit": "setups",
+      "explanation": "Function scope sets up once per test invocation: 4 plain tests plus 3 parametrised cases make 7. With scope=\"module\" it would run once."
+    },
+    {
+      "id": "parametrize",
+      "concept": "Parametrisation",
+      "type": "code",
+      "difficulty": 2,
+      "prompt": "Write a pytest test add(a, b, expected) parametrised with the rows (1, 2, 3) and (0, 0, 0) that asserts a + b == expected.",
+      "language": "python",
+      "starter": "import pytest\n",
+      "checks": [
+        {
+          "label": "uses parametrize with the names",
+          "pattern": "@pytest\\.mark\\.parametrize\\(\\s*[\"']a\\s*,\\s*b\\s*,\\s*expected[\"']"
+        },
+        {
+          "label": "lists the rows",
+          "pattern": "\\(\\s*1\\s*,\\s*2\\s*,\\s*3\\s*\\)[\\s\\S]*\\(\\s*0\\s*,\\s*0\\s*,\\s*0\\s*\\)"
+        },
+        {
+          "label": "defines add(a, b, expected)",
+          "pattern": "def\\s+test_add\\s*\\(\\s*a\\s*,\\s*b\\s*,\\s*expected\\s*\\)|def\\s+add\\s*\\(\\s*a\\s*,\\s*b\\s*,\\s*expected\\s*\\)"
+        },
+        {
+          "label": "asserts the sum",
+          "pattern": "assert\\s+a\\s*\\+\\s*b\\s*==\\s*expected"
+        }
+      ],
+      "model": "@pytest.mark.parametrize(\"a, b, expected\", [(1, 2, 3), (0, 0, 0)])\ndef test_add(a, b, expected):\n    assert a + b == expected",
+      "explanation": "Each row is its own test in the report. Use pytest.param(..., id=\"zero\") for readable ids or marks such as xfail on a single row."
+    },
+    {
+      "id": "parametrize-cross",
+      "concept": "Parametrisation",
+      "type": "integer",
+      "difficulty": 2,
+      "prompt": "In pytest, a test function is decorated with @pytest.mark.parametrize(\"a\", [1, 2, 3]) and also with @pytest.mark.parametrize(\"b\", [10, 20]). How many test cases does pytest generate for it?",
+      "answer": 6,
+      "unit": "tests",
+      "explanation": "Stacked parametrize decorators form a cross product: 3 x 2 = 6 cases. Use a single parametrize with explicit tuples when you do not want every combination."
+    },
+    {
+      "id": "pytest-raises",
+      "concept": "pytest basics",
+      "type": "code",
+      "difficulty": 2,
+      "prompt": "Write a pytest test that asserts calling withdraw(-5) raises ValueError whose message matches \"negative\".",
+      "language": "python",
+      "starter": "import pytest\n",
+      "checks": [
+        {
+          "label": "uses pytest.raises with ValueError",
+          "pattern": "pytest\\.raises\\(\\s*valueerror"
+        },
+        {
+          "label": "matches the message",
+          "pattern": "match\\s*=\\s*[\"']negative[\"']"
+        },
+        {
+          "label": "calls withdraw(-5)",
+          "pattern": "withdraw\\(\\s*-5\\s*\\)"
+        }
+      ],
+      "model": "def test_withdraw_negative():\n    with pytest.raises(ValueError, match=\"negative\"):\n        withdraw(-5)",
+      "explanation": "match is a regular expression searched in str(exception). Without the with block an exception would simply fail the test, and an assert on the exception type alone is weaker than checking the message."
+    },
+    {
+      "id": "monkeypatch",
+      "concept": "pytest basics",
+      "type": "code",
+      "difficulty": 2,
+      "prompt": "Write a pytest test test_key that uses the monkeypatch fixture to set the environment variable API_KEY to \"test\" and then asserts os.environ[\"API_KEY\"] equals \"test\".",
+      "language": "python",
+      "starter": "import os\n",
+      "checks": [
+        {
+          "label": "takes monkeypatch",
+          "pattern": "def\\s+test_key\\s*\\(\\s*monkeypatch"
+        },
+        {
+          "label": "sets the variable",
+          "pattern": "monkeypatch\\.setenv\\(\\s*[\"']api_key[\"']\\s*,\\s*[\"']test[\"']\\s*\\)"
+        },
+        {
+          "label": "asserts the value",
+          "pattern": "assert\\s+os\\.environ\\[\\s*[\"']api_key[\"']\\s*\\]\\s*==\\s*[\"']test[\"']"
+        }
+      ],
+      "model": "def test_key(monkeypatch):\n    monkeypatch.setenv(\"API_KEY\", \"test\")\n    assert os.environ[\"API_KEY\"] == \"test\"",
+      "explanation": "monkeypatch undoes every change at the end of the test, so settings never leak into other tests. It also offers setattr, setitem and chdir. Verified with pytest 9."
+    },
+    {
+      "id": "patch-where",
+      "concept": "unittest.mock",
+      "type": "single",
+      "difficulty": 3,
+      "prompt": "app/service.py does \"import requests\" and calls requests.get(...). Which unittest.mock target replaces it for a test of service.py?",
+      "options": [
+        {
+          "id": "a",
+          "text": "patch(\"app.service.get\", autospec=True)",
+          "why": "service.py has no attribute called get, because it imported the module."
+        },
+        {
+          "id": "b",
+          "text": "patch(\"app.tests.requests.get\")",
+          "why": "The test module is not where service.py looks the name up."
+        },
+        {
+          "id": "c",
+          "text": "patch(\"builtins.requests\")",
+          "why": "requests is not a builtin, so there is nothing to patch there."
+        },
+        {
+          "id": "d",
+          "text": "patch(\"app.service.requests.get\")",
+          "why": "Correct: patch the name in the namespace that looks it up."
+        }
+      ],
+      "correct": [
+        "d"
+      ],
+      "explanation": "Where to patch: patch the name in the namespace that looks it up. Because service.py calls requests.get through the module, patch(\"app.service.requests.get\") works (patching \"requests.get\" would work too, but changes it for every module). For \"from requests import get\" you must patch app.service.get instead."
+    },
+    {
+      "id": "mock-assert",
+      "concept": "unittest.mock",
+      "type": "code",
+      "difficulty": 3,
+      "prompt": "Using unittest.mock.patch as a context manager on \"requests.get\" (bound to mock_get), set its return value's status_code to 200 and, after calling fetch(\"http://x\"), assert mock_get was called exactly once with \"http://x\".",
+      "language": "python",
+      "starter": "from unittest.mock import patch\n",
+      "checks": [
+        {
+          "label": "patches requests.get",
+          "pattern": "patch\\(\\s*[\"']requests\\.get[\"']\\s*\\)\\s+as\\s+mock_get"
+        },
+        {
+          "label": "sets the status code",
+          "pattern": "mock_get\\.return_value\\.status_code\\s*=\\s*200"
+        },
+        {
+          "label": "calls fetch",
+          "pattern": "fetch\\(\\s*[\"']http://x[\"']\\s*\\)"
+        },
+        {
+          "label": "asserts one call with the url",
+          "pattern": "mock_get\\.assert_called_once_with\\(\\s*[\"']http://x[\"']"
+        }
+      ],
+      "model": "with patch(\"requests.get\") as mock_get:\n    mock_get.return_value.status_code = 200\n    fetch(\"http://x\")\n    mock_get.assert_called_once_with(\"http://x\")",
+      "explanation": "return_value is itself a mock, so attributes set on it become the fake response. Verified with a runnable example. Add autospec=True when you want signature checking."
+    },
+    {
+      "id": "autospec",
+      "concept": "unittest.mock",
+      "type": "assertion",
+      "difficulty": 3,
+      "prompt": "Read the assertion A and the reason R, then choose the correct relationship between them.",
+      "assertion": "patch(\"os.path.join\", autospec=True) makes a call with the wrong number of arguments raise TypeError.",
+      "reason": "autospec builds the mock from the real function, so it honours the real signature.",
+      "correct": [
+        "a"
+      ],
+      "whys": {
+        "a": "Correct: The mock copies the target's signature, so a bad call fails like the real one would.",
+        "b": "Not this one: Both are true but R is not the reason A holds does not describe this pair; R is actually the reason or is false.",
+        "c": "Not this one: A is true while R is false does not describe this pair; check the truth of R again.",
+        "d": "Not this one: A is false while R is true does not describe this pair; check the truth of A again."
+      },
+      "explanation": "Plain MagicMock accepts any call, which can hide wrong arguments. Verified: calling the autospecced join() with no arguments raises TypeError."
+    },
+    {
+      "id": "dependency-override",
+      "concept": "TestClient",
+      "type": "code",
+      "difficulty": 3,
+      "prompt": "In a test, make the FastAPI app app use the lambda returning \"fake\" instead of the dependency get_db, send GET /items/2 with TestClient client and always remove the override afterwards.",
+      "language": "python",
+      "checks": [
+        {
+          "label": "sets the override",
+          "pattern": "app\\.dependency_overrides\\[\\s*get_db\\s*\\]\\s*=\\s*lambda\\s*:\\s*[\"']fake[\"']"
+        },
+        {
+          "label": "calls the endpoint",
+          "pattern": "client\\.get\\(\\s*[\"']/items/2[\"']"
+        },
+        {
+          "label": "clears in finally",
+          "pattern": "finally\\s*:[\\s\\S]*(dependency_overrides\\.clear\\(\\)|del\\s+app\\.dependency_overrides|dependency_overrides\\.pop)"
+        }
+      ],
+      "model": "app.dependency_overrides[get_db] = lambda: \"fake\"\ntry:\n    r = client.get(\"/items/2\")\nfinally:\n    app.dependency_overrides.clear()",
+      "explanation": "dependency_overrides maps the original dependency callable to its replacement for the whole app, so cleaning up matters. Wrap it in a fixture with yield to do this automatically."
+    },
+    {
+      "id": "async-test",
+      "concept": "Async tests",
+      "type": "code",
+      "difficulty": 3,
+      "prompt": "With the anyio pytest plugin (anyio_backend already set to \"asyncio\"), write an async test test_async that uses httpx.AsyncClient with httpx.ASGITransport(app=app) and base_url \"http://test\" to GET /items/1 and asserts status 200.",
+      "language": "python",
+      "starter": "import pytest, httpx\n",
+      "checks": [
+        {
+          "label": "marks the test for anyio",
+          "pattern": "@pytest\\.mark\\.anyio"
+        },
+        {
+          "label": "is an async test",
+          "pattern": "async\\s+def\\s+test_async\\s*\\("
+        },
+        {
+          "label": "uses the ASGI transport",
+          "pattern": "httpx\\.ASGITransport\\(\\s*app\\s*=\\s*app\\s*\\)"
+        },
+        {
+          "label": "awaits the GET",
+          "pattern": "await\\s+client\\.get\\(\\s*[\"']/items/1[\"']"
+        },
+        {
+          "label": "asserts 200",
+          "pattern": "status_code\\s*==\\s*200"
+        }
+      ],
+      "model": "@pytest.mark.anyio\nasync def test_async():\n    async with httpx.AsyncClient(transport=httpx.ASGITransport(app=app), base_url=\"http://test\") as client:\n        r = await client.get(\"/items/1\")\n    assert r.status_code == 200",
+      "explanation": "Verified with httpx 0.28 and anyio. pytest-asyncio with @pytest.mark.asyncio is an equally valid choice. Note that ASGITransport does not run lifespan events unless you wrap the app in a lifespan manager."
+    },
+    {
+      "id": "fixture-scope",
+      "concept": "pytest fixtures",
+      "type": "assertion",
+      "difficulty": 2,
+      "prompt": "Read the assertion A and the reason R, then choose the correct relationship between them.",
+      "assertion": "A function-scoped fixture is created fresh for every test that requests it.",
+      "reason": "pytest collects functions whose names start with test_.",
+      "correct": [
+        "b"
+      ],
+      "whys": {
+        "a": "Not this one: Both A and R are true and R explains A does not describe this pair; R does not explain A.",
+        "b": "Correct: Both are true, but how tests are discovered does not explain fixture lifetime; the scope argument does.",
+        "c": "Not this one: A is true while R is false does not describe this pair; check the truth of R again.",
+        "d": "Not this one: A is false while R is true does not describe this pair; check the truth of A again."
+      },
+      "explanation": "Function is the default scope. Wider scopes (class, module, package, session) trade isolation for speed."
+    },
+    {
+      "id": "parametrize-product",
+      "concept": "Parametrisation",
+      "type": "assertion",
+      "difficulty": 2,
+      "prompt": "Read the assertion A and the reason R, then choose the correct relationship between them.",
+      "assertion": "Stacking two @pytest.mark.parametrize decorators on one test produces the cross product of the values.",
+      "reason": "pytest never generates more test cases than the length of the longest list.",
+      "correct": [
+        "c"
+      ],
+      "whys": {
+        "a": "Not this one: Both A and R are true and R explains A does not describe this pair; R does not explain A.",
+        "b": "Not this one: Both are true but R is not the reason A holds does not describe this pair; R is actually the reason or is false.",
+        "c": "Correct: A is true. R is false: 3 values times 2 values gives 6 cases, more than either list.",
+        "d": "Not this one: A is false while R is true does not describe this pair; check the truth of A again."
+      },
+      "explanation": "For specific pairs only, use a single parametrize with tuples of both arguments."
+    },
+    {
+      "id": "testclient-server",
+      "concept": "TestClient",
+      "type": "assertion",
+      "difficulty": 1,
+      "prompt": "Read the assertion A and the reason R, then choose the correct relationship between them.",
+      "assertion": "FastAPI's TestClient needs a running uvicorn server listening on a port.",
+      "reason": "TestClient calls the ASGI application object directly, in the same process.",
+      "correct": [
+        "d"
+      ],
+      "whys": {
+        "a": "Not this one: Both A and R are true and R explains A does not describe this pair; R does not explain A.",
+        "b": "Not this one: Both are true but R is not the reason A holds does not describe this pair; R is actually the reason or is false.",
+        "c": "Not this one: A is true while R is false does not describe this pair; check the truth of R again.",
+        "d": "Correct: A is false: no server or port is involved. R is true and is why tests are fast."
+      },
+      "explanation": "Use a real server (for example uvicorn in a fixture) only when you need to test network behaviour."
+    },
+    {
+      "id": "tmp-path",
+      "concept": "pytest basics",
+      "type": "truefalse",
+      "difficulty": 3,
+      "prompt": "True or false: with the built-in tmp_path fixture, every test that requests it receives its own fresh temporary directory.",
+      "options": [
+        {
+          "id": "a",
+          "text": "True",
+          "why": "Correct: tmp_path is function-scoped and unique per test."
+        },
+        {
+          "id": "b",
+          "text": "False",
+          "why": "The directory is created per test, so tests cannot see each other's files."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Use tmp_path_factory for a session-wide directory. Old temporary directories are kept for a few runs and then pruned."
+    },
+    {
+      "id": "call-count",
+      "concept": "unittest.mock",
+      "type": "integer",
+      "difficulty": 1,
+      "prompt": "A MagicMock named m is called as m(1), m(2) and m(1). What is the value of m.call_count?",
+      "answer": 3,
+      "unit": "calls",
+      "explanation": "call_count counts every call regardless of arguments: 3. Use m.call_args_list to inspect each call and assert_any_call to check one of them."
+    }
+  ]
+}

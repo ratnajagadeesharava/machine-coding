@@ -1,0 +1,400 @@
+{
+  "id": "rm-design-recon-evals-core",
+  "title": "Design: SAP reconciliation and agent evals",
+  "topic": "Language-independent",
+  "series": "core-system-design",
+  "seriesTitle": "Core: system design",
+  "seriesDescription": "The design framework, estimation, classic designs, multi-tenant SaaS, SDKs, trip tracking and reconciliation. JEE-Advanced style: integer, assertion-reason, matrix match, fill-in-the-blanks, short code and multi-correct questions.",
+  "seriesOrder": 4,
+  "language": "neutral",
+  "description": "Designing a reconciliation pipeline between SAP and a data warehouse (idempotent loads, control totals, hash trees, break classification) and an eval and monitoring system for production LLM agents.",
+  "source": "Kimball ETL practices; data engineering reconciliation write-ups; Merkle tree overviews; OpenAI and Anthropic eval guides; Hamel Husain and Eugene Yan evals writing; OpenTelemetry GenAI docs",
+  "estimatedMinutes": 15,
+  "questions": [
+    {
+      "id": "recon-principle",
+      "concept": "Reconciliation",
+      "type": "single",
+      "difficulty": 2,
+      "prompt": "You design a nightly reconciliation between SAP and a data warehouse. Which property matters most for the load job?",
+      "options": [
+        {
+          "id": "a",
+          "text": "It is idempotent and re-runnable per business date",
+          "why": "Right: a failed or repeated run must not create duplicates or gaps."
+        },
+        {
+          "id": "b",
+          "text": "It always runs as one huge transaction over all history",
+          "why": "Huge transactions are slow, lock a lot and are hard to retry."
+        },
+        {
+          "id": "c",
+          "text": "It deletes the warehouse tables first and reloads everything",
+          "why": "Full reloads waste time and leave a window with no data."
+        },
+        {
+          "id": "d",
+          "text": "It silently skips rows that fail to parse",
+          "why": "Silent skipping creates exactly the discrepancies you are reconciling."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Partition work by business date or document range, upsert by business key, and record the run id and counts."
+    },
+    {
+      "id": "missing-docs",
+      "concept": "Control totals",
+      "type": "integer",
+      "difficulty": 3,
+      "prompt": "SAP reports 1,000,000 documents for the day. The warehouse holds 998,750 rows for it, of which 1,500 are duplicate loads of documents that are present (every warehouse document exists in SAP). How many distinct SAP documents are missing from the warehouse?",
+      "answer": 2750,
+      "explanation": "Distinct documents in the warehouse = 998,750 - 1,500 = 997,250. Missing = 1,000,000 - 997,250 = 2,750. Equal counts can still hide problems, so also compare checksums.",
+      "unit": "documents"
+    },
+    {
+      "id": "merkle-levels",
+      "concept": "Hash trees",
+      "type": "integer",
+      "difficulty": 3,
+      "prompt": "You compare hierarchical checksums (day, then half, then half again) to find the one mismatching partition among 1,024 partitions. How many comparison levels, halving each time, are needed to isolate it?",
+      "answer": 10,
+      "explanation": "log2(1024) = 10 halvings. Hash trees (Merkle trees) let you localise differences without comparing every row.",
+      "unit": "levels"
+    },
+    {
+      "id": "anti-join",
+      "concept": "Anti-join SQL",
+      "type": "code",
+      "difficulty": 2,
+      "prompt": "Tables sap_invoices(doc_id, amount) and dwh_invoices(doc_id, amount) should match. Write one SQL query that lists doc_id values that are missing from dwh_invoices or have a different amount.",
+      "language": "sql",
+      "checks": [
+        {
+          "label": "joins or excepts the two tables",
+          "pattern": "(left\\s+join|full\\s+(outer\\s+)?join|not\\s+exists|except|not\\s+in)"
+        },
+        {
+          "label": "finds missing rows",
+          "pattern": "(is\\s+null|not\\s+exists|except|not\\s+in)"
+        },
+        {
+          "label": "compares the amount",
+          "pattern": "(<>|!=|is\\s+distinct\\s+from|except|not\\s+exists[\\s\\S]*amount)"
+        },
+        {
+          "label": "uses doc_id",
+          "pattern": "doc_id"
+        }
+      ],
+      "model": "SELECT s.doc_id\nFROM sap_invoices s\nLEFT JOIN dwh_invoices d ON d.doc_id = s.doc_id\nWHERE d.doc_id IS NULL OR d.amount <> s.amount;",
+      "explanation": "SELECT doc_id, amount FROM sap_invoices EXCEPT SELECT doc_id, amount FROM dwh_invoices is a shorter alternative. A FULL OUTER JOIN additionally finds rows that exist only in the warehouse."
+    },
+    {
+      "id": "recon-causes",
+      "concept": "Break classification",
+      "type": "matrix",
+      "difficulty": 2,
+      "prompt": "Match each typical reconciliation mismatch to the fix.",
+      "left": [
+        {
+          "id": "a",
+          "text": "Late-arriving documents"
+        },
+        {
+          "id": "b",
+          "text": "Duplicate loads after a retry"
+        },
+        {
+          "id": "c",
+          "text": "Rounding and currency differences"
+        },
+        {
+          "id": "d",
+          "text": "Records deleted or archived in the source"
+        },
+        {
+          "id": "e",
+          "text": "Different time zones"
+        }
+      ],
+      "right": [
+        {
+          "id": "p",
+          "text": "Reprocess a trailing window and use a watermark"
+        },
+        {
+          "id": "q",
+          "text": "Upsert by business key"
+        },
+        {
+          "id": "r",
+          "text": "Compare decimals with an agreed tolerance"
+        },
+        {
+          "id": "s",
+          "text": "Soft-delete markers or tombstones"
+        },
+        {
+          "id": "t",
+          "text": "Normalise timestamps to UTC"
+        },
+        {
+          "id": "u",
+          "text": "Buy a larger warehouse"
+        }
+      ],
+      "pairs": {
+        "a": "p",
+        "b": "q",
+        "c": "r",
+        "d": "s",
+        "e": "t"
+      },
+      "explanation": "Classify breaks (missing, extra, changed, timing) in the report so owners can act on each class."
+    },
+    {
+      "id": "upsert",
+      "concept": "Idempotent loads",
+      "type": "assertion",
+      "difficulty": 1,
+      "prompt": "Read the assertion and the reason, then choose the option that describes them correctly.",
+      "assertion": "The warehouse loader should upsert by the business key instead of blindly inserting.",
+      "reason": "After a failure the same batch is retried, and an upsert does not create duplicates.",
+      "correct": [
+        "a"
+      ],
+      "whys": {
+        "a": "Right: idempotent writes make retries safe.",
+        "b": "The reason is the cause.",
+        "c": "The assertion is true.",
+        "d": "The reason is true."
+      },
+      "explanation": "Pair it with a unique constraint on the key so a bug cannot reintroduce duplicates."
+    },
+    {
+      "id": "counts-only",
+      "concept": "Control totals",
+      "type": "assertion",
+      "difficulty": 3,
+      "prompt": "Read the assertion and the reason, then choose the option that describes them correctly.",
+      "assertion": "If row counts in SAP and the warehouse are equal, the data is proven to match.",
+      "reason": "Missing rows in one place can be offset by extra rows elsewhere.",
+      "correct": [
+        "d"
+      ],
+      "whys": {
+        "a": "The assertion is false.",
+        "b": "The assertion is false.",
+        "c": "The reason is true.",
+        "d": "Right: the assertion is false, and the reason is true because offsets and changed values keep counts equal."
+      },
+      "explanation": "Add sum-of-amount control totals and per-partition hashes to the count check."
+    },
+    {
+      "id": "pass-rate",
+      "concept": "Agent evals",
+      "type": "code",
+      "difficulty": 2,
+      "prompt": "Table eval_runs(case_id, run_no, passed) stores one row per agent run on a golden set, where passed is 1 or 0. Write one SQL query that returns the overall pass rate as a fraction between 0 and 1.",
+      "language": "sql",
+      "checks": [
+        {
+          "label": "reads eval_runs",
+          "pattern": "from\\s+eval_runs"
+        },
+        {
+          "label": "aggregates with AVG, or SUM divided by COUNT",
+          "pattern": "(avg\\s*\\(|sum\\s*\\([\\s\\S]*/[\\s\\S]*count\\s*\\()"
+        },
+        {
+          "label": "uses the passed column",
+          "pattern": "passed"
+        }
+      ],
+      "model": "SELECT AVG(passed * 1.0) AS pass_rate FROM eval_runs;",
+      "explanation": "AVG over a 0/1 column is the pass fraction (multiply by 1.0 so integer division does not truncate in some engines). SUM(passed) * 1.0 / COUNT(*) is equivalent. Real agent evals rarely use equality: use rubric graders, schema checks or an LLM judge, and run each case several times because outputs vary."
+    },
+    {
+      "id": "agent-metrics",
+      "concept": "Agent metrics",
+      "type": "matrix",
+      "difficulty": 2,
+      "prompt": "Match each production-agent metric to what it tells you.",
+      "left": [
+        {
+          "id": "a",
+          "text": "Task success rate"
+        },
+        {
+          "id": "b",
+          "text": "Groundedness (faithfulness)"
+        },
+        {
+          "id": "c",
+          "text": "Tool-call error rate"
+        },
+        {
+          "id": "d",
+          "text": "Cost per task"
+        },
+        {
+          "id": "e",
+          "text": "Guardrail violation rate"
+        }
+      ],
+      "right": [
+        {
+          "id": "p",
+          "text": "Whether the agent achieved the user's goal"
+        },
+        {
+          "id": "q",
+          "text": "Whether claims are supported by retrieved sources"
+        },
+        {
+          "id": "r",
+          "text": "How often tools fail or are called with bad arguments"
+        },
+        {
+          "id": "s",
+          "text": "Tokens and tool spend per completed task"
+        },
+        {
+          "id": "t",
+          "text": "How often safety rules are triggered"
+        },
+        {
+          "id": "u",
+          "text": "Disk usage of the vector store"
+        }
+      ],
+      "pairs": {
+        "a": "p",
+        "b": "q",
+        "c": "r",
+        "d": "s",
+        "e": "t"
+      },
+      "explanation": "Track them per prompt/model version so a deploy can be compared against the previous baseline."
+    },
+    {
+      "id": "judge-tokens",
+      "concept": "Eval cost",
+      "type": "integer",
+      "difficulty": 2,
+      "prompt": "An agent handles 50,000 runs per day. You sample 5% for an LLM judge that reads 4,000 tokens per judged run. How many millions of tokens does the judging consume per day?",
+      "answer": 10,
+      "explanation": "5% of 50,000 = 2,500 runs; 2,500 x 4,000 = 10,000,000 tokens. Sampling keeps judging cost a small fraction of serving cost.",
+      "unit": "M tokens"
+    },
+    {
+      "id": "pass-k",
+      "concept": "Reliability metrics",
+      "type": "integer",
+      "difficulty": 3,
+      "prompt": "An agent solves a task correctly 90% of the time and attempts are independent. What is the percent chance that three repeated attempts at the same task are all correct (one decimal place)?",
+      "answer": 72.9,
+      "explanation": "0.9^3 = 0.729. Reliability metrics such as pass^k fall quickly with k, which is why consistency matters more than a single pass rate for agents.",
+      "unit": "%",
+      "tolerance": 0.05
+    },
+    {
+      "id": "golden-set",
+      "concept": "Golden sets",
+      "type": "assertion",
+      "difficulty": 2,
+      "prompt": "Read the assertion and the reason, then choose the option that describes them correctly.",
+      "assertion": "Run a fixed golden set of cases before every prompt or model change.",
+      "reason": "LLM outputs can be non-deterministic.",
+      "correct": [
+        "b"
+      ],
+      "whys": {
+        "a": "Non-determinism is a reason to use thresholds, not the reason for a golden set.",
+        "b": "Right: both are true; the golden set exists to catch regressions, while non-determinism means you compare pass rates rather than exact outputs.",
+        "c": "Both statements are true.",
+        "d": "The assertion is true."
+      },
+      "explanation": "Keep the set versioned, add every production failure as a new case, and gate deploys on score thresholds."
+    },
+    {
+      "id": "drift",
+      "concept": "Drift monitoring",
+      "type": "assertion",
+      "difficulty": 3,
+      "prompt": "Read the assertion and the reason, then choose the option that describes them correctly.",
+      "assertion": "Production monitoring should track drift in the input distribution as well as offline eval scores.",
+      "reason": "An offline eval set never becomes stale once it is written.",
+      "correct": [
+        "c"
+      ],
+      "whys": {
+        "a": "The reason is false.",
+        "b": "The reason is false.",
+        "c": "Right: users change, so a fixed set drifts away from real traffic and must be refreshed.",
+        "d": "The assertion is the true statement."
+      },
+      "explanation": "Sample production traces into the eval set regularly and compare topic and length distributions over time."
+    },
+    {
+      "id": "agent-monitoring",
+      "concept": "Agent evals",
+      "type": "fill",
+      "difficulty": 2,
+      "prompt": "Complete the monitoring plan for a production agent.",
+      "text": "Record {1} for every run, alert on a rising error {2} and on p95 latency, and send low-scoring samples to {3} review.",
+      "blanks": {
+        "1": "traces",
+        "2": "rate",
+        "3": "human"
+      },
+      "bank": [
+        "traces",
+        "rate",
+        "human",
+        "averages",
+        "password",
+        "compiler"
+      ],
+      "explanation": "A trace with every model call, tool call and token count lets you replay and debug any failed run."
+    },
+    {
+      "id": "agent-alerts",
+      "concept": "Agent evals",
+      "type": "multi",
+      "difficulty": 3,
+      "prompt": "Which signals deserve an alert for a production agent? Select all that apply.",
+      "options": [
+        {
+          "id": "a",
+          "text": "A jump in tool-call error rate after a deploy",
+          "why": "Right: often a schema or dependency break."
+        },
+        {
+          "id": "b",
+          "text": "Cost per task doubling over a day",
+          "why": "Right: loops and retries burn tokens quietly."
+        },
+        {
+          "id": "c",
+          "text": "A guardrail or PII-leak detector firing above its baseline",
+          "why": "Right: safety signals need a fast response."
+        },
+        {
+          "id": "d",
+          "text": "The average answer length changing by 1%",
+          "why": "Small natural variation, not actionable on its own."
+        }
+      ],
+      "correct": [
+        "a",
+        "b",
+        "c"
+      ],
+      "explanation": "Alert on user impact, safety and cost; keep fine-grained drift on dashboards."
+    }
+  ]
+}

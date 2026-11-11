@@ -1,0 +1,441 @@
+{
+  "id": "rm-langchain-rag-tracing-java",
+  "title": "LangChain4j and Spring AI: splitters, retrievers, vector stores and listeners",
+  "topic": "Java",
+  "language": "java",
+  "series": "java-langchain4j-spring-ai",
+  "seriesTitle": "Java: LangChain4j and Spring AI",
+  "seriesDescription": "AI services, tools, chat memory, structured output, RAG and tracing in Java. JEE-Advanced style: integer, assertion-reason, matrix match, fill-in-the-blanks, short code and multi-correct questions.",
+  "seriesOrder": 2,
+  "description": "Document loaders and splitters, content retrievers and the Spring AI VectorStore, query expansion arithmetic, advisors, and observing model calls with ChatModelListener.",
+  "source": "LangChain4j docs (RAG, retrieval augmentor, observability), 1.23 compiled and run locally with the all-MiniLM embedding model; Spring AI reference (vector stores, advisors), 1.1.8 compiled locally",
+  "estimatedMinutes": 18,
+  "questions": [
+    {
+      "id": "multiquery-dedupe",
+      "concept": "Retrievers",
+      "type": "integer",
+      "difficulty": 2,
+      "prompt": "An ExpandingQueryTransformer with its default setting rewrites the question into 3 variants, and each variant retrieves maxResults = 4 chunks. If 4 of the 12 results are repeats of chunks already returned, how many unique chunks go into the prompt?",
+      "answer": 8,
+      "explanation": "3 x 4 = 12 retrieved, minus 4 repeats = 8 unique chunks. I confirmed that the default n is 3 and that the transformer returns only the generated variants. Multi-query raises recall at the cost of an extra model call and a bigger prompt, so aggregate and dedupe before building the context.",
+      "unit": "chunks"
+    },
+    {
+      "id": "context-tokens-from-k",
+      "concept": "RAG context budget",
+      "type": "integer",
+      "difficulty": 1,
+      "prompt": "Segments are 500 tokens each and the retriever returns maxResults = 6. Together with a 400-token prompt template and a 100-token question, how many input tokens does the final chat model call use?",
+      "answer": 3500,
+      "explanation": "6 x 500 = 3,000 context tokens + 400 + 100 = 3,500. Raising maxResults or the segment size grows cost and latency linearly.",
+      "unit": "tokens"
+    },
+    {
+      "id": "hit-rate-at-k",
+      "concept": "Retrieval evaluation",
+      "type": "integer",
+      "difficulty": 2,
+      "prompt": "A retrieval test set has 60 questions, each with one gold segment. The gold segment appears in the top 4 results for 42 of them. What is hit rate at 4, as a percentage?",
+      "answer": 70,
+      "explanation": "42 / 60 = 0.70, so 70 percent. Measure retrieval separately from generation: if the hit rate is low, tuning the prompt cannot help.",
+      "unit": "%"
+    },
+    {
+      "id": "overlap-bound",
+      "concept": "Document splitters",
+      "type": "assertion",
+      "difficulty": 2,
+      "prompt": "Assertion and reason: read both statements and choose the right option.",
+      "assertion": "DocumentSplitters.recursive(500, 600) is rejected, because the overlap is larger than the segment size.",
+      "reason": "The overlap argument must lie between 0 and the maximum segment size.",
+      "correct": [
+        "a"
+      ],
+      "whys": {
+        "a": "Both true, and R explains A: the constructor validates exactly that range.",
+        "b": "Not chosen: R states the rule that triggers the rejection.",
+        "c": "Not chosen: R is true; the error message says the overlap must be between 0 and the segment size.",
+        "d": "Not chosen: A is true; I called it and got an IllegalArgumentException."
+      },
+      "explanation": "Typical advice is a modest overlap of 10 to 20 percent of the segment size, so 500 with 50 is a sensible starting point."
+    },
+    {
+      "id": "query-embedding",
+      "concept": "Retrievers",
+      "type": "assertion",
+      "difficulty": 2,
+      "prompt": "Assertion and reason: read both statements and choose the right option.",
+      "assertion": "EmbeddingStoreContentRetriever embeds the user's query with the EmbeddingModel you give it before it searches the store.",
+      "reason": "InMemoryEmbeddingStore keeps its vectors on the heap and loses them when the process stops.",
+      "correct": [
+        "b"
+      ],
+      "whys": {
+        "a": "Not chosen: persistence has nothing to do with how the query is embedded.",
+        "b": "Both true, but R does not explain A: the query is embedded because search compares vectors, whatever the store keeps them in.",
+        "c": "Not chosen: R is true, so the pair is not A true and R false.",
+        "d": "Not chosen: A is true, the retriever is built from a store and an embedding model."
+      },
+      "explanation": "Use the same embedding model for ingestion and retrieval, and a persistent store in production."
+    },
+    {
+      "id": "threshold",
+      "concept": "Retrievers",
+      "type": "assertion",
+      "difficulty": 3,
+      "prompt": "Assertion and reason: read both statements and choose the right option.",
+      "assertion": "A Spring AI SearchRequest with similarityThreshold(0.6) can return fewer than topK documents.",
+      "reason": "VectorStore.similaritySearch always returns exactly topK documents.",
+      "correct": [
+        "c"
+      ],
+      "whys": {
+        "a": "Not chosen: R is false, so it cannot explain A.",
+        "b": "Not chosen: R is false, so the pair cannot both be true.",
+        "c": "A is true and R is false: documents scoring below the threshold are dropped, so fewer than topK (even none) can come back.",
+        "d": "Not chosen: A is true, because the threshold filters weak matches."
+      },
+      "explanation": "Handle an empty result explicitly, for example with a no-context answer, instead of letting the model guess."
+    },
+    {
+      "id": "mixed-models",
+      "concept": "Embeddings and similarity",
+      "type": "assertion",
+      "difficulty": 3,
+      "prompt": "Assertion and reason: read both statements and choose the right option.",
+      "assertion": "Segments embedded with two different EmbeddingModel instances can be stored in one EmbeddingStore and searched together.",
+      "reason": "A query must be embedded with the same model that embedded the stored segments.",
+      "correct": [
+        "d"
+      ],
+      "whys": {
+        "a": "Not chosen: A is false, so it cannot be explained by R.",
+        "b": "Not chosen: A is false, so it cannot be true together with R.",
+        "c": "Not chosen: A is false, so this option is wrong.",
+        "d": "A is false: vectors from different models live in different spaces and their similarities are meaningless. R is true."
+      },
+      "explanation": "Record the embedding model name with the index so changing it is a planned re-ingestion."
+    },
+    {
+      "id": "rag-parts",
+      "concept": "Document loaders and retrievers",
+      "type": "matrix",
+      "difficulty": 2,
+      "prompt": "Match each LangChain4j or Spring AI piece with its job.",
+      "left": [
+        {
+          "id": "a",
+          "text": "FileSystemDocumentLoader"
+        },
+        {
+          "id": "b",
+          "text": "DocumentSplitters.recursive(500, 50)"
+        },
+        {
+          "id": "c",
+          "text": "EmbeddingStoreContentRetriever"
+        },
+        {
+          "id": "d",
+          "text": "ReciprocalRankFuser"
+        },
+        {
+          "id": "e",
+          "text": "ChatModelListener"
+        }
+      ],
+      "right": [
+        {
+          "id": "p",
+          "text": "Reads files into Document objects"
+        },
+        {
+          "id": "q",
+          "text": "Cuts documents into overlapping text segments"
+        },
+        {
+          "id": "r",
+          "text": "Embeds the query and returns the closest stored segments"
+        },
+        {
+          "id": "s",
+          "text": "Merges several ranked result lists by rank"
+        },
+        {
+          "id": "t",
+          "text": "Receives onRequest, onResponse and onError callbacks for model calls"
+        },
+        {
+          "id": "u",
+          "text": "Encrypts the vectors at rest"
+        }
+      ],
+      "pairs": {
+        "a": "p",
+        "b": "q",
+        "c": "r",
+        "d": "s",
+        "e": "t"
+      },
+      "explanation": "All five classes exist in LangChain4j 1.23 (I imported them). Encryption at rest is a storage feature, not part of these classes."
+    },
+    {
+      "id": "listener-vocab",
+      "concept": "Callbacks and tracing",
+      "type": "fill",
+      "difficulty": 2,
+      "prompt": "Complete the observability sentence.",
+      "text": "Implement {1} and register it on the chat model through the builder's {2} method to receive onRequest, {3} and onError callbacks for every call.",
+      "blanks": {
+        "1": "ChatModelListener",
+        "2": "listeners",
+        "3": "onResponse"
+      },
+      "bank": [
+        "ChatModelListener",
+        "listeners",
+        "onResponse",
+        "onComplete",
+        "TokenStream"
+      ],
+      "explanation": "I attached a listener to an OpenAiChatModel builder and compiled it. Listeners are the place to record prompts, token usage and latency."
+    },
+    {
+      "id": "split-config",
+      "concept": "Document splitters",
+      "type": "code",
+      "difficulty": 1,
+      "prompt": "With LangChain4j, create a recursive document splitter with a maximum segment size of 500 characters and an overlap of 50, then split the Document variable doc into a List<TextSegment>.",
+      "language": "java",
+      "checks": [
+        {
+          "label": "uses the recursive splitter",
+          "pattern": "DocumentSplitters\\s*\\.\\s*recursive\\s*\\(\\s*500\\s*,\\s*50\\s*\\)"
+        },
+        {
+          "label": "splits the document",
+          "pattern": "\\.split\\s*\\(\\s*doc\\s*\\)"
+        },
+        {
+          "label": "collects TextSegments",
+          "pattern": "List\\s*<\\s*TextSegment\\s*>"
+        }
+      ],
+      "model": "DocumentSplitter splitter = DocumentSplitters.recursive(500, 50);\nList<TextSegment> segments = splitter.split(doc);",
+      "explanation": "The recursive splitter tries paragraphs, then lines, sentences, words and finally characters until each piece fits. splitAll(documents) handles a list. Add a TokenCountEstimator as a third argument to size segments in tokens instead of characters."
+    },
+    {
+      "id": "retriever-wiring",
+      "concept": "Retrievers",
+      "type": "code",
+      "difficulty": 2,
+      "prompt": "Build an EmbeddingStoreContentRetriever from the variables store and embeddingModel that returns at most 4 segments scoring at least 0.6, then create an Assistant AI Service from the variable model that uses it.",
+      "language": "java",
+      "checks": [
+        {
+          "label": "builds the retriever",
+          "pattern": "EmbeddingStoreContentRetriever\\s*\\.\\s*builder\\s*\\(\\s*\\)"
+        },
+        {
+          "label": "passes store and embedding model",
+          "pattern": "\\.embeddingStore\\s*\\(\\s*store\\s*\\)[\\s\\S]*\\.embeddingModel\\s*\\(\\s*embeddingModel\\s*\\)|\\.embeddingModel\\s*\\(\\s*embeddingModel\\s*\\)[\\s\\S]*\\.embeddingStore\\s*\\(\\s*store\\s*\\)"
+        },
+        {
+          "label": "limits results and score",
+          "pattern": "\\.maxResults\\s*\\(\\s*4\\s*\\)[\\s\\S]*\\.minScore\\s*\\(\\s*0?\\.6|\\.minScore\\s*\\(\\s*0?\\.6[\\s\\S]*\\.maxResults\\s*\\(\\s*4\\s*\\)"
+        },
+        {
+          "label": "plugs it into the service",
+          "pattern": "AiServices[\\s\\S]*\\.contentRetriever\\s*\\("
+        }
+      ],
+      "model": "ContentRetriever retriever = EmbeddingStoreContentRetriever.builder()\n    .embeddingStore(store)\n    .embeddingModel(embeddingModel)\n    .maxResults(4)\n    .minScore(0.6)\n    .build();\n\nAssistant a = AiServices.builder(Assistant.class)\n    .chatModel(model)\n    .contentRetriever(retriever)\n    .build();",
+      "explanation": "I compiled and ran this with the all-MiniLM embedding model and an in-memory store. Retrieved segments are injected into the user message before the model call. For query rewriting or routing use a DefaultRetrievalAugmentor through retrievalAugmentor(...) instead."
+    },
+    {
+      "id": "spring-search",
+      "concept": "Retrievers",
+      "type": "code",
+      "difficulty": 2,
+      "prompt": "With a Spring AI VectorStore variable vectorStore, fetch the 4 most similar documents for the query 'refund policy' that score at least 0.6, as a List<Document>.",
+      "language": "java",
+      "checks": [
+        {
+          "label": "calls similaritySearch",
+          "pattern": "vectorStore\\s*\\.\\s*similaritySearch\\s*\\("
+        },
+        {
+          "label": "uses a SearchRequest builder",
+          "pattern": "SearchRequest\\s*\\.\\s*builder\\s*\\(\\s*\\)"
+        },
+        {
+          "label": "sets the query",
+          "pattern": "\\.query\\s*\\(\\s*\"refund policy\"\\s*\\)"
+        },
+        {
+          "label": "limits to 4",
+          "pattern": "\\.topK\\s*\\(\\s*4\\s*\\)"
+        },
+        {
+          "label": "applies the score threshold",
+          "pattern": "\\.similarityThreshold\\s*\\(\\s*0?\\.6"
+        }
+      ],
+      "model": "List<Document> docs = vectorStore.similaritySearch(\n    SearchRequest.builder()\n        .query(\"refund policy\")\n        .topK(4)\n        .similarityThreshold(0.6)\n        .build());",
+      "explanation": "I compiled this against Spring AI 1.1.8. A filterExpression(...) on the request limits the search by metadata such as tenant or source, which is how you enforce per-tenant access."
+    },
+    {
+      "id": "qa-advisor",
+      "concept": "Retrievers",
+      "type": "code",
+      "difficulty": 3,
+      "prompt": "Build a Spring AI ChatClient from the ChatModel variable model that automatically retrieves context from the VectorStore variable vectorStore for every prompt by registering a QuestionAnswerAdvisor as a default advisor.",
+      "language": "java",
+      "checks": [
+        {
+          "label": "builds the client from the model",
+          "pattern": "ChatClient\\s*\\.\\s*builder\\s*\\(\\s*model\\s*\\)"
+        },
+        {
+          "label": "registers default advisors",
+          "pattern": "\\.defaultAdvisors\\s*\\("
+        },
+        {
+          "label": "creates a QuestionAnswerAdvisor from the store",
+          "pattern": "QuestionAnswerAdvisor\\s*\\.\\s*builder\\s*\\(\\s*vectorStore\\s*\\)|new\\s+QuestionAnswerAdvisor\\s*\\(\\s*vectorStore"
+        }
+      ],
+      "model": "ChatClient rag = ChatClient.builder(model)\n    .defaultAdvisors(QuestionAnswerAdvisor.builder(vectorStore).build())\n    .build();",
+      "explanation": "The advisor searches the store with the user's text and appends the matches to the prompt before the model call; it needs the spring-ai-advisors-vector-store module (I compiled it against 1.1.8). Pass .searchRequest(SearchRequest.builder().topK(4).build()) to tune the search. RetrievalAugmentationAdvisor adds query rewriting and other stages."
+    },
+    {
+      "id": "chat-listener",
+      "concept": "Callbacks and tracing",
+      "type": "code",
+      "difficulty": 3,
+      "prompt": "Write a class Tracer that implements LangChain4j's ChatModelListener and prints \"request\" in onRequest and \"done\" in onResponse (both take the matching context object), then build an OpenAiChatModel from the String variable key with model name \"gpt-4o-mini\" and that listener registered.",
+      "language": "java",
+      "checks": [
+        {
+          "label": "implements the listener",
+          "pattern": "class\\s+Tracer\\s+implements\\s+ChatModelListener"
+        },
+        {
+          "label": "overrides onRequest with its context",
+          "pattern": "void\\s+onRequest\\s*\\(\\s*ChatModelRequestContext\\s+\\w+\\s*\\)"
+        },
+        {
+          "label": "overrides onResponse with its context",
+          "pattern": "void\\s+onResponse\\s*\\(\\s*ChatModelResponseContext\\s+\\w+\\s*\\)"
+        },
+        {
+          "label": "registers it on the OpenAI builder",
+          "pattern": "OpenAiChatModel\\s*\\.\\s*builder\\s*\\(\\s*\\)[\\s\\S]*\\.listeners\\s*\\(\\s*(List\\.of|Arrays\\.asList)\\s*\\(\\s*new\\s+Tracer\\s*\\(\\s*\\)"
+        }
+      ],
+      "model": "class Tracer implements ChatModelListener {\n  @Override public void onRequest(ChatModelRequestContext ctx) { System.out.println(\"request\"); }\n  @Override public void onResponse(ChatModelResponseContext ctx) { System.out.println(\"done\"); }\n}\n\nChatModel chat = OpenAiChatModel.builder()\n    .apiKey(key)\n    .modelName(\"gpt-4o-mini\")\n    .listeners(List.of(new Tracer()))\n    .build();",
+      "explanation": "All three callbacks are default methods, so you override only what you need; onError receives the failure. I compiled this against LangChain4j 1.23. The contexts carry the request, response, token usage and an attributes map, which is the hook for custom tracing."
+    },
+    {
+      "id": "similarity-threshold-fix",
+      "concept": "Retrievers",
+      "type": "single",
+      "difficulty": 2,
+      "prompt": "Off-topic questions to a Spring AI RAG assistant still retrieve loosely related documents, and the model then builds an answer on them. What is the most targeted fix?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Set a similarityThreshold and answer \"I don't know\" when nothing comes back.",
+          "why": "Right: weak matches are dropped before they reach the prompt."
+        },
+        {
+          "id": "b",
+          "text": "Raise topK to 50 so that the right document is likelier to be among the many results.",
+          "why": "More results add noise and cost; they do not remove irrelevant ones."
+        },
+        {
+          "id": "c",
+          "text": "Lower the model temperature so that the answer sounds more confident and sticks to the context.",
+          "why": "Temperature changes sampling, not which documents were retrieved."
+        },
+        {
+          "id": "d",
+          "text": "Switch to a larger embedding dimension to separate topics, and re-ingest the whole corpus.",
+          "why": "That is expensive and does not by itself stop weak matches from being returned."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Combine a threshold with an instruction to answer only from the context, and test with an off-topic question set."
+    },
+    {
+      "id": "hybrid-fix-java",
+      "concept": "Retrievers",
+      "type": "single",
+      "difficulty": 2,
+      "prompt": "Users search a support index for exact strings such as the error code E-4012, and the embedding-only retriever keeps missing them. What is the most targeted fix in a LangChain4j or Spring AI application?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Add a keyword retriever next to the embedding one and fuse the two rankings by rank.",
+          "why": "Right: lexical matching catches rare exact tokens that embeddings blur, and rank fusion needs no score normalisation."
+        },
+        {
+          "id": "b",
+          "text": "Increase the segment overlap to 80 percent so that every error code appears in many more of the stored segments.",
+          "why": "Overlap duplicates text but does nothing for how embeddings treat rare tokens."
+        },
+        {
+          "id": "c",
+          "text": "Raise the model temperature so that the generator can guess the missing error code on its own when it is absent.",
+          "why": "Sampling noise cannot restore a segment the retriever never returned."
+        },
+        {
+          "id": "d",
+          "text": "Replace the embedding model with one that has a smaller vector dimension to speed up every lookup.",
+          "why": "A smaller dimension is cheaper but usually blurs rare tokens even more."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "LangChain4j's DefaultContentAggregator fuses the result lists of several ContentRetrievers by reciprocal rank (I found ReciprocalRankFuser in its bytecode). Hybrid search is the standard answer for IDs, SKUs and error codes."
+    },
+    {
+      "id": "vector-facts",
+      "concept": "Embeddings and similarity",
+      "type": "multi",
+      "difficulty": 2,
+      "prompt": "Which statements about operating an embedding index in Java applications are correct? Select all that apply.",
+      "options": [
+        {
+          "id": "a",
+          "text": "The query and the stored segments must be embedded with the same model.",
+          "why": "Right: otherwise their vectors are not comparable."
+        },
+        {
+          "id": "b",
+          "text": "Changing the embedding model means re-ingesting the corpus.",
+          "why": "Right: old vectors do not match the new model's space."
+        },
+        {
+          "id": "c",
+          "text": "InMemoryEmbeddingStore is a good choice for a production service that must survive restarts.",
+          "why": "It keeps vectors on the heap and loses them when the process stops."
+        },
+        {
+          "id": "d",
+          "text": "A cosine similarity of 0.8 means that 80 percent of the words match.",
+          "why": "Similarity is geometric, not a word-overlap percentage."
+        }
+      ],
+      "correct": [
+        "a",
+        "b"
+      ],
+      "explanation": "Store the embedding model name with the index metadata and plan a migration as a re-ingestion."
+    }
+  ]
+}

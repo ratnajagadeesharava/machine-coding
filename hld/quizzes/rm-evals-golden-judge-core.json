@@ -1,0 +1,337 @@
+{
+  "id": "rm-evals-golden-judge-core",
+  "title": "Evals: golden datasets, CI gates and LLM-as-judge",
+  "topic": "Language-independent",
+  "language": "neutral",
+  "series": "core-llm-evals",
+  "seriesTitle": "Core: LLM evals",
+  "seriesDescription": "Golden datasets, LLM-as-judge, online monitoring and red teaming. JEE-Advanced style: integer, assertion-reason, matrix match, fill-in-the-blanks, short code and multi-correct questions.",
+  "seriesOrder": 1,
+  "description": "Golden datasets, regression suites and CI thresholds, LLM-as-judge rubrics and biases, calibration against human labels, and pass@k.",
+  "source": "Zheng et al. MT-Bench and Chatbot Arena (NeurIPS 2023); Ragas, DeepEval and Langfuse docs; tau-bench (Yao et al.); Codex paper (Chen et al.) for pass@k; pytest docs",
+  "estimatedMinutes": 15,
+  "questions": [
+    {
+      "id": "gate-failures",
+      "concept": "Regression suites in CI",
+      "type": "integer",
+      "difficulty": 1,
+      "prompt": "Your golden suite has 200 cases and the CI gate requires a pass rate of at least 92%. What is the maximum number of failing cases that still lets the build pass?",
+      "answer": 16,
+      "unit": "cases",
+      "explanation": "92% of 200 is 184 passes, so at most 200 - 184 = 16 failures are tolerated. Many teams also gate on per-category minimums so a critical category cannot hide inside the average."
+    },
+    {
+      "id": "pin-model",
+      "concept": "Regression suites in CI",
+      "type": "assertion",
+      "difficulty": 2,
+      "prompt": "Read the assertion (A) and the reason (R), then choose the correct option.",
+      "assertion": "For regression runs you should pin the model snapshot and use temperature 0.",
+      "reason": "Provider aliases can point at newer model versions over time, and sampling adds run-to-run variation.",
+      "correct": [
+        "a"
+      ],
+      "whys": {
+        "a": "Correct: both effects make results flaky or drift silently, so pinning removes them (temperature 0 reduces but may not fully eliminate non-determinism).",
+        "b": "R is not a side fact; it is the reason pinning is advised.",
+        "c": "R is true: floating aliases do move.",
+        "d": "A is true; pinning is standard practice."
+      },
+      "explanation": "Also record prompt version, retrieval index version and dataset version with each run so results are comparable."
+    },
+    {
+      "id": "verbosity",
+      "concept": "LLM-as-judge biases",
+      "type": "assertion",
+      "difficulty": 2,
+      "prompt": "Read the assertion (A) and the reason (R), then choose the correct option.",
+      "assertion": "LLM judges tend to prefer longer answers, which is called verbosity bias.",
+      "reason": "Verbosity bias disappears once the judge prompt says to be objective and fair.",
+      "correct": [
+        "c"
+      ],
+      "whys": {
+        "a": "R is false, so it cannot be the explanation.",
+        "b": "R is false, not merely unrelated.",
+        "c": "Correct: A is true (documented in the MT-Bench work), but a polite instruction alone does not remove it; use rubrics, length controls and human calibration.",
+        "d": "A is true, so this option is wrong."
+      },
+      "explanation": "Mitigations: criteria-based rubrics, penalise padding explicitly, compare against reference answers, and check score vs length correlation."
+    },
+    {
+      "id": "position-swap",
+      "concept": "LLM-as-judge biases",
+      "type": "assertion",
+      "difficulty": 3,
+      "prompt": "Read the assertion (A) and the reason (R), then choose the correct option.",
+      "assertion": "In pairwise judging, running each comparison in both orders (A,B then B,A) reduces position bias.",
+      "reason": "A judge can be calibrated against human labels by measuring agreement with Cohen's kappa.",
+      "correct": [
+        "b"
+      ],
+      "whys": {
+        "a": "R is true but it concerns calibration, not order effects, so it does not explain A.",
+        "b": "Correct: swapping removes first-position preference (A true), and kappa-based calibration (R true) is a separate technique.",
+        "c": "R is true: kappa corrects raw agreement for chance.",
+        "d": "A is true; inconsistent verdicts across orders are usually treated as ties."
+      },
+      "explanation": "If the verdict flips when the order flips, treat it as a tie or as low-confidence."
+    },
+    {
+      "id": "self-preference",
+      "concept": "LLM-as-judge biases",
+      "type": "assertion",
+      "difficulty": 3,
+      "prompt": "Read the assertion (A) and the reason (R), then choose the correct option.",
+      "assertion": "A model is an unbiased judge of its own outputs.",
+      "reason": "Judges often score text that resembles their own style or wording more favourably (self-preference bias).",
+      "correct": [
+        "d"
+      ],
+      "whys": {
+        "a": "A is false, so no reason can make this pair correct.",
+        "b": "A is false.",
+        "c": "R is true, so this option is wrong.",
+        "d": "Correct: A is false because of self-preference bias, and R is true. Prefer a different or stronger judge model family and verify with humans."
+      },
+      "explanation": "Zheng et al. (MT-Bench) call this self-enhancement bias; later work calls it self-preference. Use a judge from a different family than the generator where possible, and spot-check with human labels."
+    },
+    {
+      "id": "kappa",
+      "concept": "Calibrating the judge",
+      "type": "integer",
+      "difficulty": 3,
+      "prompt": "A judge and a human agree on 90% of 100 labelled answers. By chance alone the expected agreement is 50%. Compute Cohen's kappa = (observed - expected) / (1 - expected), multiplied by 100.",
+      "answer": 80,
+      "explanation": "(0.90 - 0.50) / (1 - 0.50) = 0.80. Kappa discounts agreement that would happen by luck, which matters when one label dominates."
+    },
+    {
+      "id": "rubric-design",
+      "concept": "LLM-as-judge rubrics",
+      "type": "single",
+      "difficulty": 2,
+      "prompt": "Which judge prompt design gives the most reliable and debuggable scores for a support-bot answer?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Separate criteria with anchored definitions per score level, reasoning first, then a score.",
+          "why": "Right: anchored rubrics and short rationale reduce noise and make failures inspectable."
+        },
+        {
+          "id": "b",
+          "text": "\"Rate the answer from 1 to 10 for overall quality.\" with no further instruction at all given to the judge model.",
+          "why": "Vague scales produce noisy, clustered scores that drift between runs."
+        },
+        {
+          "id": "c",
+          "text": "Ask the judge to reply with only the number, hiding its reasoning, so that scores are cheaper to generate for every case.",
+          "why": "Hiding the rationale saves little and makes the verdicts impossible to audit."
+        },
+        {
+          "id": "d",
+          "text": "Show the judge the candidate model name so it can account for what that model usually does well or badly.",
+          "why": "Revealing identity adds bias; judges should be blind to the source."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Keep scales small (pass/fail or 1-5 with anchors), judge one criterion per call where possible, and version the rubric like code."
+    },
+    {
+      "id": "calibrate-steps",
+      "concept": "Calibrating the judge",
+      "type": "multi",
+      "difficulty": 2,
+      "prompt": "Which steps belong in calibrating an LLM judge before you trust it in CI? Select all that apply.",
+      "options": [
+        {
+          "id": "a",
+          "text": "Have humans label a stratified sample of real outputs.",
+          "why": "Right: you need ground truth to measure against."
+        },
+        {
+          "id": "b",
+          "text": "Measure agreement (kappa or per-class precision/recall) and iterate on the rubric.",
+          "why": "Right: tune the prompt and examples until agreement is acceptable."
+        },
+        {
+          "id": "c",
+          "text": "Skip human labels if the judge model is the largest available.",
+          "why": "Size does not prove it matches your quality bar."
+        },
+        {
+          "id": "d",
+          "text": "Accept the judge after it looks sensible on three examples.",
+          "why": "Three examples cannot show reliability."
+        }
+      ],
+      "correct": [
+        "a",
+        "b"
+      ],
+      "explanation": "Re-check calibration when the judge model, rubric or traffic mix changes."
+    },
+    {
+      "id": "golden-fill",
+      "concept": "Golden datasets",
+      "type": "fill",
+      "difficulty": 1,
+      "prompt": "Complete the golden-dataset guidance.",
+      "text": "A golden set should include {1} questions, edge cases and past {2}; run a small subset on every pull request and the full suite {3}.",
+      "blanks": {
+        "1": "typical",
+        "2": "production failures",
+        "3": "nightly"
+      },
+      "bank": [
+        "typical",
+        "production failures",
+        "nightly",
+        "random noise",
+        "never"
+      ],
+      "explanation": "Add each real incident as a new case with the expected behaviour so it can never regress silently. Version the dataset."
+    },
+    {
+      "id": "judge-deterministic",
+      "concept": "LLM-as-judge rubrics",
+      "type": "truefalse",
+      "difficulty": 1,
+      "prompt": "True or false: with temperature 0 an LLM judge is guaranteed to return the same score every run.",
+      "options": [
+        {
+          "id": "a",
+          "text": "True",
+          "why": "Even at temperature 0, batching and hardware effects can change outputs."
+        },
+        {
+          "id": "b",
+          "text": "False",
+          "why": "Correct: determinism is not guaranteed, and a provider model update can change scores, so repeat borderline cases and pin versions."
+        }
+      ],
+      "correct": [
+        "b"
+      ],
+      "explanation": "Estimate judge noise by re-scoring a sample several times."
+    },
+    {
+      "id": "reference-free",
+      "concept": "Eval tooling",
+      "type": "truefalse",
+      "difficulty": 2,
+      "prompt": "True or false: a RAG faithfulness metric (does the answer follow from the retrieved context) can be computed without a ground-truth answer.",
+      "options": [
+        {
+          "id": "a",
+          "text": "True",
+          "why": "Correct: it compares the answer against the retrieved context, so no reference answer is required."
+        },
+        {
+          "id": "b",
+          "text": "False",
+          "why": "It needs context and answer, not a gold answer."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Reference-free metrics are useful for online monitoring on unlabeled traffic, but still need calibration."
+    },
+    {
+      "id": "pass-at-k",
+      "concept": "Reliability metrics",
+      "type": "integer",
+      "difficulty": 3,
+      "prompt": "A code agent is sampled n = 10 times on a task and c = 3 samples pass. Using the unbiased pass@k estimator 1 - C(n-c, k) / C(n, k) from the Codex paper, compute pass@2 multiplied by 100, rounded to the nearest integer.",
+      "answer": 53,
+      "tolerance": 0.5,
+      "explanation": "C(7,2) = 21 and C(10,2) = 45, so pass@2 = 1 - 21/45 = 0.533, i.e. 53. pass@k asks whether at least one of k tries succeeds, whereas pass^k (tau-bench) asks whether all k succeed."
+    },
+    {
+      "id": "judge-bias-fix",
+      "concept": "LLM judges",
+      "type": "matrix",
+      "difficulty": 2,
+      "prompt": "Match each LLM-as-judge weakness reported by Zheng et al. to a standard mitigation.",
+      "left": [
+        {
+          "id": "a",
+          "text": "Position bias"
+        },
+        {
+          "id": "b",
+          "text": "Verbosity bias"
+        },
+        {
+          "id": "c",
+          "text": "Self-enhancement bias"
+        },
+        {
+          "id": "d",
+          "text": "Weak grading of maths and reasoning answers"
+        }
+      ],
+      "right": [
+        {
+          "id": "p",
+          "text": "Judge both orders and treat a flip as a tie"
+        },
+        {
+          "id": "q",
+          "text": "Rubric that penalises padding, and check score against length"
+        },
+        {
+          "id": "r",
+          "text": "Use a judge from a different model family than the generator"
+        },
+        {
+          "id": "s",
+          "text": "Give the judge a reference answer or ask it to solve the task first"
+        },
+        {
+          "id": "t",
+          "text": "Raise the judge temperature to 1.5"
+        }
+      ],
+      "pairs": {
+        "a": "p",
+        "b": "q",
+        "c": "r",
+        "d": "s"
+      },
+      "explanation": "The MT-Bench paper proposes swapping positions, few-shot examples, chain-of-thought and reference-guided judging; the rest are practitioner extensions."
+    },
+    {
+      "id": "gate-by-category",
+      "concept": "Regression suites in CI",
+      "type": "code",
+      "difficulty": 2,
+      "prompt": "Table eval_results(run_id, category, passed) stores one row per golden case, with passed as 1 or 0. Write a query that lists, for run 'r42', every category whose pass rate is below 0.9, together with that pass rate.",
+      "language": "sql",
+      "checks": [
+        {
+          "label": "filters to the run",
+          "pattern": "run_id\\s*=\\s*'r42'"
+        },
+        {
+          "label": "groups by category",
+          "pattern": "group\\s+by\\s+category"
+        },
+        {
+          "label": "computes a pass rate",
+          "pattern": "avg\\s*\\(|sum\\s*\\([^)]*\\)\\s*(\\*\\s*1\\.0\\s*)?/\\s*count"
+        },
+        {
+          "label": "keeps only rates below 0.9",
+          "pattern": "having[\\s\\S]*<\\s*0?\\.9|<\\s*0?\\.9"
+        }
+      ],
+      "model": "SELECT category, AVG(passed) AS pass_rate\nFROM eval_results\nWHERE run_id = 'r42'\nGROUP BY category\nHAVING AVG(passed) < 0.9;",
+      "explanation": "A per-category gate stops a critical category hiding inside a healthy average. AVG over a 0/1 column is the pass rate; HAVING filters the groups after aggregation. Equivalent forms with SUM(passed) * 1.0 / COUNT(*) pass.",
+      "starter": "SELECT "
+    }
+  ]
+}

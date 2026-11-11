@@ -1,0 +1,443 @@
+{
+  "id": "rm-safety-guardrails-core",
+  "title": "Agent safety: deterministic guardrails and verifiers",
+  "topic": "Language-independent",
+  "language": "neutral",
+  "series": "core-agent-safety",
+  "seriesTitle": "Core: agent safety",
+  "seriesDescription": "Guardrails, validate-and-retry, constrained tools, approvals and audit trails. JEE-Advanced style: integer, assertion-reason, matrix match, fill-in-the-blanks, short code and multi-correct questions.",
+  "seriesOrder": 1,
+  "description": "Why safety belongs in code rather than prompts: schema validation, allow-lists, SELECT-only guards, read-only roles, verifiers and defence in depth for LLM agents.",
+  "source": "JSON Schema specification; PostgreSQL docs (roles, statement_timeout); OWASP Top 10 for LLM Applications 2025",
+  "estimatedMinutes": 13,
+  "questions": [
+    {
+      "id": "guard-count",
+      "concept": "SQL guard",
+      "type": "integer",
+      "difficulty": 3,
+      "prompt": "A guard accepts SQL only if it parses into exactly one statement whose root node is a plain SELECT. Of these five inputs, how many pass: (1) SELECT 1; (2) SELECT 1; DROP TABLE t; (3) WITH x AS (SELECT 1) SELECT * FROM x; (4) SELECT 1 UNION SELECT 2; (5) DELETE FROM t?",
+      "answer": 2,
+      "unit": "inputs",
+      "explanation": "Inputs 1 and 3 pass (a WITH clause hangs off the SELECT node). Input 2 has two statements, input 4 has a Union root rather than a Select, and input 5 is a Delete. Union is a common false rejection, so a production guard usually allows set operations explicitly."
+    },
+    {
+      "id": "prompt-vs-code",
+      "concept": "Why deterministic",
+      "type": "assertion",
+      "difficulty": 1,
+      "prompt": "Read the assertion (A) and the reason (R), then choose the correct option.",
+      "assertion": "Safety rules such as \"never delete data\" should be enforced in code, not only stated in the prompt.",
+      "reason": "A prompt is a request to the model, not an enforcement mechanism, whereas code checks run the same way every time.",
+      "correct": [
+        "a"
+      ],
+      "whys": {
+        "a": "Correct: the model may ignore, misread or be tricked out of an instruction, while a code check cannot be argued with.",
+        "b": "R is the direct reason, so it explains A.",
+        "c": "R is true.",
+        "d": "A is true."
+      },
+      "explanation": "Use the prompt for behaviour and tone; use code for anything with a cost if violated."
+    },
+    {
+      "id": "allow-list",
+      "concept": "Allow-lists",
+      "type": "assertion",
+      "difficulty": 2,
+      "prompt": "Read the assertion (A) and the reason (R), then choose the correct option.",
+      "assertion": "For which tools an agent may call, an allow-list is safer than a deny-list.",
+      "reason": "Hash sets give constant-time membership tests.",
+      "correct": [
+        "b"
+      ],
+      "whys": {
+        "a": "R is true but speed is not why allow-lists are safer.",
+        "b": "Correct: unknown tools are rejected by default (A), and O(1) lookup (R) is true but irrelevant to safety.",
+        "c": "R is true.",
+        "d": "A is true: deny-lists miss new or renamed items."
+      },
+      "explanation": "Default deny: anything not named is refused."
+    },
+    {
+      "id": "readonly-role",
+      "concept": "SQL guard",
+      "type": "assertion",
+      "difficulty": 3,
+      "prompt": "Read the assertion (A) and the reason (R), then choose the correct option.",
+      "assertion": "Running LLM-generated SQL under a read-only database role adds defence in depth even when a parser guard exists.",
+      "reason": "Once the application validates the SQL, the database role no longer matters.",
+      "correct": [
+        "c"
+      ],
+      "whys": {
+        "a": "R is false, so it cannot explain A.",
+        "b": "R is false, not just unrelated.",
+        "c": "Correct: A is true because parsers have gaps and bugs, so layers matter. R is false: it is the very argument defence in depth rejects.",
+        "d": "A is true."
+      },
+      "explanation": "Pair the role with a statement timeout, row limit and least-privilege views that hide sensitive columns."
+    },
+    {
+      "id": "keyword-block",
+      "concept": "SQL guard",
+      "type": "assertion",
+      "difficulty": 3,
+      "prompt": "Read the assertion (A) and the reason (R), then choose the correct option.",
+      "assertion": "Blocking the keyword DROP with a regular expression is a robust SQL safety guard.",
+      "reason": "SQL can be varied with case, comments, quoting and other statements, so keyword filters are easy to bypass.",
+      "correct": [
+        "d"
+      ],
+      "whys": {
+        "a": "A is false.",
+        "b": "A is false, so the pair is not both-true.",
+        "c": "R is true, so this option is wrong.",
+        "d": "Correct: A is false, R is true. Parse the SQL into an AST and allow-list node types instead."
+      },
+      "explanation": "Also note that DROP is not the only danger: DELETE, UPDATE, COPY, pg_sleep and file functions matter too."
+    },
+    {
+      "id": "controls",
+      "concept": "Defence in depth",
+      "type": "matrix",
+      "difficulty": 2,
+      "prompt": "Match each control to the risk it mitigates.",
+      "left": [
+        {
+          "id": "a",
+          "text": "Allow-list of tool names"
+        },
+        {
+          "id": "b",
+          "text": "Read-only role and statement timeout"
+        },
+        {
+          "id": "c",
+          "text": "Schema validation of arguments"
+        },
+        {
+          "id": "d",
+          "text": "PII redaction on output"
+        },
+        {
+          "id": "e",
+          "text": "Automatic LIMIT on queries"
+        }
+      ],
+      "right": [
+        {
+          "id": "p",
+          "text": "The model calls a tool it should not have"
+        },
+        {
+          "id": "q",
+          "text": "A destructive or runaway query"
+        },
+        {
+          "id": "r",
+          "text": "Malformed or out-of-range tool arguments"
+        },
+        {
+          "id": "s",
+          "text": "Leaking emails or phone numbers to the user"
+        },
+        {
+          "id": "t",
+          "text": "Result sets that exhaust memory or context"
+        },
+        {
+          "id": "u",
+          "text": "Slow embedding lookups"
+        }
+      ],
+      "pairs": {
+        "a": "p",
+        "b": "q",
+        "c": "r",
+        "d": "s",
+        "e": "t"
+      },
+      "explanation": "Interviewers like a table of control versus threat, plus the point that no single control is enough."
+    },
+    {
+      "id": "guard-fill",
+      "concept": "Why deterministic",
+      "type": "fill",
+      "difficulty": 1,
+      "prompt": "Complete the guardrail principle.",
+      "text": "Guardrails that run in {1} are deterministic and testable, a prompt instruction is only {2}, and for tools you prefer an {3} over a deny-list.",
+      "blanks": {
+        "1": "code",
+        "2": "advisory",
+        "3": "allow-list"
+      },
+      "bank": [
+        "code",
+        "advisory",
+        "allow-list",
+        "deny-list",
+        "mandatory"
+      ],
+      "explanation": "Deterministic checks can be unit-tested, replayed from logs and audited; prompts cannot."
+    },
+    {
+      "id": "refund-limit",
+      "concept": "Verifiers",
+      "type": "single",
+      "difficulty": 2,
+      "prompt": "An agent issues refunds and the rule is \"never refund more than the order total\". Which is the strongest control?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Code compares amount with the stored order total first.",
+          "why": "Right: the rule is enforced in code against the source of truth."
+        },
+        {
+          "id": "b",
+          "text": "Add \"never refund more than the order total\" in capital letters to the system prompt.",
+          "why": "The model can still be talked out of it or err."
+        },
+        {
+          "id": "c",
+          "text": "Ask a second model whether the refund looks reasonable before proceeding with the payment.",
+          "why": "A model judge is probabilistic and can be persuaded too."
+        },
+        {
+          "id": "d",
+          "text": "Trust the amount supplied by the customer in the chat when it seems plausible to the agent.",
+          "why": "User-supplied values are untrusted input."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Verify against authoritative data, not against what the model or user claims."
+    },
+    {
+      "id": "verifier-checks",
+      "concept": "Verifiers",
+      "type": "multi",
+      "difficulty": 2,
+      "prompt": "Which properties of an agent answer can a deterministic verifier check? Select all that apply.",
+      "options": [
+        {
+          "id": "a",
+          "text": "The output parses as JSON that matches the required schema.",
+          "why": "Right: schema validation is mechanical."
+        },
+        {
+          "id": "b",
+          "text": "Every cited document id exists in the set of retrieved documents.",
+          "why": "Right: set membership is mechanical."
+        },
+        {
+          "id": "c",
+          "text": "The invoice line items add up to the stated total.",
+          "why": "Right: arithmetic can be recomputed."
+        },
+        {
+          "id": "d",
+          "text": "The reply sounds friendly and empathetic to the customer.",
+          "why": "Tone is subjective and needs a model or human judge."
+        }
+      ],
+      "correct": [
+        "a",
+        "b",
+        "c"
+      ],
+      "explanation": "Use deterministic checks wherever possible, then LLM judges for the subjective remainder."
+    },
+    {
+      "id": "approval-count",
+      "concept": "Defence in depth",
+      "type": "integer",
+      "difficulty": 1,
+      "prompt": "A policy says refunds strictly above $100 need approval. An agent plans 40 refunds: 20 of $50, 12 of $100 and 8 of $250. How many need approval?",
+      "answer": 8,
+      "unit": "refunds",
+      "explanation": "Only the eight $250 refunds exceed $100. The twelve $100 refunds equal the limit, so they do not need approval under \"strictly above\". Boundary conditions like this are classic guard bugs."
+    },
+    {
+      "id": "judge-guard",
+      "concept": "Why deterministic",
+      "type": "truefalse",
+      "difficulty": 2,
+      "prompt": "True or false: asking a second LLM to check the first LLM's output is a deterministic guardrail.",
+      "options": [
+        {
+          "id": "a",
+          "text": "True",
+          "why": "It is a model call."
+        },
+        {
+          "id": "b",
+          "text": "False",
+          "why": "Correct: a second model is still probabilistic and can be manipulated; it is a useful extra layer but not a replacement for code checks."
+        }
+      ],
+      "correct": [
+        "b"
+      ],
+      "explanation": "Layer them: code checks first, model judges second, human review for high risk."
+    },
+    {
+      "id": "owasp-matrix",
+      "concept": "OWASP LLM Top 10",
+      "type": "matrix",
+      "difficulty": 2,
+      "prompt": "Match each scenario to the OWASP Top 10 for LLM Applications (2025) category it illustrates.",
+      "left": [
+        {
+          "id": "a",
+          "text": "A web page the assistant summarises hides instructions that make it email the chat history"
+        },
+        {
+          "id": "b",
+          "text": "The bot repeats another customer's phone number from its training or context data"
+        },
+        {
+          "id": "c",
+          "text": "An agent holding delete rights on every table drops one after a bad plan"
+        },
+        {
+          "id": "d",
+          "text": "A user floods the endpoint with huge prompts and the monthly bill explodes"
+        },
+        {
+          "id": "e",
+          "text": "Users coax the bot into printing its hidden system prompt and embedded keys"
+        }
+      ],
+      "right": [
+        {
+          "id": "p",
+          "text": "LLM01 Prompt Injection"
+        },
+        {
+          "id": "q",
+          "text": "LLM02 Sensitive Information Disclosure"
+        },
+        {
+          "id": "r",
+          "text": "LLM06 Excessive Agency"
+        },
+        {
+          "id": "s",
+          "text": "LLM10 Unbounded Consumption"
+        },
+        {
+          "id": "t",
+          "text": "LLM07 System Prompt Leakage"
+        },
+        {
+          "id": "u",
+          "text": "LLM03 Supply Chain"
+        }
+      ],
+      "pairs": {
+        "a": "p",
+        "b": "q",
+        "c": "r",
+        "d": "s",
+        "e": "t"
+      },
+      "explanation": "In the 2025 list Sensitive Information Disclosure rose to LLM02, Excessive Agency is LLM06, and System Prompt Leakage (LLM07) and Vector and Embedding Weaknesses (LLM08) are new. Categories overlap in real incidents, so name the primary control for each."
+    },
+    {
+      "id": "indirect-injection",
+      "concept": "Prompt injection",
+      "type": "single",
+      "difficulty": 3,
+      "prompt": "An email-triage agent can read mail and send replies. An attacker's email contains hidden instructions to forward the inbox. Which control best limits the damage?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Least-privilege tools plus a human approval step for sending.",
+          "why": "Right: you cannot reliably stop injected text, so limit what the agent may do and gate irreversible actions."
+        },
+        {
+          "id": "b",
+          "text": "A stronger system prompt that says to ignore instructions in emails.",
+          "why": "The model cannot reliably tell data from instructions; prompt wording is advisory and can be bypassed."
+        },
+        {
+          "id": "c",
+          "text": "Asking the user to avoid opening suspicious emails in the app.",
+          "why": "Users cannot see hidden text, and the agent reads mail without them opening anything."
+        },
+        {
+          "id": "d",
+          "text": "Lowering the temperature so the agent follows instructions exactly.",
+          "why": "Temperature affects randomness, not whether untrusted text is treated as a command."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "OWASP LLM01 advice: constrain privileges, require human approval for privileged operations, segregate untrusted content and validate outputs in code. No filter is complete, so design for a successful injection."
+    },
+    {
+      "id": "json-schema-args",
+      "concept": "Schema validation",
+      "type": "code",
+      "difficulty": 2,
+      "prompt": "Write a JSON Schema for the arguments of a refund tool: order_id is a string matching ORD- followed by exactly six digits, amount is a number greater than 0 and at most 500, both are required, and no other properties are allowed.",
+      "language": "json",
+      "checks": [
+        {
+          "label": "pattern for ORD- plus six digits",
+          "pattern": "\"pattern\"\\s*:\\s*\"\\^?ORD-(\\[0-9\\]|\\\\+d)\\{6\\}\\$?\""
+        },
+        {
+          "label": "amount strictly above 0",
+          "pattern": "\"exclusiveMinimum\"\\s*:\\s*0"
+        },
+        {
+          "label": "amount at most 500",
+          "pattern": "\"maximum\"\\s*:\\s*500"
+        },
+        {
+          "label": "both fields required",
+          "pattern": "\"required\"\\s*:\\s*\\[(?=[^\\]]*order_id)(?=[^\\]]*amount)[^\\]]*\\]"
+        },
+        {
+          "label": "rejects extra properties",
+          "pattern": "\"additionalProperties\"\\s*:\\s*false"
+        }
+      ],
+      "model": "{\n  \"type\": \"object\",\n  \"properties\": {\n    \"order_id\": { \"type\": \"string\", \"pattern\": \"^ORD-[0-9]{6}$\" },\n    \"amount\": { \"type\": \"number\", \"exclusiveMinimum\": 0, \"maximum\": 500 }\n  },\n  \"required\": [\"order_id\", \"amount\"],\n  \"additionalProperties\": false\n}",
+      "explanation": "Validate every tool call against this schema in code before it runs, and reject instead of coercing. In draft-04 style schemas exclusiveMinimum is a boolean beside minimum; the draft 2019-09 and later form shown here takes the number. An anchored pattern matters: without ^ and $ a value such as xORD-123456789 would still match.",
+      "starter": "{\n"
+    },
+    {
+      "id": "readonly-role-sql",
+      "concept": "SQL guard",
+      "type": "code",
+      "difficulty": 3,
+      "prompt": "In PostgreSQL, create a role agent_ro that can log in, give it read access to only the tables orders and customers, and cap every query it runs at 5 seconds.",
+      "language": "sql",
+      "checks": [
+        {
+          "label": "creates the role with login",
+          "pattern": "create\\s+(role|user)\\s+agent_ro[\\s\\S]*login|create\\s+user\\s+agent_ro"
+        },
+        {
+          "label": "grants SELECT on orders",
+          "pattern": "grant\\s+select\\s+on[^;]*\\borders\\b[^;]*to\\s+agent_ro"
+        },
+        {
+          "label": "grants SELECT on customers",
+          "pattern": "grant\\s+select\\s+on[^;]*\\bcustomers\\b[^;]*to\\s+agent_ro"
+        },
+        {
+          "label": "sets a 5 second statement timeout",
+          "pattern": "statement_timeout\\s*(=|to)\\s*'?(5s|5000|5\\s*s)"
+        }
+      ],
+      "model": "CREATE ROLE agent_ro LOGIN;\nGRANT SELECT ON orders, customers TO agent_ro;\nALTER ROLE agent_ro SET statement_timeout = '5s';",
+      "explanation": "Least privilege plus a runaway-query cap, so a bad generated query cannot write or hold a connection for minutes. Two separate GRANT statements, or a view over only the allowed columns, are equally valid. Pair it with a row limit and an application-side guard."
+    }
+  ]
+}

@@ -1,0 +1,513 @@
+{
+  "id": "rm-lang-strings-memory-java",
+  "title": "Language core: strings, immutability and memory (Java)",
+  "topic": "Java",
+  "series": "java-strings-memory",
+  "seriesTitle": "Java: strings, memory and garbage collection",
+  "seriesOrder": 1,
+  "seriesDescription": "String pool, immutability, heap and stack, generations, G1, leaks. JEE-Advanced style: integer, assertion-reason, matrix match, fill-in-the-blanks, short code and multi-correct questions.",
+  "language": "java",
+  "description": "String pool and == vs equals, StringBuilder, immutable classes, heap vs stack, generations, G1 and Metaspace, reference types, leak causes, reachability and shallow array clones.",
+  "source": "JLS 3.10.5, 15.18.1 and 15.29; Oracle JVM GC Tuning Guide; JEP 122 (Metaspace) and JEP 248 (G1 default for server-class machines in JDK 9); java.lang.ref docs; Effective Java (Bloch) items 17, 50; Baeldung; Toptal interview list",
+  "estimatedMinutes": 17,
+  "questions": [
+    {
+      "id": "string-pool-count",
+      "concept": "String pool",
+      "type": "integer",
+      "difficulty": 2,
+      "prompt": "Consider:\nString a = \"hi\", b = \"hi\";\nString c = new String(\"hi\");\nString d = c.intern();\nHow many of these six expressions are true: a == b, a == c, a == d, c == d, a.equals(c), c.equals(d)?",
+      "answer": 4,
+      "explanation": "Literals share one pooled object (a == b). new String creates a separate heap object (a == c and c == d are false). intern() returns the pooled instance (a == d). Both equals calls are true. Total 4. (Verified by running it.)"
+    },
+    {
+      "id": "constant-folding",
+      "concept": "String pool",
+      "type": "single",
+      "difficulty": 3,
+      "prompt": "What do these Java comparisons print?\nString s1 = \"ab\", s2 = \"a\" + \"b\";\nString s3 = \"a\", s4 = s3 + \"b\";\nSystem.out.println((s1 == s2) + \" \" + (s1 == s4));\nWhat is printed?",
+      "options": [
+        {
+          "id": "a",
+          "text": "true true",
+          "why": "Only constant expressions are folded by the compiler; s3 is not a constant, so s4 is built at runtime."
+        },
+        {
+          "id": "b",
+          "text": "false false",
+          "why": "\"a\" + \"b\" is a compile-time constant and is interned, so s1 == s2 is true."
+        },
+        {
+          "id": "c",
+          "text": "true false",
+          "why": "Correct: s2 is folded to the pooled \"ab\", while s4 is created at runtime as a new object."
+        },
+        {
+          "id": "d",
+          "text": "false true",
+          "why": "It is the other way round: the constant matches, the runtime concatenation does not."
+        }
+      ],
+      "correct": [
+        "c"
+      ],
+      "explanation": "If s3 were declared final String s3 = \"a\", then s3 + \"b\" would be a constant expression and s1 == s4 would be true. Always compare strings with equals. (Verified by running it.)"
+    },
+    {
+      "id": "string-thread-safe",
+      "concept": "Immutability",
+      "type": "assertion",
+      "difficulty": 2,
+      "prompt": "Read the assertion (A) and the reason (R), then choose the option that fits.",
+      "assertion": "A Java String can be shared between threads without any synchronization.",
+      "reason": "A String caches its hash code after the first call to hashCode().",
+      "correct": [
+        "b"
+      ],
+      "whys": {
+        "a": "R is true, but caching is a performance detail that does not make sharing safe.",
+        "b": "Correct: both true; thread safety comes from immutability (final state), which also makes the cached hash safe, but caching does not cause it.",
+        "c": "R is true: String stores a hash field.",
+        "d": "A is true: immutable objects are inherently thread-safe."
+      },
+      "explanation": "Immutability buys thread safety, safe use as map keys, string pooling and security (a validated path cannot change after the check)."
+    },
+    {
+      "id": "stringbuilder-join",
+      "concept": "Mutable vs immutable strings",
+      "type": "code",
+      "difficulty": 1,
+      "prompt": "Given an int n, write Java that builds the string \"0,1,2,...,n-1\" (no trailing comma) in a variable s, using a StringBuilder instead of repeated + on a String.",
+      "language": "java",
+      "starter": "",
+      "checks": [
+        {
+          "label": "creates a StringBuilder",
+          "pattern": "new\\s+StringBuilder"
+        },
+        {
+          "label": "appends in a loop",
+          "pattern": "(for|while)[\\s\\S]*\\.append\\s*\\("
+        },
+        {
+          "label": "converts with toString()",
+          "pattern": "toString\\s*\\(\\s*\\)"
+        }
+      ],
+      "model": "StringBuilder sb = new StringBuilder();\nfor (int i = 0; i < n; i++) {\n  if (i > 0) sb.append(',');\n  sb.append(i);\n}\nString s = sb.toString();",
+      "explanation": "Using s += i in a loop creates a new String each iteration, which is O(n squared) in total. String.join or Collectors.joining are the stream alternatives; StringBuffer is the synchronized, slower older sibling."
+    },
+    {
+      "id": "why-string-immutable",
+      "concept": "Immutability",
+      "type": "fill",
+      "difficulty": 1,
+      "prompt": "Complete the sentence about Java strings.",
+      "text": "Because String is {1}, literals can be shared from the string {2}, and its {3} can be cached after the first computation.",
+      "blanks": {
+        "1": "immutable",
+        "2": "pool",
+        "3": "hashCode"
+      },
+      "bank": [
+        "immutable",
+        "pool",
+        "hashCode",
+        "volatile",
+        "length"
+      ],
+      "explanation": "The pool lives in the heap since Java 7. Immutability is a design choice enforced by a final class with private final fields, not by the final keyword on a variable."
+    },
+    {
+      "id": "final-reference",
+      "concept": "Immutability",
+      "type": "truefalse",
+      "difficulty": 1,
+      "prompt": "Declaring a variable final in Java (final List<String> names = new ArrayList<>();) makes the list it refers to immutable.",
+      "options": [
+        {
+          "id": "a",
+          "text": "True",
+          "why": "final only fixes the reference."
+        },
+        {
+          "id": "b",
+          "text": "False",
+          "why": "Correct: you can still call names.add(...); final prevents reassigning the variable, not mutating the object."
+        }
+      ],
+      "correct": [
+        "b"
+      ],
+      "explanation": "For real immutability use List.of / Collections.unmodifiableList (a view) or List.copyOf (a copy)."
+    },
+    {
+      "id": "immutable-class-recipe",
+      "concept": "Immutability",
+      "type": "multi",
+      "difficulty": 2,
+      "prompt": "Select all steps that are part of making a Java class truly immutable.",
+      "options": [
+        {
+          "id": "a",
+          "text": "Declare the class final (or make constructors private) so subclasses cannot add mutability.",
+          "why": "A subclass could otherwise override getters or add mutable state."
+        },
+        {
+          "id": "b",
+          "text": "Make all fields private and final.",
+          "why": "The core of immutability: fields set once in the constructor."
+        },
+        {
+          "id": "c",
+          "text": "Provide no setters or other mutators.",
+          "why": "No method may change observable state after construction."
+        },
+        {
+          "id": "d",
+          "text": "Copy mutable inputs and outputs, such as a Date or List, defensively.",
+          "why": "Otherwise callers keep a handle on the internal state."
+        },
+        {
+          "id": "e",
+          "text": "Implement Serializable.",
+          "why": "Unrelated to immutability and it adds extra concerns."
+        },
+        {
+          "id": "f",
+          "text": "Mark every getter synchronized.",
+          "why": "Unneeded: nothing changes after construction, so there are no races."
+        }
+      ],
+      "correct": [
+        "a",
+        "b",
+        "c",
+        "d"
+      ],
+      "explanation": "Records automate most of this, but remember they are only shallowly immutable: a record with a List component is only immutable if you copy the list with List.copyOf."
+    },
+    {
+      "id": "jvm-memory",
+      "concept": "Heap, stack and GC",
+      "type": "matrix",
+      "difficulty": 2,
+      "prompt": "Match each JVM term with its description.",
+      "left": [
+        {
+          "id": "a",
+          "text": "Young generation"
+        },
+        {
+          "id": "b",
+          "text": "Old generation"
+        },
+        {
+          "id": "c",
+          "text": "Metaspace"
+        },
+        {
+          "id": "d",
+          "text": "G1 collector"
+        },
+        {
+          "id": "e",
+          "text": "Thread stack"
+        }
+      ],
+      "right": [
+        {
+          "id": "p",
+          "text": "Eden plus survivor spaces; collected by frequent, short minor GCs"
+        },
+        {
+          "id": "q",
+          "text": "Holds objects that survived several collections; collected less often"
+        },
+        {
+          "id": "r",
+          "text": "Class metadata stored in native memory (replaced PermGen in Java 8)"
+        },
+        {
+          "id": "s",
+          "text": "Region-based collector with a pause-time target, default since JDK 9"
+        },
+        {
+          "id": "t",
+          "text": "Per-thread frames holding local variables and call state"
+        },
+        {
+          "id": "u",
+          "text": "Pool of interned string literals only"
+        }
+      ],
+      "pairs": {
+        "a": "p",
+        "b": "q",
+        "c": "r",
+        "d": "s",
+        "e": "t"
+      },
+      "explanation": "Generational GC exploits the fact that most objects die young; stacks are per thread and freed on return."
+    },
+    {
+      "id": "java-leaks",
+      "concept": "Memory leaks",
+      "type": "assertion",
+      "difficulty": 2,
+      "prompt": "Read the assertion (A) and the reason (R), then choose the option that fits.",
+      "assertion": "A Java application can leak memory even though it runs a garbage collector.",
+      "reason": "The garbage collector frees every object that is still reachable from a static collection.",
+      "correct": [
+        "c"
+      ],
+      "whys": {
+        "a": "R is false, so it cannot explain A.",
+        "b": "R is false.",
+        "c": "Correct: A is true (unwanted but reachable objects are never collected); R is false, since reachable objects are never freed.",
+        "d": "A is true."
+      },
+      "explanation": "GC reclaims unreachable objects only. A leak in Java means unintended reachability."
+    },
+    {
+      "id": "leak-causes",
+      "concept": "Memory leaks",
+      "type": "multi",
+      "difficulty": 2,
+      "prompt": "Select all common causes of memory leaks in a long-running Java service.",
+      "options": [
+        {
+          "id": "a",
+          "text": "A static Map used as a cache with no eviction or size bound.",
+          "why": "It lives as long as the class, so entries are always reachable."
+        },
+        {
+          "id": "b",
+          "text": "Listeners or callbacks registered but never deregistered.",
+          "why": "The publisher keeps a strong reference (the lapsed listener problem)."
+        },
+        {
+          "id": "c",
+          "text": "ThreadLocal values never removed in a pooled thread.",
+          "why": "Pool threads live forever, so their ThreadLocal map keeps the values."
+        },
+        {
+          "id": "d",
+          "text": "Local variables inside a method that has already returned.",
+          "why": "Their stack frame is gone, so they no longer keep objects alive."
+        },
+        {
+          "id": "e",
+          "text": "Allocating many short-lived objects in the young generation.",
+          "why": "This is what the young generation is designed for; it does not leak."
+        }
+      ],
+      "correct": [
+        "a",
+        "b",
+        "c"
+      ],
+      "explanation": "Diagnose with a heap dump (jmap, VisualVM, Eclipse MAT): look for the dominator tree and the GC roots keeping the objects alive."
+    },
+    {
+      "id": "gc-cycle",
+      "concept": "Heap, stack and GC",
+      "type": "integer",
+      "difficulty": 3,
+      "prompt": "class Node { Node next; }\nNode a = new Node(), b = new Node(), c = new Node();\na.next = b; b.next = c; c.next = b;\nb = null; c = null;\na.next = null;\nAfter this code, how many of the three Node objects are eligible for garbage collection?",
+      "answer": 2,
+      "explanation": "The variable a still references the first node, so it stays alive. After a.next = null nothing reaches b or c; their mutual cycle does not keep them reachable, so both are eligible: 2. Java uses reachability from GC roots, not reference counting."
+    },
+    {
+      "id": "stack-heap",
+      "concept": "Heap, stack and GC",
+      "type": "assertion",
+      "difficulty": 1,
+      "prompt": "Read the assertion (A) and the reason (R), then choose the option that fits.",
+      "assertion": "In Java, a local variable of reference type lives on the thread stack, while the object it points to lives on the heap.",
+      "reason": "Stack frames vanish when a method returns, whereas heap objects are reclaimed only by the garbage collector.",
+      "correct": [
+        "a"
+      ],
+      "whys": {
+        "a": "Correct: the second statement describes the different lifetimes of the two areas, which is why objects can outlive the frame that created them.",
+        "b": "R is relevant: it explains the lifecycle difference.",
+        "c": "R is true.",
+        "d": "A is true (escape analysis can sometimes avoid heap allocation, but the language model is as stated)."
+      },
+      "explanation": "Each thread has its own stack (StackOverflowError when too deep); the heap is shared (OutOfMemoryError when full)."
+    },
+    {
+      "id": "concat-precedence",
+      "concept": "String pool",
+      "type": "single",
+      "difficulty": 3,
+      "prompt": "What does this Java statement print?\n\nSystem.out.println(1 + 2 + \"x\" + 1 + 2);\n\nWhat is printed?",
+      "options": [
+        {
+          "id": "a",
+          "text": "3x12, because 1 + 2 is added before any String appears",
+          "why": "Correct: + is evaluated left to right, so 1 + 2 is integer addition (3) before the first String appears; after that every + is concatenation."
+        },
+        {
+          "id": "b",
+          "text": "12x12, because every + here is string concatenation",
+          "why": "Wrong: this treats every + as concatenation, but the first operands are both ints and are added numerically."
+        },
+        {
+          "id": "c",
+          "text": "3x3, because the trailing 1 + 2 is added numerically",
+          "why": "Wrong: once the left operand is a String, the trailing 1 + 2 is not added; each digit is appended as text."
+        },
+        {
+          "id": "d",
+          "text": "Compile error, because int and String cannot be added",
+          "why": "Wrong: the + operator converts non-String operands to text when the other operand is a String."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Precedence and associativity decide where numeric addition stops and concatenation starts. Also \"\" + 'a' + 1 gives \"a1\" but 'a' + 1 + \"\" gives \"98\". Verified by running it."
+    },
+    {
+      "id": "java-reference-types",
+      "concept": "Heap, stack and GC",
+      "type": "matrix",
+      "difficulty": 2,
+      "prompt": "Match each Java reference type with its behaviour.",
+      "left": [
+        {
+          "id": "a",
+          "text": "Strong reference"
+        },
+        {
+          "id": "b",
+          "text": "SoftReference"
+        },
+        {
+          "id": "c",
+          "text": "WeakReference"
+        },
+        {
+          "id": "d",
+          "text": "PhantomReference"
+        }
+      ],
+      "right": [
+        {
+          "id": "p",
+          "text": "Never cleared while the object is reachable through it; the normal kind"
+        },
+        {
+          "id": "q",
+          "text": "Cleared only when the JVM needs memory, so it suits memory-sensitive caches"
+        },
+        {
+          "id": "r",
+          "text": "Cleared at the next GC once the object has no strong or soft references, as WeakHashMap keys use"
+        },
+        {
+          "id": "s",
+          "text": "get() always returns null; it is enqueued after the object is finalised, for cleanup actions"
+        },
+        {
+          "id": "t",
+          "text": "Cleared the moment the variable holding it goes out of scope"
+        }
+      ],
+      "pairs": {
+        "a": "p",
+        "b": "q",
+        "c": "r",
+        "d": "s"
+      },
+      "explanation": "Soft for caches, weak for canonicalising maps and listener registries, phantom (or java.lang.ref.Cleaner) for post-mortem cleanup. The fifth right item is invented."
+    },
+    {
+      "id": "system-gc",
+      "concept": "Heap, stack and GC",
+      "type": "assertion",
+      "difficulty": 2,
+      "prompt": "Read the assertion (A) and the reason (R), then choose the option that fits.",
+      "assertion": "Calling System.gc() guarantees that all unreachable objects are collected immediately.",
+      "reason": "System.gc() is only a hint, and the JVM is free to ignore it.",
+      "correct": [
+        "d"
+      ],
+      "whys": {
+        "a": "This option says both statements are true and R explains A, which does not match: A is false because the call is merely a request; R is true.",
+        "b": "This option says both statements are true but R does not explain A, which does not match: A is false because the call is merely a request; R is true.",
+        "c": "This option says A is true and R is false, which does not match: A is false because the call is merely a request; R is true.",
+        "d": "Correct: A is false because the call is merely a request; R is true."
+      },
+      "explanation": "Never rely on System.gc() for correctness or tune around it; use the right collector and heap settings instead."
+    },
+    {
+      "id": "array-clone-shallow",
+      "concept": "Immutability",
+      "type": "single",
+      "difficulty": 3,
+      "prompt": "What does this Java code print?\n\nint[][] a = {{1}, {2}};\nint[][] b = a.clone();\na[0][0] = 9;\nSystem.out.println(b[0][0]);\n\nWhat is the output?",
+      "options": [
+        {
+          "id": "a",
+          "text": "9, as clone copies the outer array only",
+          "why": "Correct: clone is shallow; both outer arrays hold the same inner arrays."
+        },
+        {
+          "id": "b",
+          "text": "1, because clone makes a full deep copy of every nested array",
+          "why": "Array clone never copies the nested arrays."
+        },
+        {
+          "id": "c",
+          "text": "0, because the clone is a zero-initialised array of the same shape",
+          "why": "The clone copies the references, not default values."
+        },
+        {
+          "id": "d",
+          "text": "ArrayStoreException",
+          "why": "That exception relates to storing the wrong element type, not to clone."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Copy nested structures yourself (loop, Arrays.copyOf per row, or streams) when you need independence."
+    },
+    {
+      "id": "string-methods-return",
+      "concept": "Mutable vs immutable strings",
+      "type": "single",
+      "difficulty": 2,
+      "prompt": "What does this Java code print?\n\nString s = \"hi\";\ns.toUpperCase();\ns += \"!\";\nSystem.out.println(s);\n\nWhat is the output?",
+      "options": [
+        {
+          "id": "a",
+          "text": "hi!, as the new string is discarded",
+          "why": "Correct: String methods never change the receiver; the result must be assigned."
+        },
+        {
+          "id": "b",
+          "text": "HI!, since toUpperCase changes the original string in place",
+          "why": "Strings are immutable, so s is untouched."
+        },
+        {
+          "id": "c",
+          "text": "HI, because the += assignment replaces the whole value of s",
+          "why": "The += appends to the original lowercase s."
+        },
+        {
+          "id": "d",
+          "text": "Compile error, since the result of toUpperCase is unused and dropped",
+          "why": "Ignoring a return value is legal Java."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Every String \"mutation\" returns a new object, which is why immutability is safe for sharing and caching."
+    }
+  ]
+}

@@ -1,0 +1,393 @@
+{
+  "id": "rm-design-lld-python",
+  "title": "LLD in Python: LRU cache, rate limiter, parking lot",
+  "topic": "Python",
+  "series": "python-low-level-design",
+  "seriesTitle": "Python: low-level design",
+  "seriesDescription": "LRU cache, token bucket and parking lot class design in Python. JEE-Advanced style: integer, assertion-reason, matrix match, fill-in-the-blanks, short code and multi-correct questions.",
+  "seriesOrder": 1,
+  "language": "python",
+  "description": "Low-level design in Python: an LRU cache on OrderedDict, a thread-safe token bucket class, a parking lot with abstract base classes, design patterns and thread-safety follow-ups.",
+  "source": "Python docs (collections.OrderedDict, abc, functools, threading); Head First Design Patterns; Grokking the OOD interview problem lists; LeetCode 146 discussion",
+  "estimatedMinutes": 15,
+  "questions": [
+    {
+      "id": "lru-py",
+      "concept": "LRU cache",
+      "type": "code",
+      "difficulty": 2,
+      "prompt": "Write a Python class LRUCache with __init__(self, cap), get(key) returning -1 on a miss, and put(key, value), using collections.OrderedDict so both operations are O(1).",
+      "language": "python",
+      "checks": [
+        {
+          "label": "uses OrderedDict",
+          "pattern": "ordereddict"
+        },
+        {
+          "label": "moves a used key to the end",
+          "pattern": "move_to_end\\("
+        },
+        {
+          "label": "evicts the oldest with popitem(last=False)",
+          "pattern": "popitem\\(\\s*last\\s*=\\s*false\\s*\\)"
+        },
+        {
+          "label": "defines get and put",
+          "pattern": "def\\s+get\\([\\s\\S]*def\\s+put\\("
+        }
+      ],
+      "model": "class LRUCache:\n    def __init__(self, cap): self.cap, self.d = cap, OrderedDict()\n    def get(self, key):\n        if key not in self.d: return -1\n        self.d.move_to_end(key); return self.d[key]\n    def put(self, key, value):\n        self.d[key] = value; self.d.move_to_end(key)\n        if len(self.d) > self.cap: self.d.popitem(last=False)",
+      "explanation": "OrderedDict is itself a hash map plus a doubly linked list. The functools.lru_cache decorator is the standard-library answer when you only need function memoisation."
+    },
+    {
+      "id": "token-bucket",
+      "concept": "Rate limiter LLD",
+      "type": "code",
+      "difficulty": 3,
+      "prompt": "Write a thread-safe Python class TokenBucket(capacity, refill_per_second) with a try_acquire() method that returns True or False, refills lazily from elapsed time (never above capacity), starts full and takes one token on success.",
+      "language": "python",
+      "checks": [
+        {
+          "label": "uses a lock",
+          "pattern": "(lock|rlock)\\s*\\("
+        },
+        {
+          "label": "caps tokens at capacity with min()",
+          "pattern": "min\\("
+        },
+        {
+          "label": "uses a monotonic clock",
+          "pattern": "(monotonic|perf_counter|time\\.time)\\s*\\("
+        },
+        {
+          "label": "defines try_acquire",
+          "pattern": "def\\s+try_acquire\\s*\\("
+        }
+      ],
+      "model": "import threading, time\nclass TokenBucket:\n    def __init__(self, capacity, refill_per_second):\n        self.cap, self.rate = capacity, refill_per_second\n        self.tokens, self.last = capacity, time.monotonic()\n        self.lock = threading.Lock()\n    def try_acquire(self):\n        with self.lock:\n            now = time.monotonic()\n            self.tokens = min(self.cap, self.tokens + (now - self.last) * self.rate)\n            self.last = now\n            if self.tokens >= 1:\n                self.tokens -= 1\n                return True\n            return False",
+      "explanation": "Lazy refill avoids a timer thread. Use time.monotonic rather than wall-clock time, which can jump. The lock makes the read-refill-decrement sequence atomic. Other correct versions use asyncio.Lock for async code."
+    },
+    {
+      "id": "vehicle-abc",
+      "concept": "Parking lot LLD",
+      "type": "code",
+      "difficulty": 2,
+      "prompt": "Write Python for a parking lot: an abstract base class Vehicle with an abstract method spots_needed(self), and a concrete class Car(Vehicle) that needs 1 spot.",
+      "language": "python",
+      "checks": [
+        {
+          "label": "imports ABC / abstractmethod",
+          "pattern": "from\\s+abc\\s+import|import\\s+abc"
+        },
+        {
+          "label": "declares Vehicle as an ABC",
+          "pattern": "class\\s+vehicle\\(\\s*(abc\\.)?abc\\s*\\)"
+        },
+        {
+          "label": "marks the method @abstractmethod",
+          "pattern": "@(abc\\.)?abstractmethod"
+        },
+        {
+          "label": "Car subclasses Vehicle and returns 1",
+          "pattern": "class\\s+car\\(\\s*vehicle\\s*\\)[\\s\\S]*return\\s+1"
+        }
+      ],
+      "model": "from abc import ABC, abstractmethod\nclass Vehicle(ABC):\n    @abstractmethod\n    def spots_needed(self) -> int: ...\nclass Car(Vehicle):\n    def spots_needed(self): return 1",
+      "explanation": "Instantiating Vehicle raises TypeError, and subclasses that forget the method also cannot be instantiated. An enum.Enum for VehicleType is the usual companion."
+    },
+    {
+      "id": "lru-trace",
+      "concept": "LRU trace",
+      "type": "integer",
+      "difficulty": 2,
+      "prompt": "An LRU cache has capacity 3. Operations: put(1), put(2), put(3), get(1), put(4), get(3), put(5). What is the sum of the keys left in the cache?",
+      "answer": 12,
+      "explanation": "After put(4) key 2 is evicted; after get(3) the order is 1,4,3 (oldest first); put(5) evicts 1. Remaining keys 4, 3, 5 sum to 12."
+    },
+    {
+      "id": "bucket-trace",
+      "concept": "Token bucket",
+      "type": "integer",
+      "difficulty": 3,
+      "prompt": "A token bucket has capacity 5 and refills 2 tokens per second. It starts full, 5 requests are accepted at t = 0, then 10 requests arrive at t = 1.5 s (all at the same instant). How many of those 10 are accepted?",
+      "answer": 3,
+      "explanation": "1.5 s x 2 tokens/s = 3 tokens were refilled, so 3 requests succeed and 7 are rejected.",
+      "unit": "requests"
+    },
+    {
+      "id": "patterns",
+      "concept": "Design patterns",
+      "type": "matrix",
+      "difficulty": 2,
+      "prompt": "Match each parking-lot or cache design need to the pattern that fits best.",
+      "left": [
+        {
+          "id": "a",
+          "text": "Switch between hourly and flat pricing or LRU and LFU eviction"
+        },
+        {
+          "id": "b",
+          "text": "Create the right Spot subclass from a type"
+        },
+        {
+          "id": "c",
+          "text": "Update display boards when a spot is taken"
+        },
+        {
+          "id": "d",
+          "text": "A ticket moves from ISSUED to PAID to EXITED"
+        },
+        {
+          "id": "e",
+          "text": "Exactly one shared configuration object"
+        }
+      ],
+      "right": [
+        {
+          "id": "p",
+          "text": "Strategy"
+        },
+        {
+          "id": "q",
+          "text": "Factory"
+        },
+        {
+          "id": "r",
+          "text": "Observer"
+        },
+        {
+          "id": "s",
+          "text": "State"
+        },
+        {
+          "id": "t",
+          "text": "Singleton"
+        },
+        {
+          "id": "u",
+          "text": "Decorator"
+        }
+      ],
+      "pairs": {
+        "a": "p",
+        "b": "q",
+        "c": "r",
+        "d": "s",
+        "e": "t"
+      },
+      "explanation": "Name the pattern only after stating the problem it solves. Strategy is the most frequent LLD answer (pricing, eviction, rate-limiting algorithm)."
+    },
+    {
+      "id": "lru-on",
+      "concept": "LRU cache",
+      "type": "assertion",
+      "difficulty": 2,
+      "prompt": "Read the assertion and the reason, then choose the option that describes them correctly.",
+      "assertion": "An LRU cache built from a hash map and a doubly linked list supports O(1) get and put.",
+      "reason": "The map finds a node directly and the doubly linked list can unlink and move it without scanning.",
+      "correct": [
+        "a"
+      ],
+      "whys": {
+        "a": "Right: lookup is O(1) via the map and reordering is O(1) via the list pointers.",
+        "b": "The reason is the mechanism.",
+        "c": "The assertion is true.",
+        "d": "The reason is true."
+      },
+      "explanation": "A singly linked list would need the previous node to unlink, forcing an O(n) search."
+    },
+    {
+      "id": "abc-strategy",
+      "concept": "Interfaces and ABCs",
+      "type": "assertion",
+      "difficulty": 2,
+      "prompt": "Read the assertion and the reason, then choose the option that describes them correctly.",
+      "assertion": "Define PricingPolicy as an interface so the parking lot can swap pricing rules.",
+      "reason": "Python abstract base classes refuse instantiation while abstract methods are missing.",
+      "correct": [
+        "b"
+      ],
+      "whys": {
+        "a": "The ABC behaviour does not explain why an interface helps swapping.",
+        "b": "Right: both true, but swapping comes from programming to an interface, not from ABC enforcement.",
+        "c": "Both statements are true.",
+        "d": "The assertion is true."
+      },
+      "explanation": "Inject the policy through the constructor so tests can pass a fake."
+    },
+    {
+      "id": "od-thread",
+      "concept": "Thread safety",
+      "type": "assertion",
+      "difficulty": 3,
+      "prompt": "Read the assertion and the reason, then choose the option that describes them correctly.",
+      "assertion": "OrderedDict with move_to_end is a convenient base for an LRU cache.",
+      "reason": "OrderedDict makes the whole get-then-reorder sequence atomic, so concurrent callers never need a lock.",
+      "correct": [
+        "c"
+      ],
+      "whys": {
+        "a": "The reason is false, so it cannot explain the assertion.",
+        "b": "The reason is false, not merely unrelated.",
+        "c": "Right: single operations are safe but the check, reorder and read in get() are separate steps, so a lock is still needed.",
+        "d": "The assertion is the true statement."
+      },
+      "explanation": "Guard get and put with one threading.Lock. For production, a library cache with locking built in is the usual answer."
+    },
+    {
+      "id": "spot-pricing",
+      "concept": "Parking lot LLD",
+      "type": "assertion",
+      "difficulty": 3,
+      "prompt": "Read the assertion and the reason, then choose the option that describes them correctly.",
+      "assertion": "The Spot class should compute the parking fee for the vehicle it holds.",
+      "reason": "The Single Responsibility Principle says a class should have one reason to change.",
+      "correct": [
+        "d"
+      ],
+      "whys": {
+        "a": "The assertion is false.",
+        "b": "The assertion is false.",
+        "c": "The reason is true.",
+        "d": "Right: pricing changes for business reasons unrelated to spots, so the assertion is false while the reason is true."
+      },
+      "explanation": "Put pricing in a PricingPolicy used by the Ticket or a payment service."
+    },
+    {
+      "id": "lru-parts",
+      "concept": "OrderedDict eviction",
+      "type": "fill",
+      "difficulty": 1,
+      "prompt": "Complete the LRU facts.",
+      "text": "An OrderedDict reorders a used key with {1}, evicts the oldest entry with popitem(last={2}), and an ordinary dict keeps {3} order.",
+      "blanks": {
+        "1": "move_to_end",
+        "2": "False",
+        "3": "insertion"
+      },
+      "bank": [
+        "move_to_end",
+        "False",
+        "insertion",
+        "True",
+        "sorted",
+        "popitem"
+      ],
+      "explanation": "move_to_end(key) sends a key to the most recent end; popitem(last=False) removes from the least recent end. Plain dicts also keep insertion order since 3.7, but have no move_to_end."
+    },
+    {
+      "id": "lru-thread",
+      "concept": "Thread safety",
+      "type": "single",
+      "difficulty": 3,
+      "prompt": "Why is an OrderedDict LRU unsafe for concurrent readers even if the threads only call get?",
+      "options": [
+        {
+          "id": "a",
+          "text": "get() reads then reorders, so another thread can evict in between",
+          "why": "Right: the key may disappear between the membership check and the move, raising KeyError or corrupting the order."
+        },
+        {
+          "id": "b",
+          "text": "OrderedDict raises RuntimeError whenever two threads read at the same time",
+          "why": "No such rule exists; reads from several threads are allowed."
+        },
+        {
+          "id": "c",
+          "text": "OrderedDict objects are bound to the thread that created them",
+          "why": "Objects are not thread-bound; any thread can use a shared reference."
+        },
+        {
+          "id": "d",
+          "text": "move_to_end copies the whole mapping, so concurrent reads see stale data",
+          "why": "move_to_end relinks one node and copies nothing."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Use a lock around get and put, or a cache library with locking built in."
+    },
+    {
+      "id": "lld-practice",
+      "concept": "LLD practice",
+      "type": "multi",
+      "difficulty": 2,
+      "prompt": "Which are sound LLD practices for the parking lot? Select all that apply.",
+      "options": [
+        {
+          "id": "a",
+          "text": "Use an Enum for VehicleType rather than free strings",
+          "why": "Right: it is exhaustive and typos fail early."
+        },
+        {
+          "id": "b",
+          "text": "Inject the pricing and allocation strategies through constructors",
+          "why": "Right: swappable and testable."
+        },
+        {
+          "id": "c",
+          "text": "Return an explicit Optional[Spot] (None when full) from find_spot",
+          "why": "Right: the absence case is part of the signature."
+        },
+        {
+          "id": "d",
+          "text": "Give the constructor a mutable default such as spots=[]",
+          "why": "That list is created once and shared by every lot, which causes hidden coupling."
+        }
+      ],
+      "correct": [
+        "a",
+        "b",
+        "c"
+      ],
+      "explanation": "Clarify requirements, list entities, define interfaces, then write the core flow park and unpark first."
+    },
+    {
+      "id": "abc-needed",
+      "concept": "Interfaces and ABCs",
+      "type": "truefalse",
+      "difficulty": 2,
+      "prompt": "In Python, a class with an @abstractmethod that does not inherit from ABC (or use ABCMeta) still cannot be instantiated.",
+      "options": [
+        {
+          "id": "a",
+          "text": "True",
+          "why": "The decorator alone has no effect without the ABCMeta metaclass."
+        },
+        {
+          "id": "b",
+          "text": "False",
+          "why": "Right: abstract enforcement needs ABCMeta (usually via inheriting ABC); the decorator by itself is only a marker."
+        }
+      ],
+      "correct": [
+        "b"
+      ],
+      "explanation": "Running a class with @abstractmethod but no ABC base shows A() still instantiates fine."
+    },
+    {
+      "id": "lru-cache-method",
+      "concept": "LRU cache",
+      "type": "truefalse",
+      "difficulty": 3,
+      "prompt": "True or false: decorating an instance method with functools.lru_cache keeps references to the instances, so they can stay alive as long as the cache does.",
+      "options": [
+        {
+          "id": "a",
+          "text": "True",
+          "why": "Right: the instance is part of every cache key, so the cache holds a strong reference to it."
+        },
+        {
+          "id": "b",
+          "text": "False",
+          "why": "Incorrect: the cache stores self in its keys, so it prevents the instance from being garbage collected."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Cache a module-level function instead, or build a per-instance cache in the constructor, when instances are short-lived."
+    }
+  ]
+}

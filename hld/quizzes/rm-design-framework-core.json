@@ -1,0 +1,441 @@
+{
+  "id": "rm-design-framework-core",
+  "title": "System design framework and estimation",
+  "topic": "Language-independent",
+  "series": "core-system-design",
+  "seriesTitle": "Core: system design",
+  "seriesDescription": "The design framework, estimation, classic designs, multi-tenant SaaS, SDKs, trip tracking and reconciliation. JEE-Advanced style: integer, assertion-reason, matrix match, fill-in-the-blanks, short code and multi-correct questions.",
+  "seriesOrder": 1,
+  "language": "neutral",
+  "description": "The system design interview framework: requirements, estimates, API, data model, high-level design, deep dive and trade-offs, with back-of-envelope QPS, storage, bandwidth, cache sizing, powers of two and latency numbers.",
+  "source": "Jeff Dean latency numbers (Designs, Lessons and Advice; Colin Scott interactive version); Hello Interview and ByteByteGo frameworks; Google SRE book; Designing Data-Intensive Applications",
+  "estimatedMinutes": 15,
+  "questions": [
+    {
+      "id": "first-step",
+      "concept": "Design framework",
+      "type": "single",
+      "difficulty": 1,
+      "prompt": "You are asked to \"design a photo-sharing service\" in a 45 minute interview. What is the best first move?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Clarify the requirements and expected scale",
+          "why": "Right: scope and numbers decide every later choice."
+        },
+        {
+          "id": "b",
+          "text": "Draw the database schema with every column",
+          "why": "Details without scope are likely wasted effort."
+        },
+        {
+          "id": "c",
+          "text": "Choose Kafka, Redis and Cassandra first so the design looks current",
+          "why": "Naming technologies before requirements is a classic red flag."
+        },
+        {
+          "id": "d",
+          "text": "Start coding the upload endpoint to show depth",
+          "why": "A system design round is not a coding round."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Typical order: requirements, estimates, API, data model, high-level design, deep dive, trade-offs and failure modes."
+    },
+    {
+      "id": "framework-steps",
+      "concept": "Design framework",
+      "type": "matrix",
+      "difficulty": 1,
+      "prompt": "Match each step of the design framework to the artefact it produces.",
+      "left": [
+        {
+          "id": "a",
+          "text": "Requirements"
+        },
+        {
+          "id": "b",
+          "text": "Estimation"
+        },
+        {
+          "id": "c",
+          "text": "API design"
+        },
+        {
+          "id": "d",
+          "text": "Data model"
+        },
+        {
+          "id": "e",
+          "text": "Deep dive"
+        }
+      ],
+      "right": [
+        {
+          "id": "p",
+          "text": "In-scope features, latency and availability targets"
+        },
+        {
+          "id": "q",
+          "text": "QPS, storage and bandwidth numbers"
+        },
+        {
+          "id": "r",
+          "text": "Endpoints or RPCs with request and response shapes"
+        },
+        {
+          "id": "s",
+          "text": "Tables or collections, keys and indexes"
+        },
+        {
+          "id": "t",
+          "text": "Detailed treatment of the riskiest component, such as hot keys or cache invalidation"
+        },
+        {
+          "id": "u",
+          "text": "A list of the team's preferred technologies"
+        }
+      ],
+      "pairs": {
+        "a": "p",
+        "b": "q",
+        "c": "r",
+        "d": "s",
+        "e": "t"
+      },
+      "explanation": "Interviewers score structure, so say out loud which step you are on and when you move to the next."
+    },
+    {
+      "id": "avg-qps",
+      "concept": "QPS and latency",
+      "type": "integer",
+      "difficulty": 1,
+      "prompt": "A service receives 8.64 million requests per day, evenly spread. What is the average number of requests per second?",
+      "answer": 100,
+      "explanation": "8,640,000 / 86,400 = 100. Quick rule: 1 million per day is about 12 QPS.",
+      "unit": "QPS"
+    },
+    {
+      "id": "storage-estimate",
+      "concept": "Storage estimate",
+      "type": "integer",
+      "difficulty": 2,
+      "prompt": "A service stores 100 million new records per day, each 1 KB (1,000 bytes). Data is kept for 365 days and replicated 3 times. How many decimal terabytes of raw storage are needed (one decimal place)?",
+      "answer": 109.5,
+      "explanation": "100M x 1 KB = 100 GB per day; x 365 = 36.5 TB; x 3 replicas = 109.5 TB. Add indexes and headroom in a real estimate.",
+      "unit": "TB",
+      "tolerance": 0.5
+    },
+    {
+      "id": "bandwidth",
+      "concept": "Bandwidth and cache sizing",
+      "type": "integer",
+      "difficulty": 2,
+      "prompt": "An API serves 2,000 responses per second, each 50 KB. How many megabits per second of egress bandwidth does it need (1 byte = 8 bits, 1 KB = 1,000 bytes)?",
+      "answer": 800,
+      "explanation": "2,000 x 50 KB = 100 MB/s, and 100 MB/s x 8 = 800 Mbps. That already fills most of a 1 Gbps link, so a CDN is justified.",
+      "unit": "Mbps"
+    },
+    {
+      "id": "cache-size",
+      "concept": "Bandwidth and cache sizing",
+      "type": "integer",
+      "difficulty": 2,
+      "prompt": "A read-heavy service has 50 million reads per day, each returning a 2 KB object, and you decide to cache the hottest 20% of that daily volume. How many decimal gigabytes does the cache need?",
+      "answer": 20,
+      "explanation": "50M x 2 KB = 100 GB per day; 20% of it is 20 GB, which fits comfortably in one Redis node. This is the 80/20 rule used as an estimate.",
+      "unit": "GB"
+    },
+    {
+      "id": "estimate-first",
+      "concept": "Estimation",
+      "type": "assertion",
+      "difficulty": 2,
+      "prompt": "Read the assertion and the reason, then choose the option that describes them correctly.",
+      "assertion": "Do back-of-envelope estimates before choosing components.",
+      "reason": "Order-of-magnitude numbers show whether you need sharding, caching or a CDN at all.",
+      "correct": [
+        "a"
+      ],
+      "whys": {
+        "a": "Right: the reason is the justification.",
+        "b": "The reason explains the assertion.",
+        "c": "The assertion is true.",
+        "d": "The reason is true."
+      },
+      "explanation": "A service with 50 QPS and 10 GB of data does not need Cassandra; saying so earns more credit than over-engineering."
+    },
+    {
+      "id": "round-numbers",
+      "concept": "Estimation",
+      "type": "assertion",
+      "difficulty": 1,
+      "prompt": "Read the assertion and the reason, then choose the option that describes them correctly.",
+      "assertion": "In estimates it is fine to treat a day as roughly 10^5 seconds.",
+      "reason": "One million requests per day works out to about 12 requests per second.",
+      "correct": [
+        "b"
+      ],
+      "whys": {
+        "a": "The conversion fact does not justify rounding.",
+        "b": "Right: both are true; the 12 QPS figure is a consequence of the 10^5 approximation, not the reason it is allowed.",
+        "c": "Both statements are true.",
+        "d": "The assertion is true."
+      },
+      "explanation": "A day has 86,400 seconds, so 10^5 is within 16%, and the speed gained in mental arithmetic is worth it."
+    },
+    {
+      "id": "cap-all",
+      "concept": "Trade-offs",
+      "type": "assertion",
+      "difficulty": 3,
+      "prompt": "Read the assertion and the reason, then choose the option that describes them correctly.",
+      "assertion": "Non-functional requirements such as latency, availability and consistency shape a design.",
+      "reason": "The CAP theorem says a distributed store can always provide consistency, availability and partition tolerance together.",
+      "correct": [
+        "c"
+      ],
+      "whys": {
+        "a": "The reason is false.",
+        "b": "The reason is false.",
+        "c": "Right: CAP says that during a partition you must give up consistency or availability.",
+        "d": "The assertion is the true statement."
+      },
+      "explanation": "Say which of C or A you choose during a partition for the data in question: payments lean C, a like counter leans A."
+    },
+    {
+      "id": "queue-first",
+      "concept": "Trade-offs",
+      "type": "assertion",
+      "difficulty": 2,
+      "prompt": "Read the assertion and the reason, then choose the option that describes them correctly.",
+      "assertion": "For a read-heavy service the first optimisation to propose is a message queue.",
+      "reason": "Caches and read replicas absorb read traffic.",
+      "correct": [
+        "d"
+      ],
+      "whys": {
+        "a": "The assertion is false.",
+        "b": "The assertion is false.",
+        "c": "The reason is true.",
+        "d": "Right: the assertion is false (queues smooth writes and async work), and the reason names the actual read-side tools."
+      },
+      "explanation": "Match the tool to the bottleneck: reads need caches, replicas and CDNs; write bursts need queues and batching."
+    },
+    {
+      "id": "powers-two",
+      "concept": "Powers of two",
+      "type": "fill",
+      "difficulty": 1,
+      "prompt": "Complete the powers-of-two table.",
+      "text": "2^10 is about one {1}, 2^20 about one {2}, and 2^30 about one {3}.",
+      "blanks": {
+        "1": "thousand",
+        "2": "million",
+        "3": "billion"
+      },
+      "bank": [
+        "thousand",
+        "million",
+        "billion",
+        "trillion"
+      ],
+      "explanation": "As bytes: 1 KB, 1 MB, 1 GB (decimal approximations of 1,024; 1,048,576; 1,073,741,824). 2^32 is about 4.3 billion, the size of the IPv4 space."
+    },
+    {
+      "id": "latency-ssd",
+      "concept": "Latency numbers",
+      "type": "truefalse",
+      "difficulty": 2,
+      "prompt": "Reading 1 MB sequentially from main memory is faster than reading 1 MB sequentially from an SSD.",
+      "options": [
+        {
+          "id": "a",
+          "text": "True",
+          "why": "Right: Dean's latency table has roughly 250 microseconds for memory against about 1 ms for SSD per MB."
+        },
+        {
+          "id": "b",
+          "text": "False",
+          "why": "Memory bandwidth is an order of magnitude beyond an SSD, which is why caches pay off."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "The approximate order: L1 reference 1 ns, main memory 100 ns, SSD random read tens to 150 microseconds, same-datacenter round trip 500 microseconds, disk seek 10 ms."
+    },
+    {
+      "id": "sql-vs-nosql",
+      "concept": "Trade-offs",
+      "type": "single",
+      "difficulty": 3,
+      "prompt": "A payments ledger needs multi-row transactions, strict uniqueness and ad-hoc reporting. Which store do you defend first?",
+      "options": [
+        {
+          "id": "a",
+          "text": "A relational database",
+          "why": "Right: ACID transactions, constraints and SQL cover all three needs."
+        },
+        {
+          "id": "b",
+          "text": "A wide-column store partitioned by event time bucket",
+          "why": "It gives write scale but weak cross-row transactions."
+        },
+        {
+          "id": "c",
+          "text": "An in-memory cache with periodic snapshots",
+          "why": "Snapshots can lose acknowledged writes."
+        },
+        {
+          "id": "d",
+          "text": "A document store holding one blob per day",
+          "why": "Whole-blob updates make uniqueness and reporting awkward."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Pick for the access pattern and guarantees, then say what you would change if the load grew 100 times."
+    },
+    {
+      "id": "deep-dive",
+      "concept": "Design framework",
+      "type": "multi",
+      "difficulty": 2,
+      "prompt": "Which items belong in the deep-dive and trade-off phase? Select all that apply.",
+      "options": [
+        {
+          "id": "a",
+          "text": "Handling a hot key or partition",
+          "why": "Right: a typical scaling risk worth probing."
+        },
+        {
+          "id": "b",
+          "text": "Cache invalidation and consistency windows",
+          "why": "Right: the usual caching trade-off."
+        },
+        {
+          "id": "c",
+          "text": "Failure modes: node loss, retries, duplicates",
+          "why": "Right: show how the design degrades."
+        },
+        {
+          "id": "d",
+          "text": "Asking the interviewer for the expected scale",
+          "why": "That belongs at the start, in requirements."
+        }
+      ],
+      "correct": [
+        "a",
+        "b",
+        "c"
+      ],
+      "explanation": "Choose one or two components to go deep on, ideally the part with the highest risk or the interviewer's interest."
+    },
+    {
+      "id": "urls-table",
+      "concept": "Data model",
+      "type": "code",
+      "difficulty": 2,
+      "prompt": "Write the SQL to create a table urls for a URL shortener: short_code (VARCHAR(8), primary key), long_url (TEXT, not null) and created_at (timestamp, not null).",
+      "language": "sql",
+      "checks": [
+        {
+          "label": "creates the table",
+          "pattern": "create\\s+table\\s+urls"
+        },
+        {
+          "label": "short_code is the primary key",
+          "pattern": "short_code\\s+varchar\\(\\s*8\\s*\\)\\s+primary\\s+key"
+        },
+        {
+          "label": "long_url is TEXT NOT NULL",
+          "pattern": "long_url\\s+text\\s+not\\s+null"
+        },
+        {
+          "label": "has created_at timestamp",
+          "pattern": "created_at\\s+timestamp"
+        }
+      ],
+      "model": "CREATE TABLE urls (\n  short_code VARCHAR(8) PRIMARY KEY,\n  long_url   TEXT NOT NULL,\n  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP\n);",
+      "explanation": "The primary key on short_code gives the index for redirects. Other column orders and types (TIMESTAMPTZ) are fine in practice; the checks here accept TIMESTAMP spelled directly."
+    },
+    {
+      "id": "latency-matrix",
+      "concept": "Latency numbers",
+      "type": "matrix",
+      "difficulty": 2,
+      "prompt": "Match each operation to its order-of-magnitude latency from the widely quoted latency table.",
+      "left": [
+        {
+          "id": "a",
+          "text": "Main memory reference"
+        },
+        {
+          "id": "b",
+          "text": "Random 4 KB read from an SSD"
+        },
+        {
+          "id": "c",
+          "text": "Round trip within one datacenter"
+        },
+        {
+          "id": "d",
+          "text": "Packet round trip California to Netherlands and back"
+        },
+        {
+          "id": "e",
+          "text": "Spinning-disk seek"
+        }
+      ],
+      "right": [
+        {
+          "id": "p",
+          "text": "About 100 nanoseconds"
+        },
+        {
+          "id": "q",
+          "text": "About 150 microseconds"
+        },
+        {
+          "id": "r",
+          "text": "About 500 microseconds"
+        },
+        {
+          "id": "s",
+          "text": "About 150 milliseconds"
+        },
+        {
+          "id": "t",
+          "text": "About 10 milliseconds"
+        },
+        {
+          "id": "u",
+          "text": "About 1 nanosecond"
+        }
+      ],
+      "pairs": {
+        "a": "p",
+        "b": "q",
+        "c": "r",
+        "d": "s",
+        "e": "t"
+      },
+      "explanation": "These are the 2012-era figures attributed to Jeff Dean and Peter Norvig; hardware has moved (NVMe is faster, cross-region RTT is bounded by the speed of light) but the ratios still guide design: memory is thousands of times faster than a network hop, and a cross-continent call costs about 100 ms."
+    },
+    {
+      "id": "downtime-month",
+      "concept": "Availability",
+      "type": "integer",
+      "difficulty": 2,
+      "prompt": "A service promises 99.9% availability measured over a 30-day month. How many minutes of downtime per month does the target allow, rounded to the nearest minute?",
+      "answer": 43,
+      "unit": "minutes",
+      "tolerance": 0.5,
+      "explanation": "30 days x 24 h x 60 min = 43,200 minutes; 0.1% of that is 43.2 minutes. Each extra nine divides the budget by ten (99.99% is about 4.3 minutes), which is why the SRE book treats the remaining budget as an error budget."
+    }
+  ]
+}

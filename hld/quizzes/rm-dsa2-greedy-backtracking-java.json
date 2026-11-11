@@ -1,0 +1,377 @@
+{
+  "id": "rm-dsa2-greedy-backtracking-java",
+  "title": "Greedy and backtracking in Java (List copies, remove overloads, bitmasks)",
+  "topic": "Java",
+  "language": "java",
+  "series": "java-dsa-advanced",
+  "seriesTitle": "Java: DSA advanced",
+  "seriesDescription": "Shortest paths, union-find, tries, intervals, bits, dynamic programming, greedy and backtracking with Java code. JEE-Advanced style: integer, assertion-reason, matrix match, fill-in-the-blanks, short code and multi-correct questions.",
+  "seriesOrder": 5,
+  "description": "Jump game, subsets, combination sum and word search with ArrayList backtracking, the remove(int) trap, boolean[] used and bitmask enumeration.",
+  "source": "Oracle Java docs (List.remove, Arrays.sort, Integer.bitCount); CLRS ch. 16; LeetCode Jump Game, Subsets, Combination Sum, Word Search",
+  "estimatedMinutes": 16,
+  "questions": [
+    {
+      "id": "jump-game",
+      "concept": "Greedy implementation",
+      "type": "code",
+      "difficulty": 2,
+      "prompt": "Write a Java method boolean canJump(int[] nums). You start at index 0 and nums[i] is the maximum jump length from index i. Return true if the last index is reachable, in O(n) time using a greedy farthest-reach variable.",
+      "explanation": "Greedy works because reachable indices form a prefix: if you can reach index r, you can reach everything before it. A backwards \"goal post\" loop is an equally valid O(n) solution (it would need these checks adapted). For [2,3,1,1,4] the result is true and for [3,2,1,0,4] it is false.",
+      "language": "java",
+      "starter": "static boolean canJump(int[] nums) {\n  \n}",
+      "checks": [
+        {
+          "label": "tracks the farthest reachable index with Math.max",
+          "pattern": "Math\\.max\\s*\\("
+        },
+        {
+          "label": "uses i + nums[i] as the candidate reach",
+          "pattern": "i\\s*\\+\\s*nums\\s*\\[\\s*i\\s*\\]|nums\\s*\\[\\s*i\\s*\\]\\s*\\+\\s*i"
+        },
+        {
+          "label": "returns false when the current index is beyond the reach",
+          "pattern": "i\\s*>\\s*\\w+[\\s\\S]*return\\s+false|return\\s+false"
+        },
+        {
+          "label": "scans the array once",
+          "pattern": "for|while"
+        }
+      ],
+      "model": "static boolean canJump(int[] nums) {\n  int reach = 0;\n  for (int i = 0; i < nums.length; i++) {\n    if (i > reach) return false;\n    reach = Math.max(reach, i + nums[i]);\n  }\n  return true;\n}"
+    },
+    {
+      "id": "subsets-java",
+      "concept": "Subsets backtracking",
+      "type": "code",
+      "difficulty": 2,
+      "prompt": "Write a Java method List<List<Integer>> subsets(int[] nums) that returns all subsets (the power set) of an array of distinct integers using backtracking. You may add a private helper method.",
+      "explanation": "The copy is essential: adding cur itself would leave every entry pointing at the same, finally empty list. There are 2^n results, each copied in O(n), so O(n * 2^n) time. An include/exclude binary recursion or a bitmask loop over 0..2^n-1 are also valid.",
+      "language": "java",
+      "starter": "static List<List<Integer>> subsets(int[] nums) {\n  \n}",
+      "checks": [
+        {
+          "label": "adds a copy of the current path to the result",
+          "pattern": "res\\w*\\.add\\s*\\(\\s*new\\s+ArrayList\\s*<[^>]*>\\s*\\(\\s*\\w+\\s*\\)|List\\.copyOf|new\\s+ArrayList\\s*<>\\s*\\(\\s*\\w+\\s*\\)"
+        },
+        {
+          "label": "chooses with add and un-chooses with remove (backtrack)",
+          "pattern": "\\.add\\s*\\([\\s\\S]*\\.remove\\s*\\("
+        },
+        {
+          "label": "recurses with the next index (i + 1)",
+          "pattern": "i\\s*\\+\\s*1"
+        },
+        {
+          "label": "loops from a start index",
+          "pattern": "for\\s*\\(\\s*int\\s+i\\s*=\\s*start|for\\s*\\(\\s*int\\s+\\w+\\s*=\\s*\\w+"
+        }
+      ],
+      "model": "static List<List<Integer>> subsets(int[] nums) {\n  List<List<Integer>> res = new ArrayList<>();\n  go(nums, 0, new ArrayList<>(), res);\n  return res;\n}\nstatic void go(int[] nums, int start, List<Integer> cur, List<List<Integer>> res) {\n  res.add(new ArrayList<>(cur));\n  for (int i = start; i < nums.length; i++) {\n    cur.add(nums[i]); go(nums, i + 1, cur, res); cur.remove(cur.size() - 1);\n  }\n}"
+    },
+    {
+      "id": "comb-sum-java",
+      "concept": "Combination sum",
+      "type": "code",
+      "difficulty": 3,
+      "prompt": "Write a Java method List<List<Integer>> combinationSum(int[] cands, int target) returning all unique combinations of the positive integers in cands that sum to target, where each number may be reused. Sort first and prune once a candidate exceeds the remaining target. A private helper is allowed.",
+      "explanation": "Starting each loop at start (not 0) prevents [2,3] and [3,2] both appearing. Passing i (not i + 1) is what allows reuse. The break is valid only because the array is sorted.",
+      "language": "java",
+      "starter": "static List<List<Integer>> combinationSum(int[] cands, int target) {\n  \n}",
+      "checks": [
+        {
+          "label": "sorts the candidates to enable pruning",
+          "pattern": "Arrays\\.sort"
+        },
+        {
+          "label": "prunes with break (or return) when a candidate is too big",
+          "pattern": "break|return"
+        },
+        {
+          "label": "recurses on the same index so numbers can be reused",
+          "pattern": ",\\s*i\\s*,"
+        },
+        {
+          "label": "adds a copy of the path and removes the last element after recursing",
+          "pattern": "new\\s+ArrayList\\s*<>\\s*\\(\\s*\\w+\\s*\\)[\\s\\S]*\\.remove\\s*\\("
+        }
+      ],
+      "model": "static List<List<Integer>> combinationSum(int[] cands, int target) {\n  Arrays.sort(cands);\n  List<List<Integer>> res = new ArrayList<>();\n  go(cands, 0, target, new ArrayList<>(), res);\n  return res;\n}\nstatic void go(int[] c, int start, int rem, List<Integer> cur, List<List<Integer>> res) {\n  if (rem == 0) { res.add(new ArrayList<>(cur)); return; }\n  for (int i = start; i < c.length; i++) {\n    if (c[i] > rem) break;\n    cur.add(c[i]); go(c, i, rem - c[i], cur, res); cur.remove(cur.size() - 1);\n  }\n}"
+    },
+    {
+      "id": "word-search-java",
+      "concept": "Backtracking on grids",
+      "type": "code",
+      "difficulty": 3,
+      "prompt": "Write a Java method boolean exist(char[][] board, String word) that returns true if word can be traced in the grid through horizontally or vertically adjacent cells, using each cell at most once per path.",
+      "explanation": "Restoring the cell after the recursive calls is the backtracking step. Worst case O(R C 4^L) for a word of length L. A boolean[][] visited array that you set and clear is equally valid.",
+      "language": "java",
+      "starter": "static boolean exist(char[][] board, String word) {\n  \n}",
+      "checks": [
+        {
+          "label": "compares the cell with the next letter using charAt",
+          "pattern": "charAt"
+        },
+        {
+          "label": "marks the cell as used while exploring",
+          "pattern": "'#'|visited|seen|used"
+        },
+        {
+          "label": "explores all four neighbours",
+          "pattern": "\\+\\s*1[\\s\\S]*-\\s*1"
+        },
+        {
+          "label": "returns true when the whole word is matched",
+          "pattern": "==\\s*word\\.length\\s*\\(\\s*\\)|==\\s*w\\.length\\s*\\(\\s*\\)|\\.length\\s*\\(\\s*\\)\\s*\\)\\s*return\\s+true"
+        }
+      ],
+      "model": "static boolean exist(char[][] board, String word) {\n  for (int r = 0; r < board.length; r++)\n    for (int c = 0; c < board[0].length; c++)\n      if (dfs(board, word, r, c, 0)) return true;\n  return false;\n}\nstatic boolean dfs(char[][] b, String w, int r, int c, int i) {\n  if (i == w.length()) return true;\n  if (r < 0 || c < 0 || r >= b.length || c >= b[0].length || b[r][c] != w.charAt(i)) return false;\n  char saved = b[r][c];\n  b[r][c] = '#';\n  boolean found = dfs(b, w, r + 1, c, i + 1) || dfs(b, w, r - 1, c, i + 1)\n               || dfs(b, w, r, c + 1, i + 1) || dfs(b, w, r, c - 1, i + 1);\n  b[r][c] = saved;\n  return found;\n}"
+    },
+    {
+      "id": "mask-iterations",
+      "concept": "Bitmask subsets",
+      "type": "integer",
+      "difficulty": 1,
+      "prompt": "A Java loop for (int mask = 0; mask < (1 << 5); mask++) enumerates all subsets of 5 items. How many iterations does it run?",
+      "explanation": "1 << 5 = 32 = 2^5, one iteration per subset. Bit j of mask says whether item j is included, so the loop needs no recursion.",
+      "answer": 32,
+      "unit": "iterations"
+    },
+    {
+      "id": "two-bit-masks",
+      "concept": "Bitmask subsets",
+      "type": "integer",
+      "difficulty": 2,
+      "prompt": "Among the 16 masks 0..15 that represent subsets of 4 items, how many satisfy Integer.bitCount(mask) == 2?",
+      "explanation": "These are the subsets of size 2, so C(4, 2) = 6: masks 3, 5, 6, 9, 10 and 12. Filtering masks by bitCount is a compact way to enumerate combinations for small n.",
+      "answer": 6,
+      "unit": "masks"
+    },
+    {
+      "id": "list-remove",
+      "concept": "Undo step",
+      "type": "single",
+      "difficulty": 3,
+      "prompt": "Inside backtracking, cur is a List<Integer> and you just appended the int x at its end. Which undo step is always correct?",
+      "explanation": "List.remove has two overloads, remove(int index) and remove(Object o). The index form on size() - 1 is both safe and O(1) for an ArrayList.",
+      "options": [
+        {
+          "id": "a",
+          "text": "cur.remove(cur.size() - 1)",
+          "why": "Correct: removing by index drops exactly the last element, even with duplicates."
+        },
+        {
+          "id": "b",
+          "text": "cur.remove(x), passing the primitive int x",
+          "why": "The int overload removes the element at index x, which is the wrong element or an exception."
+        },
+        {
+          "id": "c",
+          "text": "cur.remove(Integer.valueOf(x)), removing the first element equal to x",
+          "why": "With an equal earlier element it removes the wrong one, corrupting the path."
+        },
+        {
+          "id": "d",
+          "text": "cur.clear(), emptying the list after each recursive call",
+          "why": "This destroys the whole path, so sibling branches start from nothing."
+        }
+      ],
+      "correct": [
+        "a"
+      ]
+    },
+    {
+      "id": "start-index",
+      "concept": "Subsets backtracking",
+      "type": "single",
+      "difficulty": 2,
+      "prompt": "In the Java subsets backtracking, why does the for loop start at start instead of 0?",
+      "explanation": "Starting at 0 would generate permutations of subsets and duplicates. With start, the recursion tree has exactly 2^n nodes.",
+      "options": [
+        {
+          "id": "a",
+          "text": "So each subset is built once, in index order.",
+          "why": "Correct: moving only forward in the array yields every combination exactly once."
+        },
+        {
+          "id": "b",
+          "text": "Because Java arrays must be read from the middle outward.",
+          "why": "Arrays can be read in any order; this is not a language rule."
+        },
+        {
+          "id": "c",
+          "text": "To avoid an ArrayIndexOutOfBoundsException on the first iteration.",
+          "why": "The index 0 is valid for any non-empty array, so nothing would throw."
+        },
+        {
+          "id": "d",
+          "text": "Because ArrayList.add only accepts increasing indices.",
+          "why": "add accepts any element; there is no ordering requirement on indices."
+        }
+      ],
+      "correct": [
+        "a"
+      ]
+    },
+    {
+      "id": "copy-path",
+      "concept": "Subsets backtracking",
+      "type": "assertion",
+      "difficulty": 2,
+      "prompt": "A backtracking method adds the path to the result and later calls cur.remove(cur.size() - 1).",
+      "explanation": "Always snapshot with new ArrayList<>(cur) (or List.copyOf) before storing.",
+      "assertion": "Executing res.add(cur) instead of res.add(new ArrayList<>(cur)) leaves every stored subset equal to the final state of cur.",
+      "reason": "cur is one mutable ArrayList that the recursion keeps modifying.",
+      "correct": [
+        "a"
+      ],
+      "whys": {
+        "a": "Right: all entries are references to the same list, which ends up empty, and R is the reason.",
+        "b": "R is the explanation, not a side fact.",
+        "c": "A is true.",
+        "d": "R is true."
+      }
+    },
+    {
+      "id": "compare-sort",
+      "concept": "Greedy implementation",
+      "type": "assertion",
+      "difficulty": 2,
+      "prompt": "Sorting activities in Java with Arrays.sort(a, (x, y) -> Integer.compare(x[1], y[1])).",
+      "explanation": "Sorting by finish time is the first step of the earliest-finish greedy.",
+      "assertion": "This comparator orders the activities by finish time ascending.",
+      "reason": "Integer.compare avoids the overflow that x[1] - y[1] can cause.",
+      "correct": [
+        "b"
+      ],
+      "whys": {
+        "a": "Overflow safety is a bonus; it does not explain why the order is ascending.",
+        "b": "Right: both are true, but the ascending order comes from the compare direction, not from overflow safety.",
+        "c": "R is true.",
+        "d": "A is true."
+      }
+    },
+    {
+      "id": "stack-memory",
+      "concept": "Backtracking complexity",
+      "type": "assertion",
+      "difficulty": 3,
+      "prompt": "Backtracking over subsets of n items recurses n levels deep.",
+      "explanation": "Depth n is tiny, but the number of results (2^n) is the real cost. Deep recursions such as DFS on 10^5 nodes can overflow the stack.",
+      "assertion": "The recursion depth of subset backtracking is only n.",
+      "reason": "Java allocates each recursive call frame on the heap, which is why deep recursion never fails.",
+      "correct": [
+        "c"
+      ],
+      "whys": {
+        "a": "R is false, so it cannot explain A.",
+        "b": "R is false.",
+        "c": "Right: A is true, but call frames live on the thread stack, which is limited, so R is false.",
+        "d": "A is true."
+      }
+    },
+    {
+      "id": "bool-default",
+      "concept": "Permutations",
+      "type": "assertion",
+      "difficulty": 1,
+      "prompt": "Permutations use a boolean[] used = new boolean[n] array.",
+      "explanation": "Default values: 0 for numbers, false for booleans, null for references.",
+      "assertion": "A new boolean[n] array starts with every entry true.",
+      "reason": "Java initialises boolean array elements to false.",
+      "correct": [
+        "d"
+      ],
+      "whys": {
+        "a": "A is false, so R cannot explain it.",
+        "b": "A is false.",
+        "c": "A is false.",
+        "d": "Right: R is true and is exactly why A is false; the array starts all false, meaning nothing is used yet."
+      }
+    },
+    {
+      "id": "java-backtrack-api",
+      "concept": "Backtracking idioms",
+      "type": "matrix",
+      "difficulty": 2,
+      "prompt": "Match each backtracking need with the Java idiom that serves it.",
+      "explanation": "Each idiom serves one step of choose, explore, un-choose. clear() would wipe the whole path rather than the last choice.",
+      "left": [
+        {
+          "id": "a",
+          "text": "Store a snapshot of the current path"
+        },
+        {
+          "id": "b",
+          "text": "Group equal values so duplicates can be skipped"
+        },
+        {
+          "id": "c",
+          "text": "Track which elements a permutation already uses"
+        },
+        {
+          "id": "d",
+          "text": "Undo the last choice"
+        },
+        {
+          "id": "e",
+          "text": "Mark a grid cell as visited in place"
+        }
+      ],
+      "right": [
+        {
+          "id": "p",
+          "text": "boolean[] used"
+        },
+        {
+          "id": "q",
+          "text": "cur.remove(cur.size() - 1)"
+        },
+        {
+          "id": "r",
+          "text": "board[r][c] = '#'"
+        },
+        {
+          "id": "s",
+          "text": "cur.clear()"
+        },
+        {
+          "id": "t",
+          "text": "res.add(new ArrayList<>(cur))"
+        },
+        {
+          "id": "u",
+          "text": "Arrays.sort(nums)"
+        }
+      ],
+      "pairs": {
+        "a": "t",
+        "b": "u",
+        "c": "p",
+        "d": "q",
+        "e": "r"
+      }
+    },
+    {
+      "id": "mask-fill",
+      "concept": "Bitmask subsets",
+      "type": "fill",
+      "difficulty": 3,
+      "prompt": "Complete the Java bitmask enumeration of subsets.",
+      "explanation": "The upper bound 1 << n equals 2^n subsets. The & 1 isolates bit j after shifting, and a non-zero result means that item is included.",
+      "text": "Loop mask from 0 while mask < {1}; item j belongs to the subset when ((mask >> j) & {2}) != {3}.",
+      "blanks": {
+        "1": "1 << n",
+        "2": "1",
+        "3": "0"
+      },
+      "bank": [
+        "0",
+        "n << 1",
+        "2",
+        "1 << n",
+        "1"
+      ]
+    }
+  ]
+}

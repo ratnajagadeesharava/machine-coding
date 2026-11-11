@@ -1,0 +1,338 @@
+{
+  "id": "rm-evals-python",
+  "title": "Evals in Python: pytest gates, judge maths and tracing",
+  "topic": "Python",
+  "language": "python",
+  "series": "python-rag-evals-safety",
+  "seriesTitle": "Python: RAG, evals and guardrails",
+  "seriesDescription": "Retrieval metrics, pytest eval gates and guardrail code in Python. JEE-Advanced style: integer, assertion-reason, matrix match, fill-in-the-blanks, short code and multi-correct questions.",
+  "seriesOrder": 2,
+  "description": "Python tooling for LLM evaluation: pytest regression gates and red-team tests, pass@k and Cohen kappa functions, percentile arithmetic, OpenTelemetry spans, and the Ragas, DeepEval and Langfuse roles.",
+  "source": "pytest docs (parametrize, exit codes); Python statistics and math docs, all run locally; Zheng et al. MT-Bench (NeurIPS 2023); Codex paper (Chen et al.); Ragas, DeepEval and Langfuse docs; OpenTelemetry Python docs",
+  "estimatedMinutes": 18,
+  "questions": [
+    {
+      "id": "pytest-gate",
+      "concept": "Regression suites in CI",
+      "type": "code",
+      "difficulty": 2,
+      "prompt": "Write a pytest test named test_golden_pass_rate that calls run_eval() (it returns a list of dicts, each with a boolean key \"passed\") and fails the build if the pass rate is below 0.9.",
+      "language": "python",
+      "starter": "def test_golden_pass_rate():\n    ",
+      "checks": [
+        {
+          "label": "defines test_golden_pass_rate",
+          "pattern": "def\\s+test_golden_pass_rate\\s*\\("
+        },
+        {
+          "label": "calls run_eval()",
+          "pattern": "run_eval\\s*\\(\\s*\\)"
+        },
+        {
+          "label": "reads the passed flag",
+          "pattern": "passed"
+        },
+        {
+          "label": "divides by the number of results",
+          "pattern": "/\\s*len\\s*\\("
+        },
+        {
+          "label": "asserts against 0.9",
+          "pattern": "assert[^\\n]*0?\\.9|0?\\.9[^\\n]*assert"
+        }
+      ],
+      "model": "def test_golden_pass_rate():\n    results = run_eval()\n    rate = sum(r[\"passed\"] for r in results) / len(results)\n    assert rate >= 0.9, f\"pass rate {rate:.0%}\"",
+      "explanation": "Other forms pass (statistics.mean, numpy, asserting on a precomputed number of failures). Put a message in the assert so the CI log says what failed."
+    },
+    {
+      "id": "pytest-param",
+      "concept": "Regression suites in CI",
+      "type": "code",
+      "difficulty": 2,
+      "prompt": "Write a parametrized pytest that loads a list of cases from golden.json (each has \"id\", \"question\" and \"expected_contains\") and, for each, asserts that answer(question) contains expected_contains ignoring case. Use the case id as the test id.",
+      "language": "python",
+      "starter": "import json\nimport pytest\n",
+      "checks": [
+        {
+          "label": "loads golden.json",
+          "pattern": "json\\.load\\s*\\("
+        },
+        {
+          "label": "uses pytest.mark.parametrize",
+          "pattern": "pytest\\.mark\\.parametrize"
+        },
+        {
+          "label": "calls answer(...)",
+          "pattern": "answer\\s*\\("
+        },
+        {
+          "label": "compares ignoring case",
+          "pattern": "lower\\s*\\(|casefold\\s*\\(|re\\.I|IGNORECASE"
+        },
+        {
+          "label": "asserts containment",
+          "pattern": "assert[^\\n]*\\bin\\b"
+        }
+      ],
+      "model": "CASES = json.load(open(\"golden.json\"))\n\n@pytest.mark.parametrize(\"case\", CASES, ids=lambda c: c[\"id\"])\ndef test_golden(case):\n    out = answer(case[\"question\"])\n    assert case[\"expected_contains\"].lower() in out.lower()",
+      "explanation": "Each case becomes its own test, so the CI report names the exact failing case. Other correct forms (re.search with IGNORECASE) pass."
+    },
+    {
+      "id": "eval-tools",
+      "concept": "Eval tooling",
+      "type": "matrix",
+      "difficulty": 2,
+      "prompt": "Match each tool or technique to its role.",
+      "left": [
+        {
+          "id": "a",
+          "text": "Ragas"
+        },
+        {
+          "id": "b",
+          "text": "DeepEval"
+        },
+        {
+          "id": "c",
+          "text": "Langfuse"
+        },
+        {
+          "id": "d",
+          "text": "pytest"
+        }
+      ],
+      "right": [
+        {
+          "id": "p",
+          "text": "RAG metrics such as faithfulness, answer relevancy and context precision/recall"
+        },
+        {
+          "id": "q",
+          "text": "Unit-test-style LLM metrics (for example G-Eval) that run under pytest"
+        },
+        {
+          "id": "r",
+          "text": "Tracing plus datasets, scores and LLM-as-judge evaluators in a UI"
+        },
+        {
+          "id": "s",
+          "text": "Test runner whose exit code gates the CI pipeline"
+        },
+        {
+          "id": "t",
+          "text": "Approximate nearest neighbour index"
+        }
+      ],
+      "pairs": {
+        "a": "p",
+        "b": "q",
+        "c": "r",
+        "d": "s"
+      },
+      "explanation": "Tools overlap, so describe the role you need (metrics, test harness, observability) and pick accordingly."
+    },
+    {
+      "id": "otel-span",
+      "concept": "Tracing",
+      "type": "code",
+      "difficulty": 2,
+      "prompt": "In Python with OpenTelemetry, write a function call_llm(prompt) that runs inside a span named \"llm.call\" (use a tracer from trace.get_tracer) and sets a span attribute \"llm.model\" to MODEL before calling client.generate(prompt).",
+      "language": "python",
+      "starter": "from opentelemetry import trace\ntracer = trace.get_tracer(__name__)\n",
+      "checks": [
+        {
+          "label": "gets or uses a tracer",
+          "pattern": "tracer"
+        },
+        {
+          "label": "opens the span as a context manager",
+          "pattern": "with\\s+\\w+(\\.\\w+)*\\.start_as_current_span\\s*\\("
+        },
+        {
+          "label": "names the span llm.call",
+          "pattern": "[\"']llm\\.call[\"']"
+        },
+        {
+          "label": "sets the llm.model attribute",
+          "pattern": "set_attribute\\s*\\(\\s*[\"']llm\\.model[\"']"
+        },
+        {
+          "label": "calls client.generate",
+          "pattern": "client\\.generate\\s*\\("
+        }
+      ],
+      "model": "def call_llm(prompt):\n    with tracer.start_as_current_span(\"llm.call\") as span:\n        span.set_attribute(\"llm.model\", MODEL)\n        return client.generate(prompt)",
+      "explanation": "start_as_current_span ends the span and records exceptions for you. A decorator or start_span with try/finally also works but is more verbose; this check expects the context-manager form. The OpenTelemetry GenAI semantic conventions standardise attribute names such as gen_ai.request.model (still in development), so prefer those over invented keys like llm.model in real code."
+    },
+    {
+      "id": "redteam-pytest",
+      "concept": "Red-team suites",
+      "type": "code",
+      "difficulty": 3,
+      "prompt": "ATTACKS is a list of prompt-injection strings and SECRET is the system-prompt secret. Write a parametrized pytest test_no_leak that calls chatbot(prompt) and asserts SECRET never appears in the reply.",
+      "language": "python",
+      "starter": "import pytest\n",
+      "checks": [
+        {
+          "label": "parametrizes over ATTACKS",
+          "pattern": "pytest\\.mark\\.parametrize\\s*\\(\\s*[\"']\\w+[\"']\\s*,\\s*ATTACKS"
+        },
+        {
+          "label": "defines test_no_leak",
+          "pattern": "def\\s+test_no_leak\\s*\\("
+        },
+        {
+          "label": "calls chatbot",
+          "pattern": "chatbot\\s*\\("
+        },
+        {
+          "label": "asserts SECRET is absent",
+          "pattern": "assert\\s+SECRET\\s+not\\s+in|assert\\s+not\\s+\\(?\\s*SECRET\\s+in"
+        }
+      ],
+      "model": "@pytest.mark.parametrize(\"prompt\", ATTACKS)\ndef test_no_leak(prompt):\n    reply = chatbot(prompt)\n    assert SECRET not in reply",
+      "explanation": "Red-team prompts become regression tests: every new jailbreak you find is appended to ATTACKS. Also test paraphrased or encoded leaks, since exact-string checks miss base64 or translated output."
+    },
+    {
+      "id": "pass-at-k-fn",
+      "concept": "Reliability metrics",
+      "type": "code",
+      "difficulty": 3,
+      "prompt": "Write pass_at_k(n, c, k) in Python for n sampled runs of which c passed: return 1 - C(n - c, k) / C(n, k) using math.comb, and 1.0 when fewer than k runs failed.",
+      "language": "python",
+      "checks": [
+        {
+          "label": "defines pass_at_k",
+          "pattern": "def\\s+pass_at_k\\s*\\("
+        },
+        {
+          "label": "uses math.comb",
+          "pattern": "comb\\s*\\("
+        },
+        {
+          "label": "subtracts the fail-only probability from 1",
+          "pattern": "1(\\.0)?\\s*-\\s*"
+        },
+        {
+          "label": "handles n - c < k",
+          "pattern": "n\\s*-\\s*c\\s*<\\s*k"
+        }
+      ],
+      "model": "def pass_at_k(n, c, k):\n    if n - c < k:\n        return 1.0\n    return 1 - math.comb(n - c, k) / math.comb(n, k)",
+      "explanation": "I ran pass_at_k(10, 3, 2) = 0.5333, matching the earlier integer question. When fewer than k samples failed, every group of k contains a pass, so the answer is 1.0 (math.comb would also return 0 there, but the guard states the intent).",
+      "starter": "import math\n\ndef pass_at_k(n, c, k):\n    "
+    },
+    {
+      "id": "kappa-fn",
+      "concept": "Calibrating the judge",
+      "type": "code",
+      "difficulty": 3,
+      "prompt": "Write cohen_kappa(human, judge) for two equal-length lists of labels: observed agreement po, chance agreement pe (the sum over labels of the share each rater gave it, multiplied), and return (po - pe) / (1 - pe).",
+      "language": "python",
+      "checks": [
+        {
+          "label": "defines cohen_kappa",
+          "pattern": "def\\s+cohen_kappa\\s*\\("
+        },
+        {
+          "label": "computes observed agreement",
+          "pattern": "zip\\s*\\(\\s*human\\s*,\\s*judge\\s*\\)"
+        },
+        {
+          "label": "counts label shares",
+          "pattern": "\\.count\\s*\\(|Counter\\s*\\("
+        },
+        {
+          "label": "applies the kappa formula",
+          "pattern": "\\(\\s*po\\s*-\\s*pe\\s*\\)\\s*/\\s*\\(\\s*1\\s*-\\s*pe\\s*\\)|\\(\\s*\\w+\\s*-\\s*\\w+\\s*\\)\\s*/\\s*\\(\\s*1(\\.0)?\\s*-"
+        }
+      ],
+      "model": "def cohen_kappa(human, judge):\n    n = len(human)\n    po = sum(h == j for h, j in zip(human, judge)) / n\n    pe = sum((human.count(l) / n) * (judge.count(l) / n) for l in set(human) | set(judge))\n    return (po - pe) / (1 - pe)",
+      "explanation": "With 100 answers where the human labels 50 pass and 50 fail and the judge agrees on 90, I ran it and got 0.8, the figure from the earlier integer question. If both raters use one label only, pe is 1 and the division fails, so guard that case.",
+      "starter": "def cohen_kappa(human, judge):\n    "
+    },
+    {
+      "id": "parametrize-stack",
+      "concept": "Regression suites in CI",
+      "type": "integer",
+      "difficulty": 2,
+      "prompt": "A test function is decorated with @pytest.mark.parametrize('a', [1, 2, 3]) and also with @pytest.mark.parametrize('b', ['x', 'y']). How many test cases does pytest generate for it?",
+      "answer": 6,
+      "explanation": "Stacked parametrize marks multiply: 3 x 2 = 6 cases, one for each combination. I confirmed it with pytest --collect-only. Remember this when a matrix of prompts times models multiplies your LLM bill.",
+      "unit": "tests"
+    },
+    {
+      "id": "exit-code",
+      "concept": "Regression suites in CI",
+      "type": "assertion",
+      "difficulty": 1,
+      "prompt": "Assertion and reason: read both statements and choose the right option.",
+      "assertion": "A CI job fails the build when a pytest golden-case test fails.",
+      "reason": "pytest exits with a non-zero status when any test fails, and CI treats a non-zero exit status as a failed step.",
+      "correct": [
+        "a"
+      ],
+      "whys": {
+        "a": "Both true, and R explains A: the exit status is the signal the CI system reads.",
+        "b": "Not chosen: the exit status is exactly the mechanism by which the failure reaches CI.",
+        "c": "Not chosen: R is true; pytest returns a non-zero code on failures.",
+        "d": "Not chosen: A is true, a failing test fails the job."
+      },
+      "explanation": "That is why an eval gate can be an ordinary test: assert on the pass rate and let the exit code carry the verdict."
+    },
+    {
+      "id": "p95-stdlib",
+      "concept": "Latency percentiles",
+      "type": "single",
+      "difficulty": 2,
+      "prompt": "Which expression returns the 95th percentile of a list latencies using only the standard library?",
+      "options": [
+        {
+          "id": "a",
+          "text": "statistics.quantiles(latencies, n=20)[18]",
+          "why": "Right: n=20 returns 19 cut points, and the 19th (index 18) is the 95th percentile."
+        },
+        {
+          "id": "b",
+          "text": "statistics.quantiles(latencies, n=20)[19]",
+          "why": "This raises IndexError: only 19 cut points (indexes 0 to 18) are returned for n=20."
+        },
+        {
+          "id": "c",
+          "text": "statistics.median(latencies) * 0.95",
+          "why": "The median is the 50th percentile; scaling it by 0.95 is not a percentile."
+        },
+        {
+          "id": "d",
+          "text": "sorted(latencies)[int(len(latencies) * 0.95) - 20]",
+          "why": "An arbitrary offset; the index must come from the percentile, not a magic number."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "I ran it on 1..100 and got 95.95 (the default exclusive method). numpy.percentile(latencies, 95) is the common alternative when NumPy is available."
+    },
+    {
+      "id": "pytest-vocab",
+      "concept": "Regression suites in CI",
+      "type": "fill",
+      "difficulty": 1,
+      "prompt": "Complete the pytest vocabulary for an eval suite.",
+      "text": "A {1} marker runs one test function once per golden case, a {2} shares an expensive object such as a judge client between tests, and a non-zero exit status from {3} fails the CI step.",
+      "blanks": {
+        "1": "parametrize",
+        "2": "fixture",
+        "3": "pytest"
+      },
+      "bank": [
+        "parametrize",
+        "fixture",
+        "pytest",
+        "skipif",
+        "mock"
+      ],
+      "explanation": "Keep fixtures scoped (session or module) for clients and datasets so the suite stays fast, and load golden cases from a versioned file."
+    }
+  ]
+}

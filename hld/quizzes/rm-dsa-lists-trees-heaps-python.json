@@ -1,0 +1,414 @@
+{
+  "id": "rm-dsa-lists-trees-heaps-python",
+  "title": "DSA in Python: linked lists, trees and heaps",
+  "topic": "Python",
+  "series": "python-dsa-fundamentals",
+  "seriesTitle": "Python: DSA fundamentals",
+  "seriesDescription": "Hashing, windows, stacks, binary search, lists, trees, heaps and graphs with Python code. JEE-Advanced style: integer, assertion-reason, matrix match, fill-in-the-blanks, short code and multi-correct questions.",
+  "seriesOrder": 3,
+  "language": "python",
+  "description": "Python versions of linked list, tree and heap problems: iterative reversal, level order with deque, LCA, heapq top-k and tie-breaking, and an LRU cache on OrderedDict.",
+  "source": "Python documentation (heapq, collections.deque, OrderedDict); LeetCode problem set; NeetCode roadmap; Cracking the Coding Interview",
+  "estimatedMinutes": 20,
+  "questions": [
+    {
+      "id": "reverse-list",
+      "concept": "Linked lists",
+      "type": "code",
+      "difficulty": 1,
+      "prompt": "Write a Python function reverse(head) that reverses a singly linked list iteratively (each node has val and next attributes) and returns the new head.",
+      "language": "python",
+      "starter": "def reverse(head):\n    ",
+      "checks": [
+        {
+          "label": "loops while the current node is not None",
+          "pattern": "while\\s+\\w+(\\s+is\\s+not\\s+None)?\\s*:"
+        },
+        {
+          "label": "saves the next node before rewiring",
+          "pattern": "=\\s*\\w+\\.next\\b"
+        },
+        {
+          "label": "points the current node back to the previous one",
+          "pattern": "\\w+\\.next\\s*=\\s*\\w+"
+        },
+        {
+          "label": "returns the previous pointer as the new head",
+          "pattern": "return\\s+\\w+"
+        }
+      ],
+      "model": "def reverse(head):\n    prev, cur = None, head\n    while cur:\n        nxt = cur.next\n        cur.next = prev\n        prev, cur = cur, nxt\n    return prev",
+      "explanation": "Save next first, or you lose the rest of the list. The loop runs n times with O(1) extra space."
+    },
+    {
+      "id": "level-order",
+      "concept": "Trees",
+      "type": "code",
+      "difficulty": 2,
+      "prompt": "Write a Python function level_order(root) returning a list of lists of values, one per level, using collections.deque. The node class has val, left and right.",
+      "language": "python",
+      "starter": "from collections import deque\n\ndef level_order(root):\n    ",
+      "checks": [
+        {
+          "label": "uses a deque as the queue",
+          "pattern": "deque"
+        },
+        {
+          "label": "dequeues from the left in O(1)",
+          "pattern": "popleft\\(\\)"
+        },
+        {
+          "label": "processes one level at a time using the queue length",
+          "pattern": "len\\(\\s*\\w+\\s*\\)"
+        },
+        {
+          "label": "enqueues left and right children when present",
+          "pattern": "\\.append\\([^)]*\\.left|\\.append\\([^)]*\\.right|\\.extend\\("
+        },
+        {
+          "label": "returns the result",
+          "pattern": "return"
+        }
+      ],
+      "model": "from collections import deque\n\ndef level_order(root):\n    out, q = [], deque([root] if root else [])\n    while q:\n        level = []\n        for _ in range(len(q)):\n            node = q.popleft()\n            level.append(node.val)\n            if node.left: q.append(node.left)\n            if node.right: q.append(node.right)\n        out.append(level)\n    return out",
+      "explanation": "Take len(q) before the inner loop: it is the number of nodes on the current level."
+    },
+    {
+      "id": "lca",
+      "concept": "Trees",
+      "type": "code",
+      "difficulty": 3,
+      "prompt": "Write a Python function lca(root, p, q) returning the lowest common ancestor of nodes p and q in a binary tree (both exist; compare nodes with is).",
+      "language": "python",
+      "starter": "def lca(root, p, q):\n    ",
+      "checks": [
+        {
+          "label": "returns root on null or when root is p or q",
+          "pattern": "root\\s+is\\s+(p|q)|root\\s*==\\s*(p|q)|\\(\\s*p\\s*,\\s*q\\s*\\)"
+        },
+        {
+          "label": "recurses into the left subtree",
+          "pattern": "lca\\(\\s*root\\.left"
+        },
+        {
+          "label": "recurses into the right subtree",
+          "pattern": "lca\\(\\s*root\\.right"
+        },
+        {
+          "label": "returns root when both sides found something",
+          "pattern": "and[\\s\\S]*return\\s+root|return\\s+root\\s+if"
+        }
+      ],
+      "model": "def lca(root, p, q):\n    if root is None or root is p or root is q:\n        return root\n    left = lca(root.left, p, q)\n    right = lca(root.right, p, q)\n    return root if left and right else left or right",
+      "explanation": "If p and q are found in different subtrees the current node is their meeting point; if only one side finds anything, bubble that result up. O(n) time, O(h) stack."
+    },
+    {
+      "id": "top-k",
+      "concept": "Top-K selection",
+      "type": "code",
+      "difficulty": 2,
+      "prompt": "Write a Python function top_k_frequent(nums, k) that returns the k most frequent values using collections.Counter and the heapq module.",
+      "language": "python",
+      "starter": "import heapq\nfrom collections import Counter\n\ndef top_k_frequent(nums, k):\n    ",
+      "checks": [
+        {
+          "label": "counts frequencies with Counter",
+          "pattern": "Counter"
+        },
+        {
+          "label": "uses heapq (nlargest or a size-k heap with heappush)",
+          "pattern": "heapq\\.(nlargest|heappush)|nlargest|heappush"
+        },
+        {
+          "label": "orders by the count, e.g. key=count.get or (count, value) tuples",
+          "pattern": "key\\s*=|\\(\\s*\\w+\\s*,\\s*\\w+\\s*\\)"
+        },
+        {
+          "label": "returns the selected values",
+          "pattern": "return"
+        }
+      ],
+      "model": "import heapq\nfrom collections import Counter\n\ndef top_k_frequent(nums, k):\n    cnt = Counter(nums)\n    return heapq.nlargest(k, cnt.keys(), key=cnt.get)",
+      "explanation": "nlargest with a key runs in O(n log k). A manual size-k min-heap of (count, value) tuples, or bucket sort by count (O(n)), is equivalent."
+    },
+    {
+      "id": "lru-ordereddict",
+      "concept": "LRU cache design",
+      "type": "code",
+      "difficulty": 3,
+      "prompt": "Write a Python class LRUCache using collections.OrderedDict with __init__(capacity), get(key) returning -1 on a miss, and put(key, value) that evicts the least recently used key when over capacity.",
+      "language": "python",
+      "starter": "from collections import OrderedDict\n\nclass LRUCache:\n    ",
+      "checks": [
+        {
+          "label": "uses an OrderedDict",
+          "pattern": "OrderedDict"
+        },
+        {
+          "label": "marks a key as most recently used on access",
+          "pattern": "move_to_end"
+        },
+        {
+          "label": "evicts the oldest entry",
+          "pattern": "popitem\\(\\s*last\\s*=\\s*False\\s*\\)"
+        },
+        {
+          "label": "returns -1 on a miss",
+          "pattern": "return\\s+-1"
+        }
+      ],
+      "model": "from collections import OrderedDict\n\nclass LRUCache:\n    def __init__(self, capacity):\n        self.cap = capacity\n        self.d = OrderedDict()\n    def get(self, key):\n        if key not in self.d:\n            return -1\n        self.d.move_to_end(key)\n        return self.d[key]\n    def put(self, key, value):\n        self.d[key] = value\n        self.d.move_to_end(key)\n        if len(self.d) > self.cap:\n            self.d.popitem(last=False)",
+      "explanation": "OrderedDict is a hash map plus a doubly linked list underneath, which is exactly the textbook design. In an interview you may be asked to build the map and linked list by hand."
+    },
+    {
+      "id": "heap-peek",
+      "concept": "Priority queues",
+      "type": "integer",
+      "difficulty": 2,
+      "prompt": "Values 9, 4, 7, 1, 6, 2 are pushed onto an empty list with heapq.heappush in that order, then heappop is called twice. What does h[0] hold?",
+      "answer": 4,
+      "tolerance": 0,
+      "explanation": "The two pops remove 1 and 2, the smallest values. The remaining values are 4, 6, 7 and 9, so the root is 4. I ran it to confirm."
+    },
+    {
+      "id": "merge-k",
+      "concept": "Heaps",
+      "type": "assertion",
+      "difficulty": 3,
+      "prompt": "Evaluate the assertion and the reason.",
+      "assertion": "Merging K sorted lists with N total nodes using a heap of list heads costs O(N log K).",
+      "reason": "The heap can grow to hold all N nodes at the same time.",
+      "correct": [
+        "c"
+      ],
+      "whys": {
+        "a": "R is false, so it cannot explain A.",
+        "b": "R is false, so no both-true option applies.",
+        "c": "Correct: A is true and the heap holds at most K entries (one head per list), so R is false.",
+        "d": "A is true, so this is wrong."
+      },
+      "explanation": "Each of the N nodes is pushed and popped once at O(log K). heapq.merge does this lazily for sorted iterables."
+    },
+    {
+      "id": "heapify-linear",
+      "concept": "Heap complexity",
+      "type": "assertion",
+      "difficulty": 3,
+      "prompt": "Evaluate the assertion and the reason.",
+      "assertion": "heapq.heapify(xs) turns a list of n items into a heap in O(n) time.",
+      "reason": "Half of the nodes of a binary heap are leaves, and heapify sifts down only from the internal nodes.",
+      "correct": [
+        "a"
+      ],
+      "whys": {
+        "a": "Correct: most nodes sit near the bottom and travel only a short distance, so the sum of work is linear.",
+        "b": "R is the reason for the linear bound, so it does explain A.",
+        "c": "R is true, so c is wrong.",
+        "d": "A is true, so d is wrong."
+      },
+      "explanation": "Heapify is O(n); n separate heappush calls are O(n log n). Use heapify when you already have all the data."
+    },
+    {
+      "id": "nsmallest-cost",
+      "concept": "Heaps",
+      "type": "assertion",
+      "difficulty": 2,
+      "prompt": "Evaluate the assertion and the reason.",
+      "assertion": "heapq.nsmallest(k, xs) runs in O(n log k) time for small k.",
+      "reason": "The heapq functions operate on plain Python lists.",
+      "correct": [
+        "b"
+      ],
+      "whys": {
+        "a": "R has nothing to do with the log k factor.",
+        "b": "Correct: both are true, but working on plain lists does not explain the bound; the log k comes from keeping a heap of only k candidates.",
+        "c": "R is true, so c is wrong.",
+        "d": "A is true, so d is wrong."
+      },
+      "explanation": "For k close to n, simply sorting is as good. For k = 1 use min()."
+    },
+    {
+      "id": "heap-print",
+      "concept": "Heaps",
+      "type": "assertion",
+      "difficulty": 2,
+      "prompt": "Evaluate the assertion and the reason.",
+      "assertion": "Printing the list behind a heapq heap shows its items in sorted order.",
+      "reason": "heappop always returns the smallest item.",
+      "correct": [
+        "d"
+      ],
+      "whys": {
+        "a": "A is false, so no explanation can hold.",
+        "b": "A is false, so both-true options are out.",
+        "c": "R is true, so c is wrong.",
+        "d": "Correct: R is true, but the list is only heap-ordered: pushing 5, 3, 8, 1 leaves [1, 3, 8, 5]."
+      },
+      "explanation": "Pop repeatedly (or sorted(h)) when you need sorted output. I ran the 5, 3, 8, 1 example and got [1, 3, 8, 5]."
+    },
+    {
+      "id": "heapq-api",
+      "concept": "Heaps",
+      "type": "matrix",
+      "difficulty": 1,
+      "prompt": "Match each heapq call with its behaviour.",
+      "left": [
+        {
+          "id": "a",
+          "text": "heappush(h, x)"
+        },
+        {
+          "id": "b",
+          "text": "heappop(h)"
+        },
+        {
+          "id": "c",
+          "text": "heappushpop(h, x)"
+        },
+        {
+          "id": "d",
+          "text": "heapreplace(h, x)"
+        },
+        {
+          "id": "e",
+          "text": "nlargest(k, xs)"
+        }
+      ],
+      "right": [
+        {
+          "id": "p",
+          "text": "Adds x and restores the heap order in O(log n)"
+        },
+        {
+          "id": "q",
+          "text": "Removes and returns the smallest item"
+        },
+        {
+          "id": "r",
+          "text": "Pushes x first, then pops and returns the smallest, in one step"
+        },
+        {
+          "id": "s",
+          "text": "Pops the smallest first, then pushes x (it raises on an empty heap)"
+        },
+        {
+          "id": "t",
+          "text": "Returns the k biggest items in descending order"
+        },
+        {
+          "id": "u",
+          "text": "Returns the items in sorted order in O(n)"
+        }
+      ],
+      "pairs": {
+        "a": "p",
+        "b": "q",
+        "c": "r",
+        "d": "s",
+        "e": "t"
+      },
+      "explanation": "heappushpop and heapreplace are the efficient building blocks of a size-k heap; the difference is whether the push or the pop comes first."
+    },
+    {
+      "id": "tie-break",
+      "concept": "Heaps",
+      "type": "single",
+      "difficulty": 3,
+      "prompt": "You push (priority, node) tuples onto a heapq heap, where node is a custom object without ordering methods. What can go wrong when two entries have the same priority?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Python compares the nodes, so a TypeError is raised.",
+          "why": "Correct: tuple comparison falls through to the nodes, and objects without ordering cannot be compared."
+        },
+        {
+          "id": "b",
+          "text": "The heap silently drops one of the two equal entries.",
+          "why": "Heaps never drop items; equal priorities are both kept."
+        },
+        {
+          "id": "c",
+          "text": "heappush sorts the whole list again, ruining the O(log n) cost of a push.",
+          "why": "heappush sifts one item only; it never re-sorts the list."
+        },
+        {
+          "id": "d",
+          "text": "The entry with the larger node object always pops first.",
+          "why": "Node objects cannot be ordered, so there is no such rule."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Add a unique counter as a tie-breaker: (priority, next(counter), node). I ran the failing case and got the TypeError."
+    },
+    {
+      "id": "topk-fill",
+      "concept": "Heaps",
+      "type": "fill",
+      "difficulty": 2,
+      "prompt": "Complete the top-k recipe.",
+      "text": "To keep the k largest numbers, hold a {1}-heap of size {2}; after each heappush, if len(h) > k call {3} to drop the smallest.",
+      "blanks": {
+        "1": "min",
+        "2": "k",
+        "3": "heappop"
+      },
+      "bank": [
+        "min",
+        "max",
+        "k",
+        "n",
+        "heappop",
+        "heapify"
+      ],
+      "explanation": "heapq only provides a min-heap, which is what this recipe needs. For a max-heap negate the values."
+    },
+    {
+      "id": "heap-root",
+      "concept": "Heaps",
+      "type": "truefalse",
+      "difficulty": 1,
+      "prompt": "In a list maintained with heapq, h[0] is always the smallest item.",
+      "options": [
+        {
+          "id": "a",
+          "text": "True",
+          "why": "Correct: the heap invariant puts the minimum at index 0."
+        },
+        {
+          "id": "b",
+          "text": "False",
+          "why": "The heap invariant guarantees exactly this."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Peeking at h[0] is O(1); heappop is O(log n)."
+    },
+    {
+      "id": "heap-after-append",
+      "concept": "Heaps",
+      "type": "truefalse",
+      "difficulty": 2,
+      "prompt": "Appending to a list with list.append keeps it a valid heapq heap, so heappop still returns the smallest item.",
+      "options": [
+        {
+          "id": "a",
+          "text": "True",
+          "why": "append does not sift the new item into place."
+        },
+        {
+          "id": "b",
+          "text": "False",
+          "why": "Correct: only heappush maintains the heap invariant; after a raw append the order is not guaranteed."
+        }
+      ],
+      "correct": [
+        "b"
+      ],
+      "explanation": "If you build the list by hand, call heapq.heapify(list) once afterwards."
+    }
+  ]
+}

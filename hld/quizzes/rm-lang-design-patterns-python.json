@@ -1,0 +1,502 @@
+{
+  "id": "rm-lang-design-patterns-python",
+  "title": "Language core: design patterns in Python",
+  "topic": "Python",
+  "series": "python-design-patterns",
+  "seriesTitle": "Python: design patterns",
+  "seriesOrder": 1,
+  "seriesDescription": "Singleton, factory, builder, strategy, observer, command, decorators and dependency injection in Python. JEE-Advanced style: integer, assertion-reason, matrix match, fill-in-the-blanks, short code and multi-correct questions.",
+  "language": "python",
+  "description": "Decorators and closures, late binding, Strategy with plain functions, Singleton via modules and __new__, dataclass builders, Observer with callbacks and the usual traps.",
+  "source": "Gang of Four; Python docs: functools, data model, import system (sys.modules), dataclasses; Fluent Python (Ramalho); Real Python; GeeksforGeeks design pattern interview list",
+  "estimatedMinutes": 16,
+  "questions": [
+    {
+      "id": "decorator-name",
+      "concept": "Decorators and DI",
+      "type": "single",
+      "difficulty": 3,
+      "prompt": "What does this Python code print?\ndef shout(f):\n    def wrapper(*a):\n        return f(*a).upper()\n    return wrapper\n\n@shout\ndef hi(n):\n    return \"hi \" + n\n\nprint(hi(\"bo\"), hi.__name__)\nWhat is the output?",
+      "options": [
+        {
+          "id": "a",
+          "text": "HI BO hi",
+          "why": "The name now refers to the wrapper because the decorator did not copy metadata."
+        },
+        {
+          "id": "b",
+          "text": "HI BO wrapper",
+          "why": "Correct: @shout rebinds hi to wrapper, and without functools.wraps its __name__ is \"wrapper\"."
+        },
+        {
+          "id": "c",
+          "text": "hi bo hi, decorator ignored",
+          "why": "The decorator syntax is equivalent to hi = shout(hi), so it is applied."
+        },
+        {
+          "id": "d",
+          "text": "TypeError at decoration time",
+          "why": "Decoration only calls shout(hi), which returns a function without error."
+        }
+      ],
+      "correct": [
+        "b"
+      ],
+      "explanation": "Always put @functools.wraps(f) on the inner function to preserve __name__, __doc__ and the signature (important for FastAPI, pytest and logging). (Verified by running it.)"
+    },
+    {
+      "id": "log-calls-decorator",
+      "concept": "Decorators and DI",
+      "type": "code",
+      "difficulty": 2,
+      "prompt": "Write a Python decorator log_calls that prints \"calling <function name>\" before running the wrapped function, passes all arguments through, returns the result, and keeps the original function metadata.",
+      "language": "python",
+      "starter": "import functools\n",
+      "checks": [
+        {
+          "label": "defines log_calls",
+          "pattern": "def\\s+log_calls\\s*\\("
+        },
+        {
+          "label": "uses functools.wraps",
+          "pattern": "wraps\\s*\\("
+        },
+        {
+          "label": "accepts *args and **kwargs",
+          "pattern": "\\*args[\\s\\S]*\\*\\*kwargs"
+        },
+        {
+          "label": "calls and returns the wrapped function",
+          "pattern": "return\\s+\\w+\\s*\\(\\s*\\*args"
+        }
+      ],
+      "model": "def log_calls(fn):\n    @functools.wraps(fn)\n    def wrapper(*args, **kwargs):\n        print(f\"calling {fn.__name__}\")\n        return fn(*args, **kwargs)\n    return wrapper",
+      "explanation": "A decorator is just a callable that takes a function and returns a replacement. A decorator with its own arguments needs one more level of nesting."
+    },
+    {
+      "id": "strategy-python",
+      "concept": "Pattern selection",
+      "type": "single",
+      "difficulty": 2,
+      "prompt": "What is the most idiomatic way to implement the Strategy pattern in Python?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Pass a function or lambda as the strategy argument",
+          "why": "Correct: functions are first-class, so a callable replaces the whole class hierarchy."
+        },
+        {
+          "id": "b",
+          "text": "Create an abstract Strategy class with one subclass per algorithm",
+          "why": "Valid but ceremonial; use it when strategies hold state or need several methods."
+        },
+        {
+          "id": "c",
+          "text": "Use a metaclass to register algorithms globally",
+          "why": "Overkill and hides the dependency."
+        },
+        {
+          "id": "d",
+          "text": "Hard-code an if/elif chain inside the context class",
+          "why": "That is the code smell Strategy removes."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Examples: sorted(key=...), the key function of max, or a dict mapping names to callables."
+    },
+    {
+      "id": "late-binding",
+      "concept": "Observer",
+      "type": "single",
+      "difficulty": 3,
+      "prompt": "A developer registers three handlers in Python:\nhandlers = [lambda: i for i in range(3)]\nprint([h() for h in handlers])\nWhat does it print?",
+      "options": [
+        {
+          "id": "a",
+          "text": "[0, 1, 2]",
+          "why": "That would need each lambda to capture its own value at creation time."
+        },
+        {
+          "id": "b",
+          "text": "[2, 2, 2]",
+          "why": "Correct: closures capture the variable i, not its value, and the loop leaves i == 2."
+        },
+        {
+          "id": "c",
+          "text": "[3, 3, 3]",
+          "why": "range(3) ends at 2, so i never becomes 3."
+        },
+        {
+          "id": "d",
+          "text": "NameError: i is not defined",
+          "why": "i is still alive in the enclosing scope after the comprehension via the closure cell."
+        }
+      ],
+      "correct": [
+        "b"
+      ],
+      "explanation": "Fix with a default argument: lambda i=i: i, or functools.partial. The same late-binding trap hits callbacks registered in loops. (Verified by running it.)"
+    },
+    {
+      "id": "decorator-targets",
+      "concept": "Decorators and DI",
+      "type": "assertion",
+      "difficulty": 2,
+      "prompt": "Read the assertion (A) and the reason (R), then choose the option that fits.",
+      "assertion": "Python decorators can only be applied to functions, never to classes.",
+      "reason": "A decorator is any callable that receives an object and returns a replacement or the same object.",
+      "correct": [
+        "d"
+      ],
+      "whys": {
+        "a": "A is false, so it cannot be right.",
+        "b": "A is false.",
+        "c": "R is true, so c is wrong.",
+        "d": "Correct: class decorators exist (for example @dataclass), so A is false; R correctly defines a decorator."
+      },
+      "explanation": "@dataclass, @functools.total_ordering and many registries are class decorators."
+    },
+    {
+      "id": "py-module-singleton",
+      "concept": "Singleton",
+      "type": "truefalse",
+      "difficulty": 2,
+      "prompt": "In Python, a module-level object is a simple singleton because the interpreter executes a module once and caches it in sys.modules.",
+      "options": [
+        {
+          "id": "a",
+          "text": "True",
+          "why": "Correct: sys.modules makes repeated imports return the same module object, so its top-level objects are created once per process."
+        },
+        {
+          "id": "b",
+          "text": "False",
+          "why": "Wrong: the import system caches modules by name, so a second import does not re-run the module body."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Importing the same module again returns the cached module object, so module-level state is shared. This is why Python code rarely needs a Singleton class; an exception is separate processes or reloading the module."
+    },
+    {
+      "id": "singleton-new",
+      "concept": "Singleton",
+      "type": "code",
+      "difficulty": 2,
+      "prompt": "Write a Python class Config that behaves as a singleton by overriding __new__, so that Config() always returns the same object.",
+      "language": "python",
+      "checks": [
+        {
+          "label": "overrides __new__",
+          "pattern": "def\\s+__new__"
+        },
+        {
+          "label": "stores the instance on the class",
+          "pattern": "_?instance|cls\\."
+        },
+        {
+          "label": "creates it once via super or object",
+          "pattern": "super\\(\\)\\.__new__|object\\.__new__"
+        }
+      ],
+      "model": "class Config:\n    _instance = None\n    def __new__(cls):\n        if cls._instance is None:\n            cls._instance = super().__new__(cls)\n        return cls._instance",
+      "explanation": "A module-level instance is simpler and just as good; note that __init__ runs on every Config() call here."
+    },
+    {
+      "id": "dataclass-builder",
+      "concept": "Builder",
+      "type": "code",
+      "difficulty": 1,
+      "prompt": "Write a Python dataclass Pizza with an int field size and a bool field cheese that defaults to False, as the idiomatic replacement for a builder.",
+      "language": "python",
+      "checks": [
+        {
+          "label": "uses @dataclass",
+          "pattern": "@dataclass"
+        },
+        {
+          "label": "has an int size field",
+          "pattern": "size\\s*:\\s*int"
+        },
+        {
+          "label": "cheese defaults to False",
+          "pattern": "cheese\\s*:\\s*bool\\s*=\\s*False"
+        }
+      ],
+      "model": "from dataclasses import dataclass\n\n@dataclass\nclass Pizza:\n    size: int\n    cheese: bool = False",
+      "explanation": "Keyword arguments plus defaults give the readability a builder provides, so Python rarely needs the classic Builder."
+    },
+    {
+      "id": "observer-callbacks",
+      "concept": "Observer",
+      "type": "code",
+      "difficulty": 2,
+      "prompt": "Write a Python class Subject with subscribe(callback) and publish(msg) so that publishing calls every subscribed callback with the message.",
+      "language": "python",
+      "checks": [
+        {
+          "label": "defines subscribe",
+          "pattern": "def\\s+subscribe"
+        },
+        {
+          "label": "defines publish",
+          "pattern": "def\\s+publish"
+        },
+        {
+          "label": "stores and loops over callbacks",
+          "pattern": "append|add\\("
+        }
+      ],
+      "model": "class Subject:\n    def __init__(self):\n        self._subs = []\n    def subscribe(self, callback):\n        self._subs.append(callback)\n    def publish(self, msg):\n        for cb in list(self._subs):\n            cb(msg)",
+      "explanation": "Iterating over a copy lets a callback unsubscribe itself safely while the loop runs."
+    },
+    {
+      "id": "strategy-key",
+      "concept": "Strategy",
+      "type": "code",
+      "difficulty": 1,
+      "prompt": "Given a list of strings words, write one Python expression that returns a new list sorted by string length, passing the strategy as a function.",
+      "language": "python",
+      "checks": [
+        {
+          "label": "uses sorted or sort",
+          "pattern": "sorted\\(|\\.sort\\("
+        },
+        {
+          "label": "uses a key function",
+          "pattern": "key\\s*=\\s*(len|lambda)"
+        }
+      ],
+      "model": "sorted(words, key=len)",
+      "explanation": "The key argument is the strategy: any function mapping an item to a sort key."
+    },
+    {
+      "id": "singleton-pitfalls-py",
+      "concept": "Singleton",
+      "type": "multi",
+      "difficulty": 3,
+      "prompt": "Select all genuine drawbacks or pitfalls of the Singleton pattern in Python.",
+      "options": [
+        {
+          "id": "a",
+          "text": "It is hidden global state, which makes tests order-dependent and hard to isolate.",
+          "why": "Tests share the instance unless it is explicitly reset."
+        },
+        {
+          "id": "b",
+          "text": "A __new__-based singleton runs __init__ again on every call to the class.",
+          "why": "Python calls __init__ whenever __new__ returns an instance of the class."
+        },
+        {
+          "id": "c",
+          "text": "Each worker process in a multi-process server gets its own instance.",
+          "why": "Processes do not share memory, so one \"global\" is really one per process."
+        },
+        {
+          "id": "d",
+          "text": "A module-level instance is created again every time another module imports it.",
+          "why": "Imports are cached in sys.modules, so the module body runs once."
+        },
+        {
+          "id": "e",
+          "text": "A singleton can never be created lazily.",
+          "why": "Lazy creation inside __new__ or a function is straightforward."
+        }
+      ],
+      "correct": [
+        "a",
+        "b",
+        "c"
+      ],
+      "explanation": "Prefer a module-level object or dependency injection; singletons mainly add hidden coupling."
+    },
+    {
+      "id": "new-init-count",
+      "concept": "Singleton",
+      "type": "integer",
+      "difficulty": 3,
+      "prompt": "A class caches one instance in __new__ and its __init__ increments a class counter n (starting at 0) each time it runs. After Config(); Config(); Config(), what is n?",
+      "answer": 3,
+      "tolerance": 0,
+      "explanation": "__new__ returns the same object each time, but Python still calls __init__ on it after every Config() call, so n reaches 3."
+    },
+    {
+      "id": "decorator-order",
+      "concept": "Decorators and DI",
+      "type": "single",
+      "difficulty": 3,
+      "prompt": "What does this Python code print?\n\ndef tag(t):\n    def deco(f):\n        def w():\n            return f\"<{t}>\" + f() + f\"</{t}>\"\n        return w\n    return deco\n\n@tag(\"b\")\n@tag(\"i\")\ndef x():\n    return \"hi\"\n\nprint(x())\n\nWhat is the output?",
+      "options": [
+        {
+          "id": "a",
+          "text": "<b><i>hi</i></b>",
+          "why": "Correct: the decorator closest to the function applies first, so the b wrapper is outermost."
+        },
+        {
+          "id": "b",
+          "text": "<i><b>hi</b></i>",
+          "why": "That reverses the order; the bottom decorator is applied first and ends up inside."
+        },
+        {
+          "id": "c",
+          "text": "<b>hi</b><i>hi</i>",
+          "why": "Each wrapper calls the function it wraps, not the original twice."
+        },
+        {
+          "id": "d",
+          "text": "TypeError because tag is called twice",
+          "why": "tag(\"b\") and tag(\"i\") each return a decorator, which is the intended use."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Stacked decorators apply bottom-up: x = tag(\"b\")(tag(\"i\")(x))."
+    },
+    {
+      "id": "decorator-sugar",
+      "concept": "Decorators and DI",
+      "type": "fill",
+      "difficulty": 1,
+      "prompt": "Complete the sentence about decorators.",
+      "text": "Writing @deco above a function definition is shorthand for f = {1}(f); apply @{2}.wraps(fn) inside the decorator so the wrapper keeps the original {3}.",
+      "blanks": {
+        "1": "deco",
+        "2": "functools",
+        "3": "name"
+      },
+      "bank": [
+        "deco",
+        "functools",
+        "name",
+        "wrapper",
+        "contextlib",
+        "id"
+      ],
+      "explanation": "wraps copies __name__, __doc__ and other metadata so debugging and introspection still show the real function."
+    },
+    {
+      "id": "decorator-tools",
+      "concept": "Decorators and DI",
+      "type": "matrix",
+      "difficulty": 2,
+      "prompt": "Match each Python decorator with its effect.",
+      "left": [
+        {
+          "id": "a",
+          "text": "@staticmethod"
+        },
+        {
+          "id": "b",
+          "text": "@classmethod"
+        },
+        {
+          "id": "c",
+          "text": "@property"
+        },
+        {
+          "id": "d",
+          "text": "@functools.wraps"
+        },
+        {
+          "id": "e",
+          "text": "@dataclass"
+        }
+      ],
+      "right": [
+        {
+          "id": "p",
+          "text": "A plain function in the class namespace that receives no implicit first argument"
+        },
+        {
+          "id": "q",
+          "text": "Receives the class as its first argument, so it suits alternative constructors"
+        },
+        {
+          "id": "r",
+          "text": "Makes a method readable like an attribute, without parentheses"
+        },
+        {
+          "id": "s",
+          "text": "Copies the wrapped function's name and docstring onto the wrapper"
+        },
+        {
+          "id": "t",
+          "text": "Generates __init__, __repr__ and __eq__ from annotated fields"
+        },
+        {
+          "id": "u",
+          "text": "Makes a method run in a background thread"
+        }
+      ],
+      "pairs": {
+        "a": "p",
+        "b": "q",
+        "c": "r",
+        "d": "s",
+        "e": "t"
+      },
+      "explanation": "classmethod is Python's factory-method hook; dataclass and property remove boilerplate."
+    },
+    {
+      "id": "first-class-strategy",
+      "concept": "Strategy",
+      "type": "assertion",
+      "difficulty": 1,
+      "prompt": "Read the assertion (A) and the reason (R), then choose the option that fits.",
+      "assertion": "In Python a plain function can serve as a strategy object.",
+      "reason": "Python functions are first-class objects that can be passed as arguments and returned from other functions.",
+      "correct": [
+        "a"
+      ],
+      "whys": {
+        "a": "Correct: first-class functions are exactly what makes a separate strategy class unnecessary.",
+        "b": "This option says both statements are true but R does not explain A, which does not match: first-class functions are exactly what makes a separate strategy class unnecessary.",
+        "c": "This option says A is true and R is false, which does not match: first-class functions are exactly what makes a separate strategy class unnecessary.",
+        "d": "This option says A is false and R is true, which does not match: first-class functions are exactly what makes a separate strategy class unnecessary."
+      },
+      "explanation": "Pass a function where other languages need a one-method interface."
+    },
+    {
+      "id": "stacked-decorators",
+      "concept": "Decorators and DI",
+      "type": "assertion",
+      "difficulty": 2,
+      "prompt": "Read the assertion (A) and the reason (R), then choose the option that fits.",
+      "assertion": "Python allows several decorators to be stacked on one function.",
+      "reason": "functools.wraps copies the wrapped function's metadata onto the wrapper.",
+      "correct": [
+        "b"
+      ],
+      "whys": {
+        "a": "This option says both statements are true and R explains A, which does not match: Both are true, but wraps is a metadata convenience and has nothing to do with whether stacking is allowed.",
+        "b": "Correct: Both are true, but wraps is a metadata convenience and has nothing to do with whether stacking is allowed.",
+        "c": "This option says A is true and R is false, which does not match: Both are true, but wraps is a metadata convenience and has nothing to do with whether stacking is allowed.",
+        "d": "This option says A is false and R is true, which does not match: Both are true, but wraps is a metadata convenience and has nothing to do with whether stacking is allowed."
+      },
+      "explanation": "Stacking is just repeated application: f = a(b(f))."
+    },
+    {
+      "id": "listener-leak-py",
+      "concept": "Observer",
+      "type": "assertion",
+      "difficulty": 3,
+      "prompt": "Read the assertion (A) and the reason (R), then choose the option that fits.",
+      "assertion": "Registering a bound method in a plain list of callbacks keeps its object alive.",
+      "reason": "A Python list stores only weak references to its items.",
+      "correct": [
+        "c"
+      ],
+      "whys": {
+        "a": "This option says both statements are true and R explains A, which does not match: A is true because the list holds a strong reference, but R is false: lists hold strong references.",
+        "b": "This option says both statements are true but R does not explain A, which does not match: A is true because the list holds a strong reference, but R is false: lists hold strong references.",
+        "c": "Correct: A is true because the list holds a strong reference, but R is false: lists hold strong references.",
+        "d": "This option says A is false and R is true, which does not match: A is true because the list holds a strong reference, but R is false: lists hold strong references."
+      },
+      "explanation": "Use weakref.WeakSet or WeakMethod when listeners should not be kept alive by the subject."
+    }
+  ]
+}

@@ -1,0 +1,356 @@
+{
+  "id": "rm-dsa-lists-trees-heaps-core",
+  "title": "DSA core: linked lists, trees and heaps",
+  "topic": "Language-independent",
+  "series": "core-dsa-fundamentals",
+  "seriesTitle": "Core: DSA fundamentals",
+  "seriesDescription": "Complexity and pattern reasoning for hashing, windows, stacks, lists, trees, heaps and graphs, in pseudocode. JEE-Advanced style: integer, assertion-reason, matrix match, fill-in-the-blanks, short code and multi-correct questions.",
+  "seriesOrder": 3,
+  "language": "neutral",
+  "description": "Language-independent reasoning about linked lists, trees and heaps: cycle detection, recursion depth, traversals, heap properties, the running median and LRU cache design.",
+  "source": "LeetCode problem set; NeetCode roadmap; Cracking the Coding Interview; CLRS (heaps, binary search trees)",
+  "estimatedMinutes": 20,
+  "questions": [
+    {
+      "id": "floyd",
+      "concept": "Linked lists",
+      "type": "integer",
+      "difficulty": 2,
+      "prompt": "The list is 1 -> 2 -> 3 -> 4 -> 5 and node 5 points back to node 3. Slow and fast both start at node 1; each iteration moves slow by 1 and fast by 2. After how many iterations do they first meet?",
+      "answer": 3,
+      "tolerance": 0,
+      "explanation": "Iteration 1: slow at 2, fast at 3. Iteration 2: slow at 3, fast at 5. Iteration 3: slow at 4, fast goes 5 -> 3 -> 4, so they meet at node 4.",
+      "unit": "iterations"
+    },
+    {
+      "id": "dummy-head",
+      "concept": "Linked lists",
+      "type": "assertion",
+      "difficulty": 2,
+      "prompt": "Evaluate the assertion and the reason.",
+      "assertion": "Using a dummy node before the head simplifies \"remove the nth node from the end\".",
+      "reason": "Removing the head itself has no predecessor, so without a dummy node it needs a special case.",
+      "correct": [
+        "a"
+      ],
+      "whys": {
+        "a": "Correct: the dummy gives the head a predecessor, so one code path handles every position.",
+        "b": "R is the actual reason, so \"does not explain\" is wrong.",
+        "c": "R is true, so this is wrong.",
+        "d": "A is true, so this is wrong."
+      },
+      "explanation": "Dummy (sentinel) nodes remove edge cases in merge, partition and delete operations."
+    },
+    {
+      "id": "floyd-space",
+      "concept": "Linked lists",
+      "type": "assertion",
+      "difficulty": 2,
+      "prompt": "Evaluate the assertion and the reason.",
+      "assertion": "Floyd's tortoise and hare detects a cycle in a linked list with O(1) extra space.",
+      "reason": "Storing every visited node in a hash set also detects a cycle, in O(n) time and O(n) space.",
+      "correct": [
+        "b"
+      ],
+      "whys": {
+        "a": "R describes a different technique and does not explain why Floyd needs only two pointers.",
+        "b": "Correct: both are true; R is the alternative approach, not the reason Floyd is constant space.",
+        "c": "A is true, so this is wrong.",
+        "d": "A is true, so this is wrong."
+      },
+      "explanation": "Floyd keeps just two pointers. If asked for the cycle start, reset one pointer to the head and advance both one step at a time."
+    },
+    {
+      "id": "depth",
+      "concept": "Trees and recursion",
+      "type": "integer",
+      "difficulty": 2,
+      "prompt": "A recursive inorder traversal runs on a left-leaning chain of 6 nodes (each node has only a left child). Counting the root call as depth 1 and calls on null children as real calls, what is the greatest number of calls active on the stack at once?",
+      "answer": 7,
+      "tolerance": 0,
+      "explanation": "The chain has 6 real calls stacked on top of each other, plus the call on the null left child of the deepest node, so 7. Recursion depth equals the tree height, which is O(n) for a skewed tree.",
+      "unit": "calls"
+    },
+    {
+      "id": "traversal-match",
+      "concept": "Trees",
+      "type": "matrix",
+      "difficulty": 1,
+      "prompt": "Match each traversal or structure with the job it is best known for.",
+      "left": [
+        {
+          "id": "a",
+          "text": "Level-order (BFS)"
+        },
+        {
+          "id": "b",
+          "text": "Inorder on a BST"
+        },
+        {
+          "id": "c",
+          "text": "Preorder"
+        },
+        {
+          "id": "d",
+          "text": "Postorder"
+        }
+      ],
+      "right": [
+        {
+          "id": "p",
+          "text": "Uses a queue and visits nodes depth by depth"
+        },
+        {
+          "id": "q",
+          "text": "Yields the values in sorted order"
+        },
+        {
+          "id": "r",
+          "text": "Visits a node before its children, natural for serializing"
+        },
+        {
+          "id": "s",
+          "text": "Visits children before the node, natural for computing height or size"
+        },
+        {
+          "id": "t",
+          "text": "Uses a min-heap to order the nodes"
+        }
+      ],
+      "pairs": {
+        "a": "p",
+        "b": "q",
+        "c": "r",
+        "d": "s"
+      },
+      "explanation": "Level order is breadth first, the three depth-first orders differ only in where the node is visited, and inorder on a BST is sorted."
+    },
+    {
+      "id": "validate-bst",
+      "concept": "Binary search trees",
+      "type": "single",
+      "difficulty": 2,
+      "prompt": "Which is the standard bug in a validate-BST function that only checks node.left.val < node.val < node.right.val at every node?",
+      "options": [
+        {
+          "id": "a",
+          "text": "It ignores ancestor bounds, so a deep 4 right of 5 slips by.",
+          "why": "Correct: a value deep in the right subtree must still be greater than every ancestor on the left path."
+        },
+        {
+          "id": "b",
+          "text": "It rejects valid trees that contain duplicate values in a subtree.",
+          "why": "Duplicates are normally invalid anyway, and this is not the standard bug."
+        },
+        {
+          "id": "c",
+          "text": "It runs in O(n^2) because each node re-compares its whole subtree.",
+          "why": "It only compares the immediate children, so it stays O(n)."
+        },
+        {
+          "id": "d",
+          "text": "It only works when the tree happens to be a complete binary tree.",
+          "why": "Completeness is irrelevant; the check is wrong for any shape."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Pass down an allowed range (low, high) that tightens as you recurse, or check that an inorder traversal is strictly increasing."
+    },
+    {
+      "id": "serialize-fill",
+      "concept": "Trees",
+      "type": "fill",
+      "difficulty": 3,
+      "prompt": "Complete the serialize / deserialize design for a binary tree.",
+      "text": "Serialize with a {1} traversal and write an explicit {2} marker for each missing child; deserialize by consuming the tokens from a {3} in the same order.",
+      "blanks": {
+        "1": "preorder",
+        "2": "null",
+        "3": "queue"
+      },
+      "bank": [
+        "preorder",
+        "inorder",
+        "null",
+        "sentinel-less",
+        "queue",
+        "heap"
+      ],
+      "explanation": "Preorder with null markers is enough to rebuild the unique tree. Without markers you would need two different traversals."
+    },
+    {
+      "id": "merge-k",
+      "concept": "Heaps",
+      "type": "assertion",
+      "difficulty": 3,
+      "prompt": "Evaluate the assertion and the reason.",
+      "assertion": "Merging K sorted lists with N total nodes using a min-heap of list heads costs O(N log K).",
+      "reason": "The heap can grow to hold all N nodes at the same time.",
+      "correct": [
+        "c"
+      ],
+      "whys": {
+        "a": "R is false, so it cannot explain A.",
+        "b": "R is false, so no both-true option applies.",
+        "c": "Correct: A is true and the heap holds at most K entries (one head per list), so R is false.",
+        "d": "A is true, so this is wrong."
+      },
+      "explanation": "Each of the N nodes is pushed and popped once at O(log K). Pairwise merging (divide and conquer) gives the same bound."
+    },
+    {
+      "id": "heap-order",
+      "concept": "Heaps",
+      "type": "assertion",
+      "difficulty": 2,
+      "prompt": "Evaluate the assertion and the reason.",
+      "assertion": "Reading the backing array of a binary min-heap from left to right gives the elements in sorted order.",
+      "reason": "The root of a min-heap is its smallest element.",
+      "correct": [
+        "d"
+      ],
+      "whys": {
+        "a": "A is false, so no explanation can hold.",
+        "b": "A is false, so both-true options are out.",
+        "c": "R is true, so c is wrong.",
+        "d": "Correct: R is true, but a heap only orders each parent before its children; for example inserting 5, 3, 8, 1 leaves the array [1, 3, 8, 5]."
+      },
+      "explanation": "Sorted output needs repeated removal of the root (heap sort), not a plain array read."
+    },
+    {
+      "id": "median-heap",
+      "concept": "Heaps",
+      "type": "integer",
+      "difficulty": 3,
+      "prompt": "A running-median structure keeps the smaller half in a max-heap and the larger half in a min-heap, rebalanced so the max-heap holds equal or one more element. After inserting 1, 2, ..., 9, how many elements are in the max-heap?",
+      "answer": 5,
+      "tolerance": 0,
+      "explanation": "With 9 elements the halves are 5 and 4, and the extra element goes to the max-heap, so it holds 5. The median is the max-heap root.",
+      "unit": "elements"
+    },
+    {
+      "id": "heapify",
+      "concept": "Heaps",
+      "type": "truefalse",
+      "difficulty": 2,
+      "prompt": "Building a binary heap from an unsorted array of n elements with heapify (sift-down from the middle) takes O(n), not O(n log n).",
+      "options": [
+        {
+          "id": "a",
+          "text": "True",
+          "why": "Correct: most nodes are near the leaves and sift down only a few levels, so the total is linear."
+        },
+        {
+          "id": "b",
+          "text": "False",
+          "why": "It is linear; only repeated insertion costs O(n log n)."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "The sum of sift-down distances over all nodes is bounded by about 2n, hence O(n)."
+    },
+    {
+      "id": "heap-binary-search",
+      "concept": "Heaps",
+      "type": "truefalse",
+      "difficulty": 2,
+      "prompt": "In a binary heap, finding an arbitrary value takes O(log n) time because the structure is a balanced tree.",
+      "options": [
+        {
+          "id": "a",
+          "text": "True",
+          "why": "The heap order does not let you discard half of the tree by comparison."
+        },
+        {
+          "id": "b",
+          "text": "False",
+          "why": "Correct: a heap only orders parents before children, so searching for an arbitrary value is O(n)."
+        }
+      ],
+      "correct": [
+        "b"
+      ],
+      "explanation": "Use a balanced search tree or a hash table when you need fast arbitrary lookup."
+    },
+    {
+      "id": "lru-design",
+      "concept": "LRU cache design",
+      "type": "single",
+      "difficulty": 2,
+      "prompt": "Which pair of structures gives O(1) get and O(1) put for an LRU cache with eviction?",
+      "options": [
+        {
+          "id": "a",
+          "text": "A hash map from key to node, plus a singly linked list ordered by recency.",
+          "why": "Unlinking a node from a singly linked list needs its predecessor, which costs O(n)."
+        },
+        {
+          "id": "b",
+          "text": "A balanced tree keyed by last-access timestamp, plus a hash map from key to value.",
+          "why": "Tree updates cost O(log n), so get and put are not O(1)."
+        },
+        {
+          "id": "c",
+          "text": "A min-heap keyed by last-access time, plus a hash map from key to value.",
+          "why": "Updating a heap entry on every access costs O(log n) and needs extra bookkeeping."
+        },
+        {
+          "id": "d",
+          "text": "A hash map from key to node, plus a doubly linked list ordered by recency.",
+          "why": "Correct: the map finds the node, and the doubly linked list moves it to the front and evicts from the tail in O(1)."
+        }
+      ],
+      "correct": [
+        "d"
+      ],
+      "explanation": "The doubly linked list gives O(1) unlinking and reinsertion; the hash map gives O(1) location of the node."
+    },
+    {
+      "id": "tree-diameter",
+      "concept": "Trees and recursion",
+      "type": "integer",
+      "difficulty": 2,
+      "prompt": "A tree has edges 1-2, 1-3, 2-4, 2-5, 4-6 and 5-7. How many edges are on its longest path between any two nodes (the diameter)?",
+      "answer": 4,
+      "tolerance": 0,
+      "explanation": "The path 6-4-2-5-7 has 4 edges, as does 3-1-2-4-6. Compute it as the maximum over nodes of (left height + right height) in one post-order pass.",
+      "unit": "edges"
+    },
+    {
+      "id": "reverse-list-pseudo",
+      "concept": "Linked lists",
+      "type": "code",
+      "difficulty": 1,
+      "prompt": "Write pseudocode that reverses a singly linked list iteratively and returns the new head. Each node has a value and a next pointer.",
+      "language": "pseudocode",
+      "starter": "function reverse(head):\n    ",
+      "checks": [
+        {
+          "label": "keeps a previous pointer starting empty",
+          "pattern": "prev"
+        },
+        {
+          "label": "loops while the current node exists",
+          "pattern": "while"
+        },
+        {
+          "label": "saves the next node before changing the link",
+          "pattern": "next\\s*(=|<-|:=)\\s*\\w+\\.next"
+        },
+        {
+          "label": "points the current node back to previous",
+          "pattern": "\\w+\\.next\\s*(=|<-|:=)\\s*prev"
+        },
+        {
+          "label": "returns prev as the new head",
+          "pattern": "return\\s+prev"
+        }
+      ],
+      "model": "function reverse(head):\n    prev = null\n    cur = head\n    while cur is not null:\n        next = cur.next\n        cur.next = prev\n        prev = cur\n        cur = next\n    return prev",
+      "explanation": "Save next first, or you lose the rest of the list. The loop runs n times with O(1) extra space."
+    }
+  ]
+}
