@@ -508,22 +508,22 @@
       "options": [
         {
           "id": "a",
-          "text": "false false",
+          "text": "false false, flag cleared",
           "why": "Correct: sleep sees the flag, throws InterruptedException and clears the flag, so both checks report false."
         },
         {
           "id": "b",
-          "text": "true false",
+          "text": "true false, the flag is still set",
           "why": "Wrong: the flag is cleared when InterruptedException is thrown, so isInterrupted() inside the catch is already false."
         },
         {
           "id": "c",
-          "text": "true true",
+          "text": "true true, the flag is still set",
           "why": "Wrong: interrupted() reads and clears the flag, and it was already cleared by the exception."
         },
         {
           "id": "d",
-          "text": "false true",
+          "text": "false true, the flag is set again",
           "why": "Wrong: nothing sets the flag again after the exception, so the later interrupted() call returns false."
         }
       ],

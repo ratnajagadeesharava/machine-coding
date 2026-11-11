@@ -459,7 +459,7 @@
       "concept": "String pool",
       "type": "single",
       "difficulty": 3,
-      "prompt": "What does this Java statement print?\n\nSystem.out.println(1 + 2 + \"x\" + 1 + 2);",
+      "prompt": "What does this Java statement print?\n\nSystem.out.println(1 + 2 + \"x\" + 1 + 2);\n\nWhat is printed?",
       "options": [
         {
           "id": "a",

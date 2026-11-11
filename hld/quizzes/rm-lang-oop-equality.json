@@ -462,22 +462,22 @@
       "options": [
         {
           "id": "a",
-          "text": "BCA",
+          "text": "BCA, following the C3 order D, B, C, A",
           "why": "Correct: the C3 MRO of D is D, B, C, A and super() follows it, so B calls C, which calls A."
         },
         {
           "id": "b",
-          "text": "BA",
+          "text": "BA, since super() goes to the declared parent",
           "why": "Wrong: super() in B does not jump straight to its declared parent A; it goes to the next class in the instance MRO, which is C."
         },
         {
           "id": "c",
-          "text": "BAC",
+          "text": "BAC, since C runs after A finishes",
           "why": "Wrong: A is the common base, so C3 linearisation places it after both B and C, never between them."
         },
         {
           "id": "d",
-          "text": "TypeError (inconsistent hierarchy)",
+          "text": "TypeError, since the hierarchy is inconsistent",
           "why": "Wrong: B and C list A consistently, so a valid linearisation exists and the class statement succeeds."
         }
       ],

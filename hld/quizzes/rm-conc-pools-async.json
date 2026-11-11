@@ -451,7 +451,7 @@
       "concept": "asyncio",
       "type": "single",
       "difficulty": 3,
-      "prompt": "What does this Python code print?\n\nasync def ok(): await asyncio.sleep(0.1); return 1\nasync def bad(): raise ValueError(\"x\")\nasync def main():\n    print(await asyncio.gather(ok(), bad(), return_exceptions=True))\nasyncio.run(main())",
+      "prompt": "What does this Python code print?\n\nasync def ok(): await asyncio.sleep(0.1); return 1\nasync def bad(): raise ValueError(\"x\")\nasync def main():\n    print(await asyncio.gather(ok(), bad(), return_exceptions=True))\nasyncio.run(main())\n\nWhat is the output?",
       "options": [
         {
           "id": "a",
@@ -560,22 +560,22 @@
       "options": [
         {
           "id": "a",
-          "text": "The callable and its arguments are pickled to reach another process, and a lambda cannot be pickled by reference",
+          "text": "Callables are pickled to reach another process, and a lambda has no importable name",
           "why": "Correct: pickle stores functions by qualified name, which a lambda does not have. Verified by running it."
         },
         {
           "id": "b",
-          "text": "Lambdas are not allowed to return values across threads",
+          "text": "Lambdas are forbidden from returning values across a thread boundary of any kind",
           "why": "Wrong: lambdas return values normally; the limit comes from serialisation to a separate process, not from return values."
         },
         {
           "id": "c",
-          "text": "The GIL forbids anonymous functions in worker threads",
+          "text": "The GIL forbids anonymous functions from running inside separate worker threads",
           "why": "Wrong: ProcessPoolExecutor uses processes, and the GIL has no rule about function syntax."
         },
         {
           "id": "d",
-          "text": "ProcessPoolExecutor only accepts built-in functions",
+          "text": "ProcessPoolExecutor only accepts built-in functions from the standard library",
           "why": "Wrong: any picklable top-level function works, as the sq example shows."
         }
       ],
