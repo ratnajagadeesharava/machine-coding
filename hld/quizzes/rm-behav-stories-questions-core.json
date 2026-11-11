@@ -1,0 +1,500 @@
+{
+  "id": "rm-behav-stories-questions-core",
+  "title": "Behavioural: why-I-left, mistake, conflict, feedback and your questions",
+  "topic": "Interview roadmap",
+  "language": "neutral",
+  "series": "interview-roadmap-core",
+  "seriesTitle": "Interview roadmap: language-independent topics",
+  "seriesDescription": "Language-independent interview topics (concepts, SQL, design, AI engineering): no Java and no Python code or library names.",
+  "seriesOrder": 107,
+  "description": "Framing why you are leaving and why this company, telling mistake, conflict and feedback stories, and asking the interviewer good questions. Scenario-judgement style: pick the strongest answer or the statement that weakens a story.",
+  "source": "Amazon Leadership Principles and interview guide (aboutamazon.com); Harvard Business Review on behavioural interviewing; Cracking the Coding Interview (behavioural chapter); common interview-prep guides on STAR, exit reasons and questions to ask",
+  "estimatedMinutes": 16,
+  "questions": [
+    {
+      "id": "action-seconds",
+      "concept": "STAR structure",
+      "type": "integer",
+      "difficulty": 1,
+      "prompt": "You plan a 3-minute (180 s) answer: 30 s for Situation and Task together, and 30 s for the Result. How many seconds remain for the Action?",
+      "answer": 120,
+      "unit": "s",
+      "explanation": "180 - 30 - 30 = 120 s, about two thirds of the answer. Timing varies, but Action should dominate."
+    },
+    {
+      "id": "stories-needed",
+      "concept": "Story bank",
+      "type": "integer",
+      "difficulty": 2,
+      "prompt": "You want to cover all 16 Amazon Leadership Principles, and each story can credibly cover at most 3 distinct principles. What is the minimum number of stories?",
+      "answer": 6,
+      "unit": "stories",
+      "explanation": "ceil(16 / 3) = 6. In practice prepare 8 to 10 so you can pick a different story for a repeat question in the same loop."
+    },
+    {
+      "id": "ask-question",
+      "concept": "Questions to ask",
+      "type": "code",
+      "difficulty": 2,
+      "prompt": "Write one thoughtful question to ask an engineering interviewer about how the team runs its services in production (for example on-call, incidents or operational ownership).",
+      "language": "text",
+      "checks": [
+        {
+          "label": "is phrased as a question",
+          "pattern": "\\?"
+        },
+        {
+          "label": "asks about production operations",
+          "pattern": "(on-?call|incident|pager|postmortem|post-incident|runbook|alarm|operational|production|outage|oncall)"
+        },
+        {
+          "label": "opens with an interrogative",
+          "pattern": "\\b(how|what|who|when|which|can you|could you)\\b"
+        }
+      ],
+      "model": "How does the team handle on-call and what changes after a serious incident, for example post-incident reviews and follow-up actions?",
+      "explanation": "Free-text: any open, specific question about operations passes. Good questions show curiosity about how work really happens, not about perks."
+    },
+    {
+      "id": "why-leaving",
+      "concept": "Why I left",
+      "type": "code",
+      "difficulty": 3,
+      "prompt": "Write a two-sentence answer to \"Why are you leaving your current job?\" that is forward-looking and does not criticise your employer. Mention what you are looking for.",
+      "language": "text",
+      "checks": [
+        {
+          "label": "says what you are looking for",
+          "pattern": "(looking for|seeking|want to|excited|opportunit|keen|grow|scale|ownership|challenge)"
+        },
+        {
+          "label": "does not bad-mouth anyone",
+          "pattern": "^(?![\\s\\S]*\\b(hate|toxic|terrible|awful|boring|incompetent|stupid|worst)\\b)[\\s\\S]+$"
+        },
+        {
+          "label": "has at least two sentences",
+          "pattern": "[.!?][\\s\\S]*[.!?]"
+        }
+      ],
+      "model": "I have enjoyed building and owning backend services, and I have learned a lot there. I am now looking for larger-scale distributed systems problems and broader ownership, which is why this role excites me.",
+      "explanation": "Keep it brief, truthful, positive and about the future. Pull toward something, rather than pushing away from something."
+    },
+    {
+      "id": "why-company",
+      "concept": "Why this company",
+      "type": "single",
+      "difficulty": 2,
+      "prompt": "Asked \"Why do you want to work here?\", which answer is strongest?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Link a specific company problem to your own experience.",
+          "why": "Right: specific and mutual; it shows research and fit."
+        },
+        {
+          "id": "b",
+          "text": "Say that the compensation and the brand name are the main reasons you applied to this particular role.",
+          "why": "Honest perhaps, but it says nothing about fit or motivation."
+        },
+        {
+          "id": "c",
+          "text": "Say that a friend told you it is a good place and that you want to switch jobs soon.",
+          "why": "Vague and second-hand; it does not show your own reasons."
+        },
+        {
+          "id": "d",
+          "text": "Say you are open to any team and will take whatever the company needs right now.",
+          "why": "Lack of direction reads as low motivation."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Prepare two or three concrete reasons from product, scale, engineering culture or mission, each tied to something you have done."
+    },
+    {
+      "id": "conflict-story",
+      "concept": "Conflict story",
+      "type": "single",
+      "difficulty": 2,
+      "prompt": "Which conflict story is strongest?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Understood their constraint, agreed on data, committed.",
+          "why": "Right: empathy, data and commitment show maturity."
+        },
+        {
+          "id": "b",
+          "text": "Escalated to the manager straight away so that a decision could be made without wasting my own time.",
+          "why": "Skipping direct conversation signals poor conflict skills."
+        },
+        {
+          "id": "c",
+          "text": "Waited for the other person to leave the project so that the disagreement resolved itself over time.",
+          "why": "Avoidance resolves nothing."
+        },
+        {
+          "id": "d",
+          "text": "Won the argument by presenting my own opinion repeatedly in meetings until the group gave in.",
+          "why": "Persistence without data or listening is not influence."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Show you disagreed respectfully, used data and then supported the decision. The Result should include the working relationship, not only the code."
+    },
+    {
+      "id": "feedback-story",
+      "concept": "Feedback story",
+      "type": "single",
+      "difficulty": 2,
+      "prompt": "Which feedback story shows coachability best?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Specific feedback, my change, and the later measured result.",
+          "why": "Right: concrete input, concrete change, measurable effect."
+        },
+        {
+          "id": "b",
+          "text": "Feedback that I was too much of a perfectionist, which I treat as a strength and still handle in exactly the same way.",
+          "why": "No change and no evidence of learning."
+        },
+        {
+          "id": "c",
+          "text": "Feedback that I disagreed with and ignored because the reviewer lacked context on the project.",
+          "why": "Dismissing feedback signals low coachability."
+        },
+        {
+          "id": "d",
+          "text": "General praise from my manager on my annual review, which I was happy to receive from the team.",
+          "why": "Praise is not developmental feedback."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Choose real, developmental feedback, show that you asked clarifying questions, changed behaviour and followed up."
+    },
+    {
+      "id": "weakens-story",
+      "concept": "STAR structure",
+      "type": "multi",
+      "difficulty": 2,
+      "prompt": "Which statements weaken a STAR story? Select all that apply.",
+      "options": [
+        {
+          "id": "a",
+          "text": "\"We did a lot of work and it went well in the end.\"",
+          "why": "Right: vague, no individual role, no result."
+        },
+        {
+          "id": "b",
+          "text": "\"The release fixed things, though I never checked whether the numbers actually improved.\"",
+          "why": "Right: no measured result."
+        },
+        {
+          "id": "c",
+          "text": "\"The tester kept missing bugs, which is why the release slipped.\"",
+          "why": "Right: blaming others sounds defensive."
+        },
+        {
+          "id": "d",
+          "text": "\"Looking back I would add a canary step, and I added it the following sprint.\"",
+          "why": "This strengthens the story by showing learning."
+        }
+      ],
+      "correct": [
+        "a",
+        "b",
+        "c"
+      ],
+      "explanation": "Specific I-statements, numbers, trade-offs considered and lessons applied make a story credible."
+    },
+    {
+      "id": "good-questions",
+      "concept": "Questions to ask",
+      "type": "multi",
+      "difficulty": 1,
+      "prompt": "Which questions are good to ask the interviewer? Select all that apply.",
+      "options": [
+        {
+          "id": "a",
+          "text": "What does success look like in the first six months?",
+          "why": "Right: shows you care about impact."
+        },
+        {
+          "id": "b",
+          "text": "How does the team decide between shipping fast and paying down technical debt?",
+          "why": "Right: reveals engineering culture and shows judgement."
+        },
+        {
+          "id": "c",
+          "text": "How soon can I be promoted after joining?",
+          "why": "Premature and focused only on yourself."
+        },
+        {
+          "id": "d",
+          "text": "What does your company do?",
+          "why": "Basic research you should have done beforehand."
+        }
+      ],
+      "correct": [
+        "a",
+        "b"
+      ],
+      "explanation": "Ask about the work, the team, the challenges and how you will be measured. Avoid questions answered on the careers page."
+    },
+    {
+      "id": "failure-end",
+      "concept": "Mistake stories",
+      "type": "assertion",
+      "difficulty": 2,
+      "prompt": "Read the assertion (A) and the reason (R), then choose the correct option.",
+      "assertion": "A failure story should end with what you changed afterwards.",
+      "reason": "Interviewers use failure stories to judge ownership and whether you learn from mistakes.",
+      "correct": [
+        "a"
+      ],
+      "whys": {
+        "a": "Correct: the change is the evidence of learning, which is what the interviewer is assessing.",
+        "b": "R is the reason itself.",
+        "c": "R is true.",
+        "d": "A is true."
+      },
+      "explanation": "The strongest endings are systemic: a test, a checklist, an alert or a changed process."
+    },
+    {
+      "id": "mistake-eliminates",
+      "concept": "Mistake stories",
+      "type": "assertion",
+      "difficulty": 2,
+      "prompt": "Read the assertion (A) and the reason (R), then choose the correct option.",
+      "assertion": "Admitting a real mistake will always eliminate you from an Amazon interview loop.",
+      "reason": "Interviewers look for ownership and learning, which a good failure story demonstrates.",
+      "correct": [
+        "d"
+      ],
+      "whys": {
+        "a": "A is false.",
+        "b": "A is false.",
+        "c": "R is true, so this option is wrong.",
+        "d": "Correct: A is false and R is true; a candid, well-handled mistake is what they are looking for, whereas evading is the red flag."
+      },
+      "explanation": "Pick a real failure with moderate stakes and take responsibility."
+    },
+    {
+      "id": "ask-questions",
+      "concept": "Questions to ask",
+      "type": "assertion",
+      "difficulty": 1,
+      "prompt": "Read the assertion (A) and the reason (R), then choose the correct option.",
+      "assertion": "Asking good questions at the end of an interview helps show genuine interest in the role.",
+      "reason": "You should ask nothing, because questions waste the interviewer's time.",
+      "correct": [
+        "c"
+      ],
+      "whys": {
+        "a": "R is false, so it cannot explain A.",
+        "b": "R is false.",
+        "c": "Correct: A is true; R is false, since interviewers expect and value thoughtful questions.",
+        "d": "A is true."
+      },
+      "explanation": "Prepare three or four questions per round and adapt them to the interviewer's role."
+    },
+    {
+      "id": "badmouth",
+      "concept": "Why I left",
+      "type": "assertion",
+      "difficulty": 2,
+      "prompt": "Read the assertion (A) and the reason (R), then choose the correct option.",
+      "assertion": "Criticising a former employer in an interview damages your credibility.",
+      "reason": "Behavioural questions are usually open-ended rather than yes/no.",
+      "correct": [
+        "b"
+      ],
+      "whys": {
+        "a": "R is true but unrelated to why criticism hurts.",
+        "b": "Correct: both are true and independent; the interviewer infers how you might speak about them later.",
+        "c": "R is true.",
+        "d": "A is true."
+      },
+      "explanation": "Frame reasons positively: scope, scale, learning, mission."
+    },
+    {
+      "id": "story-tests",
+      "concept": "Story types",
+      "type": "matrix",
+      "difficulty": 2,
+      "prompt": "Match each story type to what the interviewer is mainly testing.",
+      "left": [
+        {
+          "id": "a",
+          "text": "Mistake or failure"
+        },
+        {
+          "id": "b",
+          "text": "Conflict with a colleague"
+        },
+        {
+          "id": "c",
+          "text": "Critical feedback received"
+        },
+        {
+          "id": "d",
+          "text": "Why are you leaving"
+        },
+        {
+          "id": "e",
+          "text": "Questions you ask us"
+        }
+      ],
+      "right": [
+        {
+          "id": "p",
+          "text": "Ownership and learning from failure"
+        },
+        {
+          "id": "q",
+          "text": "Respectful disagreement, data use and commitment"
+        },
+        {
+          "id": "r",
+          "text": "Coachability and growth"
+        },
+        {
+          "id": "s",
+          "text": "Motivation and judgement without negativity"
+        },
+        {
+          "id": "t",
+          "text": "Curiosity and what you value in a team"
+        },
+        {
+          "id": "u",
+          "text": "Typing speed under pressure"
+        }
+      ],
+      "pairs": {
+        "a": "p",
+        "b": "q",
+        "c": "r",
+        "d": "s",
+        "e": "t"
+      },
+      "explanation": "Knowing what each question probes tells you what to emphasise."
+    },
+    {
+      "id": "conflict-fill",
+      "concept": "Conflict story",
+      "type": "fill",
+      "difficulty": 2,
+      "prompt": "Complete the conflict story guidance.",
+      "text": "In a conflict story show that you {1} the other person's constraints, used {2} rather than opinion, and {3} to the final decision.",
+      "blanks": {
+        "1": "understood",
+        "2": "data",
+        "3": "committed"
+      },
+      "bank": [
+        "understood",
+        "data",
+        "committed",
+        "escalated",
+        "ignored"
+      ],
+      "explanation": "Understanding, evidence and commitment are the three beats of a mature conflict story."
+    },
+    {
+      "id": "reuse-story",
+      "concept": "Story bank",
+      "type": "truefalse",
+      "difficulty": 2,
+      "prompt": "True or false: you may reuse one strong story for different questions if you emphasise different actions each time.",
+      "options": [
+        {
+          "id": "a",
+          "text": "True",
+          "why": "Correct: this is normal; just avoid repeating the identical story in the same interview loop when you have alternatives."
+        },
+        {
+          "id": "b",
+          "text": "False",
+          "why": "Reuse is fine when the emphasis changes."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Prepare more stories than principles so a repeated question gets a fresh example."
+    },
+    {
+      "id": "weakness-answer",
+      "concept": "Weakness question",
+      "type": "single",
+      "difficulty": 2,
+      "prompt": "Asked 'What is your greatest weakness?', which answer is strongest?",
+      "options": [
+        {
+          "id": "a",
+          "text": "A real, non-critical weakness, the concrete steps you took on it, and visible progress.",
+          "why": "Right: honesty plus a working improvement plan shows self-awareness."
+        },
+        {
+          "id": "b",
+          "text": "'I am a perfectionist', followed by an explanation that this is really a strength for the team.",
+          "why": "A disguised strength sounds rehearsed and avoids the question."
+        },
+        {
+          "id": "c",
+          "text": "A weakness that is central to the job, such as 'I find debugging production issues stressful'.",
+          "why": "A core-skill weakness without a plan makes the interviewer doubt the fit."
+        },
+        {
+          "id": "d",
+          "text": "'I do not really have weaknesses that affect my work', since you track your performance closely.",
+          "why": "Claiming none signals low self-awareness, which interviewers read as a risk."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Pick something genuinely improvable (for example delegating, or writing design docs earlier), say what you changed, and give evidence it worked."
+    },
+    {
+      "id": "ambiguity-story",
+      "concept": "Ambiguity story",
+      "type": "single",
+      "difficulty": 3,
+      "prompt": "Asked about a time you had to decide with incomplete data, which answer shows the most mature judgement?",
+      "options": [
+        {
+          "id": "a",
+          "text": "State the assumptions, pick a reversible step, set a metric and a checkpoint, then adjust.",
+          "why": "Right: it shows bias for action with a safety net and a learning loop."
+        },
+        {
+          "id": "b",
+          "text": "Wait until the missing data arrives, because acting on partial information is always irresponsible.",
+          "why": "Always waiting is the opposite of bias for action when decisions are reversible."
+        },
+        {
+          "id": "c",
+          "text": "Make the call alone and quietly, because asking for input would show a lack of confidence.",
+          "why": "Skipping stakeholders hides risk and weakens trust."
+        },
+        {
+          "id": "d",
+          "text": "Escalate to the manager immediately and implement whichever option they choose, without analysis.",
+          "why": "Escalating with no analysis shows no ownership of the decision."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Interviewers map this to Bias for Action and Are Right, A Lot. Name what you did not know, how you reduced the risk, and what you measured afterwards."
+    }
+  ]
+}

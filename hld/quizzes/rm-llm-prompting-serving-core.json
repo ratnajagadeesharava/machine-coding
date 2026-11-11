@@ -1,13 +1,14 @@
 {
-  "id": "rm-llm-prompting-serving",
+  "id": "rm-llm-prompting-serving-core",
   "title": "LLM apps: prompt design, streaming, caching",
   "topic": "Interview roadmap",
-  "series": "interview-roadmap",
-  "seriesTitle": "Interview roadmap: topic quizzes",
-  "seriesDescription": "Topic-by-topic JEE-style quizzes for the backend and AI-engineering interview roadmap: integer, assertion-reason, matrix match, fill-in-the-blanks, short code writing, plus multi-correct questions. Language core, concurrency, DSA, web frameworks, data access, databases, messaging, resilience, security, testing, system design, LLM and agent engineering.",
+  "series": "interview-roadmap-core",
+  "seriesTitle": "Interview roadmap: language-independent topics",
+  "seriesDescription": "Language-independent interview topics (concepts, SQL, design, AI engineering): no Java and no Python code or library names.",
   "seriesOrder": 91,
+  "language": "neutral",
   "description": "System prompts, few-shot examples, prompt versioning, streaming to the client with SSE, exact and semantic caching, prompt caching and token budgets.",
-  "source": "OpenAI prompt caching guide; Anthropic prompt caching docs (minimums, 0.1x reads, 1.25x writes); Spring Framework SseEmitter docs; FastAPI StreamingResponse docs; LangChain caching docs; OWASP Top 10 for LLM Applications",
+  "source": "OpenAI prompt caching guide; Anthropic prompt caching docs (minimums, 0.1x reads, 1.25x writes); WHATWG HTML Standard (Server-Sent Events); OWASP Top 10 for LLM Applications",
   "estimatedMinutes": 15,
   "questions": [
     {
@@ -121,53 +122,53 @@
       "concept": "Streaming",
       "type": "matrix",
       "difficulty": 2,
-      "prompt": "Match each stack with the construct normally used to stream LLM output.",
+      "prompt": "Match each streaming need with the construct normally used for it.",
       "left": [
         {
           "id": "a",
-          "text": "Spring MVC controller"
+          "text": "One-way token stream from server to browser over HTTP"
         },
         {
           "id": "b",
-          "text": "Spring WebFlux or Spring AI chat client"
+          "text": "Browser API that consumes that stream"
         },
         {
           "id": "c",
-          "text": "FastAPI endpoint"
+          "text": "Client must also send messages while the answer is streaming"
         },
         {
           "id": "d",
-          "text": "LangChain4j model"
+          "text": "Response length is unknown when the headers are sent"
         },
         {
           "id": "e",
-          "text": "Browser client"
+          "text": "A reverse proxy delays tokens by buffering the response"
         }
       ],
       "right": [
         {
           "id": "p",
-          "text": "SseEmitter"
+          "text": "Server-Sent Events with text/event-stream"
         },
         {
           "id": "q",
-          "text": "Flux<String> from stream().content()"
-        },
-        {
-          "id": "r",
-          "text": "StreamingResponse over an async generator"
-        },
-        {
-          "id": "s",
-          "text": "StreamingChatModel with a StreamingChatResponseHandler"
-        },
-        {
-          "id": "t",
           "text": "EventSource or fetch with a ReadableStream"
         },
         {
+          "id": "r",
+          "text": "WebSocket"
+        },
+        {
+          "id": "s",
+          "text": "Chunked transfer encoding"
+        },
+        {
+          "id": "t",
+          "text": "Disable response buffering for that route (for example X-Accel-Buffering: no)"
+        },
+        {
           "id": "u",
-          "text": "ResponseEntity<String> with Content-Length"
+          "text": "A fixed Content-Length response body"
         }
       ],
       "pairs": {
@@ -177,7 +178,7 @@
         "d": "s",
         "e": "t"
       },
-      "explanation": "All of them push chunks as they are produced. A fixed Content-Length body cannot stream. Spring AI exposes stream().content() on ChatClient, and LangChain4j 1.x uses StreamingChatModel with a response handler."
+      "explanation": "All of them push chunks as they are produced. A fixed Content-Length body cannot stream, and proxy buffering is the usual reason a working stream arrives all at once in production."
     },
     {
       "id": "prompt-cache-names",
@@ -222,85 +223,84 @@
       "explanation": "SSE events are separated by an empty line. Do not confuse it with newline-delimited JSON, which is a different convention."
     },
     {
-      "id": "fastapi-sse-stream",
+      "id": "sse-wire-http",
       "concept": "Streaming",
       "type": "code",
       "difficulty": 2,
-      "prompt": "FastAPI: an async iterator function llm_tokens(q) yields text tokens. Write an async generator gen(q) that yields each token as an SSE event ('data: <token>' plus a blank line), and a GET /chat endpoint chat(q: str) that returns it as a StreamingResponse with the SSE media type.",
-      "language": "python",
+      "prompt": "Write the raw HTTP response head and body of a Server-Sent Events reply that sends two events, with the data hello and then world.",
+      "language": "http",
       "checks": [
         {
-          "label": "uses an async generator (async def with yield)",
-          "pattern": "async\\s+def\\s+gen[\\s\\S]*yield"
+          "label": "status 200",
+          "pattern": "http/[\\d.]+\\s+200"
         },
         {
-          "label": "iterates with async for over llm_tokens",
-          "pattern": "async\\s+for[\\s\\S]*llm_tokens"
+          "label": "media type text/event-stream",
+          "pattern": "content-type\\s*:\\s*text/event-stream"
         },
         {
-          "label": "returns StreamingResponse",
-          "pattern": "StreamingResponse\\s*\\("
+          "label": "first event is data: hello",
+          "pattern": "data:\\s*hello"
         },
         {
-          "label": "sets media_type text/event-stream",
-          "pattern": "text/event-stream"
+          "label": "second event is data: world",
+          "pattern": "data:\\s*world"
+        },
+        {
+          "label": "each event ends with a blank line",
+          "pattern": "data:\\s*hello\\s*\\n\\s*\\n[\\s\\S]*data:\\s*world"
         }
       ],
-      "model": "async def gen(q):\n    async for tok in llm_tokens(q):\n        yield f\"data: {tok}\\n\\n\"\n\n@app.get(\"/chat\")\nasync def chat(q: str):\n    return StreamingResponse(gen(q), media_type=\"text/event-stream\")",
-      "explanation": "Other valid forms exist (a nested generator, EventSourceResponse from sse-starlette). In production also stop generating when the client disconnects.",
-      "starter": "from fastapi.responses import StreamingResponse\n"
+      "model": "HTTP/1.1 200 OK\nContent-Type: text/event-stream\nCache-Control: no-cache\n\ndata: hello\n\ndata: world\n\n",
+      "explanation": "The blank line is what ends an event. Cache-Control: no-cache is customary but not required by the checks. In production also stop generating when the client disconnects, which saves tokens."
     },
     {
-      "id": "spring-sseemitter",
-      "concept": "Streaming",
+      "id": "cache-control-block",
+      "concept": "Prompt caching",
       "type": "code",
       "difficulty": 2,
-      "prompt": "Spring MVC: write the body of a controller method SseEmitter chat(String q) that creates an emitter with no timeout, sends the text hello from a background executor (variable executor), completes the emitter, and returns it.",
-      "language": "java",
+      "prompt": "Write the JSON for one Anthropic system content block with the text \"You are a support bot.\" that is marked as a prompt-cache breakpoint with the ephemeral type.",
+      "language": "json",
       "checks": [
         {
-          "label": "creates new SseEmitter",
-          "pattern": "new\\s+SseEmitter\\s*\\("
+          "label": "is a text block",
+          "pattern": "\"type\"\\s*:\\s*\"text\""
         },
         {
-          "label": "sends from the executor",
-          "pattern": "executor\\.(submit|execute)[\\s\\S]*\\.send\\s*\\("
+          "label": "carries the text",
+          "pattern": "You are a support bot\\."
         },
         {
-          "label": "completes the emitter",
-          "pattern": "\\.complete\\s*\\(\\)"
-        },
-        {
-          "label": "returns the emitter",
-          "pattern": "return\\s+emitter"
+          "label": "has cache_control",
+          "pattern": "\"cache_control\"\\s*:\\s*\\{\\s*\"type\"\\s*:\\s*\"ephemeral\""
         }
       ],
-      "model": "SseEmitter emitter = new SseEmitter(0L);\nexecutor.submit(() -> {\n  try { emitter.send(\"hello\"); emitter.complete(); }\n  catch (IOException e) { emitter.completeWithError(e); }\n});\nreturn emitter;",
-      "explanation": "The servlet thread returns immediately and the executor writes events. A timeout of 0L means no timeout. Returning a Flux<String> with produces = TEXT_EVENT_STREAM_VALUE is the reactive alternative."
+      "model": "{\"type\": \"text\", \"text\": \"You are a support bot.\", \"cache_control\": {\"type\": \"ephemeral\"}}",
+      "explanation": "Everything up to and including the marked block becomes a cacheable prefix. The system field takes a list of such blocks. Prompts shorter than the model minimum are simply not cached, so check the cache read and write token counts in the usage object."
     },
     {
-      "id": "langchain-llm-cache",
+      "id": "redis-llm-cache",
       "concept": "Caching LLM calls",
       "type": "code",
       "difficulty": 2,
-      "prompt": "In LangChain Python, enable an in-memory exact-match cache for all LLM calls (imports included).",
-      "language": "python",
+      "prompt": "Write the redis-cli command that stores the answer \"42\" for the cache key llm:9f3a and lets it expire after one hour.",
+      "language": "shell",
       "checks": [
         {
-          "label": "imports set_llm_cache",
-          "pattern": "from\\s+langchain_core\\.globals\\s+import\\s+set_llm_cache|import[^\\n]*set_llm_cache"
+          "label": "stores under the key",
+          "pattern": "(set|setex)\\s+llm:9f3a"
         },
         {
-          "label": "imports InMemoryCache",
-          "pattern": "InMemoryCache"
+          "label": "stores the value 42",
+          "pattern": "42"
         },
         {
-          "label": "calls set_llm_cache with an InMemoryCache",
-          "pattern": "set_llm_cache\\(\\s*InMemoryCache\\s*\\(\\s*\\)\\s*\\)"
+          "label": "expires after 3600 seconds",
+          "pattern": "ex\\s+3600|setex\\s+llm:9f3a\\s+3600|px\\s+3600000"
         }
       ],
-      "model": "from langchain_core.globals import set_llm_cache\nfrom langchain_core.caches import InMemoryCache\n\nset_llm_cache(InMemoryCache())",
-      "explanation": "I ran this: the second identical invoke returns the cached answer without calling the model. For multi-process production use Redis- or SQL-backed caches. The older langchain.globals import path also works."
+      "model": "SET llm:9f3a \"42\" EX 3600",
+      "explanation": "The key is normally a hash of the normalised prompt, model name and parameters, so a hit means an identical request. SETEX llm:9f3a 3600 \"42\" is the older equivalent. A TTL bounds staleness when prompts or source documents change."
     },
     {
       "id": "prompt-versioning-practice",
@@ -333,7 +333,7 @@
       "correct": [
         "a"
       ],
-      "explanation": "Treat prompts as code and config: review, version, evaluate, canary. Prompt registries (LangSmith, Langfuse) provide labels like production/staging."
+      "explanation": "Treat prompts as code and config: review, version, evaluate, canary. Prompt registries provide labels like production/staging."
     },
     {
       "id": "few-shot-design",

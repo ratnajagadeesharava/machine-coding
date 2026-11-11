@@ -1,43 +1,16 @@
 {
-  "id": "rm-design-lld",
-  "title": "LLD: LRU cache, rate limiter, parking lot",
+  "id": "rm-design-lld-python",
+  "title": "LLD in Python: LRU cache, rate limiter, parking lot",
   "topic": "Interview roadmap",
-  "series": "interview-roadmap",
-  "seriesTitle": "Interview roadmap: topic quizzes",
-  "seriesDescription": "Topic-by-topic JEE-style quizzes for the backend and AI-engineering interview roadmap: integer, assertion-reason, matrix match, fill-in-the-blanks, short code writing, plus multi-correct questions. Language core, concurrency, DSA, web frameworks, data access, databases, messaging, resilience, security, testing, system design, LLM and agent engineering.",
+  "series": "interview-roadmap-python",
+  "seriesTitle": "Interview roadmap: Python and FastAPI",
+  "seriesDescription": "Python and FastAPI interview topics in JEE-Advanced style: integer, assertion-reason, matrix match, fill-in-the-blanks, short Python/SQL code and multi-correct questions. Python only: nothing here mixes in Java.",
   "seriesOrder": 89,
-  "description": "Low-level design: an LRU cache with LinkedHashMap or OrderedDict, a token bucket class, a parking lot class design with interfaces and ABCs, design patterns, and thread-safety follow-ups.",
-  "source": "Oracle Java docs (LinkedHashMap); Python docs (collections.OrderedDict, abc); Head First Design Patterns; Grokking the OOD interview problem lists; LeetCode 146 discussion",
+  "language": "python",
+  "description": "Low-level design in Python: an LRU cache on OrderedDict, a thread-safe token bucket class, a parking lot with abstract base classes, design patterns and thread-safety follow-ups.",
+  "source": "Python docs (collections.OrderedDict, abc, functools, threading); Head First Design Patterns; Grokking the OOD interview problem lists; LeetCode 146 discussion",
   "estimatedMinutes": 15,
   "questions": [
-    {
-      "id": "lru-lhm",
-      "concept": "LRU cache",
-      "type": "code",
-      "difficulty": 2,
-      "prompt": "Write a generic Java class LRU<K,V> extending LinkedHashMap that keeps at most cap entries, evicting the least recently used one (cap is a constructor argument).",
-      "language": "java",
-      "checks": [
-        {
-          "label": "extends LinkedHashMap",
-          "pattern": "extends\\s+linkedhashmap"
-        },
-        {
-          "label": "access-order constructor (true)",
-          "pattern": "super\\([^)]*,\\s*true\\s*\\)"
-        },
-        {
-          "label": "overrides removeEldestEntry",
-          "pattern": "removeeldestentry"
-        },
-        {
-          "label": "evicts when size exceeds cap",
-          "pattern": "size\\(\\)\\s*>\\s*cap"
-        }
-      ],
-      "model": "class LRU<K,V> extends LinkedHashMap<K,V> {\n  private final int cap;\n  LRU(int cap) { super(16, 0.75f, true); this.cap = cap; }\n  @Override protected boolean removeEldestEntry(Map.Entry<K,V> e) { return size() > cap; }\n}",
-      "explanation": "accessOrder = true makes get() move an entry to the end. The interview follow-up is to implement the same with a HashMap plus a doubly linked list with head and tail sentinels, giving O(1) get and put."
-    },
     {
       "id": "lru-py",
       "concept": "LRU cache",
@@ -71,28 +44,28 @@
       "concept": "Rate limiter LLD",
       "type": "code",
       "difficulty": 3,
-      "prompt": "Write a thread-safe Java class TokenBucket(double capacity, double refillPerSecond) with a boolean tryAcquire() method that refills lazily from elapsed time (never above capacity), starts full and takes one token on success.",
-      "language": "java",
+      "prompt": "Write a thread-safe Python class TokenBucket(capacity, refill_per_second) with a try_acquire() method that returns True or False, refills lazily from elapsed time (never above capacity), starts full and takes one token on success.",
+      "language": "python",
       "checks": [
         {
-          "label": "is synchronized or locked",
-          "pattern": "(synchronized|reentrantlock|atomic)"
+          "label": "uses a lock",
+          "pattern": "(lock|rlock)\\s*\\("
         },
         {
-          "label": "caps tokens at capacity with Math.min",
-          "pattern": "math\\.min\\("
+          "label": "caps tokens at capacity with min()",
+          "pattern": "min\\("
         },
         {
-          "label": "uses elapsed time",
-          "pattern": "(nanotime|currentTimeMillis|instant\\.now)"
+          "label": "uses a monotonic clock",
+          "pattern": "(monotonic|perf_counter|time\\.time)\\s*\\("
         },
         {
-          "label": "has tryAcquire returning boolean",
-          "pattern": "boolean\\s+tryacquire\\(\\)"
+          "label": "defines try_acquire",
+          "pattern": "def\\s+try_acquire\\s*\\("
         }
       ],
-      "model": "class TokenBucket {\n  private final double cap, rate; private double tokens; private long last = System.nanoTime();\n  TokenBucket(double cap, double rate) { this.cap = cap; this.rate = rate; this.tokens = cap; }\n  synchronized boolean tryAcquire() {\n    long now = System.nanoTime();\n    tokens = Math.min(cap, tokens + (now - last) / 1e9 * rate); last = now;\n    if (tokens >= 1) { tokens -= 1; return true; } return false;\n  }\n}",
-      "explanation": "Lazy refill avoids a timer thread. Use nanoTime (monotonic) rather than wall-clock time. Other correct versions use a lock or an AtomicLong with compare-and-set."
+      "model": "import threading, time\nclass TokenBucket:\n    def __init__(self, capacity, refill_per_second):\n        self.cap, self.rate = capacity, refill_per_second\n        self.tokens, self.last = capacity, time.monotonic()\n        self.lock = threading.Lock()\n    def try_acquire(self):\n        with self.lock:\n            now = time.monotonic()\n            self.tokens = min(self.cap, self.tokens + (now - self.last) * self.rate)\n            self.last = now\n            if self.tokens >= 1:\n                self.tokens -= 1\n                return True\n            return False",
+      "explanation": "Lazy refill avoids a timer thread. Use time.monotonic rather than wall-clock time, which can jump. The lock makes the read-refill-decrement sequence atomic. Other correct versions use asyncio.Lock for async code."
     },
     {
       "id": "vehicle-abc",
@@ -120,7 +93,7 @@
         }
       ],
       "model": "from abc import ABC, abstractmethod\nclass Vehicle(ABC):\n    @abstractmethod\n    def spots_needed(self) -> int: ...\nclass Car(Vehicle):\n    def spots_needed(self): return 1",
-      "explanation": "Instantiating Vehicle raises TypeError, and subclasses that forget the method also cannot be instantiated. In Java the same idea is an interface or abstract class, with an enum for VehicleType."
+      "explanation": "Instantiating Vehicle raises TypeError, and subclasses that forget the method also cannot be instantiated. An enum.Enum for VehicleType is the usual companion."
     },
     {
       "id": "lru-trace",
@@ -243,23 +216,23 @@
       "explanation": "Inject the policy through the constructor so tests can pass a fake."
     },
     {
-      "id": "lhm-thread",
+      "id": "od-thread",
       "concept": "Thread safety",
       "type": "assertion",
       "difficulty": 3,
       "prompt": "Read the assertion and the reason, then choose the option that describes them correctly.",
-      "assertion": "LinkedHashMap with accessOrder = true is a convenient base for an LRU cache.",
-      "reason": "LinkedHashMap is thread-safe, so concurrent get calls are safe.",
+      "assertion": "OrderedDict with move_to_end is a convenient base for an LRU cache.",
+      "reason": "OrderedDict makes the whole get-then-reorder sequence atomic, so concurrent callers never need a lock.",
       "correct": [
         "c"
       ],
       "whys": {
-        "a": "The reason is false.",
-        "b": "The reason is false.",
-        "c": "Right: LinkedHashMap is not thread-safe and in access order even get() mutates it.",
+        "a": "The reason is false, so it cannot explain the assertion.",
+        "b": "The reason is false, not merely unrelated.",
+        "c": "Right: single operations are safe but the check, reorder and read in get() are separate steps, so a lock is still needed.",
         "d": "The assertion is the true statement."
       },
-      "explanation": "Wrap with Collections.synchronizedMap or guard get and put with one lock. Caffeine is the production answer."
+      "explanation": "Guard get and put with one threading.Lock. For production, a library cache with locking built in is the usual answer."
     },
     {
       "id": "spot-pricing",
@@ -282,58 +255,58 @@
     },
     {
       "id": "lru-parts",
-      "concept": "LinkedHashMap and OrderedDict",
+      "concept": "OrderedDict eviction",
       "type": "fill",
       "difficulty": 1,
       "prompt": "Complete the LRU facts.",
-      "text": "LinkedHashMap is constructed with access order {1} and you override {2}; in Python the matching method on OrderedDict is {3}.",
+      "text": "An OrderedDict reorders a used key with {1}, evicts the oldest entry with popitem(last={2}), and an ordinary dict keeps {3} order.",
       "blanks": {
-        "1": "true",
-        "2": "removeEldestEntry",
-        "3": "move_to_end"
+        "1": "move_to_end",
+        "2": "False",
+        "3": "insertion"
       },
       "bank": [
-        "true",
-        "removeEldestEntry",
         "move_to_end",
-        "false",
-        "removeAll",
+        "False",
+        "insertion",
+        "True",
+        "sorted",
         "popitem"
       ],
-      "explanation": "The three-argument constructor is LinkedHashMap(initialCapacity, loadFactor, accessOrder)."
+      "explanation": "move_to_end(key) sends a key to the most recent end; popitem(last=False) removes from the least recent end. Plain dicts also keep insertion order since 3.7, but have no move_to_end."
     },
     {
       "id": "lru-thread",
       "concept": "Thread safety",
       "type": "single",
       "difficulty": 3,
-      "prompt": "Why is a plain LinkedHashMap LRU unsafe for concurrent readers even if the threads only call get?",
+      "prompt": "Why is an OrderedDict LRU unsafe for concurrent readers even if the threads only call get?",
       "options": [
         {
           "id": "a",
-          "text": "get() reorders entries, so each read mutates it",
-          "why": "Right: concurrent reorders can corrupt the links or lose entries."
+          "text": "get() reads then reorders, so another thread can evict in between",
+          "why": "Right: the key may disappear between the membership check and the move, raising KeyError or corrupting the order."
         },
         {
           "id": "b",
-          "text": "get() always throws ConcurrentModificationException",
-          "why": "It is not guaranteed to throw; corruption can be silent."
+          "text": "OrderedDict raises RuntimeError whenever two threads read at the same time",
+          "why": "No such rule exists; reads from several threads are allowed."
         },
         {
           "id": "c",
-          "text": "LinkedHashMap forbids more than one reader thread at any time",
-          "why": "No such restriction exists in the class."
+          "text": "OrderedDict objects are bound to the thread that created them",
+          "why": "Objects are not thread-bound; any thread can use a shared reference."
         },
         {
           "id": "d",
-          "text": "The hash function differs per thread",
-          "why": "Hashing is deterministic and does not depend on the thread."
+          "text": "move_to_end copies the whole mapping, so concurrent reads see stale data",
+          "why": "move_to_end relinks one node and copies nothing."
         }
       ],
       "correct": [
         "a"
       ],
-      "explanation": "Use a lock around get and put, or a concurrent cache library such as Caffeine."
+      "explanation": "Use a lock around get and put, or a cache library with locking built in."
     },
     {
       "id": "lld-practice",
@@ -344,8 +317,8 @@
       "options": [
         {
           "id": "a",
-          "text": "Use an enum for VehicleType rather than free strings",
-          "why": "Right: it is type-safe and exhaustive."
+          "text": "Use an Enum for VehicleType rather than free strings",
+          "why": "Right: it is exhaustive and typos fail early."
         },
         {
           "id": "b",
@@ -354,13 +327,13 @@
         },
         {
           "id": "c",
-          "text": "Return Optional<Spot> from findSpot instead of null",
-          "why": "Right: the absence case is explicit."
+          "text": "Return an explicit Optional[Spot] (None when full) from find_spot",
+          "why": "Right: the absence case is part of the signature."
         },
         {
           "id": "d",
-          "text": "Expose a public mutable List<Spot> field for convenience",
-          "why": "Callers could corrupt the lot state; expose behaviour instead."
+          "text": "Give the constructor a mutable default such as spots=[]",
+          "why": "That list is created once and shared by every lot, which causes hidden coupling."
         }
       ],
       "correct": [
@@ -394,27 +367,27 @@
       "explanation": "Running a class with @abstractmethod but no ABC base shows A() still instantiates fine."
     },
     {
-      "id": "dcl-volatile",
-      "concept": "Thread safety",
+      "id": "lru-cache-method",
+      "concept": "LRU cache",
       "type": "truefalse",
       "difficulty": 3,
-      "prompt": "True or false: a double-checked locking Singleton in Java needs its instance field declared volatile so another thread cannot see a partially constructed object.",
+      "prompt": "True or false: decorating an instance method with functools.lru_cache keeps references to the instances, so they can stay alive as long as the cache does.",
       "options": [
         {
           "id": "a",
           "text": "True",
-          "why": "Right: without volatile the write of the reference can be reordered before the constructor's writes, so a second thread may see a half-built object (fixed by the Java 5 memory model with volatile)."
+          "why": "Right: the instance is part of every cache key, so the cache holds a strong reference to it."
         },
         {
           "id": "b",
           "text": "False",
-          "why": "Incorrect: the synchronized block only protects the second check; the unsynchronised first read can still observe a reference to an unfinished object without volatile."
+          "why": "Incorrect: the cache stores self in its keys, so it prevents the instance from being garbage collected."
         }
       ],
       "correct": [
         "a"
       ],
-      "explanation": "Cleaner alternatives are the initialisation-on-demand holder idiom or a single-element enum Singleton (Effective Java, Item 3), neither of which needs volatile."
+      "explanation": "Cache a module-level function instead, or build a per-instance cache in the constructor, when instances are short-lived."
     }
   ]
 }

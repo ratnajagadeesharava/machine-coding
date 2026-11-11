@@ -1,0 +1,443 @@
+{
+  "id": "rm-langgraph-core-python",
+  "title": "LangGraph: StateGraph, state, reducers, edges",
+  "topic": "Interview roadmap",
+  "language": "python",
+  "series": "interview-roadmap-python",
+  "seriesTitle": "Interview roadmap: Python and FastAPI",
+  "seriesDescription": "Python and FastAPI interview topics in JEE-Advanced style: integer, assertion-reason, matrix match, fill-in-the-blanks, short Python/SQL code and multi-correct questions. Python only: nothing here mixes in Java.",
+  "seriesOrder": 94,
+  "description": "State schemas and reducers, nodes, edges and conditional edges, Command-based routing, and a router between a tool path and a text-to-SQL path.",
+  "source": "LangGraph docs (docs.langchain.com/oss/python/langgraph, langchain-ai.github.io/langgraph); LangGraph v1 release notes and migration guide; verified by running langgraph 1.2",
+  "estimatedMinutes": 16,
+  "questions": [
+    {
+      "id": "reducer-sum",
+      "concept": "State and reducers",
+      "type": "integer",
+      "difficulty": 2,
+      "prompt": "State is count: Annotated[int, operator.add] starting at 0. START fans out to nodes A and B in parallel; A returns {'count': 2} and B returns {'count': 3}. Both feed node C, which returns {'count': 1}. What is count when the graph finishes?",
+      "answer": 6,
+      "explanation": "A and B run in the same superstep and the add reducer combines both writes: 0 + 2 + 3 = 5. Then C adds 1 = 6. I ran this graph and got 6. Without the reducer the two parallel writes would raise InvalidUpdateError."
+    },
+    {
+      "id": "agent-tools-executions",
+      "concept": "Agent loop",
+      "type": "integer",
+      "difficulty": 2,
+      "prompt": "An agent graph has START -> agent, a conditional edge from agent to tools (if the model requested tools) or END, and an edge tools -> agent. The model requests tools twice and then answers in plain text. How many node executions happen in total?",
+      "answer": 5,
+      "explanation": "agent, tools, agent, tools, agent = 5 executions: 3 agent runs (3 LLM calls) and 2 tool runs. I ran an equivalent graph and it produced exactly that sequence. This is the count to compare against recursion_limit.",
+      "unit": "node runs"
+    },
+    {
+      "id": "add-messages-length",
+      "concept": "Messages reducer",
+      "type": "integer",
+      "difficulty": 3,
+      "prompt": "existing = [Human(id='1'), AI(id='2', content='b')]; update = [AI(id='2', content='b2'), Human(no id)]. After add_messages(existing, update), how many messages are in the list?",
+      "answer": 3,
+      "explanation": "add_messages merges by id: the update with id '2' replaces the existing message, and the message without an id gets a new generated id and is appended. 2 original (one replaced) + 1 new = 3. I verified it by running add_messages.",
+      "unit": "messages"
+    },
+    {
+      "id": "default-overwrite",
+      "concept": "State and reducers",
+      "type": "assertion",
+      "difficulty": 1,
+      "prompt": "Assertion and reason: read both statements and choose the right option.",
+      "assertion": "A state key declared without a reducer is overwritten by the most recent node that returns it.",
+      "reason": "Without a reducer, LangGraph's default channel simply keeps the last value written.",
+      "correct": [
+        "a"
+      ],
+      "whys": {
+        "a": "Right: overwrite is the default behaviour, and R states the mechanism behind it.",
+        "b": "R is the explanation of A, so b is wrong.",
+        "c": "R is true, so c is wrong.",
+        "d": "A is true, so d is wrong."
+      },
+      "explanation": "Add a reducer through Annotated[type, fn] whenever you need accumulation (messages, logs, counters). Be careful: in the same superstep, two writes to a plain key raise InvalidUpdateError."
+    },
+    {
+      "id": "add-messages-ids",
+      "concept": "Messages reducer",
+      "type": "assertion",
+      "difficulty": 2,
+      "prompt": "Assertion and reason: read both statements and choose the right option.",
+      "assertion": "The add_messages reducer appends new messages instead of replacing the list.",
+      "reason": "A message whose id matches an existing message replaces that message.",
+      "correct": [
+        "b"
+      ],
+      "whys": {
+        "a": "R is a detail about updates, not the reason appending happens, so a is wrong.",
+        "b": "Both are true: append is the general rule, replace-by-id is an extra feature that powers edits and RemoveMessage.",
+        "c": "R is true, so c is wrong.",
+        "d": "A is true, so d is wrong."
+      },
+      "explanation": "Both behaviours matter: the append builds the chat history, and replace-by-id lets a node correct a message or the framework update a streamed one."
+    },
+    {
+      "id": "router-returns-name",
+      "concept": "Conditional routing",
+      "type": "assertion",
+      "difficulty": 2,
+      "prompt": "Assertion and reason: read both statements and choose the right option.",
+      "assertion": "A routing function passed to add_conditional_edges returns the name of the next node (or END).",
+      "reason": "The routing function must write the chosen route into the state, otherwise LangGraph cannot follow it.",
+      "correct": [
+        "c"
+      ],
+      "whys": {
+        "a": "R is false, so it cannot explain A.",
+        "b": "R is false, so b is wrong.",
+        "c": "A is true; R is false: the function only reads state and returns a name, and I ran graphs that never store the route.",
+        "d": "A is true, so d is wrong."
+      },
+      "explanation": "Routers should be pure functions of state. If you want to update state and route in one step, return Command(update=..., goto=...) from a node."
+    },
+    {
+      "id": "parallel-plain-key",
+      "concept": "State and reducers",
+      "type": "assertion",
+      "difficulty": 3,
+      "prompt": "Assertion and reason: read both statements and choose the right option.",
+      "assertion": "Two nodes running in the same superstep can safely write a plain str state key without any reducer.",
+      "reason": "A reducer is the function that LangGraph uses to combine several updates to the same key.",
+      "correct": [
+        "d"
+      ],
+      "whys": {
+        "a": "A is false, so a is wrong.",
+        "b": "A is false, so b is wrong.",
+        "c": "R is true, so c is wrong.",
+        "d": "A is false: LangGraph raises InvalidUpdateError ('Can receive only one value per step'); R is true and is the fix."
+      },
+      "explanation": "Parallel branches need reducers on any shared key, or branches should write to separate keys. I ran the failing case to see the error message."
+    },
+    {
+      "id": "graph-api-map",
+      "concept": "Graph API",
+      "type": "matrix",
+      "difficulty": 2,
+      "prompt": "Match each LangGraph API with what it does.",
+      "left": [
+        {
+          "id": "a",
+          "text": "add_node(name, fn)"
+        },
+        {
+          "id": "b",
+          "text": "add_edge(a, b)"
+        },
+        {
+          "id": "c",
+          "text": "add_conditional_edges(src, fn, map)"
+        },
+        {
+          "id": "d",
+          "text": "Command(update=..., goto=...)"
+        },
+        {
+          "id": "e",
+          "text": "compile(checkpointer=...)"
+        }
+      ],
+      "right": [
+        {
+          "id": "p",
+          "text": "Registers a function as a named step"
+        },
+        {
+          "id": "q",
+          "text": "Always moves from a to b"
+        },
+        {
+          "id": "r",
+          "text": "Chooses the next node from the function's return value"
+        },
+        {
+          "id": "s",
+          "text": "Lets a node change state and pick the next node together"
+        },
+        {
+          "id": "t",
+          "text": "Produces the runnable graph, optionally with persistence"
+        },
+        {
+          "id": "u",
+          "text": "Starts a new conversation thread"
+        }
+      ],
+      "pairs": {
+        "a": "p",
+        "b": "q",
+        "c": "r",
+        "d": "s",
+        "e": "t"
+      },
+      "explanation": "Threads are chosen at invoke time with config['configurable']['thread_id'], not by any of these builder calls."
+    },
+    {
+      "id": "state-vocabulary",
+      "concept": "State and reducers",
+      "type": "fill",
+      "difficulty": 1,
+      "prompt": "Complete the vocabulary of a LangGraph graph.",
+      "text": "The graph is built from a {1} schema, each node returns a partial {2}, and a {3} merges several writes to the same key.",
+      "blanks": {
+        "1": "state",
+        "2": "update",
+        "3": "reducer"
+      },
+      "bank": [
+        "state",
+        "update",
+        "reducer",
+        "checkpoint",
+        "router",
+        "prompt"
+      ],
+      "explanation": "Nodes return only the keys they change. The schema can be a TypedDict, dataclass or Pydantic model."
+    },
+    {
+      "id": "router-names",
+      "concept": "Conditional routing",
+      "type": "fill",
+      "difficulty": 2,
+      "prompt": "Complete the routing sentence for a tool path versus a text-to-SQL path.",
+      "text": "The function given to add_conditional_edges returns the {1} of the next node, and returning {2} finishes the run.",
+      "blanks": {
+        "1": "name",
+        "2": "END"
+      },
+      "bank": [
+        "name",
+        "END",
+        "START",
+        "state",
+        "object"
+      ],
+      "explanation": "A path map such as {'sql': 'sql_node', 'tool': 'tool_node'} lets the function return short labels instead of node names."
+    },
+    {
+      "id": "state-with-reducers",
+      "concept": "State and reducers",
+      "type": "code",
+      "difficulty": 2,
+      "prompt": "Write a TypedDict State for LangGraph with a chat history key messages that appends via add_messages, and an integer key tokens_used that sums updates with operator.add.",
+      "language": "python",
+      "checks": [
+        {
+          "label": "defines a TypedDict State",
+          "pattern": "class\\s+State\\s*\\(\\s*TypedDict\\s*\\)"
+        },
+        {
+          "label": "messages uses add_messages",
+          "pattern": "messages\\s*:\\s*Annotated\\[\\s*list\\s*,\\s*add_messages\\s*\\]"
+        },
+        {
+          "label": "tokens_used uses operator.add",
+          "pattern": "tokens_used\\s*:\\s*Annotated\\[\\s*int\\s*,\\s*operator\\.add\\s*\\]"
+        }
+      ],
+      "model": "class State(TypedDict):\n    messages: Annotated[list, add_messages]\n    tokens_used: Annotated[int, operator.add]",
+      "explanation": "A bare add import (from operator import add) is equally valid. list[AnyMessage] is a common stricter type. MessagesState is a ready-made class that already contains the messages key.",
+      "starter": "import operator\nfrom typing import Annotated, TypedDict\nfrom langgraph.graph.message import add_messages\n"
+    },
+    {
+      "id": "router-graph",
+      "concept": "Conditional routing",
+      "type": "code",
+      "difficulty": 3,
+      "prompt": "Variables State, classify, run_tool, run_sql and pick (returns 'sql' or 'tool') already exist. Build a StateGraph(State): nodes classify, tool and sql (functions run_tool, run_sql), START -> classify, a conditional edge from classify using pick with a path map to tool and sql, both ending at END, and compile it into app.",
+      "language": "python",
+      "checks": [
+        {
+          "label": "creates StateGraph(State)",
+          "pattern": "StateGraph\\(\\s*State\\s*\\)"
+        },
+        {
+          "label": "adds the three nodes",
+          "pattern": "add_node\\([\\s\\S]*add_node\\([\\s\\S]*add_node\\("
+        },
+        {
+          "label": "START edge into classify",
+          "pattern": "add_edge\\(\\s*START\\s*,\\s*[\"']classify[\"']"
+        },
+        {
+          "label": "conditional edges from classify with pick",
+          "pattern": "add_conditional_edges\\(\\s*[\"']classify[\"']\\s*,\\s*pick"
+        },
+        {
+          "label": "tool and sql edges to END",
+          "pattern": "add_edge\\(\\s*[\"']tool[\"']\\s*,\\s*END[\\s\\S]*add_edge\\(\\s*[\"']sql[\"']\\s*,\\s*END|add_edge\\(\\s*[\"']sql[\"']\\s*,\\s*END[\\s\\S]*add_edge\\(\\s*[\"']tool[\"']\\s*,\\s*END"
+        },
+        {
+          "label": "compiles",
+          "pattern": "\\.compile\\s*\\("
+        }
+      ],
+      "model": "g = StateGraph(State)\ng.add_node(\"classify\", classify)\ng.add_node(\"tool\", run_tool)\ng.add_node(\"sql\", run_sql)\ng.add_edge(START, \"classify\")\ng.add_conditional_edges(\"classify\", pick, {\"tool\": \"tool\", \"sql\": \"sql\"})\ng.add_edge(\"tool\", END)\ng.add_edge(\"sql\", END)\napp = g.compile()",
+      "explanation": "A list of names instead of the path map also works. add_edge(START, ...) and set_entry_point are equivalent for the entry. Chained add_node calls are fine too."
+    },
+    {
+      "id": "command-routing",
+      "concept": "Command routing",
+      "type": "code",
+      "difficulty": 3,
+      "prompt": "Write a node classify(state) that returns a Command: if 'revenue' is in state['q'] it updates route to 'sql' and goes to the node 'sql_node', otherwise it updates route to 'tool' and goes to 'tool_node'.",
+      "language": "python",
+      "checks": [
+        {
+          "label": "returns Command objects",
+          "pattern": "return\\s+Command\\s*\\("
+        },
+        {
+          "label": "uses update with route",
+          "pattern": "update\\s*=\\s*\\{\\s*[\"']route[\"']"
+        },
+        {
+          "label": "uses goto sql_node and tool_node",
+          "pattern": "goto\\s*=\\s*[\"']sql_node[\"'][\\s\\S]*goto\\s*=\\s*[\"']tool_node[\"']|goto\\s*=\\s*[\"']tool_node[\"'][\\s\\S]*goto\\s*=\\s*[\"']sql_node[\"']"
+        },
+        {
+          "label": "tests for 'revenue' in state['q']",
+          "pattern": "[\"']revenue[\"']\\s+in\\s+state\\[\\s*[\"']q[\"']\\s*\\]"
+        }
+      ],
+      "model": "def classify(state) -> Command[Literal['sql_node', 'tool_node']]:\n    if 'revenue' in state['q']:\n        return Command(update={'route': 'sql'}, goto='sql_node')\n    return Command(update={'route': 'tool'}, goto='tool_node')",
+      "explanation": "I ran a Command-based node. Annotate the return type with Command[Literal[...]] so graph drawing shows the possible destinations. An if/else with a single return also passes if both goto values appear."
+    },
+    {
+      "id": "sql-validation-node",
+      "concept": "Text-to-SQL branch",
+      "type": "single",
+      "difficulty": 3,
+      "prompt": "In a text-to-SQL branch, where should the check that generated SQL is a single read-only SELECT on allow-listed tables live?",
+      "options": [
+        {
+          "id": "a",
+          "text": "In its own node between generation and execution, with a conditional edge back to regenerate on failure.",
+          "why": "Right: an explicit step is testable, traceable and can loop back with the error."
+        },
+        {
+          "id": "b",
+          "text": "Only in the system prompt, by telling the model never to write anything but SELECT statements.",
+          "why": "A prompt is a request, not an enforcement; injected text can override it."
+        },
+        {
+          "id": "c",
+          "text": "Nowhere in the graph, because the read-only database user will refuse anything unsafe in any case anyway.",
+          "why": "A read-only DB role is necessary but it does not stop heavy queries or data from forbidden tables."
+        },
+        {
+          "id": "d",
+          "text": "Inside the response node, after the query has executed and the rows were already read back.",
+          "why": "Validation after execution is too late: the query has already run."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Defence in depth: validate in code (parse, allow-list), run as a read-only role with a statement timeout and row limit, and keep the validator as a separate node so failures route back or to a human."
+    },
+    {
+      "id": "langgraph-build-facts",
+      "concept": "Graph API",
+      "type": "multi",
+      "difficulty": 2,
+      "prompt": "Which statements about building a LangGraph graph are true? Select all that apply.",
+      "options": [
+        {
+          "id": "a",
+          "text": "Nodes return only the state keys they change, not the whole state.",
+          "why": "True: updates are partial and merged by reducers."
+        },
+        {
+          "id": "b",
+          "text": "A graph must be compiled before you can call invoke or stream.",
+          "why": "True: compile() produces the runnable."
+        },
+        {
+          "id": "c",
+          "text": "A node that returns None leaves the state unchanged.",
+          "why": "True: I ran such a node and the state was untouched."
+        },
+        {
+          "id": "d",
+          "text": "Every node must return a full copy of the state dictionary.",
+          "why": "False: returning only changes is the norm."
+        },
+        {
+          "id": "e",
+          "text": "A Pydantic BaseModel cannot be used as the state schema.",
+          "why": "False: TypedDict, dataclass and Pydantic models are supported."
+        }
+      ],
+      "correct": [
+        "a",
+        "b",
+        "c"
+      ],
+      "explanation": "Remember: schema, nodes, edges, compile, invoke with config. The state schema is the contract between nodes."
+    },
+    {
+      "id": "memory-only-add-messages",
+      "concept": "Messages reducer",
+      "type": "truefalse",
+      "difficulty": 1,
+      "prompt": "In LangGraph, Annotated[list, add_messages] is the only way to keep a chat history in state.",
+      "options": [
+        {
+          "id": "a",
+          "text": "True",
+          "why": "Not true: a custom reducer such as operator.add on a list also works."
+        },
+        {
+          "id": "b",
+          "text": "False",
+          "why": "Right: add_messages is convenient (ids, replace, RemoveMessage), but any list with a reducer can hold history."
+        }
+      ],
+      "correct": [
+        "b"
+      ],
+      "explanation": "add_messages adds message-aware merging. A plain Annotated[list, operator.add] only appends and cannot replace or delete by id."
+    },
+    {
+      "id": "react-agent-moved",
+      "concept": "Agent loop",
+      "type": "single",
+      "difficulty": 2,
+      "prompt": "You find tutorial code using langgraph.prebuilt.create_react_agent. In LangGraph and LangChain 1.x, what is the status of that function?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Deprecated in favour of langchain.agents.create_agent, which takes system_prompt.",
+          "why": "Right: the v1 migration guide points to create_agent as the successor."
+        },
+        {
+          "id": "b",
+          "text": "It was removed together with StateGraph, so every agent must now be written by hand as nodes.",
+          "why": "StateGraph is the core API of LangGraph 1.x and was not removed."
+        },
+        {
+          "id": "c",
+          "text": "It still is the only prebuilt agent, and create_agent exists only for the JavaScript library.",
+          "why": "create_agent exists for Python as well, in the langchain package."
+        },
+        {
+          "id": "d",
+          "text": "It now requires a checkpointer, because agents without persistence are no longer supported.",
+          "why": "A checkpointer is optional for agents, as for any compiled graph."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Knowing the prebuilt is a ReAct-style loop (model node, tools node, conditional edge) matters more than the name; you can always build the same loop by hand with StateGraph."
+    }
+  ]
+}

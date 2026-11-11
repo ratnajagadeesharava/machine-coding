@@ -1,0 +1,390 @@
+{
+  "id": "rm-dsa-process-hashing-java",
+  "title": "DSA in Java: arrays and hashing",
+  "topic": "Interview roadmap",
+  "series": "interview-roadmap-java",
+  "seriesTitle": "Interview roadmap: Java and Spring Boot",
+  "seriesDescription": "Java and Spring Boot interview topics in JEE-Advanced style: integer, assertion-reason, matrix match, fill-in-the-blanks, short Java/SQL code and multi-correct questions. Java only: nothing here mixes in Python.",
+  "seriesOrder": 30,
+  "language": "java",
+  "description": "Java hashing for interviews: HashMap idioms (merge, computeIfAbsent), equals/hashCode, prefix sums, anagram grouping and expected versus worst-case cost.",
+  "source": "Oracle Java documentation (HashMap, Map.merge, Integer cache, Arrays.sort); LeetCode two sum, group anagrams and subarray sum equals K; Cracking the Coding Interview",
+  "estimatedMinutes": 18,
+  "questions": [
+    {
+      "id": "two-sum",
+      "concept": "Two sum family",
+      "type": "code",
+      "difficulty": 2,
+      "prompt": "Write a Java method int[] twoSum(int[] nums, int target) that returns the indices of two different elements adding up to target in one pass using a HashMap (assume exactly one answer exists).",
+      "language": "java",
+      "starter": "static int[] twoSum(int[] nums, int target) {\n  \n}",
+      "checks": [
+        {
+          "label": "uses a HashMap/Map from value to index",
+          "pattern": "HashMap|Map\\s*<"
+        },
+        {
+          "label": "looks up the complement target - nums[i]",
+          "pattern": "target\\s*-|\\bt\\s*-\\s*\\w|-\\s*\\w+\\s*\\[\\s*\\w+\\s*\\]"
+        },
+        {
+          "label": "checks the map with get or containsKey",
+          "pattern": "\\.get\\(|containsKey"
+        },
+        {
+          "label": "stores values with put",
+          "pattern": "\\.put\\("
+        },
+        {
+          "label": "returns a two-element int array",
+          "pattern": "new\\s+int\\s*\\[\\s*\\]\\s*\\{|new\\s+int\\s*\\[\\s*2\\s*\\]"
+        }
+      ],
+      "model": "static int[] twoSum(int[] nums, int target) {\n  Map<Integer, Integer> seen = new HashMap<>();\n  for (int i = 0; i < nums.length; i++) {\n    Integer j = seen.get(target - nums[i]);\n    if (j != null) return new int[]{j, i};\n    seen.put(nums[i], i);\n  }\n  return new int[0];\n}",
+      "explanation": "Check the map before inserting the current element, otherwise nums = {3, 2, 4} with target 6 pairs index 0 with itself. Other correct solutions (containsKey, a fill-first pass) also pass."
+    },
+    {
+      "id": "group-anagrams",
+      "concept": "Hashing patterns",
+      "type": "code",
+      "difficulty": 2,
+      "prompt": "Write a Java method Collection<List<String>> groupAnagrams(String[] words) that groups words that are anagrams of each other, using a Map keyed by the word's sorted letters.",
+      "language": "java",
+      "starter": "static Collection<List<String>> groupAnagrams(String[] words) {\n  \n}",
+      "checks": [
+        {
+          "label": "builds a Map of lists",
+          "pattern": "Map\\s*<[\\s\\S]*new\\s+(Hash|LinkedHash|Tree)Map"
+        },
+        {
+          "label": "sorts the characters of each word",
+          "pattern": "toCharArray\\(\\)[\\s\\S]*Arrays\\.sort|Arrays\\.sort|sorted\\("
+        },
+        {
+          "label": "turns the sorted letters back into a String key",
+          "pattern": "new\\s+String\\s*\\(|String\\.valueOf\\s*\\("
+        },
+        {
+          "label": "appends each word to its group",
+          "pattern": "computeIfAbsent|\\.add\\("
+        },
+        {
+          "label": "returns the groups",
+          "pattern": "return\\s+[\\w.]*(values\\(\\)|groups|map|res)"
+        }
+      ],
+      "model": "static Collection<List<String>> groupAnagrams(String[] words) {\n  Map<String, List<String>> groups = new HashMap<>();\n  for (String w : words) {\n    char[] cs = w.toCharArray();\n    Arrays.sort(cs);\n    groups.computeIfAbsent(new String(cs), k -> new ArrayList<>()).add(w);\n  }\n  return groups.values();\n}",
+      "explanation": "Arrays.sort works on a char[] and new String(char[]) rebuilds a hashable key. A 26-slot count array turned into a string such as \"1#0#2...\" also works and avoids the k log k sort."
+    },
+    {
+      "id": "subarray-sum-k",
+      "concept": "Prefix sums",
+      "type": "code",
+      "difficulty": 3,
+      "prompt": "Write a Java method int subarraySum(int[] nums, int k) that counts the contiguous subarrays whose sum equals k. The array may contain negative numbers, so aim for O(n) with a HashMap of prefix sums.",
+      "language": "java",
+      "starter": "static int subarraySum(int[] nums, int k) {\n  \n}",
+      "checks": [
+        {
+          "label": "keeps a running prefix sum",
+          "pattern": "\\+=\\s*\\w+|prefix\\s*\\+|sum\\s*\\+"
+        },
+        {
+          "label": "uses a map from prefix sum to how often it occurred",
+          "pattern": "Map\\s*<\\s*Integer\\s*,\\s*Integer\\s*>"
+        },
+        {
+          "label": "looks up prefix - k",
+          "pattern": "-\\s*k\\b"
+        },
+        {
+          "label": "seeds the map with prefix 0 occurring once",
+          "pattern": "put\\(\\s*0\\s*,\\s*1\\s*\\)"
+        },
+        {
+          "label": "returns the count",
+          "pattern": "return\\s+\\w+"
+        }
+      ],
+      "model": "static int subarraySum(int[] nums, int k) {\n  Map<Integer, Integer> seen = new HashMap<>();\n  seen.put(0, 1);\n  int prefix = 0, count = 0;\n  for (int x : nums) {\n    prefix += x;\n    count += seen.getOrDefault(prefix - k, 0);\n    seen.merge(prefix, 1, Integer::sum);\n  }\n  return count;\n}",
+      "explanation": "Because values can be negative a sliding window does not work. Counting before recording the current prefix keeps a zero-length subarray from being counted. Overflow is possible with huge values; use long if the constraints say so."
+    },
+    {
+      "id": "map-api",
+      "concept": "Collections API",
+      "type": "matrix",
+      "difficulty": 1,
+      "prompt": "Match each Java Map call with what it does.",
+      "left": [
+        {
+          "id": "a",
+          "text": "map.merge(k, 1, Integer::sum)"
+        },
+        {
+          "id": "b",
+          "text": "map.getOrDefault(k, 0)"
+        },
+        {
+          "id": "c",
+          "text": "map.computeIfAbsent(k, x -> new ArrayList<>())"
+        },
+        {
+          "id": "d",
+          "text": "map.putIfAbsent(k, v)"
+        },
+        {
+          "id": "e",
+          "text": "map.remove(k)"
+        }
+      ],
+      "right": [
+        {
+          "id": "p",
+          "text": "Adds one to the stored count, inserting 1 when the key is missing"
+        },
+        {
+          "id": "q",
+          "text": "Reads the value, or 0 when the key is missing, without inserting anything"
+        },
+        {
+          "id": "r",
+          "text": "Creates and stores a value when the key is missing, then returns the value for k"
+        },
+        {
+          "id": "s",
+          "text": "Stores v only when the key has no mapping, returning the old value if there was one"
+        },
+        {
+          "id": "t",
+          "text": "Deletes the mapping and returns the previous value or null"
+        },
+        {
+          "id": "u",
+          "text": "Locks the entry so other threads cannot touch it"
+        }
+      ],
+      "pairs": {
+        "a": "p",
+        "b": "q",
+        "c": "r",
+        "d": "s",
+        "e": "t"
+      },
+      "explanation": "merge counts in one call, computeIfAbsent builds multi-maps, getOrDefault avoids a null check, and putIfAbsent keeps the first value. These four replace most containsKey-then-put code in interview solutions."
+    },
+    {
+      "id": "count-idioms",
+      "concept": "Collections API",
+      "type": "fill",
+      "difficulty": 1,
+      "prompt": "Complete the Java idioms.",
+      "text": "To count with a HashMap, call map.{1}(key, 1, Integer::{2}); to group values by key, call map.{3}(key, k -> new ArrayList<>()).add(value).",
+      "blanks": {
+        "1": "merge",
+        "2": "sum",
+        "3": "computeIfAbsent"
+      },
+      "bank": [
+        "merge",
+        "sum",
+        "computeIfAbsent",
+        "putIfAbsent",
+        "max",
+        "getOrDefault"
+      ],
+      "explanation": "merge with Integer::sum inserts 1 for a new key and adds 1 for an existing one. computeIfAbsent returns the list, so you can chain add on it."
+    },
+    {
+      "id": "resize-threshold",
+      "concept": "HashMap internals",
+      "type": "integer",
+      "difficulty": 2,
+      "prompt": "A default new HashMap<>() has 16 buckets and a load factor of 0.75. Before inserting a new entry would trigger the first resize, what is the largest number of entries it can hold?",
+      "answer": 12,
+      "tolerance": 0,
+      "explanation": "16 x 0.75 = 12. The threshold is exceeded by the 13th insertion, which doubles the table to 32 buckets and rehashes. Pass an initial capacity (about expectedSize / 0.75 + 1) when you know the size up front.",
+      "unit": "entries"
+    },
+    {
+      "id": "hash-worst",
+      "concept": "Complexity analysis",
+      "type": "assertion",
+      "difficulty": 3,
+      "prompt": "Evaluate the assertion and the reason.",
+      "assertion": "A HashMap-based two sum is guaranteed O(n) time even in the worst case.",
+      "reason": "HashMap get and put take O(1) time on average.",
+      "correct": [
+        "d"
+      ],
+      "whys": {
+        "a": "A is not true as stated, so no explanation can hold.",
+        "b": "A is false, so both-true options are out.",
+        "c": "R is true, so option c cannot hold.",
+        "d": "Correct: O(1) is an average-case (expected) bound. With many collisions, treeified bins cost O(log n) per lookup for Comparable keys, so the worst case is not O(n)."
+      },
+      "explanation": "Say \"expected O(n)\" in an interview. It shows you know the difference between expected and worst-case hash costs."
+    },
+    {
+      "id": "anagram-key",
+      "concept": "Hashing patterns",
+      "type": "assertion",
+      "difficulty": 3,
+      "prompt": "Evaluate the assertion and the reason.",
+      "assertion": "Grouping anagrams by Arrays.sort on each word's char array costs O(n * k log k) for n words of length k.",
+      "reason": "Sorting the k characters of one word takes O(k) time.",
+      "correct": [
+        "c"
+      ],
+      "whys": {
+        "a": "R is false, so this cannot be right.",
+        "b": "R is false, so no both-true option holds.",
+        "c": "Correct: A is true (n sorts of cost k log k) but comparison sorting k characters takes O(k log k), not O(k).",
+        "d": "A is true, so d is wrong."
+      },
+      "explanation": "The alternative key is a 26-count signature, giving O(n * k) for lowercase words. Mention both."
+    },
+    {
+      "id": "mutable-key",
+      "concept": "HashMap internals",
+      "type": "assertion",
+      "difficulty": 2,
+      "prompt": "Evaluate the assertion and the reason.",
+      "assertion": "If a field used by hashCode is changed after an object was added to a HashSet, contains may no longer find it.",
+      "reason": "The bucket for an element is chosen from its hashCode at the moment it is inserted.",
+      "correct": [
+        "a"
+      ],
+      "whys": {
+        "a": "Correct: the entry stays in the old bucket while lookups go to the new bucket, so the object is effectively lost.",
+        "b": "R is exactly why the lookup fails, so it does explain A.",
+        "c": "R is true, so c is wrong.",
+        "d": "A is true, so d is wrong."
+      },
+      "explanation": "Use immutable fields (or records) in keys. This is also why mutable lists make poor map keys."
+    },
+    {
+      "id": "hashcode-contract",
+      "concept": "Hashing patterns",
+      "type": "single",
+      "difficulty": 2,
+      "prompt": "A Java class overrides equals but not hashCode, and instances are stored in a HashSet. What can go wrong?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Equal objects can land in different buckets, so contains may fail.",
+          "why": "Correct: the default hashCode is identity based, so two equal objects usually hash to different buckets."
+        },
+        {
+          "id": "b",
+          "text": "The class fails to compile, because the compiler insists both methods are overridden together.",
+          "why": "The compiler only warns in some tools; it does not enforce the pair."
+        },
+        {
+          "id": "c",
+          "text": "The set throws an exception on the second add of an object equal to an existing one.",
+          "why": "Sets silently ignore duplicates; they never throw for them."
+        },
+        {
+          "id": "d",
+          "text": "The set switches to comparing by identity for every later call to add or contains.",
+          "why": "The set keeps using hashCode and equals; nothing switches mode at run time."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Also never use a mutable field in hashCode for keys you keep in a map. Objects.hash(...) and records give a correct pair for free."
+    },
+    {
+      "id": "two-sum-bug",
+      "concept": "Two sum family",
+      "type": "single",
+      "difficulty": 2,
+      "prompt": "This Java two sum puts first and then checks: for (int i = 0; i < nums.length; i++) { seen.put(nums[i], i); Integer j = seen.get(target - nums[i]); if (j != null) return new int[]{j, i}; }. What does it return for nums = {3, 2, 4}, target = 6?",
+      "options": [
+        {
+          "id": "a",
+          "text": "{1, 2}, the correct pair 2 and 4",
+          "why": "That needs the lookup to run before the put; this order never gets there."
+        },
+        {
+          "id": "b",
+          "text": "An empty array, because no pair sums to 6",
+          "why": "The pair 2 and 4 exists, and the loop returns earlier anyway."
+        },
+        {
+          "id": "c",
+          "text": "A NullPointerException on the first iteration",
+          "why": "get returns null for a missing key, and the code compares j with null first."
+        },
+        {
+          "id": "d",
+          "text": "{0, 0}, pairing the first 3 with itself",
+          "why": "Correct: after putting 3 at index 0 the lookup of 6 - 3 finds index 0 straight away."
+        }
+      ],
+      "correct": [
+        "d"
+      ],
+      "explanation": "Look up the complement before storing the current value. This is the classic \"use the same element twice\" bug. I ran it: the result is {0, 0}."
+    },
+    {
+      "id": "integer-cache",
+      "concept": "Collections API",
+      "type": "truefalse",
+      "difficulty": 2,
+      "prompt": "With Integer a = 1000, b = 1000 (boxed values), a == b is false in standard Java, so values read from a Map<Integer, Integer> must be compared with equals, not ==.",
+      "options": [
+        {
+          "id": "a",
+          "text": "True",
+          "why": "Correct: boxing caches only small values (-128 to 127); larger ones are separate objects, so == compares references."
+        },
+        {
+          "id": "b",
+          "text": "False",
+          "why": "Small values are cached, but 1000 is not, so == is false for boxed 1000."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "This bites two sum and prefix-sum solutions that compare map.get(x) results with ==. Compare with equals or unbox to int first."
+    },
+    {
+      "id": "hashmap-facts",
+      "concept": "HashMap internals",
+      "type": "multi",
+      "difficulty": 2,
+      "prompt": "Which statements about java.util.HashMap are true? Select all that apply.",
+      "options": [
+        {
+          "id": "a",
+          "text": "A bucket with many colliding keys can be converted to a balanced tree once it grows past 8 entries and the table has 64 or more buckets.",
+          "why": "Correct: treeification caps the worst-case lookup at O(log n) for Comparable keys."
+        },
+        {
+          "id": "b",
+          "text": "It allows one null key and any number of null values.",
+          "why": "Correct: unlike Hashtable or ConcurrentHashMap, HashMap accepts a null key."
+        },
+        {
+          "id": "c",
+          "text": "Iteration returns entries in insertion order.",
+          "why": "False: the order depends on bucket layout; use LinkedHashMap for insertion order."
+        },
+        {
+          "id": "d",
+          "text": "It is safe to update from several threads without extra locking.",
+          "why": "False: concurrent writes can corrupt it; use ConcurrentHashMap."
+        }
+      ],
+      "correct": [
+        "a",
+        "b"
+      ],
+      "explanation": "Know the contracts: unordered, not thread safe, null friendly, O(1) expected and O(log n) in a treeified bin."
+    }
+  ]
+}

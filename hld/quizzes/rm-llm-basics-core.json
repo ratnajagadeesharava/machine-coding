@@ -1,13 +1,14 @@
 {
-  "id": "rm-llm-basics",
+  "id": "rm-llm-basics-core",
   "title": "LLM basics: tokens, structured output, hallucinations",
   "topic": "Interview roadmap",
-  "series": "interview-roadmap",
-  "seriesTitle": "Interview roadmap: topic quizzes",
-  "seriesDescription": "Topic-by-topic JEE-style quizzes for the backend and AI-engineering interview roadmap: integer, assertion-reason, matrix match, fill-in-the-blanks, short code writing, plus multi-correct questions. Language core, concurrency, DSA, web frameworks, data access, databases, messaging, resilience, security, testing, system design, LLM and agent engineering.",
+  "series": "interview-roadmap-core",
+  "seriesTitle": "Interview roadmap: language-independent topics",
+  "seriesDescription": "Language-independent interview topics (concepts, SQL, design, AI engineering): no Java and no Python code or library names.",
   "seriesOrder": 90,
+  "language": "neutral",
   "description": "Token and cost arithmetic, context budgets, sampling, structured output and tool calling, and how to control hallucinations.",
-  "source": "OpenAI API docs; Anthropic API docs (messages, handling stop reasons, prompt caching); LangChain docs; Spring AI ChatClient reference; LangChain4j docs; OWASP Top 10 for LLM Applications",
+  "source": "OpenAI API docs; Anthropic API docs (messages, handling stop reasons, prompt caching); JSON Schema 2020-12; OWASP Top 10 for LLM Applications",
   "estimatedMinutes": 16,
   "questions": [
     {
@@ -181,25 +182,25 @@
     },
     {
       "id": "sdk-names",
-      "concept": "SDK and framework names",
+      "concept": "API vocabulary",
       "type": "fill",
       "difficulty": 1,
-      "prompt": "Complete the Java-side framework names.",
-      "text": "Spring AI's {1} builds a request with prompt().user(...).call(), and .{2}(Person.class) maps the reply to a Java object. LangChain4j's {3} turns an interface into a model-backed proxy.",
+      "prompt": "Complete the chat API vocabulary.",
+      "text": "A chat request is a list of messages, each with a {1} such as system, user or assistant. The response reports why generation ended in a stop reason, and a {2} object that counts input and output {3}.",
       "blanks": {
-        "1": "ChatClient",
-        "2": "entity",
-        "3": "AiServices"
+        "1": "role",
+        "2": "usage",
+        "3": "tokens"
       },
       "bank": [
-        "ChatClient",
-        "entity",
-        "AiServices",
-        "LlmTemplate",
-        "parse",
-        "ChatFactory"
+        "role",
+        "usage",
+        "tokens",
+        "temperature",
+        "characters",
+        "schema"
       ],
-      "explanation": "Spring AI: ChatClient, with entity(Class) for structured output. LangChain4j: AiServices.create(Interface.class, model). Both are the Java answers to LangChain's chain plus with_structured_output."
+      "explanation": "The system role carries standing instructions, user carries the question, assistant carries earlier model replies. Read the usage object for billing rather than estimating, and check the stop reason (such as length or max_tokens) before trusting the output."
     },
     {
       "id": "tokens-window",
@@ -227,25 +228,32 @@
       "concept": "Structured output",
       "type": "code",
       "difficulty": 2,
-      "prompt": "Using Pydantic v2 and LangChain, define a model Invoice with str fields vendor and currency and a float field total, then wrap an existing chat model variable llm so it returns Invoice objects.",
-      "language": "python",
+      "prompt": "Write the JSON Schema for an Invoice object with string properties vendor and currency and a number property total, all three required.",
+      "language": "json",
       "checks": [
         {
-          "label": "defines Invoice as a Pydantic BaseModel",
-          "pattern": "class\\s+Invoice\\s*\\(\\s*BaseModel\\s*\\)"
+          "label": "type object",
+          "pattern": "\"type\"\\s*:\\s*\"object\""
         },
         {
-          "label": "declares vendor, total and currency fields",
-          "pattern": "vendor\\s*:\\s*str[\\s\\S]*total\\s*:\\s*float|total\\s*:\\s*float[\\s\\S]*vendor\\s*:\\s*str"
+          "label": "vendor is a string",
+          "pattern": "\"vendor\"\\s*:\\s*\\{\\s*\"type\"\\s*:\\s*\"string\""
         },
         {
-          "label": "calls with_structured_output with Invoice",
-          "pattern": "with_structured_output\\(\\s*Invoice"
+          "label": "total is a number",
+          "pattern": "\"total\"\\s*:\\s*\\{\\s*\"type\"\\s*:\\s*\"number\""
+        },
+        {
+          "label": "currency is a string",
+          "pattern": "\"currency\"\\s*:\\s*\\{\\s*\"type\"\\s*:\\s*\"string\""
+        },
+        {
+          "label": "lists all three as required",
+          "pattern": "\"required\"\\s*:\\s*\\[(?=[^\\]]*\"vendor\")(?=[^\\]]*\"total\")(?=[^\\]]*\"currency\")"
         }
       ],
-      "model": "class Invoice(BaseModel):\n    vendor: str\n    total: float\n    currency: str\n\nstructured = llm.with_structured_output(Invoice)",
-      "explanation": "with_structured_output(Schema) returns a runnable whose invoke() gives a validated Invoice instance. Field order and Field(description=...) extras are free. Always handle validation failure (retry or repair) in production.",
-      "starter": "from pydantic import BaseModel\n"
+      "model": "{\"type\": \"object\",\n \"properties\": {\"vendor\": {\"type\": \"string\"}, \"total\": {\"type\": \"number\"}, \"currency\": {\"type\": \"string\"}},\n \"required\": [\"vendor\", \"total\", \"currency\"],\n \"additionalProperties\": false}",
+      "explanation": "Structured-output modes accept a JSON Schema like this and constrain or validate the reply against it. Property order and extras such as descriptions are free. Always handle validation failure (retry or repair) in production, and check the stop reason for truncation."
     },
     {
       "id": "tool-schema-json",
@@ -280,56 +288,56 @@
       "concept": "Token cost arithmetic",
       "type": "code",
       "difficulty": 2,
-      "prompt": "Write a Python function cost_usd(in_tok, out_tok, in_price=3.0, out_price=15.0) that returns the dollar cost, where prices are dollars per 1 million tokens.",
-      "language": "python",
+      "prompt": "Table requests(id, in_tok, out_tok) holds token counts per call. Write one SQL query returning the total dollar cost, at $3 per million input tokens and $15 per million output tokens.",
+      "language": "sql",
       "checks": [
         {
-          "label": "defines cost_usd with the right name",
-          "pattern": "def\\s+cost_usd\\s*\\("
+          "label": "sums over the requests table",
+          "pattern": "sum\\s*\\([\\s\\S]*from\\s+requests"
         },
         {
-          "label": "divides by one million (1_000_000 or 1e6)",
+          "label": "divides by one million",
           "pattern": "1_?000_?000|1e6"
         },
         {
-          "label": "multiplies tokens by the matching price",
-          "pattern": "in_tok\\s*\\*\\s*in_price[\\s\\S]*out_tok\\s*\\*\\s*out_price|out_tok\\s*\\*\\s*out_price[\\s\\S]*in_tok\\s*\\*\\s*in_price|in_price\\s*\\*\\s*in_tok[\\s\\S]*out_price\\s*\\*\\s*out_tok"
+          "label": "prices input tokens at 3",
+          "pattern": "in_tok\\s*\\*\\s*3|3(\\.0+)?\\s*\\*\\s*in_tok|in_tok[^,;]*3(\\.0+)?"
         },
         {
-          "label": "returns the value",
-          "pattern": "return\\s"
+          "label": "prices output tokens at 15",
+          "pattern": "out_tok\\s*\\*\\s*15|15(\\.0+)?\\s*\\*\\s*out_tok|out_tok[^,;]*15(\\.0+)?"
         }
       ],
-      "model": "def cost_usd(in_tok, out_tok, in_price=3.0, out_price=15.0):\n    return (in_tok * in_price + out_tok * out_price) / 1_000_000",
-      "explanation": "Price per million tokens means divide the weighted token sum by 1,000,000. Equivalent forms (two divisions, a constant) are fine. With the defaults, 2,000 in and 500 out is $0.0135."
+      "model": "SELECT SUM(in_tok * 3.0 + out_tok * 15.0) / 1000000.0 AS cost_usd FROM requests;",
+      "explanation": "Price per million tokens means divide the weighted token sum by 1,000,000. Equivalent forms (two SUMs added together, a constant) are fine. With 2,000 in and 500 out the cost is $0.0135."
     },
     {
       "id": "anthropic-messages-call",
-      "concept": "SDK and framework names",
+      "concept": "API vocabulary",
       "type": "code",
       "difficulty": 2,
-      "prompt": "With the Anthropic Python SDK and an existing client variable, call the Messages API with model name 'claude-sonnet-4-5', a cap of 300 output tokens and one user message 'Summarise RAG in one line'.",
-      "language": "python",
+      "prompt": "Write the JSON body for POST /v1/messages on the Anthropic Messages API: model 'claude-sonnet-4-5', a cap of 300 output tokens and one user message 'Summarise RAG in one line'.",
+      "language": "json",
       "checks": [
         {
-          "label": "calls client.messages.create",
-          "pattern": "client\\.messages\\.create\\s*\\("
+          "label": "names a model",
+          "pattern": "\"model\"\\s*:\\s*\"claude-"
         },
         {
           "label": "sets max_tokens (required in this API)",
-          "pattern": "max_tokens\\s*=\\s*300"
+          "pattern": "\"max_tokens\"\\s*:\\s*300"
         },
         {
           "label": "passes a user role message",
-          "pattern": "role[\"']\\s*:\\s*[\"']user"
+          "pattern": "\"role\"\\s*:\\s*\"user\""
         },
         {
           "label": "passes the prompt text",
           "pattern": "Summarise RAG in one line"
         }
       ],
-      "model": "resp = client.messages.create(model=\"claude-sonnet-4-5\", max_tokens=300,\n    messages=[{\"role\": \"user\", \"content\": \"Summarise RAG in one line\"}])",
-      "explanation": "Unlike OpenAI Chat Completions, Anthropic requires max_tokens. A system prompt goes in the separate system parameter, not as a message. The model id here is only an example; any valid id passes."
+      "model": "{\"model\": \"claude-sonnet-4-5\", \"max_tokens\": 300,\n \"messages\": [{\"role\": \"user\", \"content\": \"Summarise RAG in one line\"}]}",
+      "explanation": "Unlike OpenAI Chat Completions, Anthropic requires max_tokens. A system prompt goes in the separate top-level system field, not as a message. The model id here is only an example; any valid id passes."
     },
     {
       "id": "grounding-control",
