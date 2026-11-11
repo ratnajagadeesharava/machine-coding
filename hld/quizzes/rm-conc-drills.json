@@ -59,7 +59,7 @@
         },
         {
           "label": "waits in a while loop, not an if",
-          "pattern": "while\\s*\\([^)]*\\)\\s*\\{?\\s*wait\\s*\\("
+          "pattern": "while\\s*\\(.*\\)\\s*\\{?\\s*wait\\s*\\("
         },
         {
           "label": "signals with notifyAll or notify",
@@ -83,22 +83,22 @@
       "options": [
         {
           "id": "a",
-          "text": "A woken thread must re-check the condition, because another consumer may have emptied the queue first or the wake-up was spurious.",
+          "text": "A woken thread must re-test the condition, as another consumer may have taken the item or the wake-up was spurious.",
           "why": "Correct: the condition can be false again by the time the woken thread reacquires the monitor."
         },
         {
           "id": "b",
-          "text": "wait() only compiles inside a loop.",
+          "text": "The Java compiler rejects a call to wait() that is not placed inside a loop body, so an if statement would not even compile.",
           "why": "Nothing in the language requires a loop around wait()."
         },
         {
           "id": "c",
-          "text": "The loop makes the monitor fair for waiting threads.",
+          "text": "The loop makes the monitor fair, so waiting threads wake in arrival order.",
           "why": "Looping has no influence on fairness; it only re-tests the predicate."
         },
         {
           "id": "d",
-          "text": "notify() does not wake a thread unless the guard is a loop.",
+          "text": "notify() will not wake any thread unless the guard around wait() is a loop.",
           "why": "notify() wakes a waiter regardless of how the guard is written."
         }
       ],
@@ -227,7 +227,7 @@
       "checks": [
         {
           "label": "uses an access-ordered LinkedHashMap",
-          "pattern": "LinkedHashMap[^;]*,\\s*true\\s*\\)"
+          "pattern": "0?\\.75f?\\s*,\\s*true\\s*\\)"
         },
         {
           "label": "overrides removeEldestEntry with a size check",

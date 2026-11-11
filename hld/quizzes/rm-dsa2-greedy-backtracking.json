@@ -1,0 +1,334 @@
+{
+  "id": "rm-dsa2-greedy-backtracking",
+  "title": "DSA: greedy and backtracking",
+  "topic": "Interview roadmap",
+  "series": "interview-roadmap",
+  "seriesTitle": "Interview roadmap: topic quizzes",
+  "seriesDescription": "Topic-by-topic JEE-style quizzes for the backend and AI-engineering interview roadmap: integer, assertion-reason, matrix match, fill-in-the-blanks, short code writing, plus multi-correct questions. Language core, concurrency, DSA, web frameworks, data access, databases, messaging, resilience, security, testing, system design, LLM and agent engineering.",
+  "seriesOrder": 44,
+  "description": "When greedy works and how to prove it, activity selection, jump game, gas station, then subsets, permutations, combination sum with pruning and duplicate handling.",
+  "source": "CLRS ch. 16; LeetCode Jump Game, Gas Station, Subsets I/II, Permutations II, Combination Sum; MIT 6.046 greedy notes",
+  "estimatedMinutes": 14,
+  "questions": [
+    {
+      "id": "activity-count",
+      "concept": "Activity selection",
+      "type": "integer",
+      "difficulty": 2,
+      "prompt": "Activities as (start, finish): (1,4), (3,5), (0,6), (5,7), (3,9), (5,9), (6,10), (8,11), (8,12), (2,14), (12,16). An activity may start exactly when another finishes. What is the maximum number of activities one person can attend?",
+      "answer": 4,
+      "unit": "activities",
+      "explanation": "Sort by finish and pick greedily: (1,4), (5,7), (8,11), (12,16) = 4. No schedule of 5 exists; the earliest-finish rule is optimal."
+    },
+    {
+      "id": "gas-start",
+      "concept": "Gas station",
+      "type": "integer",
+      "difficulty": 3,
+      "prompt": "Gas station circuit: gas = [1, 2, 3, 4, 5] and cost = [3, 4, 5, 1, 2]. Station i gives gas[i] and the trip to the next station costs cost[i]. At which index (0-based) must you start to complete the circle?",
+      "answer": 3,
+      "unit": "index",
+      "explanation": "Total gas 15 equals total cost 15, so a solution exists. Reset the start whenever the running tank goes negative: it fails at 0, 1, 2 and the start becomes 3. From 3 the tank runs 3, 6, 4, 2, 0 and never goes negative."
+    },
+    {
+      "id": "exchange-arg",
+      "concept": "Greedy proofs",
+      "type": "single",
+      "difficulty": 3,
+      "prompt": "What does an exchange argument show about a greedy algorithm?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Any optimal solution can be transformed, step by step, into the greedy one without getting worse.",
+          "why": "Correct: swapping in the greedy choice never reduces quality, so greedy is optimal."
+        },
+        {
+          "id": "b",
+          "text": "The greedy choice is optimal on every random test you ran.",
+          "why": "Tests are evidence, not a proof; an exchange argument is a proof."
+        },
+        {
+          "id": "c",
+          "text": "The algorithm runs in O(n log n) because it sorts the input first.",
+          "why": "Running time is separate from correctness; the argument is about optimality."
+        },
+        {
+          "id": "d",
+          "text": "Every subproblem is solved once and cached in a table.",
+          "why": "That describes dynamic programming memoisation, not an exchange argument."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "For activity selection: take any optimal schedule, swap its first activity for the earliest-finishing one; it still fits and has the same size."
+    },
+    {
+      "id": "earliest-finish",
+      "concept": "Greedy proofs",
+      "type": "assertion",
+      "difficulty": 2,
+      "prompt": "Maximising the number of non-overlapping meetings in a room.",
+      "assertion": "Sort by earliest finish time, not earliest start time.",
+      "reason": "Finishing earliest leaves the most room for the remaining meetings, which an exchange argument proves.",
+      "correct": [
+        "a"
+      ],
+      "whys": {
+        "a": "Right: R is the justification that A is the correct rule.",
+        "b": "R is the justification, not an unrelated fact.",
+        "c": "A is true.",
+        "d": "R is true."
+      },
+      "explanation": "Earliest start fails on one long meeting that starts first and blocks many short ones."
+    },
+    {
+      "id": "greedy-coins",
+      "concept": "When greedy works",
+      "type": "assertion",
+      "difficulty": 2,
+      "prompt": "Making change with the fewest coins.",
+      "assertion": "Taking the largest coin that fits at each step gives the fewest coins for any coin system.",
+      "reason": "Largest-first is optimal for the coin system {1, 5, 10, 25}.",
+      "correct": [
+        "d"
+      ],
+      "whys": {
+        "a": "A is false, so R cannot explain it.",
+        "b": "A is false.",
+        "c": "A is false.",
+        "d": "Right: A is false because of counterexamples like {1,5,6,9} with 11 (greedy 3 coins, optimal 2); R is true for canonical systems such as US coins."
+      },
+      "explanation": "Whether greedy works depends on the coin system. For arbitrary coins use DP."
+    },
+    {
+      "id": "shortest-first",
+      "concept": "When greedy works",
+      "type": "truefalse",
+      "difficulty": 2,
+      "prompt": "True or false: to maximise the number of non-overlapping activities, always pick the shortest remaining activity first.",
+      "options": [
+        {
+          "id": "a",
+          "text": "True",
+          "why": "Shortest-first can block better choices."
+        },
+        {
+          "id": "b",
+          "text": "False",
+          "why": "Correct: [1,5), [5,9) and [4,6): shortest-first takes [4,6) and gets 1, while the optimal picks [1,5) and [5,9) for 2."
+        }
+      ],
+      "correct": [
+        "b"
+      ],
+      "explanation": "Only earliest-finish-time is provably optimal; earliest-start and shortest-first both have counterexamples."
+    },
+    {
+      "id": "jump-game",
+      "concept": "Greedy implementation",
+      "type": "code",
+      "difficulty": 2,
+      "prompt": "Write a Java method boolean canJump(int[] nums). You start at index 0 and nums[i] is the maximum jump length from index i. Return true if the last index is reachable, in O(n) time using a greedy farthest-reach variable.",
+      "language": "java",
+      "starter": "boolean canJump(int[] nums) {\n  \n}",
+      "checks": [
+        {
+          "label": "tracks the farthest reachable index with Math.max",
+          "pattern": "Math\\.max\\s*\\("
+        },
+        {
+          "label": "uses i + nums[i] as the candidate reach",
+          "pattern": "i\\s*\\+\\s*nums\\s*\\[\\s*i\\s*\\]|nums\\s*\\[\\s*i\\s*\\]\\s*\\+\\s*i"
+        },
+        {
+          "label": "returns false when the current index is beyond the reach",
+          "pattern": "i\\s*>\\s*\\w+[\\s\\S]*return\\s+false|return\\s+false"
+        },
+        {
+          "label": "scans the array once",
+          "pattern": "for|while"
+        }
+      ],
+      "model": "int reach = 0;\nfor (int i = 0; i < nums.length; i++) {\n  if (i > reach) return false;\n  reach = Math.max(reach, i + nums[i]);\n}\nreturn true;",
+      "explanation": "Greedy works because reachable indices form a prefix: if you can reach index r, you can reach everything before it. A backwards \"goal post\" loop is an equally valid O(n) solution (it would need these checks adapted). I ran the model on [2,3,1,1,4] (true) and [3,2,1,0,4] (false)."
+    },
+    {
+      "id": "perm-count",
+      "concept": "Permutations",
+      "type": "integer",
+      "difficulty": 2,
+      "prompt": "How many distinct permutations does the multiset {A, A, B, C} have?",
+      "answer": 12,
+      "unit": "permutations",
+      "explanation": "4! / 2! = 24 / 2 = 12. A backtracking solution that sorts the input and skips equal neighbours (using a used[] array) produces exactly 12 leaves; a naive one produces 24 with duplicates."
+    },
+    {
+      "id": "comb-sum-count",
+      "concept": "Combination sum",
+      "type": "integer",
+      "difficulty": 2,
+      "prompt": "Candidates [2, 3, 6, 7] (each may be reused any number of times) and target 7. How many distinct combinations sum to 7?",
+      "answer": 2,
+      "unit": "combinations",
+      "explanation": "[2,2,3] and [7] are the only two. For example 2+2+3 = 7 and 7 = 7, while 3+3 = 6, 6+... and 2+2+2 = 6 fall short of 7 and cannot be completed with these candidates."
+    },
+    {
+      "id": "subsets-java",
+      "concept": "Subsets backtracking",
+      "type": "code",
+      "difficulty": 2,
+      "prompt": "Write a Java method List<List<Integer>> subsets(int[] nums) that returns all subsets (the power set) of an array of distinct integers using backtracking. You may add a private helper method.",
+      "language": "java",
+      "starter": "List<List<Integer>> subsets(int[] nums) {\n  \n}",
+      "checks": [
+        {
+          "label": "adds a copy of the current path to the result",
+          "pattern": "res\\w*\\.add\\s*\\(\\s*new\\s+ArrayList\\s*<[^>]*>\\s*\\(\\s*\\w+\\s*\\)|List\\.copyOf|new\\s+ArrayList\\s*<>\\s*\\(\\s*\\w+\\s*\\)"
+        },
+        {
+          "label": "chooses with add and un-chooses with remove (backtrack)",
+          "pattern": "\\.add\\s*\\([\\s\\S]*\\.remove\\s*\\("
+        },
+        {
+          "label": "recurses with the next index (i + 1)",
+          "pattern": "i\\s*\\+\\s*1"
+        },
+        {
+          "label": "loops from a start index",
+          "pattern": "for\\s*\\(\\s*int\\s+i\\s*=\\s*start|for\\s*\\(\\s*int\\s+\\w+\\s*=\\s*\\w+"
+        }
+      ],
+      "model": "List<List<Integer>> res = new ArrayList<>();\nvoid go(int[] nums, int start, List<Integer> cur) {\n  res.add(new ArrayList<>(cur));\n  for (int i = start; i < nums.length; i++) {\n    cur.add(nums[i]); go(nums, i + 1, cur); cur.remove(cur.size() - 1);\n  }\n}\n// subsets(nums): go(nums, 0, new ArrayList<>()); return res;",
+      "explanation": "The copy is essential: adding cur itself would leave every entry pointing at the same, finally empty list. There are 2^n results, each copied in O(n), so O(n * 2^n) time. An include/exclude binary recursion or a bitmask loop over 0..2^n-1 are also valid."
+    },
+    {
+      "id": "comb-sum-python",
+      "concept": "Combination sum",
+      "type": "code",
+      "difficulty": 3,
+      "prompt": "Write a Python function combination_sum(cands, target) that returns all unique combinations of the positive integers in cands that sum to target, where each number may be reused. Sort first and prune once a candidate exceeds the remaining target.",
+      "language": "python",
+      "starter": "def combination_sum(cands, target):\n    ",
+      "checks": [
+        {
+          "label": "sorts the candidates to enable pruning",
+          "pattern": "\\.sort\\s*\\(|sorted\\s*\\("
+        },
+        {
+          "label": "prunes with break (or return) when a candidate is too big",
+          "pattern": "break|return"
+        },
+        {
+          "label": "recurses on the same index so numbers can be reused",
+          "pattern": "\\(\\s*\\w+\\s*,\\s*\\w+\\s*-\\s*[\\w\\[\\]]+"
+        },
+        {
+          "label": "appends a copy of the path and pops after recursing",
+          "pattern": "\\[\\s*:\\s*\\]|list\\s*\\(|copy|\\+\\s*\\["
+        }
+      ],
+      "model": "cands.sort()\nres = []\ndef go(start, remaining, cur):\n    if remaining == 0:\n        res.append(cur[:]); return\n    for i in range(start, len(cands)):\n        if cands[i] > remaining: break\n        cur.append(cands[i]); go(i, remaining - cands[i], cur); cur.pop()\ngo(0, target, [])\nreturn res",
+      "explanation": "Starting each loop at start (not 0) prevents [2,3] and [3,2] both appearing. Passing i (not i + 1) is what allows reuse. The break is valid only because the list is sorted. Immutable alternatives (cur + [x]) avoid the pop."
+    },
+    {
+      "id": "dup-subsets",
+      "concept": "Duplicates and pruning",
+      "type": "fill",
+      "difficulty": 3,
+      "prompt": "Complete the rule for subsets of an array that may contain duplicates.",
+      "text": "First {1} the array. In the loop, skip nums[i] when i > start and nums[i] == nums[{2}]. A set of n distinct items has {3} subsets.",
+      "blanks": {
+        "1": "sort",
+        "2": "i-1",
+        "3": "2^n"
+      },
+      "bank": [
+        "sort",
+        "i-1",
+        "2^n",
+        "i+1",
+        "n!",
+        "shuffle"
+      ],
+      "explanation": "Sorting groups equal values. Skipping a repeat only at the same recursion level (i > start) still allows [2,2] while removing a duplicate [2] branch. [1,2,2] yields 6 unique subsets instead of 8."
+    },
+    {
+      "id": "result-counts",
+      "concept": "Backtracking complexity",
+      "type": "matrix",
+      "difficulty": 2,
+      "prompt": "Match each enumeration with the number of results (leaves) it produces.",
+      "left": [
+        {
+          "id": "a",
+          "text": "All subsets of n distinct items"
+        },
+        {
+          "id": "b",
+          "text": "All permutations of n distinct items"
+        },
+        {
+          "id": "c",
+          "text": "All combinations of k items chosen from n"
+        },
+        {
+          "id": "d",
+          "text": "All valid strings of n pairs of parentheses"
+        }
+      ],
+      "right": [
+        {
+          "id": "p",
+          "text": "2^n"
+        },
+        {
+          "id": "q",
+          "text": "n!"
+        },
+        {
+          "id": "r",
+          "text": "C(n, k)"
+        },
+        {
+          "id": "s",
+          "text": "Catalan number C(2n, n) / (n + 1)"
+        },
+        {
+          "id": "t",
+          "text": "n^2"
+        },
+        {
+          "id": "u",
+          "text": "n * 2^n"
+        }
+      ],
+      "pairs": {
+        "a": "p",
+        "b": "q",
+        "c": "r",
+        "d": "s"
+      },
+      "explanation": "Subsets: include/exclude per item. Permutations: n choices, then n-1, ... Combinations: n-choose-k. Parentheses: Catalan numbers (1, 2, 5, 14 for n = 1..4). Total work multiplies by the cost of copying each result."
+    },
+    {
+      "id": "reuse-index",
+      "concept": "Combination sum",
+      "type": "assertion",
+      "difficulty": 3,
+      "prompt": "In Combination Sum with reusable candidates.",
+      "assertion": "Recursing with the same index i, not i + 1, lets a candidate be used again.",
+      "reason": "Each recursive call subtracts the chosen candidate from the remaining target.",
+      "correct": [
+        "b"
+      ],
+      "whys": {
+        "a": "R does not explain why reuse is allowed.",
+        "b": "Right: both are true; reuse comes from the index, while subtracting the candidate is how the target shrinks.",
+        "c": "R is true.",
+        "d": "A is true."
+      },
+      "explanation": "The index controls which candidates remain available; the remaining value controls termination. Mixing these up is a common bug."
+    }
+  ]
+}

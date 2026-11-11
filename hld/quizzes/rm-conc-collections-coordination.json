@@ -156,7 +156,7 @@
       "concept": "CopyOnWriteArrayList",
       "type": "single",
       "difficulty": 2,
-      "prompt": "What happens when this code runs?\n\nList<Integer> list = new CopyOnWriteArrayList<>(List.of(1, 2, 3));\nfor (Integer x : list) { if (x == 1) list.add(99); }\nSystem.out.println(list);",
+      "prompt": "Consider this code.\n\nList<Integer> list = new CopyOnWriteArrayList<>(List.of(1, 2, 3));\nfor (Integer x : list) { if (x == 1) list.add(99); }\nSystem.out.println(list);\n\nWhat happens when it runs?",
       "options": [
         {
           "id": "a",
