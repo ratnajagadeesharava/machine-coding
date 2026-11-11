@@ -85,7 +85,7 @@
         },
         {
           "id": "c",
-          "text": "A max-heap for the lower half and a min-heap for the upper half, kept balanced.",
+          "text": "A max-heap for the lower half and a min-heap for the upper half.",
           "why": "Right: the median is one root or the mean of both roots."
         },
         {
@@ -255,7 +255,7 @@
         },
         {
           "id": "d",
-          "text": "A binary trie over the address bits, remembering the last route node passed.",
+          "text": "A binary trie over the address bits, tracking the last route node seen.",
           "why": "Right: walking at most 32 bits gives the longest match."
         }
       ],

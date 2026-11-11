@@ -19,7 +19,7 @@
       "options": [
         {
           "id": "a",
-          "text": "Restate it, clarify constraints and edge cases, then propose a brute force.",
+          "text": "Restate it, clarify edge cases, then propose a brute force.",
           "why": "Right: this shows the routine and avoids solving the wrong problem."
         },
         {
@@ -208,7 +208,7 @@
         },
         {
           "id": "c",
-          "text": "Node 1 alone, with next None: the rest of the list is lost.",
+          "text": "Node 1 only, with next None: the list is cut short.",
           "why": "Right: cur.next became None, so cur = cur.next ends the loop after one step."
         },
         {

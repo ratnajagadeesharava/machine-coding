@@ -75,7 +75,7 @@
       "options": [
         {
           "id": "a",
-          "text": "Call the model's with_structured_output with the Pydantic class and use the returned instance.",
+          "text": "Call with_structured_output with the Pydantic class and use the returned object.",
           "why": "Right: it binds the schema and returns parsed, validated data."
         },
         {
@@ -237,7 +237,7 @@
       "options": [
         {
           "id": "a",
-          "text": "More prompt tokens, so higher cost and latency, plus a risk that irrelevant chunks distract the model.",
+          "text": "More prompt tokens, so higher cost and latency, and noisier context.",
           "why": "Right: extra context is paid for and can dilute the answer."
         },
         {
