@@ -1,14 +1,15 @@
 {
-  "id": "rm-lang-collections-generics",
-  "title": "Language core: collections internals, generics and type hints",
+  "id": "rm-lang-collections-generics-java",
+  "title": "Language core: collections internals and generics (Java)",
   "topic": "Interview roadmap",
-  "series": "interview-roadmap",
-  "seriesTitle": "Interview roadmap: topic quizzes",
+  "series": "interview-roadmap-java",
+  "seriesTitle": "Interview roadmap: Java and Spring Boot",
   "seriesOrder": 11,
-  "seriesDescription": "Topic-by-topic JEE-style quizzes for the backend and AI-engineering interview roadmap: integer, assertion-reason, matrix match, fill-in-the-blanks, short code writing, plus multi-correct questions. Language core, concurrency, DSA, web frameworks, data access, databases, messaging, resilience, security, testing, system design, LLM and agent engineering.",
-  "description": "HashMap buckets, resize and treeify, ArrayList vs LinkedList vs ArrayDeque, TreeMap, CME traps, Python dict/list/set/deque, Java generics (bounds, wildcards, erasure) and Python typing.",
-  "source": "JDK HashMap source (putVal, treeifyBin) and JEP 180; JEP 248; Java Collections Framework docs (Arrays.asList, PriorityQueue); Oracle Java Tutorials: Generics; Python docs: data structures, typing; Baeldung; Real Python; JournalDev collections interview list",
-  "estimatedMinutes": 15,
+  "seriesDescription": "Java and Spring Boot interview topics in JEE-Advanced style: integer, assertion-reason, matrix match, fill-in-the-blanks, short Java/SQL code and multi-correct questions. Java only: nothing here mixes in Python.",
+  "language": "java",
+  "description": "HashMap buckets, resize and treeify, ArrayList vs LinkedList vs ArrayDeque, TreeMap, fail-fast iteration traps, Arrays.asList and the generics rules: bounds, wildcards (PECS) and type erasure.",
+  "source": "JDK HashMap source (putVal, treeifyBin) and JEP 180; Java Collections Framework docs (Arrays.asList, PriorityQueue, ArrayDeque, LinkedHashMap); Oracle Java Tutorials: Generics; Effective Java (Bloch) items 26-31; Baeldung; JournalDev collections interview list",
+  "estimatedMinutes": 16,
   "questions": [
     {
       "id": "hashmap-first-resize",
@@ -33,7 +34,7 @@
       "concept": "Collection choice",
       "type": "matrix",
       "difficulty": 2,
-      "prompt": "Match each structure to its defining property.",
+      "prompt": "Match each Java structure to its defining property.",
       "left": [
         {
           "id": "a",
@@ -53,13 +54,13 @@
         },
         {
           "id": "e",
-          "text": "Python collections.deque"
+          "text": "LinkedHashMap"
         }
       ],
       "right": [
         {
           "id": "p",
-          "text": "Resizable array: O(1) get(i), amortised O(1) append, O(n) insert in the middle"
+          "text": "Resizable array: O(1) get(i), amortised O(1) add at the end, O(n) insert in the middle"
         },
         {
           "id": "q",
@@ -71,15 +72,15 @@
         },
         {
           "id": "s",
-          "text": "Red-black tree: sorted keys, O(log n) get/put"
+          "text": "Red-black tree: sorted keys, O(log n) get and put"
         },
         {
           "id": "t",
-          "text": "Doubly linked blocks: O(1) append/popleft, O(n) indexing in the middle"
+          "text": "Hash table that also threads entries in insertion order"
         },
         {
           "id": "u",
-          "text": "Hash table with insertion-ordered iteration"
+          "text": "Binary heap kept in sorted order at all times"
         }
       ],
       "pairs": {
@@ -89,7 +90,7 @@
         "d": "s",
         "e": "t"
       },
-      "explanation": "In practice ArrayList and ArrayDeque win on cache locality; LinkedList is rarely the right answer because get(i) walks the nodes and every element costs an allocation."
+      "explanation": "Pick by access pattern: random access (ArrayList), both ends (ArrayDeque), sorted keys (TreeMap), predictable iteration order (LinkedHashMap)."
     },
     {
       "id": "arraydeque-vs-linkedlist",
@@ -109,6 +110,28 @@
         "d": "A is true; the Javadoc says ArrayDeque is likely faster than Stack as a stack and than LinkedList as a queue."
       },
       "explanation": "ArrayDeque rejects null elements and is not thread-safe. Prefer it over the legacy Stack class and over LinkedList for queues."
+    },
+    {
+      "id": "hashmap-facts-fill",
+      "concept": "HashMap internals",
+      "type": "fill",
+      "difficulty": 2,
+      "prompt": "Complete the sentence about HashMap internals.",
+      "text": "A HashMap table length is always a power of {1}; it resizes when the entry count exceeds capacity times the {2}; and a long bin is only converted to a tree when the table capacity is at least {3}.",
+      "blanks": {
+        "1": "two",
+        "2": "load factor",
+        "3": "64"
+      },
+      "bank": [
+        "two",
+        "ten",
+        "load factor",
+        "hash code",
+        "64",
+        "16"
+      ],
+      "explanation": "Power-of-two lengths let the bucket index be computed with a bit mask; treeification needs capacity >= 64, otherwise the table is resized instead."
     },
     {
       "id": "remove-evens",
@@ -163,51 +186,6 @@
         "a"
       ],
       "explanation": "Fail-fast iterators check modCount in next(), not in hasNext(). Removing the second-to-last element is the one case that silently works; removing the first would throw. (Verified by running it.)"
-    },
-    {
-      "id": "dict-order",
-      "concept": "Python collections",
-      "type": "truefalse",
-      "difficulty": 1,
-      "prompt": "In Python 3.7 and later, a dict iterates its keys in insertion order as part of the language guarantee.",
-      "options": [
-        {
-          "id": "a",
-          "text": "True",
-          "why": "Correct: this became a language guarantee in 3.7 (an implementation detail of CPython 3.6)."
-        },
-        {
-          "id": "b",
-          "text": "False",
-          "why": "It is guaranteed, not just a CPython quirk; collections.OrderedDict only adds extras like move_to_end and order-sensitive equality."
-        }
-      ],
-      "correct": [
-        "a"
-      ],
-      "explanation": "CPython keeps a compact entries array plus a sparse index table. Mutating a dict while iterating it raises RuntimeError: dictionary changed size during iteration."
-    },
-    {
-      "id": "python-dict-internals",
-      "concept": "Python collections",
-      "type": "fill",
-      "difficulty": 2,
-      "prompt": "Complete the sentence about CPython dictionaries.",
-      "text": "CPython implements a dict as a {1} table that resolves collisions with {2} addressing (probing), so a lookup is {3} on average.",
-      "blanks": {
-        "1": "hash",
-        "2": "open",
-        "3": "O(1)"
-      },
-      "bank": [
-        "hash",
-        "open",
-        "O(1)",
-        "chaining",
-        "O(log n)",
-        "sorted"
-      ],
-      "explanation": "Java HashMap chains colliding entries in a bin (list or tree); CPython probes other slots in the same table. Keys must be hashable, which is why lists cannot be dict keys."
     },
     {
       "id": "list-object-invariance",
@@ -331,33 +309,24 @@
       "explanation": "PECS: Producer Extends, Consumer Super. Read from ? extends, write to ? super. (Verified by compiling it.)"
     },
     {
-      "id": "typevar-first",
-      "concept": "Type hints",
+      "id": "reverse-treemap",
+      "concept": "Sorted collections",
       "type": "code",
       "difficulty": 2,
-      "prompt": "Write a Python function first(items) with type hints using a TypeVar named T so that mypy infers the element type of the sequence it returns.",
-      "language": "python",
-      "starter": "from typing import Sequence, TypeVar\n",
+      "prompt": "Write one Java statement that creates a TreeMap<String, Integer> named scores which keeps its String keys in reverse natural (descending) order.",
+      "language": "java",
       "checks": [
         {
-          "label": "declares a TypeVar (or PEP 695 [T] syntax)",
-          "pattern": "(TypeVar\\s*\\(|def\\s+first\\s*\\[)"
+          "label": "creates a TreeMap",
+          "pattern": "new\\s+TreeMap"
         },
         {
-          "label": "function is named first",
-          "pattern": "def\\s+first\\b"
-        },
-        {
-          "label": "parameter is a Sequence/list of T",
-          "pattern": "(Sequence|list|List|Iterable)\\s*\\[\\s*T\\s*\\]"
-        },
-        {
-          "label": "returns T",
-          "pattern": "->\\s*T\\b"
+          "label": "supplies a reverse comparator",
+          "pattern": "reverse|\\.compareTo\\(|\\(\\s*\\w+\\s*,\\s*\\w+\\s*\\)\\s*->"
         }
       ],
-      "model": "T = TypeVar(\"T\")\n\ndef first(items: Sequence[T]) -> T:\n    return items[0]",
-      "explanation": "On Python 3.12+ you can write def first[T](items: Sequence[T]) -> T. Type hints are not enforced at runtime; mypy or pyright check them statically."
+      "model": "TreeMap<String, Integer> scores = new TreeMap<>(Comparator.reverseOrder());",
+      "explanation": "A comparator passed to the constructor defines the ordering; Collections.reverseOrder() and (a, b) -> b.compareTo(a) are equally valid."
     },
     {
       "id": "treeified-bins",
@@ -377,25 +346,6 @@
         "d": "A is true: that is the point of treeification (JEP 180)."
       },
       "explanation": "JEP 180 improved HashMap under heavy collisions, notably hash-flooding attacks. The tree uses hashCode then compareTo or a tie-breaker."
-    },
-    {
-      "id": "deque-vs-list-pop",
-      "concept": "Python collections",
-      "type": "assertion",
-      "difficulty": 2,
-      "prompt": "Read the assertion (A) and the reason (R), then choose the option that fits.",
-      "assertion": "collections.deque.popleft() takes O(1) time, whereas list.pop(0) takes O(n).",
-      "reason": "A Python list is implemented as a doubly linked list of nodes.",
-      "correct": [
-        "c"
-      ],
-      "whys": {
-        "a": "R is false: a list is a dynamic array of pointers.",
-        "b": "R is false, so option b cannot hold.",
-        "c": "Correct: A is true (the list shifts every remaining pointer); R is false because CPython lists are arrays of pointers (that is why index access is O(1)).",
-        "d": "A is true, so d is wrong."
-      },
-      "explanation": "Use deque for queues (BFS); a list is fine for stacks (append/pop at the end)."
     },
     {
       "id": "aslist-fixed-size",
@@ -450,6 +400,25 @@
       "explanation": "The iterator and toString expose the heap array order. To get sorted output, poll repeatedly or copy and sort. Verified by running it."
     },
     {
+      "id": "arraydeque-poll-vs-remove",
+      "concept": "Collection choice",
+      "type": "assertion",
+      "difficulty": 2,
+      "prompt": "Read the assertion (A) and the reason (R), then choose the option that fits.",
+      "assertion": "ArrayDeque.pollFirst() takes O(1) time, whereas ArrayList.remove(0) takes O(n).",
+      "reason": "ArrayList is implemented as a doubly linked list of nodes.",
+      "correct": [
+        "c"
+      ],
+      "whys": {
+        "a": "This option says both statements are true and R explains A, which does not match: A is true (the array version shifts every element, the circular array just moves an index), but R is false: ArrayList is backed by an array.",
+        "b": "This option says both statements are true but R does not explain A, which does not match: A is true (the array version shifts every element, the circular array just moves an index), but R is false: ArrayList is backed by an array.",
+        "c": "Correct: A is true (the array version shifts every element, the circular array just moves an index), but R is false: ArrayList is backed by an array.",
+        "d": "This option says A is false and R is true, which does not match: A is true (the array version shifts every element, the circular array just moves an index), but R is false: ArrayList is backed by an array."
+      },
+      "explanation": "Use ArrayDeque as a FIFO queue; removing from the front of an ArrayList shifts all remaining elements."
+    },
+    {
       "id": "hashmap-presize",
       "concept": "HashMap internals",
       "type": "integer",
@@ -461,37 +430,83 @@
       "unit": "entries"
     },
     {
-      "id": "py-list-alias",
-      "concept": "Python collections",
+      "id": "ncopies-alias",
+      "concept": "Aliasing",
       "type": "single",
-      "difficulty": 2,
-      "prompt": "What does this Python code print?\n\ngrid = [[0] * 3] * 3\ngrid[0][0] = 1\nprint(grid)\n\nWhat is the output?",
+      "difficulty": 3,
+      "prompt": "What does this Java code print?\n\nList<List<Integer>> g = new ArrayList<>(Collections.nCopies(3, new ArrayList<>()));\ng.get(0).add(1);\nSystem.out.println(g);\n\nWhat is the output?",
       "options": [
         {
           "id": "a",
-          "text": "[[1, 0, 0], [1, 0, 0], [1, 0, 0]]",
-          "why": "Correct: the outer * 3 repeats a reference to one inner list, so all three rows are the same object."
+          "text": "[[1], [1], [1]], one shared inner list",
+          "why": "Correct: nCopies repeats one reference, so the three entries are aliases of one list."
         },
         {
           "id": "b",
-          "text": "[[1, 0, 0], [0, 0, 0], [0, 0, 0]]",
-          "why": "Wrong: this is what you would get from [[0] * 3 for _ in range(3)], which builds three separate rows."
+          "text": "[[1], [], []], only the first list changes",
+          "why": "That needs three distinct lists, but nCopies reuses a single object."
         },
         {
           "id": "c",
-          "text": "[[1, 1, 1], [1, 1, 1], [1, 1, 1]]",
-          "why": "Wrong: only index 0 of the shared row is assigned, so the other columns stay 0."
+          "text": "UnsupportedOperationException, since nCopies lists are immutable",
+          "why": "The nCopies list itself is immutable, but it is only copied into a new ArrayList; the inner list is a normal one."
         },
         {
           "id": "d",
-          "text": "TypeError: list assignment is not allowed here",
-          "why": "Wrong: lists are mutable and item assignment on a nested list is perfectly legal."
+          "text": "[[1]], because duplicates are merged",
+          "why": "Lists keep duplicates; nothing is merged."
         }
       ],
       "correct": [
         "a"
       ],
-      "explanation": "Sequence repetition copies references, not objects. Use a comprehension to create independent rows. Verified by running it."
+      "explanation": "Same trap as sharing one mutable object across slots: build each inner list in a loop or with Stream.generate."
+    },
+    {
+      "id": "hashmap-order",
+      "concept": "HashMap internals",
+      "type": "truefalse",
+      "difficulty": 1,
+      "prompt": "Iterating a HashMap is guaranteed to return its entries in insertion order.",
+      "options": [
+        {
+          "id": "a",
+          "text": "True",
+          "why": "HashMap makes no ordering promise; only LinkedHashMap keeps insertion order."
+        },
+        {
+          "id": "b",
+          "text": "False",
+          "why": "Correct: HashMap order depends on hashes and table size and can change after a resize."
+        }
+      ],
+      "correct": [
+        "b"
+      ],
+      "explanation": "Use LinkedHashMap for insertion order and TreeMap for sorted order."
+    },
+    {
+      "id": "linkedhashmap-order",
+      "concept": "HashMap internals",
+      "type": "truefalse",
+      "difficulty": 1,
+      "prompt": "A LinkedHashMap iterates its entries in insertion order by default.",
+      "options": [
+        {
+          "id": "a",
+          "text": "True",
+          "why": "Correct: it links entries in a doubly linked list in the order they were inserted (access order is opt-in)."
+        },
+        {
+          "id": "b",
+          "text": "False",
+          "why": "Insertion order is the default; only the accessOrder constructor flag changes it."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Access order plus removeEldestEntry gives a simple LRU cache."
     }
   ]
 }

@@ -1,14 +1,15 @@
 {
-  "id": "rm-conc-pools-async",
-  "title": "Concurrency: thread pools and async composition",
+  "id": "rm-conc-pools-async-java",
+  "title": "Concurrency in Java: thread pools and async composition",
   "topic": "Interview roadmap",
-  "series": "interview-roadmap",
-  "seriesTitle": "Interview roadmap: topic quizzes",
+  "language": "java",
+  "series": "interview-roadmap-java",
+  "seriesTitle": "Interview roadmap: Java and Spring Boot",
   "seriesOrder": 21,
-  "seriesDescription": "Topic-by-topic JEE-style quizzes for the backend and AI-engineering interview roadmap: integer, assertion-reason, matrix match, fill-in-the-blanks, short code writing, plus multi-correct questions. Language core, concurrency, DSA, web frameworks, data access, databases, messaging, resilience, security, testing, system design, LLM and agent engineering.",
-  "description": "ThreadPoolExecutor sizing, queue and maximumPoolSize behaviour, shutdown, Futures, CompletableFuture chains, virtual threads, concurrent.futures and asyncio gather/timeout.",
-  "source": "Oracle Java docs (ThreadPoolExecutor, Executors, CompletableFuture, JEP 444 and JEP 491 on virtual threads, parallel streams); Python docs: asyncio, concurrent.futures, pickle; FastAPI docs; Java Concurrency in Practice; Baeldung; Real Python; Super Fast Python; Educative multithreading interview course",
-  "estimatedMinutes": 16,
+  "seriesDescription": "Java and Spring Boot interview topics in JEE-Advanced style: integer, assertion-reason, matrix match, fill-in-the-blanks, short Java/SQL code and multi-correct questions. Java only: nothing here mixes in Python.",
+  "description": "ThreadPoolExecutor sizing, queue and maximumPoolSize behaviour, rejection policies, shutdown, Futures, CompletableFuture chains and timeouts, virtual threads and the common pool.",
+  "source": "Oracle Java docs (ThreadPoolExecutor, Executors, CompletableFuture, JEP 444 and JEP 491 on virtual threads, parallel streams); Java Concurrency in Practice; Baeldung; Educative multithreading interview course",
+  "estimatedMinutes": 18,
   "questions": [
     {
       "id": "tpe-five-tasks",
@@ -37,10 +38,10 @@
       "concept": "Pool sizing",
       "type": "integer",
       "difficulty": 3,
-      "prompt": "Using the sizing rule threads = cores x (1 + wait time / compute time), how many threads suit an 8-core machine whose tasks spend 90 ms waiting on a database and 10 ms computing?",
-      "answer": 80,
+      "prompt": "Using the sizing rule threads = cores x (1 + wait time / compute time), how many threads suit a 4-core machine whose tasks spend 150 ms waiting on a database and 50 ms computing?",
+      "answer": 16,
       "tolerance": 0,
-      "explanation": "wait/compute = 90/10 = 9, so 8 x (1 + 9) = 80. For CPU-bound work use about cores (or cores + 1). Treat the formula as a starting point and load test.",
+      "explanation": "wait/compute = 150/50 = 3, so 4 x (1 + 3) = 16. For CPU-bound work use about cores (or cores + 1). Treat the formula as a starting point and load test.",
       "unit": "threads"
     },
     {
@@ -185,39 +186,6 @@
       "explanation": "With execute(Runnable) an uncaught exception reaches the thread's UncaughtExceptionHandler. With submit() you must call get() or add logging inside the task."
     },
     {
-      "id": "map-order",
-      "concept": "concurrent.futures",
-      "type": "single",
-      "difficulty": 2,
-      "prompt": "What does this Python code print?\n\nwith ThreadPoolExecutor(3) as ex:\n    print(list(ex.map(work, [3, 1, 2])))\n\nwhere work(n) sleeps n tenths of a second and returns n.",
-      "options": [
-        {
-          "id": "a",
-          "text": "[3, 1, 2], following the input order",
-          "why": "Correct: map yields results in the order of the inputs, even though the 1 finishes first."
-        },
-        {
-          "id": "b",
-          "text": "[1, 2, 3], following the finish order",
-          "why": "That would be completion order, which is what as_completed gives, not map."
-        },
-        {
-          "id": "c",
-          "text": "[3, 2, 1], sorted from largest to smallest",
-          "why": "Nothing in map sorts results in descending order."
-        },
-        {
-          "id": "d",
-          "text": "It prints in random order depending on the scheduler.",
-          "why": "Result order from map is deterministic."
-        }
-      ],
-      "correct": [
-        "a"
-      ],
-      "explanation": "Executor.map preserves input order (blocking on the earliest unfinished result); use as_completed(futures) to process in completion order. Exceptions are raised when the result is reached."
-    },
-    {
       "id": "fixed-pool-oom",
       "concept": "Thread pools",
       "type": "assertion",
@@ -332,98 +300,6 @@
       "explanation": "Verified by running it. join() throws CompletionException, get() throws ExecutionException. Unwrap with getCause() when mapping errors."
     },
     {
-      "id": "async-gather-timeout",
-      "concept": "asyncio",
-      "type": "code",
-      "difficulty": 3,
-      "prompt": "Write a Python coroutine fetch_all(urls) that calls the existing coroutine fetch(url) for every url concurrently and returns the list of results in input order, raising TimeoutError if the whole batch takes more than 2 seconds.",
-      "language": "python",
-      "checks": [
-        {
-          "label": "runs the coroutines concurrently with gather",
-          "pattern": "gather\\s*\\("
-        },
-        {
-          "label": "enforces a 2 second limit via wait_for or timeout",
-          "pattern": "wait_for\\s*\\(|asyncio\\.timeout\\s*\\(|timeout\\s*\\("
-        },
-        {
-          "label": "uses await",
-          "pattern": "await\\s"
-        },
-        {
-          "label": "unpacks the generated coroutines with *",
-          "pattern": "\\*\\s*[\\w(\\[]"
-        },
-        {
-          "label": "mentions 2 seconds",
-          "pattern": "\\b2(\\.0)?\\b"
-        }
-      ],
-      "model": "async def fetch_all(urls):\n    return await asyncio.wait_for(\n        asyncio.gather(*(fetch(u) for u in urls)), timeout=2)",
-      "explanation": "gather returns results in argument order. On Python 3.11+ async with asyncio.timeout(2): return await asyncio.gather(...) is an equivalent alternative. On timeout the gathered awaitables are cancelled.",
-      "starter": "async def fetch_all(urls):\n    "
-    },
-    {
-      "id": "gather-one-second",
-      "concept": "asyncio",
-      "type": "assertion",
-      "difficulty": 2,
-      "prompt": "Read the assertion (A) and the reason (R), then choose the correct option.",
-      "assertion": "Awaiting three asyncio.sleep(1) coroutines with asyncio.gather finishes in about 1 second.",
-      "reason": "The asyncio event loop starts one thread per coroutine so that they run in parallel.",
-      "correct": [
-        "c"
-      ],
-      "whys": {
-        "a": "A is true but R is false, so R cannot explain it.",
-        "b": "R is false, so option b is wrong.",
-        "c": "Correct: the sleeps overlap because the single-threaded loop switches at each await. There is one thread, so R is false.",
-        "d": "A is true, so option d is wrong."
-      },
-      "explanation": "asyncio is cooperative concurrency on one thread. A blocking call such as time.sleep(1) would serialise the three coroutines to about 3 seconds."
-    },
-    {
-      "id": "blocking-in-loop",
-      "concept": "asyncio",
-      "type": "multi",
-      "difficulty": 3,
-      "prompt": "A FastAPI endpoint declared with async def calls the blocking requests.get(...) and the service stalls under load. Select all valid fixes.",
-      "options": [
-        {
-          "id": "a",
-          "text": "Declare the endpoint with plain def so FastAPI runs it in its thread pool",
-          "why": "Correct: FastAPI runs sync endpoints in a worker thread, off the event loop."
-        },
-        {
-          "id": "b",
-          "text": "Use an async HTTP client such as httpx.AsyncClient with await",
-          "why": "Correct: it yields to the loop while waiting for the network."
-        },
-        {
-          "id": "c",
-          "text": "Wrap the call in await asyncio.to_thread(requests.get, url)",
-          "why": "Correct: the blocking call runs in a thread while the loop stays free."
-        },
-        {
-          "id": "d",
-          "text": "Add the async keyword to the helper that calls requests.get",
-          "why": "Wrong: async def does not make blocking code non-blocking; it still stalls the loop."
-        },
-        {
-          "id": "e",
-          "text": "Run the app with more asyncio tasks",
-          "why": "Wrong: more tasks on a blocked loop just wait behind it."
-        }
-      ],
-      "correct": [
-        "a",
-        "b",
-        "c"
-      ],
-      "explanation": "Rule: never block the event loop. Either stay async end to end, or push blocking work to a thread (to_thread, run_in_executor) or process pool."
-    },
-    {
       "id": "virtual-cpu",
       "concept": "Virtual threads",
       "type": "truefalse",
@@ -445,39 +321,6 @@
         "b"
       ],
       "explanation": "Virtual threads (JEP 444, final in Java 21) make thread-per-request affordable for blocking I/O, but they gain nothing for CPU-bound work, where parallelism is capped by cores. Do not pool them. On Java 21 a virtual thread blocking inside a synchronized block pins its carrier thread; JDK 24 (JEP 491) removed that pinning for synchronized, leaving mainly native frames and class initialisers."
-    },
-    {
-      "id": "gather-return-exceptions",
-      "concept": "asyncio",
-      "type": "single",
-      "difficulty": 3,
-      "prompt": "What does this Python code print?\n\nasync def ok(): await asyncio.sleep(0.1); return 1\nasync def bad(): raise ValueError(\"x\")\nasync def main():\n    print(await asyncio.gather(ok(), bad(), return_exceptions=True))\nasyncio.run(main())\n\nWhat is the output?",
-      "options": [
-        {
-          "id": "a",
-          "text": "[1, ValueError('x')]",
-          "why": "Correct: with return_exceptions=True failures are returned in the result list in argument order, and the other awaitables still finish."
-        },
-        {
-          "id": "b",
-          "text": "ValueError: x is raised and nothing is printed",
-          "why": "Wrong: that is the default behaviour (return_exceptions=False); here the exception is delivered as a value."
-        },
-        {
-          "id": "c",
-          "text": "[1]",
-          "why": "Wrong: results are never dropped; the failed slot holds the exception object."
-        },
-        {
-          "id": "d",
-          "text": "[ValueError('x'), 1]",
-          "why": "Wrong: gather keeps results in the order of its arguments, not in completion order."
-        }
-      ],
-      "correct": [
-        "a"
-      ],
-      "explanation": "With the default False the first exception propagates to the awaiter while the other awaitables keep running; on Python 3.11+ asyncio.TaskGroup cancels the siblings instead. Verified by running it."
     },
     {
       "id": "parallel-stream-pool",
@@ -552,37 +395,154 @@
       "explanation": "On Java 21 the synchronized cases did pin, which is why advice then was to use ReentrantLock around blocking calls. Check with -Djdk.tracePinnedThreads on 21 or the jdk.VirtualThreadPinned JFR event."
     },
     {
-      "id": "processpool-pickle",
-      "concept": "Executors",
-      "type": "single",
+      "id": "allof-overlap",
+      "concept": "CompletableFuture",
+      "type": "assertion",
       "difficulty": 2,
-      "prompt": "Why does executor.submit(lambda x: x * x, 3) fail with a PicklingError on a ProcessPoolExecutor, while a module-level def sq(x) works?",
+      "prompt": "Read the assertion (A) and the reason (R), then choose the correct option.",
+      "assertion": "Three CompletableFuture tasks that each sleep for 1 second, submitted with supplyAsync to a 3-thread executor, let allOf(...).join() return after about 1 second.",
+      "reason": "supplyAsync always runs each task on the thread that called it, one after another.",
+      "correct": [
+        "c"
+      ],
+      "whys": {
+        "a": "R is false, so it cannot explain A.",
+        "b": "R is false, so option b (both true) is wrong.",
+        "c": "Correct: the three sleeps overlap on three executor threads (about 1006 ms when run). supplyAsync submits to an executor, not to the caller, so R is false.",
+        "d": "A is true, so option d (A false) is wrong."
+      },
+      "explanation": "supplyAsync(supplier) uses ForkJoinPool.commonPool() unless you pass an executor. With a pool too small for the tasks they would queue and the total time would grow."
+    },
+    {
+      "id": "allof-failure",
+      "concept": "CompletableFuture",
+      "type": "single",
+      "difficulty": 3,
+      "prompt": "ok sleeps 300 ms then returns 1; bad throws an IllegalStateException at once. Both run on a 3-thread executor. What does CompletableFuture.allOf(ok, bad).join() do?",
       "options": [
         {
           "id": "a",
-          "text": "Callables are pickled to reach another process, and a lambda has no importable name",
-          "why": "Correct: pickle stores functions by qualified name, which a lambda does not have. Verified by running it."
+          "text": "It waits for ok too (about 300 ms), then throws CompletionException caused by the IllegalStateException.",
+          "why": "Correct: allOf completes only when every input has completed; with a failure it completes exceptionally and join wraps the cause (verified by running it)."
         },
         {
           "id": "b",
-          "text": "Lambdas are forbidden from returning values across a thread boundary of any kind",
-          "why": "Wrong: lambdas return values normally; the limit comes from serialisation to a separate process, not from return values."
+          "text": "It throws the IllegalStateException immediately, without waiting for ok to finish.",
+          "why": "allOf is not fail-fast; it waits for all inputs even when one has already failed."
         },
         {
           "id": "c",
-          "text": "The GIL forbids anonymous functions from running inside separate worker threads",
-          "why": "Wrong: ProcessPoolExecutor uses processes, and the GIL has no rule about function syntax."
+          "text": "It returns normally, because allOf yields a CompletableFuture<Void> that ignores failures.",
+          "why": "The Void result carries no value, but a failed input still fails the combined future."
         },
         {
           "id": "d",
-          "text": "ProcessPoolExecutor only accepts built-in functions from the standard library",
-          "why": "Wrong: any picklable top-level function works, as the sq example shows."
+          "text": "It throws the bare IllegalStateException with no wrapper, because join unwraps causes.",
+          "why": "join wraps the failure in CompletionException; get would use ExecutionException."
         }
       ],
       "correct": [
         "a"
       ],
-      "explanation": "Same rule for arguments and results: they must be picklable. ThreadPoolExecutor has no such limit because it shares memory."
+      "explanation": "For fail-fast behaviour, complete a result future yourself from each input with whenComplete, or use structured concurrency. To collect values, call join() on each input after allOf."
+    },
+    {
+      "id": "blocking-supplyasync",
+      "concept": "CompletableFuture",
+      "type": "multi",
+      "difficulty": 3,
+      "prompt": "A service runs CompletableFuture.supplyAsync(() -> blockingHttpCall()) with no executor argument and stalls under load. Select all valid fixes.",
+      "options": [
+        {
+          "id": "a",
+          "text": "Pass a dedicated executor sized for blocking I/O as the second argument",
+          "why": "Correct: the common pool is small and shared; a separate pool keeps blocking calls from starving other work."
+        },
+        {
+          "id": "b",
+          "text": "Pass Executors.newVirtualThreadPerTaskExecutor() (Java 21) as the executor",
+          "why": "Correct: virtual threads make blocking calls cheap, so each task may block without tying up a platform thread."
+        },
+        {
+          "id": "c",
+          "text": "Use a non-blocking HTTP client whose call returns a CompletableFuture",
+          "why": "Correct: no thread waits during the network round trip at all."
+        },
+        {
+          "id": "d",
+          "text": "Call join() on the returned future inside a thenApply stage",
+          "why": "Wrong: join blocks another pool thread and adds to the starvation."
+        },
+        {
+          "id": "e",
+          "text": "Replace supplyAsync with list.parallelStream() over the same blocking call",
+          "why": "Wrong: parallel streams also run on the shared common pool, so the problem remains."
+        }
+      ],
+      "correct": [
+        "a",
+        "b",
+        "c"
+      ],
+      "explanation": "The default executor is ForkJoinPool.commonPool(), sized to roughly the core count minus one and meant for short CPU work. Blocking tasks need their own executor."
+    },
+    {
+      "id": "cf-combine-timeout",
+      "concept": "CompletableFuture",
+      "type": "code",
+      "difficulty": 3,
+      "prompt": "Given CompletableFuture<Integer> x and CompletableFuture<Integer> y, write one expression that adds their results once both complete, and fails with a timeout if that takes more than 2 seconds.",
+      "language": "java",
+      "checks": [
+        {
+          "label": "combines the two futures",
+          "pattern": "thenCombine\\s*\\(|thenAcceptBoth\\s*\\(|allOf\\s*\\("
+        },
+        {
+          "label": "adds the two values",
+          "pattern": "Integer::sum|\\+|sum"
+        },
+        {
+          "label": "applies a 2 second timeout",
+          "pattern": "orTimeout\\s*\\(\\s*2|completeOnTimeout|get\\s*\\(\\s*2"
+        }
+      ],
+      "model": "CompletableFuture<Integer> sum = x.thenCombine(y, Integer::sum)\n    .orTimeout(2, TimeUnit.SECONDS);",
+      "explanation": "thenCombine joins two independent futures (thenCompose is for dependent ones). orTimeout (Java 9+) completes the future exceptionally with TimeoutException; completeOnTimeout supplies a default instead. Verified by running it.",
+      "starter": "CompletableFuture<Integer> sum ="
+    },
+    {
+      "id": "invokeall-order",
+      "concept": "Futures",
+      "type": "single",
+      "difficulty": 2,
+      "prompt": "A pool has 3 threads. tasks holds three Callable<Integer> objects that sleep 300, 100 and 200 ms and return 3, 1 and 2. What does this print?\n\nfor (Future<Integer> f : pool.invokeAll(tasks)) System.out.print(f.get() + \" \");\n\nWhat is printed?",
+      "options": [
+        {
+          "id": "a",
+          "text": "1 2 3, the order in which the tasks finished",
+          "why": "Completion order is what an ExecutorCompletionService delivers, not invokeAll."
+        },
+        {
+          "id": "b",
+          "text": "3 1 2, the order of the tasks list",
+          "why": "Correct: invokeAll returns its Futures in the same order as the input collection, after all have completed (verified by running it)."
+        },
+        {
+          "id": "c",
+          "text": "1 only, because invokeAll returns the fastest result",
+          "why": "That describes invokeAny, which returns one result and cancels the rest."
+        },
+        {
+          "id": "d",
+          "text": "Nothing yet, since invokeAll only schedules the tasks and returns immediately",
+          "why": "invokeAll blocks until every task is done, so the futures are already complete."
+        }
+      ],
+      "correct": [
+        "b"
+      ],
+      "explanation": "Use invokeAny for the first success, ExecutorCompletionService (or CompletableFuture.anyOf) to process results as they finish, and invokeAll when you need every result in input order."
     }
   ]
 }

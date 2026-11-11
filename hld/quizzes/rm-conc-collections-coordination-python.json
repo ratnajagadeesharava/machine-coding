@@ -1,0 +1,495 @@
+{
+  "id": "rm-conc-collections-coordination-python",
+  "title": "Concurrency in Python: queues, coordination and deadlocks",
+  "topic": "Interview roadmap",
+  "language": "python",
+  "series": "interview-roadmap-python",
+  "seriesTitle": "Interview roadmap: Python and FastAPI",
+  "seriesOrder": 22,
+  "seriesDescription": "Python and FastAPI interview topics in JEE-Advanced style: integer, assertion-reason, matrix match, fill-in-the-blanks, short Python/SQL code and multi-correct questions. Python only: nothing here mixes in Java.",
+  "description": "queue.Queue and its relatives, iteration safety, Event, Barrier, Semaphore, lock ordering, asyncio.Queue across threads and dumping thread stacks.",
+  "source": "Python docs: queue, threading, asyncio, faulthandler; py-spy README; Real Python; GeeksforGeeks",
+  "estimatedMinutes": 17,
+  "questions": [
+    {
+      "id": "queue-get-nowait",
+      "concept": "queue.Queue",
+      "type": "single",
+      "difficulty": 1,
+      "prompt": "An empty queue.Queue named q is shared by several threads. What does q.get_nowait() do?",
+      "options": [
+        {
+          "id": "a",
+          "text": "It raises queue.Empty immediately.",
+          "why": "Correct: the non-blocking get signals \"nothing there\" with an exception (verified by running it)."
+        },
+        {
+          "id": "b",
+          "text": "It returns None immediately.",
+          "why": "None is not used as an empty marker; a real item could even be None."
+        },
+        {
+          "id": "c",
+          "text": "It blocks until another thread puts an item.",
+          "why": "That is q.get() with the default block=True."
+        },
+        {
+          "id": "d",
+          "text": "It waits one second and then returns None.",
+          "why": "There is no default one second wait."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "get() blocks, get(timeout=t) raises Empty after t seconds, get_nowait() raises Empty at once. The put side mirrors it with queue.Full."
+    },
+    {
+      "id": "barrier-stragglers-py",
+      "concept": "Barrier",
+      "type": "integer",
+      "difficulty": 2,
+      "prompt": "Seven threads each call wait() once on the same new threading.Barrier(3). How many of them are still blocked after everything that can happen has happened?",
+      "answer": 1,
+      "tolerance": 0,
+      "unit": "thread",
+      "explanation": "The barrier trips for every group of 3: two groups (6 threads) pass, and the seventh waits for two partners that never arrive (verified by running it). A Barrier is reusable, unlike a one-shot Event."
+    },
+    {
+      "id": "semaphore-permits-py",
+      "concept": "Semaphore",
+      "type": "integer",
+      "difficulty": 2,
+      "prompt": "A threading.Semaphore(2) is acquired once and then released twice. After that, how many consecutive acquire(blocking=False) calls succeed?",
+      "answer": 3,
+      "tolerance": 0,
+      "unit": "acquires",
+      "explanation": "Start 2, acquire leaves 1, two releases give 3, so three non-blocking acquires succeed and the fourth fails (verified). Semaphore does not remember who acquired; BoundedSemaphore would raise ValueError on the extra release."
+    },
+    {
+      "id": "queue-thread-safe",
+      "concept": "queue.Queue",
+      "type": "truefalse",
+      "difficulty": 1,
+      "prompt": "queue.Queue is thread-safe: several threads can call put() and get() on it without any extra locking.",
+      "options": [
+        {
+          "id": "a",
+          "text": "True",
+          "why": "Correct: Queue does its own locking internally, which is why it is the standard hand-off between threads."
+        },
+        {
+          "id": "b",
+          "text": "False",
+          "why": "The class is built for multiple producers and consumers and needs no external lock."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "It is not safe across processes (use multiprocessing.Queue) and not meant for coroutines (use asyncio.Queue)."
+    },
+    {
+      "id": "dict-iteration-safe",
+      "concept": "Iteration safety",
+      "type": "truefalse",
+      "difficulty": 2,
+      "prompt": "Because of the GIL, looping over a dict in one thread while another thread adds new keys is always safe.",
+      "options": [
+        {
+          "id": "a",
+          "text": "True",
+          "why": "The GIL makes single operations atomic, but a loop is many steps."
+        },
+        {
+          "id": "b",
+          "text": "False",
+          "why": "Correct: the loop can fail with RuntimeError: dictionary changed size during iteration (verified)."
+        }
+      ],
+      "correct": [
+        "b"
+      ],
+      "explanation": "Iterate over a snapshot such as list(d.items()), or guard the loop and the writers with the same Lock."
+    },
+    {
+      "id": "queue-types-match",
+      "concept": "queue.Queue",
+      "type": "matrix",
+      "difficulty": 2,
+      "prompt": "Match each queue class with its behaviour.",
+      "left": [
+        {
+          "id": "l1",
+          "text": "queue.Queue"
+        },
+        {
+          "id": "l2",
+          "text": "queue.LifoQueue"
+        },
+        {
+          "id": "l3",
+          "text": "queue.PriorityQueue"
+        },
+        {
+          "id": "l4",
+          "text": "queue.SimpleQueue"
+        },
+        {
+          "id": "l5",
+          "text": "asyncio.Queue"
+        }
+      ],
+      "right": [
+        {
+          "id": "r1",
+          "text": "First in, first out, thread-safe, optionally bounded"
+        },
+        {
+          "id": "r2",
+          "text": "Last in, first out, a thread-safe stack"
+        },
+        {
+          "id": "r3",
+          "text": "Always returns the smallest item first (usually priority, item tuples)"
+        },
+        {
+          "id": "r4",
+          "text": "Unbounded FIFO with a very small API: no maxsize, no task_done"
+        },
+        {
+          "id": "r5",
+          "text": "FIFO for coroutines on one event loop, not safe for use from other threads"
+        },
+        {
+          "id": "r6",
+          "text": "Silently drops the oldest item when full"
+        }
+      ],
+      "pairs": {
+        "l1": "r1",
+        "l2": "r2",
+        "l3": "r3",
+        "l4": "r4",
+        "l5": "r5"
+      },
+      "explanation": "Pick the class by who consumes: threads use queue.*, coroutines use asyncio.Queue. SimpleQueue is also reentrant, so it is safe in signal handlers and __del__ methods."
+    },
+    {
+      "id": "list-iteration-live",
+      "concept": "Iteration safety",
+      "type": "single",
+      "difficulty": 2,
+      "prompt": "What does this print?\n\nlst = [1, 2, 3]\nvisited = []\nfor x in lst:\n    visited.append(x)\n    if x == 1: lst.append(99)\nprint(visited)\n\nWhat is printed?",
+      "options": [
+        {
+          "id": "a",
+          "text": "[1, 2, 3, 99], because the loop sees the appended element",
+          "why": "Correct: a list iterator reads the live list by index, so growth is visible (verified by running it)."
+        },
+        {
+          "id": "b",
+          "text": "[1, 2, 3], because the loop works on a snapshot taken at the start",
+          "why": "Snapshots are what you get from list(lst), not from iterating the list itself."
+        },
+        {
+          "id": "c",
+          "text": "A RuntimeError, because a list may not change size while iterating",
+          "why": "That error is raised for dicts and sets, not lists."
+        },
+        {
+          "id": "d",
+          "text": "It never ends, because 99 is appended again on every pass",
+          "why": "The append happens only when x equals 1, which occurs once."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Lists silently misbehave when mutated during iteration, dicts raise, and neither is made safe by the GIL. Iterate over a copy when other code may mutate the collection."
+    },
+    {
+      "id": "coordination-tools-py",
+      "concept": "Coordination tools",
+      "type": "fill",
+      "difficulty": 1,
+      "prompt": "Complete the sentences about threading synchronisers.",
+      "text": "An {1} blocks waiters until set() is called and can be cleared and reused. A {2} makes a fixed number of threads wait for each other. A {3} limits how many threads hold permits at once.",
+      "blanks": {
+        "1": "Event",
+        "2": "Barrier",
+        "3": "Semaphore"
+      },
+      "bank": [
+        "Event",
+        "Barrier",
+        "Semaphore",
+        "Condition",
+        "Timer"
+      ],
+      "explanation": "Condition adds wait/notify on a predicate, and Timer runs a function after a delay. Python has no CountDownLatch; use Event plus a counter, or join the threads."
+    },
+    {
+      "id": "join-workers",
+      "concept": "Coordination tools",
+      "type": "code",
+      "difficulty": 1,
+      "prompt": "Write Python that starts 3 threading.Thread workers (each running do_work) and makes the main thread wait until all 3 have finished.",
+      "language": "python",
+      "checks": [
+        {
+          "label": "creates Thread objects with a target",
+          "pattern": "Thread\\s*\\([^)]*target\\s*="
+        },
+        {
+          "label": "starts them",
+          "pattern": "\\.start\\s*\\(\\s*\\)"
+        },
+        {
+          "label": "joins them",
+          "pattern": "\\.join\\s*\\(\\s*\\)"
+        },
+        {
+          "label": "uses a loop or list for the 3 workers",
+          "pattern": "for\\s|range\\s*\\(\\s*3|\\[[\\s\\S]*\\]\\s*\\*?\\s*3?|\\*"
+        }
+      ],
+      "model": "threads = [threading.Thread(target=do_work) for _ in range(3)]\nfor t in threads:\n    t.start()\nfor t in threads:\n    t.join()",
+      "explanation": "Start all threads before joining any, otherwise the workers run one after another. A ThreadPoolExecutor in a with block is the tidier equivalent. Join returns even if a worker failed, so check results separately.",
+      "starter": "import threading\n\n"
+    },
+    {
+      "id": "dict-iteration-race",
+      "concept": "Iteration safety",
+      "type": "assertion",
+      "difficulty": 3,
+      "prompt": "Read the assertion (A) and the reason (R), then choose the correct option.",
+      "assertion": "Iterating over a shared dict while another thread inserts keys can raise RuntimeError even though each single dict operation is atomic.",
+      "reason": "A dict remembers the insertion order of its keys.",
+      "correct": [
+        "b"
+      ],
+      "whys": {
+        "a": "R is true, but it says nothing about why concurrent modification breaks a loop.",
+        "b": "Correct: both true, but R is unrelated; the loop spans many separate operations and the dict can change size between steps.",
+        "c": "R is true (dicts keep insertion order since 3.7), so option c is wrong.",
+        "d": "A is true (verified by running it), so option d is wrong."
+      },
+      "explanation": "Atomic operations do not compose. Copy with list(d) before looping, or hold a lock for the whole loop and for every writer."
+    },
+    {
+      "id": "asyncio-queue-threads",
+      "concept": "asyncio.Queue",
+      "type": "assertion",
+      "difficulty": 3,
+      "prompt": "Read the assertion (A) and the reason (R), then choose the correct option.",
+      "assertion": "A worker thread may call asyncio.Queue.put_nowait() directly to hand items to coroutines.",
+      "reason": "asyncio.Queue is designed for coroutines on a single event loop and is documented as not thread-safe.",
+      "correct": [
+        "d"
+      ],
+      "whys": {
+        "a": "A is false, so the pair cannot be a valid explanation.",
+        "b": "A is false, so option b is wrong.",
+        "c": "A is false, so option c (A true) is wrong.",
+        "d": "Correct: R is true and A is false. From another thread use loop.call_soon_threadsafe(q.put_nowait, item) or asyncio.run_coroutine_threadsafe."
+      },
+      "explanation": "queue.Queue is for threads, asyncio.Queue for coroutines. Bridging needs call_soon_threadsafe."
+    },
+    {
+      "id": "py-spy",
+      "concept": "Thread dumps",
+      "type": "single",
+      "difficulty": 2,
+      "prompt": "A Python worker process hangs in production and you must see what each thread is doing without restarting or modifying it. Which command does that?",
+      "options": [
+        {
+          "id": "a",
+          "text": "py-spy dump --pid <pid>, attaching from outside",
+          "why": "Correct: py-spy samples the process from outside and prints each thread's current Python stack."
+        },
+        {
+          "id": "b",
+          "text": "jstack <pid>, the dump tool of another runtime",
+          "why": "jstack reads another runtime's threads and cannot see Python frames."
+        },
+        {
+          "id": "c",
+          "text": "kill -9 <pid> and then read the stack traces",
+          "why": "SIGKILL ends the process and destroys the evidence."
+        },
+        {
+          "id": "d",
+          "text": "python -m pdb --attach <pid> to step through it",
+          "why": "pdb launches scripts; it cannot attach to a running process by pid."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "py-spy needs ptrace permission (often sudo, or CAP_SYS_PTRACE in containers). Alternatives: faulthandler.dump_traceback registered on a signal, or --native for C frames."
+    },
+    {
+      "id": "py-semaphore-limit",
+      "concept": "Python coordination",
+      "type": "code",
+      "difficulty": 2,
+      "prompt": "Write an async Python function limited(sem, url) that waits for an asyncio.Semaphore before awaiting fetch(url) and returns the result, so at most N fetches run at once.",
+      "language": "python",
+      "checks": [
+        {
+          "label": "uses the semaphore (async with or acquire)",
+          "pattern": "async\\s+with\\s+sem|sem\\.acquire\\s*\\("
+        },
+        {
+          "label": "awaits fetch(url)",
+          "pattern": "await\\s+fetch\\s*\\(\\s*url\\s*\\)"
+        },
+        {
+          "label": "returns the result",
+          "pattern": "return"
+        }
+      ],
+      "model": "async def limited(sem, url):\n    async with sem:\n        return await fetch(url)",
+      "explanation": "async with releases the permit even if fetch raises. In threads the same idea uses threading.Semaphore with a plain with statement.",
+      "starter": "async def limited(sem, url):\n    "
+    },
+    {
+      "id": "stop-event",
+      "concept": "Coordination tools",
+      "type": "code",
+      "difficulty": 2,
+      "prompt": "A worker thread must run step() repeatedly, once per second, until another thread asks it to stop. Given stop = threading.Event(), write the worker loop so that the stop request is noticed promptly, not after a full second.",
+      "language": "python",
+      "checks": [
+        {
+          "label": "loops while the event is not set",
+          "pattern": "while\\s+not\\s+stop\\.is_set\\s*\\(\\s*\\)"
+        },
+        {
+          "label": "calls step",
+          "pattern": "step\\s*\\(\\s*\\)"
+        },
+        {
+          "label": "waits on the event instead of sleeping",
+          "pattern": "stop\\.wait\\s*\\("
+        }
+      ],
+      "model": "def worker():\n    while not stop.is_set():\n        step()\n        stop.wait(1.0)",
+      "explanation": "Event.wait(timeout) sleeps like time.sleep but wakes at once when stop.set() is called. Threads cannot be killed from outside, so cooperative flags like this are the standard shutdown mechanism.",
+      "starter": "import threading\nstop = threading.Event()\n\n"
+    },
+    {
+      "id": "lock-ordering-py",
+      "concept": "Deadlocks",
+      "type": "code",
+      "difficulty": 3,
+      "prompt": "Class Account has attributes id, balance and lock (a threading.Lock). Write transfer(src, dst, amount) so that two opposite transfers (A to B and B to A) can never deadlock, by always acquiring the lock of the account with the smaller id first.",
+      "language": "python",
+      "checks": [
+        {
+          "label": "orders the two accounts by id",
+          "pattern": "\\.id\\s*[<>]|sorted\\s*\\(|min\\s*\\(|key\\s*=\\s*lambda"
+        },
+        {
+          "label": "nests two lock acquisitions",
+          "pattern": "with\\s+\\w+\\.lock[\\s\\S]*with\\s+\\w+\\.lock|\\.acquire\\s*\\([\\s\\S]*\\.acquire\\s*\\("
+        },
+        {
+          "label": "moves the money",
+          "pattern": "balance\\s*(-=|\\+=)"
+        }
+      ],
+      "model": "def transfer(src, dst, amount):\n    first, second = sorted((src, dst), key=lambda a: a.id)\n    with first.lock:\n        with second.lock:\n            src.balance -= amount\n            dst.balance += amount",
+      "explanation": "A global lock order removes circular wait. Verified to finish with two opposite-direction threads. If ids can tie, add a tie-breaker; a src is dst transfer needs an RLock or a special case.",
+      "starter": "def transfer(src, dst, amount):\n    "
+    },
+    {
+      "id": "faulthandler-dump",
+      "concept": "Thread dumps",
+      "type": "single",
+      "difficulty": 2,
+      "prompt": "From inside a Python process you want every thread stack printed when you send it the signal SIGUSR1, without extra packages. Which standard-library module does that?",
+      "options": [
+        {
+          "id": "a",
+          "text": "tracemalloc, by starting it before the hang happens",
+          "why": "tracemalloc tracks memory allocations, not thread stacks."
+        },
+        {
+          "id": "b",
+          "text": "The faulthandler module, via register(SIGUSR1)",
+          "why": "Correct: it writes all thread tracebacks to stderr when the signal arrives, even if the interpreter is stuck in a lock wait."
+        },
+        {
+          "id": "c",
+          "text": "pdb, by attaching it to the running process id",
+          "why": "pdb cannot attach to a running process by pid."
+        },
+        {
+          "id": "d",
+          "text": "gc, by calling gc.get_objects() on the signal",
+          "why": "That lists objects, it does not show where threads are executing."
+        }
+      ],
+      "correct": [
+        "b"
+      ],
+      "explanation": "faulthandler.dump_traceback_later(timeout) is a watchdog variant. Externally, py-spy dump --pid does the same without touching the code."
+    },
+    {
+      "id": "queue-put-methods",
+      "concept": "queue.Queue",
+      "type": "matrix",
+      "difficulty": 2,
+      "prompt": "A queue.Queue with maxsize=2 is full. Match each call with what it does.",
+      "left": [
+        {
+          "id": "l1",
+          "text": "q.put(x)"
+        },
+        {
+          "id": "l2",
+          "text": "q.put_nowait(x)"
+        },
+        {
+          "id": "l3",
+          "text": "q.put(x, timeout=1)"
+        },
+        {
+          "id": "l4",
+          "text": "SimpleQueue().put(x)"
+        }
+      ],
+      "right": [
+        {
+          "id": "r1",
+          "text": "Blocks until a consumer makes room"
+        },
+        {
+          "id": "r2",
+          "text": "Raises queue.Full immediately"
+        },
+        {
+          "id": "r3",
+          "text": "Waits up to a second, then raises queue.Full"
+        },
+        {
+          "id": "r4",
+          "text": "Never blocks, because there is no capacity limit"
+        },
+        {
+          "id": "r5",
+          "text": "Silently overwrites the oldest element"
+        }
+      ],
+      "pairs": {
+        "l1": "r1",
+        "l2": "r2",
+        "l3": "r3",
+        "l4": "r4"
+      },
+      "explanation": "put has the same four shapes as get: block, no wait, timeout, and the unbounded SimpleQueue. No standard queue overwrites old items; collections.deque(maxlen=n) does that."
+    }
+  ]
+}

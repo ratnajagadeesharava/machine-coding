@@ -1,0 +1,421 @@
+{
+  "id": "rm-dsa-graphs-topo-core",
+  "title": "DSA core: graphs, BFS/DFS and topological sort",
+  "topic": "Interview roadmap",
+  "series": "interview-roadmap-core",
+  "seriesTitle": "Interview roadmap: language-independent topics",
+  "seriesDescription": "Language-independent interview topics (concepts, SQL, design, AI engineering): no Java and no Python code or library names.",
+  "seriesOrder": 33,
+  "language": "neutral",
+  "description": "Language-independent graph reasoning: BFS versus Dijkstra, multi-source BFS, tree conditions, cycle detection, Kahn's algorithm and counting problems.",
+  "source": "LeetCode problem set and discuss; NeetCode roadmap; Cracking the Coding Interview; CLRS (graph algorithms)",
+  "estimatedMinutes": 18,
+  "questions": [
+    {
+      "id": "graph-match",
+      "concept": "Graphs",
+      "type": "matrix",
+      "difficulty": 1,
+      "prompt": "Match each problem with the standard graph technique.",
+      "left": [
+        {
+          "id": "a",
+          "text": "Number of islands"
+        },
+        {
+          "id": "b",
+          "text": "Shortest path in an unweighted graph"
+        },
+        {
+          "id": "c",
+          "text": "Course schedule (can all courses be finished)"
+        },
+        {
+          "id": "d",
+          "text": "Clone graph"
+        },
+        {
+          "id": "e",
+          "text": "Rotting oranges (minutes until all rot)"
+        }
+      ],
+      "right": [
+        {
+          "id": "p",
+          "text": "DFS or BFS flood fill counting components"
+        },
+        {
+          "id": "q",
+          "text": "BFS, since the first time a node is reached is the shortest"
+        },
+        {
+          "id": "r",
+          "text": "Kahn's algorithm or DFS cycle detection"
+        },
+        {
+          "id": "s",
+          "text": "DFS or BFS with a map from old node to copy"
+        },
+        {
+          "id": "t",
+          "text": "Multi-source BFS, level by level"
+        },
+        {
+          "id": "u",
+          "text": "Dijkstra with a priority queue"
+        }
+      ],
+      "pairs": {
+        "a": "p",
+        "b": "q",
+        "c": "r",
+        "d": "s",
+        "e": "t"
+      },
+      "explanation": "Name the technique and the data structure it needs: flood fill needs a visited marker, BFS a queue, topological sort in-degrees or colours."
+    },
+    {
+      "id": "rotting",
+      "concept": "Multi-source BFS",
+      "type": "integer",
+      "difficulty": 2,
+      "prompt": "In the grid [[2,1,1],[1,1,0],[0,1,1]], 2 is a rotten orange, 1 is fresh, 0 is empty. Each minute, rot spreads to the 4 neighbours of every rotten orange. How many minutes until no fresh orange remains?",
+      "answer": 4,
+      "tolerance": 0,
+      "explanation": "Minute 1 rots (0,1) and (1,0); minute 2 rots (0,2) and (1,1); minute 3 rots (2,1); minute 4 rots (2,2). That is the BFS depth from the single source.",
+      "unit": "minutes"
+    },
+    {
+      "id": "multi-source",
+      "concept": "Multi-source BFS",
+      "type": "single",
+      "difficulty": 3,
+      "prompt": "Why enqueue every rotten orange at the start (distance 0) instead of running a separate BFS from each?",
+      "options": [
+        {
+          "id": "a",
+          "text": "One BFS gives every cell its nearest-source distance.",
+          "why": "Correct: all sources expand in lockstep, so each cell is first reached from its closest source."
+        },
+        {
+          "id": "b",
+          "text": "It lets you swap the queue for a recursive DFS and keep the levels.",
+          "why": "DFS does not preserve distance order; the queue is what gives levels."
+        },
+        {
+          "id": "c",
+          "text": "It is required to detect cycles in the grid before spreading.",
+          "why": "Cycle detection plays no part in this problem."
+        },
+        {
+          "id": "d",
+          "text": "It means you no longer need any visited marker anywhere in the grid.",
+          "why": "You still need to mark cells so they are not queued twice."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "The trick generalises: walls and gates, distance to nearest zero, 01 matrix. Add a virtual super-source in your head."
+    },
+    {
+      "id": "visited",
+      "concept": "Graphs",
+      "type": "assertion",
+      "difficulty": 1,
+      "prompt": "Evaluate the assertion and the reason.",
+      "assertion": "Graph DFS needs a visited set to terminate, whereas a tree DFS usually does not.",
+      "reason": "A graph can contain cycles, so you can return to a node you already explored.",
+      "correct": [
+        "a"
+      ],
+      "whys": {
+        "a": "Correct: without marking, a cycle makes the traversal loop forever; a tree has no cycles.",
+        "b": "R is the direct reason, so \"does not explain\" is wrong.",
+        "c": "R is true, so this is wrong.",
+        "d": "A is true, so this is wrong."
+      },
+      "explanation": "In a tree you can only go to children, so you never revisit; in a graph you must remember what you have seen."
+    },
+    {
+      "id": "bfs-weighted",
+      "concept": "Graphs",
+      "type": "assertion",
+      "difficulty": 2,
+      "prompt": "Evaluate the assertion and the reason.",
+      "assertion": "Plain BFS finds the cheapest path in a graph whose edges have different positive weights.",
+      "reason": "BFS visits nodes in increasing order of the number of edges from the source.",
+      "correct": [
+        "d"
+      ],
+      "whys": {
+        "a": "A is false, so no explanation can hold.",
+        "b": "A is false, so both-true options cannot be right.",
+        "c": "R is true, so option c is wrong.",
+        "d": "Correct: BFS minimises the number of edges, not total weight, so use Dijkstra (priority queue) for weighted edges."
+      },
+      "explanation": "Use 0-1 BFS with a double-ended queue when weights are only 0 or 1, and Dijkstra for general non-negative weights."
+    },
+    {
+      "id": "cycle-detect",
+      "concept": "Topological sort",
+      "type": "assertion",
+      "difficulty": 2,
+      "prompt": "Evaluate the assertion and the reason.",
+      "assertion": "Both Kahn's algorithm and DFS with three colours can detect a cycle in a directed graph.",
+      "reason": "Kahn's algorithm reports a cycle when it outputs fewer nodes than the graph has.",
+      "correct": [
+        "b"
+      ],
+      "whys": {
+        "a": "R only describes one of the two methods and does not explain why DFS also works.",
+        "b": "Correct: both are true, but R explains only Kahn's test, not the statement about both methods.",
+        "c": "A is true, so this is wrong.",
+        "d": "A is true, so this is wrong."
+      },
+      "explanation": "DFS reports a cycle when it meets a node that is still on the current path (a back edge)."
+    },
+    {
+      "id": "kahn-reason",
+      "concept": "Topological sort",
+      "type": "assertion",
+      "difficulty": 3,
+      "prompt": "Evaluate the assertion and the reason.",
+      "assertion": "Kahn's algorithm processes fewer than n nodes exactly when the directed graph has a cycle.",
+      "reason": "On a cycle, every node of the cycle starts with in-degree zero.",
+      "correct": [
+        "c"
+      ],
+      "whys": {
+        "a": "R is false, so it cannot explain A.",
+        "b": "R is false, so no both-true option applies.",
+        "c": "Correct: A is true, but R is false: every node on a cycle has an incoming edge from the cycle, so none of them ever reaches in-degree zero.",
+        "d": "A is true, so d is wrong."
+      },
+      "explanation": "Cycle nodes block each other: each waits for another cycle node to be processed first."
+    },
+    {
+      "id": "kahn-left",
+      "concept": "Topological sort",
+      "type": "integer",
+      "difficulty": 3,
+      "prompt": "Edges: 0->1, 1->2, 2->1, 2->3 (4 nodes). Kahn's algorithm starts with the nodes of in-degree 0. How many nodes does it leave unprocessed when it finishes?",
+      "answer": 3,
+      "tolerance": 0,
+      "explanation": "Only node 0 has in-degree 0. Removing it lowers node 1 from 2 to 1, which is not zero, so the algorithm stops with nodes 1, 2 and 3 unprocessed. Nodes 1 and 2 form the cycle; node 3 is stuck behind it.",
+      "unit": "nodes"
+    },
+    {
+      "id": "topo-orders",
+      "concept": "Topological sort",
+      "type": "integer",
+      "difficulty": 2,
+      "prompt": "A DAG has edges 0->1, 0->2, 1->3, 2->3. How many different valid topological orders does it have?",
+      "answer": 2,
+      "tolerance": 0,
+      "explanation": "Node 0 must come first and 3 last; nodes 1 and 2 can appear in either order: 0,1,2,3 and 0,2,1,3.",
+      "unit": "orders"
+    },
+    {
+      "id": "clone-graph",
+      "concept": "Clone graph",
+      "type": "single",
+      "difficulty": 2,
+      "prompt": "In clone graph, why keep a map from each original node to its copy?",
+      "options": [
+        {
+          "id": "a",
+          "text": "It lets you sort the neighbours before copying.",
+          "why": "The map has nothing to do with ordering."
+        },
+        {
+          "id": "b",
+          "text": "It reduces memory because copies share the originals' neighbour lists.",
+          "why": "Copies must have their own neighbour lists, or it is not a deep copy."
+        },
+        {
+          "id": "c",
+          "text": "It is only needed for directed graphs.",
+          "why": "Undirected graphs have cycles on every edge, so they need the map even more."
+        },
+        {
+          "id": "d",
+          "text": "It stops cycles and shared neighbours being copied twice.",
+          "why": "Correct: the map both prevents infinite recursion on cycles and reuses a copy for a node reached by two routes."
+        }
+      ],
+      "correct": [
+        "d"
+      ],
+      "explanation": "Register the copy before recursing into the neighbours; that ordering is what breaks the cycle."
+    },
+    {
+      "id": "bfs-facts",
+      "concept": "BFS properties",
+      "type": "multi",
+      "difficulty": 2,
+      "prompt": "Which statements about BFS on an unweighted graph are true? Select all that apply.",
+      "options": [
+        {
+          "id": "a",
+          "text": "The first time BFS reaches a node is along a shortest path in number of edges.",
+          "why": "Correct: nodes are reached in non-decreasing order of distance."
+        },
+        {
+          "id": "b",
+          "text": "With an adjacency list it runs in O(V + E).",
+          "why": "Correct: each vertex is queued once and each edge examined once or twice."
+        },
+        {
+          "id": "c",
+          "text": "The queue can hold at most the nodes of two adjacent levels at once.",
+          "why": "Correct: the queue contains nodes of level d and level d+1 only."
+        },
+        {
+          "id": "d",
+          "text": "It must use recursion, otherwise the visited set does not work.",
+          "why": "False: BFS is iterative with a queue; recursion plays no part."
+        }
+      ],
+      "correct": [
+        "a",
+        "b",
+        "c"
+      ],
+      "explanation": "These three facts are why BFS is the default for fewest-steps questions."
+    },
+    {
+      "id": "word-ladder",
+      "concept": "Shortest path in implicit graphs",
+      "type": "integer",
+      "difficulty": 2,
+      "prompt": "Word ladder: change one letter per step, every intermediate word must be in the list [hot, dot, dog, lot, log, cog]. How many words are in the shortest sequence from \"hit\" to \"cog\", counting both ends?",
+      "answer": 5,
+      "tolerance": 0,
+      "explanation": "hit -> hot -> dot -> dog -> cog (or via lot and log) has 5 words. Treat every word as a node and every one-letter change as an edge, then run BFS.",
+      "unit": "words"
+    },
+    {
+      "id": "valid-tree",
+      "concept": "Graph properties",
+      "type": "multi",
+      "difficulty": 2,
+      "prompt": "An undirected graph has n nodes. Which condition sets, taken on their own, prove it is a tree? Select all that apply.",
+      "options": [
+        {
+          "id": "a",
+          "text": "It is connected and has exactly n - 1 edges.",
+          "why": "Correct: a connected graph needs at least n - 1 edges, and exactly n - 1 leaves no room for a cycle."
+        },
+        {
+          "id": "b",
+          "text": "It has no cycle and has exactly n - 1 edges.",
+          "why": "Correct: an acyclic graph with n - 1 edges must be connected."
+        },
+        {
+          "id": "c",
+          "text": "It is connected and has exactly n edges.",
+          "why": "False: n edges on n connected nodes means exactly one cycle."
+        },
+        {
+          "id": "d",
+          "text": "It has no cycle and every node has an edge.",
+          "why": "False: two separate acyclic components still satisfy this, so it need not be connected."
+        }
+      ],
+      "correct": [
+        "a",
+        "b"
+      ],
+      "explanation": "Any two of \"connected\", \"acyclic\", \"n - 1 edges\" imply the third."
+    },
+    {
+      "id": "undirected-cycle",
+      "concept": "Graph properties",
+      "type": "single",
+      "difficulty": 2,
+      "prompt": "What must a DFS cycle check handle on an undirected graph that the directed version does not?",
+      "options": [
+        {
+          "id": "a",
+          "text": "It must run twice, once on the graph and once on its reverse.",
+          "why": "Reversing an undirected graph changes nothing, so a second run adds nothing."
+        },
+        {
+          "id": "b",
+          "text": "It must ignore the edge back to the node it just came from.",
+          "why": "Correct: every undirected edge appears in both directions, so the parent would otherwise look like a cycle."
+        },
+        {
+          "id": "c",
+          "text": "It must use three colours instead of a plain visited set.",
+          "why": "Three colours are for directed graphs; undirected graphs need only the parent check."
+        },
+        {
+          "id": "d",
+          "text": "It must sort every adjacency list before it starts the search.",
+          "why": "Sorting has no effect on whether a cycle exists."
+        }
+      ],
+      "correct": [
+        "b"
+      ],
+      "explanation": "Track the parent in the recursion. With union-find, an edge whose endpoints are already connected closes a cycle."
+    },
+    {
+      "id": "bfs-fill",
+      "concept": "Graphs",
+      "type": "fill",
+      "difficulty": 1,
+      "prompt": "Complete the BFS description.",
+      "text": "BFS uses a {1} (first in, first out) and runs in O(V + E) on an adjacency {2}; mark a node visited when you {3} it so it is never queued twice.",
+      "blanks": {
+        "1": "queue",
+        "2": "list",
+        "3": "enqueue"
+      },
+      "bank": [
+        "queue",
+        "stack",
+        "list",
+        "matrix",
+        "enqueue",
+        "dequeue"
+      ],
+      "explanation": "An adjacency matrix would make BFS O(V^2). Marking at enqueue time keeps the queue free of duplicates."
+    },
+    {
+      "id": "bfs-pseudo",
+      "concept": "Shortest path in implicit graphs",
+      "type": "code",
+      "difficulty": 2,
+      "prompt": "Write pseudocode for bfsDistance(adj, start, goal), which returns the fewest edges from start to goal in an unweighted graph given as an adjacency list, or -1 if goal is unreachable.",
+      "language": "pseudocode",
+      "starter": "function bfsDistance(adj, start, goal):\n    ",
+      "checks": [
+        {
+          "label": "uses a queue seeded with the start node",
+          "pattern": "queue"
+        },
+        {
+          "label": "keeps a visited set or distance table",
+          "pattern": "visited|seen|dist"
+        },
+        {
+          "label": "loops until the queue is empty",
+          "pattern": "while"
+        },
+        {
+          "label": "visits each neighbour of the removed node",
+          "pattern": "for[\\s\\S]*adj|neighbou?r"
+        },
+        {
+          "label": "returns the distance when the goal is reached and -1 otherwise",
+          "pattern": "return[\\s\\S]*return\\s+-1|return\\s+-1"
+        }
+      ],
+      "model": "function bfsDistance(adj, start, goal):\n    dist = map with dist[start] = 0\n    queue = [start]\n    while queue is not empty:\n        u = remove first of queue\n        if u == goal:\n            return dist[u]\n        for v in adj[u]:\n            if v not in dist:\n                dist[v] = dist[u] + 1\n                add v to end of queue\n    return -1",
+      "explanation": "The first time BFS reaches the goal is along a shortest path, so you can return immediately. The distance table doubles as the visited set."
+    }
+  ]
+}

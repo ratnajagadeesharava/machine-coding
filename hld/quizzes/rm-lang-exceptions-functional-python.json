@@ -1,0 +1,488 @@
+{
+  "id": "rm-lang-exceptions-functional-python",
+  "title": "Language core: exceptions, context managers and generators (Python)",
+  "topic": "Interview roadmap",
+  "series": "interview-roadmap-python",
+  "seriesTitle": "Interview roadmap: Python and FastAPI",
+  "seriesOrder": 12,
+  "seriesDescription": "Python and FastAPI interview topics in JEE-Advanced style: integer, assertion-reason, matrix match, fill-in-the-blanks, short Python/SQL code and multi-correct questions. Python only: nothing here mixes in Java.",
+  "language": "python",
+  "description": "try/except/else/finally, exception hierarchy and chaining, context managers, comprehensions, generators and lazy iteration, plus the usual finally and default-argument traps.",
+  "source": "Python docs: built-in exceptions and hierarchy, errors and exceptions tutorial, contextlib, itertools, generators; Real Python; Fluent Python (Ramalho); GeeksforGeeks and Toptal Python interview lists",
+  "estimatedMinutes": 17,
+  "questions": [
+    {
+      "id": "contextmanager-open",
+      "concept": "Resource handling",
+      "type": "code",
+      "difficulty": 2,
+      "prompt": "Write a Python context manager function opened(path) that opens a text file, yields it, and always closes it, so it can be used as: with opened(\"a.txt\") as f: ...  (write the function only).",
+      "language": "python",
+      "starter": "from contextlib import contextmanager\n",
+      "checks": [
+        {
+          "label": "uses @contextmanager or a class with __enter__",
+          "pattern": "(@\\s*(contextlib\\.)?contextmanager|__enter__)"
+        },
+        {
+          "label": "yields the file (or returns self)",
+          "pattern": "(yield\\b|return\\s+self)"
+        },
+        {
+          "label": "guarantees closing (finally, with open, or __exit__)",
+          "pattern": "(finally\\s*:|with\\s+open\\s*\\(|__exit__)"
+        },
+        {
+          "label": "opens the path",
+          "pattern": "open\\s*\\("
+        }
+      ],
+      "model": "@contextmanager\ndef opened(path):\n    f = open(path)\n    try:\n        yield f\n    finally:\n        f.close()",
+      "explanation": "A class defining __enter__ and __exit__ is equivalent. Putting yield inside with open(path) as f: also closes the file. Without try/finally an exception in the with-body would skip the cleanup after yield."
+    },
+    {
+      "id": "finally-order-py",
+      "concept": "Exceptions in Python",
+      "type": "single",
+      "difficulty": 2,
+      "prompt": "What does this Python code print?\ndef f():\n    try:\n        return \"try\"\n    finally:\n        print(\"finally\", end=\" \")\nprint(f())\nWhat is the output?",
+      "options": [
+        {
+          "id": "a",
+          "text": "try (then finally)",
+          "why": "finally runs before the function actually hands control back, so it prints first."
+        },
+        {
+          "id": "b",
+          "text": "finally try",
+          "why": "Correct: finally prints during the return, then print outputs the returned value."
+        },
+        {
+          "id": "c",
+          "text": "try",
+          "why": "The finally clause always runs on the way out, so something else is printed too."
+        },
+        {
+          "id": "d",
+          "text": "finally",
+          "why": "The returned string \"try\" is still printed by the outer print call."
+        }
+      ],
+      "correct": [
+        "b"
+      ],
+      "explanation": "try/except/else/finally: else runs only if no exception was raised, finally always runs. (Verified by running it.)"
+    },
+    {
+      "id": "try-clauses",
+      "concept": "Exceptions in Python",
+      "type": "fill",
+      "difficulty": 1,
+      "prompt": "Complete the Python exception clauses.",
+      "text": "In Python, the {1} clause of a try statement runs only when no exception occurred, and the {2} clause always runs; to re-raise with the original as the cause, write raise NewError from {3}.",
+      "blanks": {
+        "1": "else",
+        "2": "finally",
+        "3": "e"
+      },
+      "bank": [
+        "else",
+        "finally",
+        "e",
+        "except",
+        "None"
+      ],
+      "explanation": "else keeps the guarded region small so that only the risky call is covered by except. raise X from e sets __cause__; raise X from None suppresses the chain display."
+    },
+    {
+      "id": "generator-exhaustion",
+      "concept": "Generators and comprehensions",
+      "type": "single",
+      "difficulty": 2,
+      "prompt": "What does this Python print?\ng = (x * x for x in range(3))\nprint(list(g), list(g), sum(g))\nWhat is the output?",
+      "options": [
+        {
+          "id": "a",
+          "text": "[0, 1, 4] [0, 1, 4] 5",
+          "why": "That would be true for a list, not a generator; the iterator is consumed by the first list(g)."
+        },
+        {
+          "id": "b",
+          "text": "[0, 1, 4] [] 5",
+          "why": "sum(g) also sees an exhausted generator."
+        },
+        {
+          "id": "c",
+          "text": "[0, 1, 4] [] 0",
+          "why": "Correct: the first list drains the generator, so the second list and the sum see nothing."
+        },
+        {
+          "id": "d",
+          "text": "TypeError: generator is exhausted",
+          "why": "Python does not raise here; an exhausted generator simply yields nothing more."
+        }
+      ],
+      "correct": [
+        "c"
+      ],
+      "explanation": "Generators are one-shot iterators. If you need two passes, build a list, tee with itertools.tee, or recreate the generator. (Verified by running it.)"
+    },
+    {
+      "id": "chunks-generator",
+      "concept": "Generators and comprehensions",
+      "type": "code",
+      "difficulty": 2,
+      "prompt": "Write a Python generator function chunks(seq, n) that yields successive slices of length n from the sequence (the last one may be shorter).",
+      "language": "python",
+      "starter": "",
+      "checks": [
+        {
+          "label": "defines chunks as a function",
+          "pattern": "def\\s+chunks\\s*\\("
+        },
+        {
+          "label": "is a generator (yield)",
+          "pattern": "yield\\b"
+        },
+        {
+          "label": "slices the sequence",
+          "pattern": "(\\[[^\\]]*:[^\\]]*\\]|islice)"
+        },
+        {
+          "label": "steps through with range or a loop",
+          "pattern": "(range\\s*\\(|while|islice)"
+        }
+      ],
+      "model": "def chunks(seq, n):\n    for i in range(0, len(seq), n):\n        yield seq[i:i + n]",
+      "explanation": "itertools.batched(it, n) does this in Python 3.12+. A generator keeps memory flat because it produces one chunk at a time."
+    },
+    {
+      "id": "generator-lazy",
+      "concept": "Generators and comprehensions",
+      "type": "assertion",
+      "difficulty": 2,
+      "prompt": "Read the assertion (A) and the reason (R), then choose the option that fits.",
+      "assertion": "Calling a Python generator function runs none of its body until the first next() call.",
+      "reason": "A generator function computes all of its values into a list when it is called.",
+      "correct": [
+        "c"
+      ],
+      "whys": {
+        "a": "R is false, so it cannot explain A.",
+        "b": "R is false.",
+        "c": "Correct: A is true (the call just creates a generator object); R is false, since values are produced lazily one at a time.",
+        "d": "A is true."
+      },
+      "explanation": "That laziness lets generators model infinite sequences and stream large files without loading them into memory."
+    },
+    {
+      "id": "comprehension-scope",
+      "concept": "Generators and comprehensions",
+      "type": "assertion",
+      "difficulty": 3,
+      "prompt": "Read the assertion (A) and the reason (R), then choose the option that fits.",
+      "assertion": "In Python 3, the loop variable of a list comprehension remains visible in the enclosing scope after the comprehension ends.",
+      "reason": "In Python 2, list comprehension variables leaked into the enclosing scope.",
+      "correct": [
+        "d"
+      ],
+      "whys": {
+        "a": "A is false in Python 3.",
+        "b": "A is false in Python 3.",
+        "c": "R is true, so c is wrong.",
+        "d": "Correct: Python 3 gives comprehensions their own scope (A is false); R is true for Python 2."
+      },
+      "explanation": "A for loop statement still leaks its variable; only comprehensions and generator expressions have their own scope."
+    },
+    {
+      "id": "py-exception-hierarchy",
+      "concept": "Exceptions in Python",
+      "type": "multi",
+      "difficulty": 2,
+      "prompt": "Select all true statements about the Python exception hierarchy.",
+      "options": [
+        {
+          "id": "a",
+          "text": "A bare except: clause also catches KeyboardInterrupt.",
+          "why": "Correct: bare except catches BaseException, including KeyboardInterrupt and SystemExit."
+        },
+        {
+          "id": "b",
+          "text": "except Exception: catches KeyboardInterrupt.",
+          "why": "Wrong: KeyboardInterrupt derives from BaseException, not Exception, so it passes through."
+        },
+        {
+          "id": "c",
+          "text": "KeyError is a subclass of LookupError.",
+          "why": "Correct: KeyError and IndexError both derive from LookupError."
+        },
+        {
+          "id": "d",
+          "text": "except Exception: catches SystemExit raised by sys.exit().",
+          "why": "Wrong: SystemExit derives from BaseException, which is why sys.exit() is not swallowed by except Exception."
+        },
+        {
+          "id": "e",
+          "text": "FileNotFoundError is a subclass of OSError.",
+          "why": "Correct: since Python 3.3 IOError is an alias of OSError and FileNotFoundError is one of its subclasses."
+        }
+      ],
+      "correct": [
+        "a",
+        "c",
+        "e"
+      ],
+      "explanation": "Catch the narrowest exception you can; at most except Exception at a top-level boundary. Verified with issubclass checks."
+    },
+    {
+      "id": "exception-tools",
+      "concept": "Exceptions in Python",
+      "type": "matrix",
+      "difficulty": 2,
+      "prompt": "Match each Python feature to what it does.",
+      "left": [
+        {
+          "id": "a",
+          "text": "raise X from e"
+        },
+        {
+          "id": "b",
+          "text": "with statement"
+        },
+        {
+          "id": "c",
+          "text": "else clause of try"
+        },
+        {
+          "id": "d",
+          "text": "finally clause"
+        },
+        {
+          "id": "e",
+          "text": "Bare raise inside except"
+        }
+      ],
+      "right": [
+        {
+          "id": "p",
+          "text": "Chains the original error into __cause__"
+        },
+        {
+          "id": "q",
+          "text": "Calls __enter__ on entry and __exit__ even when the body fails"
+        },
+        {
+          "id": "r",
+          "text": "Runs only when the try body raised nothing"
+        },
+        {
+          "id": "s",
+          "text": "Always runs, whether or not an exception occurred"
+        },
+        {
+          "id": "t",
+          "text": "Re-raises the exception currently being handled"
+        },
+        {
+          "id": "u",
+          "text": "Turns the exception into a warning"
+        }
+      ],
+      "pairs": {
+        "a": "p",
+        "b": "q",
+        "c": "r",
+        "d": "s",
+        "e": "t"
+      },
+      "explanation": "Know which clause runs when: else on success only, finally always, bare raise to propagate unchanged."
+    },
+    {
+      "id": "sum-squares-evens",
+      "concept": "Comprehensions and lazy evaluation",
+      "type": "integer",
+      "difficulty": 2,
+      "prompt": "What does sum(n * n for n in range(1, 7) if n % 2 == 0) evaluate to?",
+      "answer": 56,
+      "tolerance": 0,
+      "explanation": "The even numbers are 2, 4 and 6, whose squares are 4 + 16 + 36 = 56."
+    },
+    {
+      "id": "flatten-count",
+      "concept": "Comprehensions and lazy evaluation",
+      "type": "integer",
+      "difficulty": 2,
+      "prompt": "What does len([v * 2 for sub in [[1, 2], [3], []] for v in sub if v * 2 > 2]) return?",
+      "answer": 2,
+      "tolerance": 0,
+      "explanation": "The doubled values are 2, 4 and 6; only 4 and 6 are greater than 2, so the list has 2 elements."
+    },
+    {
+      "id": "finally-return-value-py",
+      "concept": "Exceptions in Python",
+      "type": "integer",
+      "difficulty": 3,
+      "prompt": "Consider:\n\ndef f():\n    x = 1\n    try:\n        return x\n    finally:\n        x = 2\n\nWhat does f() return?",
+      "answer": 1,
+      "tolerance": 0,
+      "explanation": "The return value is evaluated before finally runs, so rebinding x afterwards does not change it."
+    },
+    {
+      "id": "group-by-length-py",
+      "concept": "Grouping",
+      "type": "code",
+      "difficulty": 2,
+      "prompt": "Given a list of strings words, write Python that builds a dict by_length mapping each length to the list of words with that length.",
+      "language": "python",
+      "checks": [
+        {
+          "label": "uses len",
+          "pattern": "len\\("
+        },
+        {
+          "label": "collects into lists",
+          "pattern": "defaultdict|setdefault|groupby|append|\\[\\s*\\w+\\s*\\]"
+        }
+      ],
+      "model": "from collections import defaultdict\nby_length = defaultdict(list)\nfor w in words:\n    by_length[len(w)].append(w)",
+      "explanation": "setdefault(len(w), []).append(w) and itertools.groupby over a sorted list also work."
+    },
+    {
+      "id": "finally-return-swallow-py",
+      "concept": "Exceptions in Python",
+      "type": "single",
+      "difficulty": 3,
+      "prompt": "What happens when this Python code runs?\n\ndef f():\n    try:\n        raise RuntimeError(\"x\")\n    finally:\n        return 7\n\nprint(f())\n\nWhat is the outcome?",
+      "options": [
+        {
+          "id": "a",
+          "text": "It prints 7 and the RuntimeError is discarded",
+          "why": "Correct: a return inside finally replaces the propagating exception."
+        },
+        {
+          "id": "b",
+          "text": "It raises RuntimeError: x after finally runs",
+          "why": "The return in finally cancels the exception, so it never propagates."
+        },
+        {
+          "id": "c",
+          "text": "It prints None because the try body failed",
+          "why": "The finally block returns 7 explicitly."
+        },
+        {
+          "id": "d",
+          "text": "SyntaxError: return is not allowed in finally",
+          "why": "It is legal (though discouraged and flagged by linters)."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Never return, break or continue inside finally: it silently swallows exceptions."
+    },
+    {
+      "id": "default-arg-eager",
+      "concept": "Evaluation order",
+      "type": "assertion",
+      "difficulty": 3,
+      "prompt": "Read the assertion (A) and the reason (R), then choose the option that fits.",
+      "assertion": "In Python, d.get(key, expensive()) calls expensive() even when key is present in d.",
+      "reason": "Python evaluates call arguments before the call is made.",
+      "correct": [
+        "a"
+      ],
+      "whys": {
+        "a": "Correct: the default argument is computed before get runs, so it is always evaluated.",
+        "b": "This option says both statements are true but R does not explain A, which does not match: the default argument is computed before get runs, so it is always evaluated.",
+        "c": "This option says A is true and R is false, which does not match: the default argument is computed before get runs, so it is always evaluated.",
+        "d": "This option says A is false and R is true, which does not match: the default argument is computed before get runs, so it is always evaluated."
+      },
+      "explanation": "Use an if/else or a conditional expression to compute the default only when needed."
+    },
+    {
+      "id": "with-order",
+      "concept": "Resource handling",
+      "type": "assertion",
+      "difficulty": 2,
+      "prompt": "Read the assertion (A) and the reason (R), then choose the option that fits.",
+      "assertion": "In \"with a() as x, b() as y:\" the context manager b is exited before a.",
+      "reason": "A context manager must define __enter__ and __exit__ methods.",
+      "correct": [
+        "b"
+      ],
+      "whys": {
+        "a": "This option says both statements are true and R explains A, which does not match: Both statements are true, but the exit order follows nesting (last entered, first exited), not the protocol methods.",
+        "b": "Correct: Both statements are true, but the exit order follows nesting (last entered, first exited), not the protocol methods.",
+        "c": "This option says A is true and R is false, which does not match: Both statements are true, but the exit order follows nesting (last entered, first exited), not the protocol methods.",
+        "d": "This option says A is false and R is true, which does not match: Both statements are true, but the exit order follows nesting (last entered, first exited), not the protocol methods."
+      },
+      "explanation": "Multiple context managers behave like nested with statements, so they unwind in reverse order."
+    },
+    {
+      "id": "map-lazy",
+      "concept": "Comprehensions and lazy evaluation",
+      "type": "single",
+      "difficulty": 3,
+      "prompt": "What does this Python code print?\n\nm = map(print, [1, 2])\nprint(\"x\")\n\nWhat is printed?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Only x, because nothing consumed the lazy map",
+          "why": "Correct: map returns an iterator; print is not called on the items until you iterate."
+        },
+        {
+          "id": "b",
+          "text": "1, 2 and then x, because map runs eagerly",
+          "why": "That would need map to run eagerly as it did in Python 2."
+        },
+        {
+          "id": "c",
+          "text": "x, then 1 and 2, printed when the program exits",
+          "why": "Nothing iterates the map object, so the items are never printed."
+        },
+        {
+          "id": "d",
+          "text": "A TypeError, because print returns None and cannot be mapped",
+          "why": "map does not care about the return values until it is consumed."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Wrap map in list() or loop over it to force evaluation; do not use map for side effects."
+    },
+    {
+      "id": "dictcomp-duplicate",
+      "concept": "Comprehensions and lazy evaluation",
+      "type": "single",
+      "difficulty": 2,
+      "prompt": "What does this Python code evaluate to?\n\n{len(s): s for s in [\"a\", \"bb\", \"cc\"]}\n\nWhat is the result?",
+      "options": [
+        {
+          "id": "a",
+          "text": "{1: 'a', 2: 'cc'}, since a later duplicate key overwrites",
+          "why": "Correct: the second value for key 2 replaces the first."
+        },
+        {
+          "id": "b",
+          "text": "{1: 'a', 2: 'bb'}, since the first value wins",
+          "why": "Dict assignment always overwrites, so the last value wins."
+        },
+        {
+          "id": "c",
+          "text": "A ValueError for the duplicate key 2",
+          "why": "Dict comprehensions allow repeated keys."
+        },
+        {
+          "id": "d",
+          "text": "{1: ['a'], 2: ['bb', 'cc']}, grouped automatically",
+          "why": "Nothing groups values; each key keeps a single value."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Unlike a collector that rejects duplicates, a dict comprehension silently keeps the last value."
+    }
+  ]
+}

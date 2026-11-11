@@ -1,0 +1,339 @@
+{
+  "id": "rm-conc-drills-java",
+  "title": "Concurrency in Java: code drills",
+  "topic": "Interview roadmap",
+  "language": "java",
+  "series": "interview-roadmap-java",
+  "seriesTitle": "Interview roadmap: Java and Spring Boot",
+  "seriesOrder": 23,
+  "seriesDescription": "Java and Spring Boot interview topics in JEE-Advanced style: integer, assertion-reason, matrix match, fill-in-the-blanks, short Java/SQL code and multi-correct questions. Java only: nothing here mixes in Python.",
+  "description": "Write-the-code drills: producer-consumer with BlockingQueue and wait/notify, Conditions, a thread-safe LRU cache, a token-bucket rate limiter, odd/even printing and print-in-order.",
+  "source": "Oracle Java docs (BlockingQueue, LinkedHashMap, Condition, CountDownLatch); Java Concurrency in Practice; Baeldung; GeeksforGeeks; LeetCode concurrency problems (print in order, odd/even printing)",
+  "estimatedMinutes": 18,
+  "questions": [
+    {
+      "id": "blocked-producer",
+      "concept": "Producer-consumer",
+      "type": "integer",
+      "difficulty": 1,
+      "prompt": "A producer thread calls put() for the numbers 1..10 on an ArrayBlockingQueue with capacity 3. No consumer is running. How many put() calls complete before the producer blocks?",
+      "answer": 3,
+      "tolerance": 0,
+      "explanation": "put() blocks when the queue is full, so exactly capacity (3) calls return and the fourth waits for a take(). That blocking is the back-pressure that makes bounded queues safe.",
+      "unit": "calls"
+    },
+    {
+      "id": "bq-prod-cons",
+      "concept": "Producer-consumer",
+      "type": "code",
+      "difficulty": 2,
+      "prompt": "Using a BlockingQueue<Integer> named q (already created, capacity 10), write a producer loop that puts 1..100 and then one -1 sentinel, and a consumer loop that takes items until it sees -1.",
+      "language": "java",
+      "checks": [
+        {
+          "label": "producer uses put(",
+          "pattern": "\\.put\\s*\\("
+        },
+        {
+          "label": "consumer uses take(",
+          "pattern": "\\.take\\s*\\("
+        },
+        {
+          "label": "sends and checks the -1 sentinel",
+          "pattern": "-1"
+        }
+      ],
+      "model": "// producer\nfor (int i = 1; i <= 100; i++) q.put(i);\nq.put(-1);\n// consumer\nwhile (true) {\n  int v = q.take();\n  if (v == -1) break;\n  process(v);\n}",
+      "explanation": "put/take block, so no manual locking or sleeping is needed. Both throw InterruptedException. offer/poll with timeouts are valid but need retry logic."
+    },
+    {
+      "id": "wait-notify-buffer",
+      "concept": "Producer-consumer",
+      "type": "code",
+      "difficulty": 3,
+      "prompt": "Write a Java class Buffer holding a Queue<Integer> q (a LinkedList) and a final int cap, with synchronized put(int x) and take() methods using wait() and notifyAll(). put must wait while the queue is full, take while it is empty. Both methods throw InterruptedException.",
+      "language": "java",
+      "checks": [
+        {
+          "label": "methods are synchronized",
+          "pattern": "synchronized"
+        },
+        {
+          "label": "waits in a while loop, not an if",
+          "pattern": "while\\s*\\(.*\\)\\s*\\{?\\s*wait\\s*\\("
+        },
+        {
+          "label": "signals with notifyAll or notify",
+          "pattern": "notify(All)?\\s*\\("
+        },
+        {
+          "label": "handles both the full and the empty condition",
+          "pattern": "size\\(\\)\\s*(==|>=)\\s*cap[\\s\\S]*isEmpty\\(\\)|isEmpty\\(\\)[\\s\\S]*size\\(\\)\\s*(==|>=)\\s*cap"
+        }
+      ],
+      "model": "synchronized void put(int x) throws InterruptedException {\n  while (q.size() == cap) wait();\n  q.add(x); notifyAll();\n}\nsynchronized int take() throws InterruptedException {\n  while (q.isEmpty()) wait();\n  int v = q.remove(); notifyAll(); return v;\n}",
+      "explanation": "Verified to run correctly with a producer and consumer thread. notifyAll is safer than notify because producers and consumers share one wait set. Using ReentrantLock with two Conditions (notFull, notEmpty) is the cleaner alternative.",
+      "starter": "class Buffer {\n  private final Queue<Integer> q = new LinkedList<>();\n  private final int cap = 5;\n  \n}"
+    },
+    {
+      "id": "while-not-if",
+      "concept": "wait/notify",
+      "type": "single",
+      "difficulty": 3,
+      "prompt": "In the wait/notify buffer, why must the guard be while (q.isEmpty()) wait(); rather than if (q.isEmpty()) wait();?",
+      "options": [
+        {
+          "id": "a",
+          "text": "A woken thread must re-test the condition, as another consumer may have taken the item or the wake-up was spurious.",
+          "why": "Correct: the condition can be false again by the time the woken thread reacquires the monitor."
+        },
+        {
+          "id": "b",
+          "text": "The Java compiler rejects a call to wait() that is not placed inside a loop body, so an if statement would not even compile.",
+          "why": "Nothing in the language requires a loop around wait()."
+        },
+        {
+          "id": "c",
+          "text": "The loop makes the monitor fair, so waiting threads wake in arrival order.",
+          "why": "Looping has no influence on fairness; it only re-tests the predicate."
+        },
+        {
+          "id": "d",
+          "text": "notify() will not wake any thread unless the guard around wait() is a loop.",
+          "why": "notify() wakes a waiter regardless of how the guard is written."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Always wait in a loop on the predicate. The same rule applies to Condition.await() with a ReentrantLock."
+    },
+    {
+      "id": "poison-pills",
+      "concept": "Producer-consumer",
+      "type": "integer",
+      "difficulty": 2,
+      "prompt": "One producer feeds a shared queue that 4 consumer threads read, and consumers stop when they take a poison pill. How many pills must the producer enqueue after the last real item so that every consumer terminates?",
+      "answer": 4,
+      "tolerance": 0,
+      "explanation": "A consumer that takes a pill exits and never takes another, so each consumer needs its own pill: 4. (Re-queueing one pill is the alternative.)",
+      "unit": "pills"
+    },
+    {
+      "id": "lru-linkedhashmap",
+      "concept": "LRU cache",
+      "type": "fill",
+      "difficulty": 2,
+      "prompt": "Complete the Java LRU recipe.",
+      "text": "Create a LinkedHashMap with accessOrder set to {1}, override {2} to return size() > capacity, and make it thread-safe by synchronizing every method or wrapping it with Collections.{3}.",
+      "blanks": {
+        "1": "true",
+        "2": "removeEldestEntry",
+        "3": "synchronizedMap"
+      },
+      "bank": [
+        "true",
+        "false",
+        "removeEldestEntry",
+        "removeLast",
+        "synchronizedMap",
+        "unmodifiableMap"
+      ],
+      "explanation": "With access order, get() moves the entry to the tail, so the head is the least recently used. removeEldestEntry is the hook called after each put. ConcurrentHashMap alone cannot give you LRU ordering."
+    },
+    {
+      "id": "lru-get-lock",
+      "concept": "LRU cache",
+      "type": "assertion",
+      "difficulty": 3,
+      "prompt": "Read the assertion (A) and the reason (R), then choose the correct option.",
+      "assertion": "In a LinkedHashMap with accessOrder=true, even get() needs the same lock as put().",
+      "reason": "In access-order mode get() relinks the entry to the end of the list, which is a structural modification.",
+      "correct": [
+        "a"
+      ],
+      "whys": {
+        "a": "Correct: get() mutates the linked list, so reads cannot run in parallel; a ReadWriteLock read lock would be wrong.",
+        "b": "R is the direct cause of A, so b understates the relationship.",
+        "c": "R is true, so c is wrong.",
+        "d": "A is true, so d is wrong."
+      },
+      "explanation": "This is why a ReadWriteLock does not help an LRU cache: every hit is a write to recency order."
+    },
+    {
+      "id": "java-lru",
+      "concept": "LRU cache",
+      "type": "code",
+      "difficulty": 3,
+      "prompt": "Write a Java class LruCache<K,V> with a constructor LruCache(int cap), synchronized V get(K k) and synchronized void put(K k, V v). Back it with a LinkedHashMap in access order that evicts the eldest entry when size exceeds cap.",
+      "language": "java",
+      "checks": [
+        {
+          "label": "uses an access-ordered LinkedHashMap",
+          "pattern": "0?\\.75f?\\s*,\\s*true\\s*\\)"
+        },
+        {
+          "label": "overrides removeEldestEntry with a size check",
+          "pattern": "removeEldestEntry[\\s\\S]*size\\(\\)\\s*>"
+        },
+        {
+          "label": "get and put are synchronized (or locked)",
+          "pattern": "synchronized|lock\\.lock|ReentrantLock|synchronizedMap"
+        }
+      ],
+      "model": "class LruCache<K, V> {\n  private final int cap;\n  private final LinkedHashMap<K, V> m;\n  LruCache(int cap) {\n    this.cap = cap;\n    m = new LinkedHashMap<>(16, 0.75f, true) {\n      protected boolean removeEldestEntry(Map.Entry<K, V> e) { return size() > LruCache.this.cap; }\n    };\n  }\n  synchronized V get(K k) { return m.get(k); }\n  synchronized void put(K k, V v) { m.put(k, v); }\n}",
+      "explanation": "Verified: after put a, put b, get a, put c with capacity 2 the cache holds {a, c}. Subclassing LinkedHashMap and wrapping in Collections.synchronizedMap is another accepted design.",
+      "starter": "class LruCache<K, V> {\n  \n}"
+    },
+    {
+      "id": "java-odd-even",
+      "concept": "Odd-even printing",
+      "type": "code",
+      "difficulty": 3,
+      "prompt": "Write a Java class OddEven with a field int next = 1, a final int max, and one synchronized method print(boolean odd) throws InterruptedException that two threads call (one with true, one with false) so numbers 1..max are printed alternately using wait() and notifyAll().",
+      "language": "java",
+      "checks": [
+        {
+          "label": "method is synchronized",
+          "pattern": "synchronized"
+        },
+        {
+          "label": "loops while next <= max",
+          "pattern": "while\\s*\\(\\s*next\\s*<=\\s*max"
+        },
+        {
+          "label": "prints and advances next",
+          "pattern": "println\\s*\\(\\s*next\\s*\\+\\+|print\\s*\\(\\s*next\\s*\\+\\+|next\\s*\\+\\+"
+        },
+        {
+          "label": "uses wait() and notifyAll()",
+          "pattern": "wait\\s*\\(\\s*\\)[\\s\\S]*notifyAll|notifyAll[\\s\\S]*wait\\s*\\(\\s*\\)"
+        }
+      ],
+      "model": "synchronized void print(boolean odd) throws InterruptedException {\n  while (next <= max) {\n    if ((next % 2 == 1) == odd) { System.out.println(next++); notifyAll(); }\n    else wait();\n  }\n}",
+      "explanation": "Verified for max = 9. The final notifyAll lets the other thread see next > max and exit. Two Semaphores are a simpler valid answer.",
+      "starter": "class OddEven {\n  private int next = 1;\n  private final int max;\n  OddEven(int max) { this.max = max; }\n  \n}"
+    },
+    {
+      "id": "token-bucket-java",
+      "concept": "Rate limiter",
+      "type": "code",
+      "difficulty": 3,
+      "prompt": "Write a thread-safe Java class TokenBucket(double cap, double rate) whose tokens start full and refill at rate tokens per second up to cap. boolean allow() refills lazily from the elapsed System.nanoTime(), consumes one token if at least one is available and returns true, otherwise false.",
+      "language": "java",
+      "checks": [
+        {
+          "label": "guards state (synchronized or a lock)",
+          "pattern": "synchronized|\\.lock\\s*\\(|ReentrantLock"
+        },
+        {
+          "label": "reads a monotonic clock",
+          "pattern": "nanoTime|currentTimeMillis"
+        },
+        {
+          "label": "caps the refill with Math.min",
+          "pattern": "Math\\.min\\s*\\("
+        },
+        {
+          "label": "consumes a token",
+          "pattern": "tokens\\s*-=\\s*1|tokens\\s*=\\s*tokens\\s*-\\s*1|tokens--"
+        }
+      ],
+      "model": "class TokenBucket {\n  private final double cap, rate;\n  private double tokens;\n  private long last = System.nanoTime();\n  TokenBucket(double cap, double rate) { this.cap = cap; this.rate = rate; this.tokens = cap; }\n  synchronized boolean allow() {\n    long now = System.nanoTime();\n    tokens = Math.min(cap, tokens + (now - last) / 1e9 * rate);\n    last = now;\n    if (tokens >= 1) { tokens -= 1; return true; }\n    return false;\n  }\n}",
+      "explanation": "Verified: a bucket of 3 answers true, true, true, false, false for five instant calls. Refill and consume are one read-modify-write, so they share the lock. An AtomicLong holding the next-allowed time with a CAS loop is the lock-free variant.",
+      "starter": "class TokenBucket {\n  \n}"
+    },
+    {
+      "id": "print-in-order-java",
+      "concept": "Thread ordering",
+      "type": "code",
+      "difficulty": 2,
+      "prompt": "Three threads run first(), second() and third() in an arbitrary start order, but the output must always be first, second, third. Given CountDownLatch l1 and l2 (each new CountDownLatch(1)), write the three methods; each prints its own name and may throw InterruptedException.",
+      "language": "java",
+      "checks": [
+        {
+          "label": "waits on a latch",
+          "pattern": "\\.await\\s*\\("
+        },
+        {
+          "label": "signals with countDown",
+          "pattern": "\\.countDown\\s*\\("
+        },
+        {
+          "label": "defines third",
+          "pattern": "void\\s+third\\s*\\("
+        },
+        {
+          "label": "prints in each method",
+          "pattern": "print(ln)?\\s*\\("
+        }
+      ],
+      "model": "void first() { System.out.println(\"first\"); l1.countDown(); }\nvoid second() throws InterruptedException { l1.await(); System.out.println(\"second\"); l2.countDown(); }\nvoid third() throws InterruptedException { l2.await(); System.out.println(\"third\"); }",
+      "explanation": "Each latch is a one-shot gate that later steps wait on. Verified with threads started in the order third, first, second. Semaphores with zero permits, or a monitor with a turn variable, also work.",
+      "starter": "CountDownLatch l1 = new CountDownLatch(1), l2 = new CountDownLatch(1);\n\n"
+    },
+    {
+      "id": "lru-keys-left",
+      "concept": "LRU cache",
+      "type": "integer",
+      "difficulty": 2,
+      "prompt": "An access-ordered LRU cache with capacity 2 receives put(1), put(2), get(1), put(3), put(4). What is the sum of the keys still cached?",
+      "answer": 7,
+      "tolerance": 0,
+      "unit": "sum",
+      "explanation": "After get(1) the order is 2, 1; put(3) evicts 2; put(4) evicts 1 (the least recently used), leaving 3 and 4, so the sum is 7 (verified with a LinkedHashMap)."
+    },
+    {
+      "id": "two-conditions",
+      "concept": "Condition variables",
+      "type": "single",
+      "difficulty": 2,
+      "prompt": "A bounded buffer uses one ReentrantLock with two Conditions, notFull and notEmpty, instead of wait() and notifyAll() on the buffer. What is the main benefit?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Condition.await() can be called without holding the lock, which saves a lock acquisition.",
+          "why": "await() requires the lock and releases it while waiting, like wait() does."
+        },
+        {
+          "id": "b",
+          "text": "Using two Conditions makes the lock fair, so waiting threads proceed in arrival order.",
+          "why": "Fairness is chosen with new ReentrantLock(true), not by the number of Conditions."
+        },
+        {
+          "id": "c",
+          "text": "Each Condition gets its own separate lock, so producers and consumers can never block each other at all.",
+          "why": "Both Conditions belong to the same lock; they only split the wait sets."
+        },
+        {
+          "id": "d",
+          "text": "Waiters are split into two groups, so signal() wakes only a thread that can proceed.",
+          "why": "Correct: a consumer signalling notFull never wakes other consumers, avoiding wasted wake-ups and the need for notifyAll."
+        }
+      ],
+      "correct": [
+        "d"
+      ],
+      "explanation": "Always await in a while loop on the predicate. A bounded buffer built this way is the textbook alternative to ArrayBlockingQueue."
+    },
+    {
+      "id": "bq-backpressure",
+      "concept": "Producer-consumer",
+      "type": "assertion",
+      "difficulty": 2,
+      "prompt": "Read the assertion (A) and the reason (R), then choose the correct option.",
+      "assertion": "A bounded BlockingQueue gives producers back-pressure when consumers fall behind.",
+      "reason": "A LinkedBlockingQueue stores its elements in linked nodes rather than in an array.",
+      "correct": [
+        "b"
+      ],
+      "whys": {
+        "a": "R is a true storage fact, but it does not explain why a full queue slows producers.",
+        "b": "Correct: both are true, but R is unrelated to A; put() blocks (or offer fails) because the queue is full.",
+        "c": "R is true, so option c (R false) is wrong.",
+        "d": "A is true, so option d (A false) is wrong."
+      },
+      "explanation": "Back-pressure comes from the capacity bound: put() blocks, offer() returns false, add() throws. An unbounded queue turns overload into memory growth instead."
+    }
+  ]
+}

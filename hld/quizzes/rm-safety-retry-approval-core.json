@@ -1,0 +1,410 @@
+{
+  "id": "rm-safety-retry-approval-core",
+  "title": "Agent safety: retries, least privilege, approvals and audit",
+  "topic": "Interview roadmap",
+  "language": "neutral",
+  "series": "interview-roadmap-core",
+  "seriesTitle": "Interview roadmap: language-independent topics",
+  "seriesDescription": "Language-independent interview topics (concepts, SQL, design, AI engineering): no Java and no Python code or library names.",
+  "seriesOrder": 105,
+  "description": "Bounded retries and backoff, validate-and-retry loops, constrained tool sets, idempotent actions, human approval for risky steps, append-only audit trails and data residency.",
+  "source": "Stripe idempotent requests docs; OWASP Top 10 for LLM Applications 2025; Google SRE book (retries and backoff)",
+  "estimatedMinutes": 16,
+  "questions": [
+    {
+      "id": "worst-calls",
+      "concept": "Validate and retry",
+      "type": "integer",
+      "difficulty": 1,
+      "prompt": "An agent workflow has 4 independent LLM steps. Each step allows the first try plus up to 2 retries. What is the worst-case number of LLM calls for one run?",
+      "answer": 12,
+      "unit": "calls",
+      "explanation": "Each step can use 1 + 2 = 3 calls, so 4 x 3 = 12. Bounded retries make worst-case cost and latency predictable."
+    },
+    {
+      "id": "backoff-total",
+      "concept": "Validate and retry",
+      "type": "integer",
+      "difficulty": 2,
+      "prompt": "A client retries a failed API call 4 times with exponential backoff, waiting 1 s, 2 s, 4 s and 8 s before the retries (no jitter). How many seconds are spent waiting in total in the worst case?",
+      "answer": 15,
+      "unit": "s",
+      "explanation": "1 + 2 + 4 + 8 = 15 s. In real systems add jitter so many clients do not retry in lockstep, and respect Retry-After headers."
+    },
+    {
+      "id": "idem-charges",
+      "concept": "Idempotent actions",
+      "type": "integer",
+      "difficulty": 1,
+      "prompt": "A client sends POST /payments three times, with the same Idempotency-Key each time, after network timeouts. The server finished processing the first request. How many charges are made?",
+      "answer": 1,
+      "unit": "charge",
+      "explanation": "The server stores the result under the key and replays it for the duplicates, so the customer is charged once. Without a key the retries could charge three times."
+    },
+    {
+      "id": "bounded-retry",
+      "concept": "Validate and retry",
+      "type": "assertion",
+      "difficulty": 1,
+      "prompt": "Read the assertion (A) and the reason (R), then choose the correct option.",
+      "assertion": "A validate-and-retry loop must have a maximum number of attempts.",
+      "reason": "An unbounded loop can repeat a failing, paid model call indefinitely.",
+      "correct": [
+        "a"
+      ],
+      "whys": {
+        "a": "Correct: a hard cap prevents runaway cost and latency, and forces a defined failure path.",
+        "b": "R is the reason itself.",
+        "c": "R is true.",
+        "d": "A is true."
+      },
+      "explanation": "After the cap, fall back (cheaper path, human, error) rather than loop."
+    },
+    {
+      "id": "structured-output",
+      "concept": "Validate and retry",
+      "type": "assertion",
+      "difficulty": 2,
+      "prompt": "Read the assertion (A) and the reason (R), then choose the correct option.",
+      "assertion": "Sending the validation error message back to the model on retry improves the chance the next attempt is valid.",
+      "reason": "Constrained decoding with a JSON schema can guarantee syntactically valid JSON.",
+      "correct": [
+        "b"
+      ],
+      "whys": {
+        "a": "R is true, but it concerns a different technique.",
+        "b": "Correct: the error tells the model what to fix (A true). Constrained decoding is a true but separate mechanism, and it guarantees syntax, not semantic correctness.",
+        "c": "R is true.",
+        "d": "A is true."
+      },
+      "explanation": "Use constrained decoding to cut format errors, and validators for business rules."
+    },
+    {
+      "id": "idem-key",
+      "concept": "Idempotent actions",
+      "type": "assertion",
+      "difficulty": 3,
+      "prompt": "Read the assertion (A) and the reason (R), then choose the correct option.",
+      "assertion": "Using an idempotency key makes retrying a non-idempotent POST safe.",
+      "reason": "The client should generate a brand-new key for each retry attempt of the same operation.",
+      "correct": [
+        "c"
+      ],
+      "whys": {
+        "a": "R is false, so it cannot explain A.",
+        "b": "R is false rather than merely unrelated.",
+        "c": "Correct: A is true, but R is false: the same key must be reused across retries of one operation, otherwise the server sees different operations.",
+        "d": "A is true."
+      },
+      "explanation": "New operation, new key; same operation retried, same key."
+    },
+    {
+      "id": "least-privilege",
+      "concept": "Constrained tool sets",
+      "type": "assertion",
+      "difficulty": 2,
+      "prompt": "Read the assertion (A) and the reason (R), then choose the correct option.",
+      "assertion": "Giving an agent every available tool makes it safer because it can recover from more errors.",
+      "reason": "Limiting tools to the minimum the task needs reduces the blast radius if the model is manipulated.",
+      "correct": [
+        "d"
+      ],
+      "whys": {
+        "a": "A is false.",
+        "b": "A is false.",
+        "c": "R is true, so this option is wrong.",
+        "d": "Correct: A is false (excessive agency is an OWASP LLM risk), R is true."
+      },
+      "explanation": "Scope tools per task and per user, with read-only variants where possible."
+    },
+    {
+      "id": "patterns",
+      "concept": "Safety patterns",
+      "type": "matrix",
+      "difficulty": 2,
+      "prompt": "Match each situation to the pattern that handles it.",
+      "left": [
+        {
+          "id": "a",
+          "text": "A payment call is retried after a network timeout"
+        },
+        {
+          "id": "b",
+          "text": "An agent proposes deleting 10,000 rows"
+        },
+        {
+          "id": "c",
+          "text": "An auditor asks who approved a refund last month"
+        },
+        {
+          "id": "d",
+          "text": "EU customer data must not leave the EU"
+        },
+        {
+          "id": "e",
+          "text": "The model returns malformed JSON"
+        }
+      ],
+      "right": [
+        {
+          "id": "p",
+          "text": "Idempotency key"
+        },
+        {
+          "id": "q",
+          "text": "Human approval gate"
+        },
+        {
+          "id": "r",
+          "text": "Append-only audit log"
+        },
+        {
+          "id": "s",
+          "text": "Region-pinned storage and model endpoint"
+        },
+        {
+          "id": "t",
+          "text": "Validate and retry with the error fed back"
+        },
+        {
+          "id": "u",
+          "text": "Cache warm-up"
+        }
+      ],
+      "pairs": {
+        "a": "p",
+        "b": "q",
+        "c": "r",
+        "d": "s",
+        "e": "t"
+      },
+      "explanation": "Each pattern answers one failure mode: duplicates, irreversibility, accountability, residency, format errors."
+    },
+    {
+      "id": "audit-fill",
+      "concept": "Audit and approval",
+      "type": "fill",
+      "difficulty": 2,
+      "prompt": "Complete the approval and audit rules.",
+      "text": "Approval gates should pause {1} steps such as payments or deletions; the audit log should be {2} and record who, what, when and the model {3} used.",
+      "blanks": {
+        "1": "irreversible",
+        "2": "append-only",
+        "3": "version"
+      },
+      "bank": [
+        "irreversible",
+        "append-only",
+        "version",
+        "cheap",
+        "editable"
+      ],
+      "explanation": "Record the actor, tool, arguments, result, approver, prompt and model versions and a trace id so any action can be reconstructed."
+    },
+    {
+      "id": "needs-approval",
+      "concept": "Audit and approval",
+      "type": "single",
+      "difficulty": 2,
+      "prompt": "Which agent action most clearly warrants a human approval step?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Wiring a large sum to a new beneficiary.",
+          "why": "Right: high-value, hard to reverse, and a common fraud pattern."
+        },
+        {
+          "id": "b",
+          "text": "Searching the public product documentation for a customer question.",
+          "why": "Read-only and low impact; approval would add only friction."
+        },
+        {
+          "id": "c",
+          "text": "Summarising an internal meeting transcript for the same user who requested it.",
+          "why": "Low risk and reversible; log it, do not gate it."
+        },
+        {
+          "id": "d",
+          "text": "Formatting a draft reply into bullet points before the user sends it manually.",
+          "why": "The user already approves by sending it."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Tier actions by reversibility and impact: auto-allow, allow with logging, require approval, deny. Approval fatigue is real, so gate sparingly."
+    },
+    {
+      "id": "residency",
+      "concept": "Data residency",
+      "type": "single",
+      "difficulty": 3,
+      "prompt": "EU customer records must stay in the EU, and your agent calls an LLM API. What is the best approach?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Use region-pinned endpoints and storage, and redact personal data before it leaves the region.",
+          "why": "Right: control where data is processed and stored, and minimise what is sent."
+        },
+        {
+          "id": "b",
+          "text": "Send everything to the cheapest global endpoint and rely on a note in the system prompt.",
+          "why": "A prompt cannot control where data is processed."
+        },
+        {
+          "id": "c",
+          "text": "Keep the data in the EU but store full prompts and logs in a US analytics tool for debugging.",
+          "why": "Traces and logs are data too and would leave the region."
+        },
+        {
+          "id": "d",
+          "text": "Encrypt the connection with TLS and then treat residency as already satisfied by the encryption.",
+          "why": "TLS protects transit, not the location of processing and storage."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Residency covers storage, processing, logs, backups and subprocessors. Involve legal for cross-border transfer rules."
+    },
+    {
+      "id": "audit-fields",
+      "concept": "Audit and approval",
+      "type": "multi",
+      "difficulty": 2,
+      "prompt": "Which fields belong in an agent audit-trail entry? Select all that apply.",
+      "options": [
+        {
+          "id": "a",
+          "text": "Actor or user id, timestamp and trace id.",
+          "why": "Right: who and when, linked to the trace."
+        },
+        {
+          "id": "b",
+          "text": "Tool name, arguments, result and approver (if any).",
+          "why": "Right: what was done and who allowed it."
+        },
+        {
+          "id": "c",
+          "text": "Model name, model version and prompt version.",
+          "why": "Right: needed to reproduce behaviour later."
+        },
+        {
+          "id": "d",
+          "text": "The raw API keys and passwords used by the tools.",
+          "why": "Never log secrets; log which credential id was used instead."
+        }
+      ],
+      "correct": [
+        "a",
+        "b",
+        "c"
+      ],
+      "explanation": "Make the log append-only or write-once and protect it from the agent itself."
+    },
+    {
+      "id": "structured-guarantee",
+      "concept": "Validate and retry",
+      "type": "truefalse",
+      "difficulty": 3,
+      "prompt": "True or false: schema-constrained decoding guarantees the output is valid JSON but not that its values are correct.",
+      "options": [
+        {
+          "id": "a",
+          "text": "True",
+          "why": "Correct: constraining tokens enforces structure, not truth or business rules, so you still validate values."
+        },
+        {
+          "id": "b",
+          "text": "False",
+          "why": "Structure is enforced; semantics are not."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Keep validators and verifiers for ranges, references and policy."
+    },
+    {
+      "id": "retry-email",
+      "concept": "Idempotent actions",
+      "type": "truefalse",
+      "difficulty": 2,
+      "prompt": "True or false: automatically retrying a \"send email\" tool call after a timeout is always safe.",
+      "options": [
+        {
+          "id": "a",
+          "text": "True",
+          "why": "The first attempt may have succeeded."
+        },
+        {
+          "id": "b",
+          "text": "False",
+          "why": "Correct: a timeout does not mean failure, so a blind retry can send duplicates unless the action is idempotent (for example via a message id)."
+        }
+      ],
+      "correct": [
+        "b"
+      ],
+      "explanation": "Make side effects idempotent or check status before retrying."
+    },
+    {
+      "id": "capped-backoff",
+      "concept": "Retries",
+      "type": "integer",
+      "difficulty": 2,
+      "prompt": "A client retries with exponential backoff, delay = min(30, 2^attempt) seconds for attempt = 0, 1, 2, 3, 4, 5 (no jitter). What is the total waiting time in seconds?",
+      "answer": 61,
+      "unit": "s",
+      "explanation": "Delays are 1, 2, 4, 8, 16 and min(30, 32) = 30, which sum to 61 s. The cap stops waits growing without bound; add jitter so many clients do not retry in lockstep."
+    },
+    {
+      "id": "retry-400",
+      "concept": "Retries",
+      "type": "truefalse",
+      "difficulty": 2,
+      "prompt": "True or false: a 400 Bad Request caused by a malformed payload is a good candidate for automatic retry with the same payload.",
+      "options": [
+        {
+          "id": "a",
+          "text": "True",
+          "why": "Incorrect: the same invalid payload will fail the same way, so retrying just wastes calls."
+        },
+        {
+          "id": "b",
+          "text": "False",
+          "why": "Right: retry only transient failures (timeouts, 429, 503) with backoff; fix or reject client errors instead."
+        }
+      ],
+      "correct": [
+        "b"
+      ],
+      "explanation": "For LLM output validation the 'retry' is different: you change the input by feeding the validation error back, and still cap attempts."
+    },
+    {
+      "id": "idem-insert-sql",
+      "concept": "Idempotent actions",
+      "type": "code",
+      "difficulty": 2,
+      "prompt": "Table payments has a UNIQUE column idempotency_key. Write a PostgreSQL statement that records a payment of 50 for the key 'k1' (columns idempotency_key, amount) but silently does nothing when that key was already used.",
+      "language": "sql",
+      "checks": [
+        {
+          "label": "inserts into payments",
+          "pattern": "insert\\s+into\\s+payments"
+        },
+        {
+          "label": "supplies the key and amount",
+          "pattern": "'k1'[\\s\\S]*\\b50\\b"
+        },
+        {
+          "label": "handles a duplicate key",
+          "pattern": "on\\s+conflict"
+        }
+      ],
+      "model": "INSERT INTO payments (idempotency_key, amount)\nVALUES ('k1', 50)\nON CONFLICT (idempotency_key) DO NOTHING;",
+      "explanation": "The unique constraint is what makes concurrent duplicates safe: the database lets exactly one insert win. Check the affected-row count (0 means a replay) and return the stored result instead of charging again. Storing the request payload hash next to the key also catches a client reusing one key for a different payment.",
+      "starter": "INSERT "
+    }
+  ]
+}

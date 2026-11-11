@@ -1,14 +1,15 @@
 {
-  "id": "rm-lang-strings-memory",
-  "title": "Language core: strings, immutability and memory",
+  "id": "rm-lang-strings-memory-java",
+  "title": "Language core: strings, immutability and memory (Java)",
   "topic": "Interview roadmap",
-  "series": "interview-roadmap",
-  "seriesTitle": "Interview roadmap: topic quizzes",
+  "series": "interview-roadmap-java",
+  "seriesTitle": "Interview roadmap: Java and Spring Boot",
   "seriesOrder": 13,
-  "seriesDescription": "Topic-by-topic JEE-style quizzes for the backend and AI-engineering interview roadmap: integer, assertion-reason, matrix match, fill-in-the-blanks, short code writing, plus multi-correct questions. Language core, concurrency, DSA, web frameworks, data access, databases, messaging, resilience, security, testing, system design, LLM and agent engineering.",
-  "description": "String pool and == vs equals, StringBuilder, immutable classes, Python str/tuple and join, JVM heap/stack/generations/G1, leak causes, reference counting plus cyclic GC and __slots__.",
-  "source": "JLS 3.10.5, 15.18.1 and 15.29; Oracle JVM GC Tuning Guide; JEP 122 (Metaspace) and JEP 248 (G1 default for server-class machines in JDK 9); java.lang.ref docs; Java docs: String; Python docs: gc, copy, data model, FAQ; Baeldung; Real Python; Toptal interview list",
-  "estimatedMinutes": 16,
+  "seriesDescription": "Java and Spring Boot interview topics in JEE-Advanced style: integer, assertion-reason, matrix match, fill-in-the-blanks, short Java/SQL code and multi-correct questions. Java only: nothing here mixes in Python.",
+  "language": "java",
+  "description": "String pool and == vs equals, StringBuilder, immutable classes, heap vs stack, generations, G1 and Metaspace, reference types, leak causes, reachability and shallow array clones.",
+  "source": "JLS 3.10.5, 15.18.1 and 15.29; Oracle JVM GC Tuning Guide; JEP 122 (Metaspace) and JEP 248 (G1 default for server-class machines in JDK 9); java.lang.ref docs; Effective Java (Bloch) items 17, 50; Baeldung; Toptal interview list",
+  "estimatedMinutes": 17,
   "questions": [
     {
       "id": "string-pool-count",
@@ -95,39 +96,6 @@
       ],
       "model": "StringBuilder sb = new StringBuilder();\nfor (int i = 0; i < n; i++) {\n  if (i > 0) sb.append(',');\n  sb.append(i);\n}\nString s = sb.toString();",
       "explanation": "Using s += i in a loop creates a new String each iteration, which is O(n squared) in total. String.join or Collectors.joining are the stream alternatives; StringBuffer is the synchronized, slower older sibling."
-    },
-    {
-      "id": "tuple-mutation",
-      "concept": "Mutable vs immutable strings",
-      "type": "single",
-      "difficulty": 3,
-      "prompt": "What does this Python print?\nt = (1, [2, 3])\ntry:\n    t[1] += [4]\nexcept TypeError:\n    print(\"err\", t)\nWhat is the output?",
-      "options": [
-        {
-          "id": "a",
-          "text": "err (1, [2, 3])",
-          "why": "The list was extended in place before the failing re-assignment to the tuple slot."
-        },
-        {
-          "id": "b",
-          "text": "err (1, [2, 3, 4])",
-          "why": "Correct: += mutates the inner list, then trying to store it back into the tuple raises TypeError."
-        },
-        {
-          "id": "c",
-          "text": "(1, [2, 3, 4]) with no error line",
-          "why": "Item assignment on a tuple always fails, even if the value is the same object."
-        },
-        {
-          "id": "d",
-          "text": "err (1, [2, 3, 4, 4])",
-          "why": "The list is extended once, not twice."
-        }
-      ],
-      "correct": [
-        "b"
-      ],
-      "explanation": "A tuple is immutable in its references, not in the objects it refers to. This is why a tuple containing a list is not hashable. (Verified by running it.)"
     },
     {
       "id": "why-string-immutable",
@@ -220,44 +188,11 @@
       "explanation": "Records automate most of this, but remember they are only shallowly immutable: a record with a List component is only immutable if you copy the list with List.copyOf."
     },
     {
-      "id": "join-vs-concat",
-      "concept": "Mutable vs immutable strings",
-      "type": "single",
-      "difficulty": 2,
-      "prompt": "What is the idiomatic way to concatenate a list of 100,000 small strings named parts in Python?",
-      "options": [
-        {
-          "id": "a",
-          "text": "\"\".join(parts) in one pass",
-          "why": "Correct: it computes the total size once and copies each piece once, so it is linear."
-        },
-        {
-          "id": "b",
-          "text": "sum(parts, \"\")",
-          "why": "sum rejects strings on purpose and raises TypeError telling you to use \"\".join."
-        },
-        {
-          "id": "c",
-          "text": "result = \"\"\nfor p in parts: result += p",
-          "why": "Each += may copy the whole string so far; CPython sometimes optimises it, but it is not guaranteed on other implementations."
-        },
-        {
-          "id": "d",
-          "text": "functools.reduce(lambda a, b: a + b, parts)",
-          "why": "Equivalent to the repeated + loop, creating many intermediate strings."
-        }
-      ],
-      "correct": [
-        "a"
-      ],
-      "explanation": "str is immutable, so building by repeated + is potentially quadratic. Use \"\".join(...), io.StringIO, or a list as the builder. (sum with strings verified to raise TypeError.)"
-    },
-    {
       "id": "jvm-memory",
       "concept": "Heap, stack and GC",
       "type": "matrix",
       "difficulty": 2,
-      "prompt": "Match each term with its description.",
+      "prompt": "Match each JVM term with its description.",
       "left": [
         {
           "id": "a",
@@ -277,7 +212,7 @@
         },
         {
           "id": "e",
-          "text": "Python cyclic GC (gc module)"
+          "text": "Thread stack"
         }
       ],
       "right": [
@@ -299,11 +234,11 @@
         },
         {
           "id": "t",
-          "text": "Finds unreachable reference cycles among container objects, supplementing reference counting"
+          "text": "Per-thread frames holding local variables and call state"
         },
         {
           "id": "u",
-          "text": "Per-thread frames holding local variables and call state"
+          "text": "Pool of interned string literals only"
         }
       ],
       "pairs": {
@@ -313,7 +248,7 @@
         "d": "s",
         "e": "t"
       },
-      "explanation": "The generational hypothesis (most objects die young) drives the design. G1 became the default collector in JDK 9 for server-class machines (JEP 248; JEP 523 later extends this to all environments). The thread stack, the sixth right item, is a separate area per thread (-Xss)."
+      "explanation": "Generational GC exploits the fact that most objects die young; stacks are per thread and freed on return."
     },
     {
       "id": "java-leaks",
@@ -384,58 +319,6 @@
       "explanation": "The variable a still references the first node, so it stays alive. After a.next = null nothing reaches b or c; their mutual cycle does not keep them reachable, so both are eligible: 2. Java uses reachability from GC roots, not reference counting."
     },
     {
-      "id": "slots-effect",
-      "concept": "Python memory",
-      "type": "single",
-      "difficulty": 2,
-      "prompt": "What happens when this Python code runs?\nclass S:\n    __slots__ = (\"x\", \"y\")\ns = S()\ns.z = 1\nWhat is the outcome?",
-      "options": [
-        {
-          "id": "a",
-          "text": "It works; z is stored in the instance __dict__",
-          "why": "A class with __slots__ has no per-instance __dict__ (unless \"__dict__\" is listed)."
-        },
-        {
-          "id": "b",
-          "text": "AttributeError is raised",
-          "why": "Correct: only the declared slots can be assigned, which also saves memory per instance."
-        },
-        {
-          "id": "c",
-          "text": "It is silently ignored",
-          "why": "Python raises instead of ignoring unknown attribute writes here."
-        },
-        {
-          "id": "d",
-          "text": "TypeError is raised at class definition",
-          "why": "The class defines fine; the error only appears on the illegal assignment."
-        }
-      ],
-      "correct": [
-        "b"
-      ],
-      "explanation": "__slots__ replaces the per-instance dict with fixed storage, cutting memory for millions of small objects. Drawbacks: no dynamic attributes, subclassing and multiple inheritance caveats, no weakrefs unless \"__weakref__\" is a slot. (Verified by running it.)"
-    },
-    {
-      "id": "refcount-cycles",
-      "concept": "Python memory",
-      "type": "assertion",
-      "difficulty": 3,
-      "prompt": "Read the assertion (A) and the reason (R), then choose the option that fits.",
-      "assertion": "In CPython, reference counting alone is enough to free objects that reference each other in a cycle.",
-      "reason": "CPython has a separate cyclic garbage collector for container objects.",
-      "correct": [
-        "d"
-      ],
-      "whys": {
-        "a": "A is false, so it cannot be explained.",
-        "b": "A is false.",
-        "c": "R is true, so c is wrong.",
-        "d": "Correct: a cycle keeps every count above zero, so A is false; that is exactly why the gc module exists (R is true)."
-      },
-      "explanation": "Refcounting frees most objects immediately and deterministically; the cyclic GC (generations 0-2) cleans up cycles later. Use weakref to avoid cycles in caches and observers."
-    },
-    {
       "id": "stack-heap",
       "concept": "Heap, stack and GC",
       "type": "assertion",
@@ -486,50 +369,6 @@
         "a"
       ],
       "explanation": "Precedence and associativity decide where numeric addition stops and concatenation starts. Also \"\" + 'a' + 1 gives \"a1\" but 'a' + 1 + \"\" gives \"98\". Verified by running it."
-    },
-    {
-      "id": "mutable-default-arg",
-      "concept": "Python memory",
-      "type": "integer",
-      "difficulty": 2,
-      "prompt": "Consider this Python code.\n\ndef add(x, acc=[]):\n    acc.append(x)\n    return len(acc)\n\nadd(1); add(2)\nprint(add(3))\n\nWhat number is printed?",
-      "answer": 3,
-      "tolerance": 0,
-      "explanation": "The default list is created once when the def statement runs and is shared by every call that omits acc, so after three calls it holds three items. Fix with acc=None and create the list inside the function. Verified by running it.",
-      "unit": "items"
-    },
-    {
-      "id": "shallow-vs-deep-copy",
-      "concept": "Python memory",
-      "type": "single",
-      "difficulty": 3,
-      "prompt": "What does this Python code print?\n\nimport copy\na = [[1], [2]]\nb = copy.copy(a)\nc = copy.deepcopy(a)\na[0].append(9)\nprint(b[0], c[0])\n\nWhat is the output?",
-      "options": [
-        {
-          "id": "a",
-          "text": "[1, 9] [1]",
-          "why": "Correct: copy.copy duplicates only the outer list, so b[0] is still the same inner list as a[0]; deepcopy cloned the inner lists too."
-        },
-        {
-          "id": "b",
-          "text": "[1] [1]",
-          "why": "Wrong: a shallow copy shares the inner objects, so the append through a[0] is visible through b[0]."
-        },
-        {
-          "id": "c",
-          "text": "[1, 9] [1, 9]",
-          "why": "Wrong: deepcopy recursively copies the inner lists, so c is unaffected by later changes to a."
-        },
-        {
-          "id": "d",
-          "text": "[1] [1, 9]",
-          "why": "Wrong: this reverses the two behaviours; the shallow copy is the one that still aliases the inner list."
-        }
-      ],
-      "correct": [
-        "a"
-      ],
-      "explanation": "list(a), a[:] and a.copy() are all shallow. Use copy.deepcopy for nested mutable data. Verified by running it."
     },
     {
       "id": "java-reference-types",
@@ -584,6 +423,91 @@
         "d": "s"
       },
       "explanation": "Soft for caches, weak for canonicalising maps and listener registries, phantom (or java.lang.ref.Cleaner) for post-mortem cleanup. The fifth right item is invented."
+    },
+    {
+      "id": "system-gc",
+      "concept": "Heap, stack and GC",
+      "type": "assertion",
+      "difficulty": 2,
+      "prompt": "Read the assertion (A) and the reason (R), then choose the option that fits.",
+      "assertion": "Calling System.gc() guarantees that all unreachable objects are collected immediately.",
+      "reason": "System.gc() is only a hint, and the JVM is free to ignore it.",
+      "correct": [
+        "d"
+      ],
+      "whys": {
+        "a": "This option says both statements are true and R explains A, which does not match: A is false because the call is merely a request; R is true.",
+        "b": "This option says both statements are true but R does not explain A, which does not match: A is false because the call is merely a request; R is true.",
+        "c": "This option says A is true and R is false, which does not match: A is false because the call is merely a request; R is true.",
+        "d": "Correct: A is false because the call is merely a request; R is true."
+      },
+      "explanation": "Never rely on System.gc() for correctness or tune around it; use the right collector and heap settings instead."
+    },
+    {
+      "id": "array-clone-shallow",
+      "concept": "Immutability",
+      "type": "single",
+      "difficulty": 3,
+      "prompt": "What does this Java code print?\n\nint[][] a = {{1}, {2}};\nint[][] b = a.clone();\na[0][0] = 9;\nSystem.out.println(b[0][0]);\n\nWhat is the output?",
+      "options": [
+        {
+          "id": "a",
+          "text": "9, as clone copies the outer array only",
+          "why": "Correct: clone is shallow; both outer arrays hold the same inner arrays."
+        },
+        {
+          "id": "b",
+          "text": "1, because clone makes a full deep copy of every nested array",
+          "why": "Array clone never copies the nested arrays."
+        },
+        {
+          "id": "c",
+          "text": "0, because the clone is a zero-initialised array of the same shape",
+          "why": "The clone copies the references, not default values."
+        },
+        {
+          "id": "d",
+          "text": "ArrayStoreException",
+          "why": "That exception relates to storing the wrong element type, not to clone."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Copy nested structures yourself (loop, Arrays.copyOf per row, or streams) when you need independence."
+    },
+    {
+      "id": "string-methods-return",
+      "concept": "Mutable vs immutable strings",
+      "type": "single",
+      "difficulty": 2,
+      "prompt": "What does this Java code print?\n\nString s = \"hi\";\ns.toUpperCase();\ns += \"!\";\nSystem.out.println(s);\n\nWhat is the output?",
+      "options": [
+        {
+          "id": "a",
+          "text": "hi!, as the new string is discarded",
+          "why": "Correct: String methods never change the receiver; the result must be assigned."
+        },
+        {
+          "id": "b",
+          "text": "HI!, since toUpperCase changes the original string in place",
+          "why": "Strings are immutable, so s is untouched."
+        },
+        {
+          "id": "c",
+          "text": "HI, because the += assignment replaces the whole value of s",
+          "why": "The += appends to the original lowercase s."
+        },
+        {
+          "id": "d",
+          "text": "Compile error, since the result of toUpperCase is unused and dropped",
+          "why": "Ignoring a return value is legal Java."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Every String \"mutation\" returns a new object, which is why immutability is safe for sharing and caching."
     }
   ]
 }

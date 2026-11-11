@@ -1,13 +1,14 @@
 {
-  "id": "rm-conc-threads-locks",
-  "title": "Concurrency: threads, locks and visibility",
+  "id": "rm-conc-threads-locks-java",
+  "title": "Concurrency in Java: threads, locks and visibility",
   "topic": "Interview roadmap",
-  "series": "interview-roadmap",
-  "seriesTitle": "Interview roadmap: topic quizzes",
+  "language": "java",
+  "series": "interview-roadmap-java",
+  "seriesTitle": "Interview roadmap: Java and Spring Boot",
   "seriesOrder": 20,
-  "seriesDescription": "Topic-by-topic JEE-style quizzes for the backend and AI-engineering interview roadmap: integer, assertion-reason, matrix match, fill-in-the-blanks, short code writing, plus multi-correct questions. Language core, concurrency, DSA, web frameworks, data access, databases, messaging, resilience, security, testing, system design, LLM and agent engineering.",
-  "description": "Thread lifecycle and states, GIL limits, synchronized vs ReentrantLock vs Python Lock, volatile, happens-before, atomics, CAS and check-then-act races.",
-  "source": "Oracle Java docs (Thread, Object.wait, java.util.concurrent, ReentrantLock); JLS 17 (memory model); Java Concurrency in Practice; Python docs: threading, GIL glossary; PEP 703 and PEP 779 (free-threaded CPython); Baeldung; GeeksforGeeks; DZone and InterviewBit multithreading lists",
+  "seriesDescription": "Java and Spring Boot interview topics in JEE-Advanced style: integer, assertion-reason, matrix match, fill-in-the-blanks, short Java/SQL code and multi-correct questions. Java only: nothing here mixes in Python.",
+  "description": "Thread lifecycle and states, run versus start, synchronized versus ReentrantLock, volatile, happens-before, atomics, CAS, double-checked locking and interrupts.",
+  "source": "Oracle Java docs (Thread, Object.wait, java.util.concurrent, ReentrantLock); JLS chapter 17 (memory model); Java Concurrency in Practice; Baeldung; GeeksforGeeks; DZone and InterviewBit multithreading lists",
   "estimatedMinutes": 16,
   "questions": [
     {
@@ -107,81 +108,6 @@
       "explanation": "Thread.State has six values; the sixth (TERMINATED) is the distractor here. A thread contending for a monitor is BLOCKED, while one parked by wait/join/LockSupport.park is WAITING."
     },
     {
-      "id": "gil-io",
-      "concept": "GIL and threads",
-      "type": "truefalse",
-      "difficulty": 1,
-      "prompt": "In CPython, a thread that is blocked waiting on a network socket releases the GIL, so Python threads can overlap I/O waits and speed up I/O-bound programs.",
-      "options": [
-        {
-          "id": "a",
-          "text": "True",
-          "why": "Correct: blocking I/O calls release the GIL, so other threads run while one waits."
-        },
-        {
-          "id": "b",
-          "text": "False",
-          "why": "The GIL is released around blocking system calls, so threading does help I/O-bound code."
-        }
-      ],
-      "correct": [
-        "a"
-      ],
-      "explanation": "The GIL only stops two threads executing Python bytecode at the same instant. Waiting on I/O is not executing bytecode, so threads still overlap waits. (Free-threaded CPython without a GIL, PEP 703, was experimental in 3.13 and became an officially supported but still optional separate build in 3.14 via PEP 779; the default build keeps the GIL.)"
-    },
-    {
-      "id": "cpu-bound-python",
-      "concept": "GIL and threads",
-      "type": "single",
-      "difficulty": 2,
-      "prompt": "A Python service must hash 4 GB of files on an 8-core machine using pure-Python-heavy CPU work. Which approach gives the best speed-up in standard CPython?",
-      "options": [
-        {
-          "id": "a",
-          "text": "Split the files across a ProcessPoolExecutor with about 8 workers.",
-          "why": "Correct: each process has its own interpreter and its own GIL, so work runs on all cores."
-        },
-        {
-          "id": "b",
-          "text": "Start 8 threading.Thread workers, one per core, and join them all at the end.",
-          "why": "Threads share one GIL, so CPU-bound bytecode still runs on one core at a time."
-        },
-        {
-          "id": "c",
-          "text": "Run the hashing in 8 asyncio tasks gathered together on one event loop.",
-          "why": "asyncio is cooperative on a single thread; CPU work never yields, so it is no faster."
-        },
-        {
-          "id": "d",
-          "text": "Lower sys.setswitchinterval so threads swap more often.",
-          "why": "A shorter switch interval only adds overhead; it does not allow parallel bytecode execution."
-        }
-      ],
-      "correct": [
-        "a"
-      ],
-      "explanation": "CPU-bound work needs processes (multiprocessing, ProcessPoolExecutor), a native extension that releases the GIL, or a free-threaded build. Note hashlib releases the GIL for large buffers, a nuance worth mentioning."
-    },
-    {
-      "id": "gil-not-atomic",
-      "concept": "GIL is not thread-safety",
-      "type": "assertion",
-      "difficulty": 2,
-      "prompt": "Read the assertion (A) and the reason (R), then choose the correct option.",
-      "assertion": "In CPython, several threads running counter += 1 on a shared int can lose updates even though the GIL exists.",
-      "reason": "The GIL can hand control to another thread between the bytecodes that load, add and store the value.",
-      "correct": [
-        "a"
-      ],
-      "whys": {
-        "a": "Correct: += compiles to separate load, add, store steps and a thread switch between them loses an update, which is exactly why the GIL does not make it safe.",
-        "b": "R is the actual mechanism behind A, so \"true but not the explanation\" understates it.",
-        "c": "R is true: bytecode-level switching between load, add and store is real, so R is not false.",
-        "d": "A is true, not false: GIL protects the interpreter internals, not your read-modify-write sequences."
-      },
-      "explanation": "The GIL protects CPython's internals. Compound operations such as +=, check-then-set on a dict, or append-after-length-check are not atomic. Use threading.Lock or a queue."
-    },
-    {
       "id": "lost-update-max",
       "concept": "Visibility and atomics",
       "type": "integer",
@@ -247,35 +173,6 @@
       ],
       "model": "if (lock.tryLock(1, TimeUnit.SECONDS)) {\n  try { doWork(); }\n  finally { lock.unlock(); }\n}",
       "explanation": "The unlock goes in finally, and the try starts only after the lock was acquired, otherwise you would unlock a lock you do not hold (IllegalMonitorStateException). tryLock(timeout) also throws InterruptedException."
-    },
-    {
-      "id": "py-account-lock",
-      "concept": "Python Lock",
-      "type": "code",
-      "difficulty": 2,
-      "prompt": "Write a Python class Account with self.balance = 0, a threading.Lock stored on the instance, and a method withdraw(amount) that returns False if funds are insufficient and otherwise subtracts the amount and returns True. The check and the subtraction must be atomic.",
-      "language": "python",
-      "checks": [
-        {
-          "label": "creates a threading.Lock",
-          "pattern": "Lock\\s*\\("
-        },
-        {
-          "label": "holds the lock with 'with' (or acquire/release)",
-          "pattern": "with\\s+self\\.\\w+|\\.acquire\\("
-        },
-        {
-          "label": "defines withdraw",
-          "pattern": "def\\s+withdraw\\s*\\("
-        },
-        {
-          "label": "subtracts the amount",
-          "pattern": "-=\\s*amount|=\\s*self\\.balance\\s*-\\s*amount"
-        }
-      ],
-      "model": "import threading\n\nclass Account:\n    def __init__(self):\n        self.balance = 0\n        self._lock = threading.Lock()\n\n    def withdraw(self, amount):\n        with self._lock:\n            if self.balance < amount:\n                return False\n            self.balance -= amount\n            return True",
-      "explanation": "Checking the balance outside the lock and subtracting inside it is still a check-then-act race. Use a context manager so the lock is released on every return path and exception.",
-      "starter": "import threading\n\nclass Account:\n    "
     },
     {
       "id": "reentrant-vs-sync",
@@ -425,39 +322,6 @@
       "explanation": "compareAndSet(expect, update) succeeds only if the current value equals expect, as one atomic hardware instruction. Retry loops around CAS give lock-free algorithms (and the ABA problem)."
     },
     {
-      "id": "py-check-then-act",
-      "concept": "Python thread-safety",
-      "type": "single",
-      "difficulty": 3,
-      "prompt": "Many threads run the code below against a shared dict cache. Which statement is accurate?\n\nif key not in cache:\n    cache[key] = compute(key)\nreturn cache[key]\n\nPick one.",
-      "options": [
-        {
-          "id": "a",
-          "text": "compute(key) can run twice for the same key, since check and store are separate steps.",
-          "why": "Correct: two threads can both see the key missing and both compute; each dict operation is atomic but the sequence is not."
-        },
-        {
-          "id": "b",
-          "text": "It is safe, because every dict operation is atomic under the GIL.",
-          "why": "Individual operations are atomic, but the two-step check-then-act is not."
-        },
-        {
-          "id": "c",
-          "text": "It raises RuntimeError: dictionary changed size during iteration of the cache.",
-          "why": "That error appears when iterating while mutating; there is no iteration here."
-        },
-        {
-          "id": "d",
-          "text": "It is safe as long as compute is a pure function without side effects.",
-          "why": "Purity avoids wrong values but not duplicate work or the race itself."
-        }
-      ],
-      "correct": [
-        "a"
-      ],
-      "explanation": "Guard the whole sequence with a Lock (or use a per-key lock / functools.lru_cache for pure functions). The same shape in Java is the containsKey-then-put bug."
-    },
-    {
       "id": "callable-vs-runnable",
       "concept": "Callable and Runnable",
       "type": "assertion",
@@ -533,25 +397,6 @@
       "explanation": "After catching InterruptedException, restore the status with Thread.currentThread().interrupt() unless you are really ending the thread. Verified by running it."
     },
     {
-      "id": "lock-owner-semantics",
-      "concept": "Locks",
-      "type": "assertion",
-      "difficulty": 3,
-      "prompt": "Read the assertion (A) and the reason (R), then choose the option that fits.",
-      "assertion": "A Python threading.Lock can be released by a thread other than the one that acquired it.",
-      "reason": "A Python threading.RLock must be released by the thread that owns it.",
-      "correct": [
-        "b"
-      ],
-      "whys": {
-        "a": "Not chosen: both statements are true, but R describes the contrast case and does not explain why Lock has no owner.",
-        "b": "Correct: both are true (Lock is a plain binary semaphore-like primitive with no owner, RLock records its owner and a recursion count), but R is a contrast rather than the explanation. Verified by running it.",
-        "c": "Not chosen: R is true; releasing an RLock from another thread raises RuntimeError.",
-        "d": "Not chosen: A is true; another thread may call release() on a locked Lock."
-      },
-      "explanation": "Use RLock for re-entrant code (a thread may acquire it again); a second acquire() of a plain Lock by the same thread deadlocks. Verified by running it."
-    },
-    {
       "id": "static-vs-instance-sync",
       "concept": "Locks",
       "type": "single",
@@ -583,6 +428,25 @@
         "a"
       ],
       "explanation": "Guarding one piece of state with both kinds of method leaves it unprotected. Use one explicit lock object for the shared data."
+    },
+    {
+      "id": "unlock-by-non-owner",
+      "concept": "Locks",
+      "type": "assertion",
+      "difficulty": 3,
+      "prompt": "Read the assertion (A) and the reason (R), then choose the correct option.",
+      "assertion": "Calling unlock() on a ReentrantLock from a thread that does not hold it throws IllegalMonitorStateException.",
+      "reason": "A ReentrantLock records its owning thread and a hold count, and only the owner may release it.",
+      "correct": [
+        "a"
+      ],
+      "whys": {
+        "a": "Correct: the lock tracks its owner, which is exactly why a non-owner release is rejected (verified by running it).",
+        "b": "R is not an unrelated fact: the recorded owner is the direct reason for the exception.",
+        "c": "R is true: ReentrantLock keeps an owner and a hold count, so option c is wrong.",
+        "d": "A is true: the exception is thrown, so option d (A false) is wrong."
+      },
+      "explanation": "A Semaphore has no owner, so any thread may release it. For a ReentrantLock, lock and unlock must pair up on the same thread, and unlock belongs in a finally block."
     }
   ]
 }

@@ -1,0 +1,393 @@
+{
+  "id": "rm-dsa-graphs-topo-python",
+  "title": "DSA in Python: graphs, BFS/DFS and topological sort",
+  "topic": "Interview roadmap",
+  "series": "interview-roadmap-python",
+  "seriesTitle": "Interview roadmap: Python and FastAPI",
+  "seriesDescription": "Python and FastAPI interview topics in JEE-Advanced style: integer, assertion-reason, matrix match, fill-in-the-blanks, short Python/SQL code and multi-correct questions. Python only: nothing here mixes in Java.",
+  "seriesOrder": 33,
+  "language": "python",
+  "description": "Python graph code: adjacency lists and their shared-list trap, grid DFS, Kahn's algorithm with deque, three-colour cycle detection and the recursion limit.",
+  "source": "Python documentation (collections.deque, defaultdict, sys.setrecursionlimit); LeetCode problem set; NeetCode roadmap; Cracking the Coding Interview",
+  "estimatedMinutes": 20,
+  "questions": [
+    {
+      "id": "adj-list",
+      "concept": "Graph representation",
+      "type": "code",
+      "difficulty": 1,
+      "prompt": "Write a Python function build_graph(n, edges) that returns an adjacency list (a list of lists) for an undirected graph with vertices 0..n-1.",
+      "language": "python",
+      "starter": "def build_graph(n, edges):\n    ",
+      "checks": [
+        {
+          "label": "creates one list per vertex",
+          "pattern": "\\[\\s*\\[\\s*\\]\\s+for|defaultdict|append\\(\\s*\\[\\s*\\]|\\{\\s*\\w+\\s*:\\s*\\[\\s*\\]"
+        },
+        {
+          "label": "loops over the edges",
+          "pattern": "for\\s+\\w+\\s*,\\s*\\w+\\s+in\\s+edges|for\\s+\\w+\\s+in\\s+edges"
+        },
+        {
+          "label": "adds both directions for an undirected edge",
+          "pattern": "(\\.append\\([\\s\\S]*){2}"
+        },
+        {
+          "label": "returns the structure",
+          "pattern": "return\\s+\\w+"
+        }
+      ],
+      "model": "def build_graph(n, edges):\n    adj = [[] for _ in range(n)]\n    for u, v in edges:\n        adj[u].append(v)\n        adj[v].append(u)\n    return adj",
+      "explanation": "Build each inner list separately with a comprehension. [[]] * n would put the same list in every slot."
+    },
+    {
+      "id": "islands",
+      "concept": "Graphs",
+      "type": "code",
+      "difficulty": 2,
+      "prompt": "Write a Python function num_islands(grid) for a grid of \"1\" (land) and \"0\" (water) strings; count the 4-directionally connected groups of land. You may modify the grid.",
+      "language": "python",
+      "starter": "def num_islands(grid):\n    ",
+      "checks": [
+        {
+          "label": "scans every cell with nested loops",
+          "pattern": "for\\s+\\w+\\s+in\\s+range[\\s\\S]*for\\s+\\w+\\s+in\\s+range"
+        },
+        {
+          "label": "starts a search only from unvisited land",
+          "pattern": "[\\'\"]1[\\'\"]"
+        },
+        {
+          "label": "marks visited cells (sink the land or use a set)",
+          "pattern": "=\\s*[\\'\"]0[\\'\"]|visited|seen"
+        },
+        {
+          "label": "explores the four neighbours with a bounds check",
+          "pattern": "[+-]\\s*1[\\s\\S]*[+-]\\s*1"
+        },
+        {
+          "label": "increments a counter once per island",
+          "pattern": "\\+=\\s*1|\\+\\+"
+        }
+      ],
+      "model": "def num_islands(grid):\n    R, C = len(grid), len(grid[0])\n    def sink(r, c):\n        if r < 0 or c < 0 or r >= R or c >= C or grid[r][c] != \"1\":\n            return\n        grid[r][c] = \"0\"\n        sink(r + 1, c); sink(r - 1, c); sink(r, c + 1); sink(r, c - 1)\n    count = 0\n    for r in range(R):\n        for c in range(C):\n            if grid[r][c] == \"1\":\n                count += 1\n                sink(r, c)\n    return count",
+      "explanation": "Sinking visited land acts as the visited set. For big grids use an explicit stack or deque, because the default recursion limit is about 1000 frames."
+    },
+    {
+      "id": "kahn",
+      "concept": "Topological sort",
+      "type": "code",
+      "difficulty": 3,
+      "prompt": "Write a Python function can_finish(n, prerequisites) where each pair [a, b] means course b must be taken before a. Return True if all n courses can be finished (no cycle), using Kahn's algorithm with in-degrees and a deque.",
+      "language": "python",
+      "starter": "from collections import deque, defaultdict\n\ndef can_finish(n, prerequisites):\n    ",
+      "checks": [
+        {
+          "label": "builds an adjacency list and in-degree counts",
+          "pattern": "indeg|in_deg|indegree"
+        },
+        {
+          "label": "seeds a deque with the zero in-degree nodes",
+          "pattern": "deque"
+        },
+        {
+          "label": "pops a node and decrements the in-degree of its neighbours",
+          "pattern": "-=\\s*1"
+        },
+        {
+          "label": "pushes a neighbour when its in-degree reaches zero",
+          "pattern": "==\\s*0"
+        },
+        {
+          "label": "compares the processed count with n",
+          "pattern": "==\\s*n|!=\\s*n|<\\s*n|>=\\s*n"
+        }
+      ],
+      "model": "from collections import deque, defaultdict\n\ndef can_finish(n, prerequisites):\n    adj, indeg = defaultdict(list), [0] * n\n    for a, b in prerequisites:\n        adj[b].append(a)\n        indeg[a] += 1\n    q = deque(i for i in range(n) if indeg[i] == 0)\n    done = 0\n    while q:\n        u = q.popleft()\n        done += 1\n        for v in adj[u]:\n            indeg[v] -= 1\n            if indeg[v] == 0:\n                q.append(v)\n    return done == n",
+      "explanation": "Nodes on a cycle never reach in-degree zero, so fewer than n nodes are processed. Recording each popped node gives a topological order."
+    },
+    {
+      "id": "cycle-colours",
+      "concept": "Topological sort",
+      "type": "code",
+      "difficulty": 3,
+      "prompt": "Write a Python function has_cycle(n, edges) for a directed graph with nodes 0..n-1 (edges are (u, v) pairs) using DFS with three states per node: unvisited, on the current path, finished.",
+      "language": "python",
+      "starter": "def has_cycle(n, edges):\n    ",
+      "checks": [
+        {
+          "label": "builds an adjacency list",
+          "pattern": "adj|graph|\\[\\s*\\[\\s*\\]|defaultdict"
+        },
+        {
+          "label": "keeps a state or colour per node",
+          "pattern": "state|colou?r|visiting|status"
+        },
+        {
+          "label": "treats a node on the current path as a cycle",
+          "pattern": "==\\s*1|visiting|grey|gray|on_stack|in_stack"
+        },
+        {
+          "label": "marks a node finished after exploring it",
+          "pattern": "=\\s*2|done|black|finished"
+        },
+        {
+          "label": "returns True when a cycle is found",
+          "pattern": "return\\s+True"
+        }
+      ],
+      "model": "def has_cycle(n, edges):\n    adj = [[] for _ in range(n)]\n    for a, b in edges:\n        adj[a].append(b)\n    state = [0] * n  # 0 new, 1 on the path, 2 finished\n    def dfs(u):\n        state[u] = 1\n        for v in adj[u]:\n            if state[v] == 1:\n                return True\n            if state[v] == 0 and dfs(v):\n                return True\n        state[u] = 2\n        return False\n    return any(state[u] == 0 and dfs(u) for u in range(n))",
+      "explanation": "Meeting a node that is still on the current path is a back edge, which is exactly a cycle. Meeting a finished node is harmless."
+    },
+    {
+      "id": "graph-structures",
+      "concept": "Graph representation",
+      "type": "matrix",
+      "difficulty": 1,
+      "prompt": "Match each Python structure with its role in graph algorithms.",
+      "left": [
+        {
+          "id": "a",
+          "text": "collections.deque"
+        },
+        {
+          "id": "b",
+          "text": "set() or [False] * n"
+        },
+        {
+          "id": "c",
+          "text": "defaultdict(list)"
+        },
+        {
+          "id": "d",
+          "text": "heapq with (distance, node) tuples"
+        },
+        {
+          "id": "e",
+          "text": "dict from old node to new node"
+        }
+      ],
+      "right": [
+        {
+          "id": "p",
+          "text": "The BFS queue (and Kahn's ready queue)"
+        },
+        {
+          "id": "q",
+          "text": "Constant-time visited marks"
+        },
+        {
+          "id": "r",
+          "text": "An adjacency list built on demand for sparse graphs"
+        },
+        {
+          "id": "s",
+          "text": "The frontier of Dijkstra's algorithm, ordered by distance"
+        },
+        {
+          "id": "t",
+          "text": "Original-to-copy lookup while cloning a graph"
+        },
+        {
+          "id": "u",
+          "text": "A dense adjacency matrix"
+        }
+      ],
+      "pairs": {
+        "a": "p",
+        "b": "q",
+        "c": "r",
+        "d": "s",
+        "e": "t"
+      },
+      "explanation": "Pick the structure that makes the main loop O(1) per step: deque for FIFO, set or list for visited, heapq for weighted frontiers."
+    },
+    {
+      "id": "bfs-fill",
+      "concept": "Graphs",
+      "type": "fill",
+      "difficulty": 1,
+      "prompt": "Complete the BFS description.",
+      "text": "BFS uses a collections.{1} so that q.{2}() removes from the front in O(1); it runs in O(V + E) on an adjacency list, and marks a node visited when it is {3} so it is never queued twice.",
+      "blanks": {
+        "1": "deque",
+        "2": "popleft",
+        "3": "enqueued"
+      },
+      "bank": [
+        "deque",
+        "list",
+        "popleft",
+        "pop",
+        "enqueued",
+        "dequeued"
+      ],
+      "explanation": "list.pop(0) would work but costs O(n) per call. Marking at dequeue time lets the same node sit in the queue many times."
+    },
+    {
+      "id": "deque-ops",
+      "concept": "Stack and deque",
+      "type": "integer",
+      "difficulty": 2,
+      "prompt": "A collections.deque q starts as deque([1, 2, 3]). It then runs q.appendleft(4), q.pop(), q.popleft(), q.appendleft(5). What does q[-1] return?",
+      "answer": 2,
+      "tolerance": 0,
+      "explanation": "After appendleft(4) the deque is [4, 1, 2, 3]; pop removes 3; popleft removes 4, leaving [1, 2]; appendleft(5) gives [5, 1, 2]. The last item is 2. I ran it to confirm."
+    },
+    {
+      "id": "shared-lists",
+      "concept": "Graph representation",
+      "type": "assertion",
+      "difficulty": 3,
+      "prompt": "Evaluate the assertion and the reason.",
+      "assertion": "adj = [[]] * n gives n independent empty adjacency lists.",
+      "reason": "Multiplying a list repeats references to the same inner object.",
+      "correct": [
+        "d"
+      ],
+      "whys": {
+        "a": "A is false, so no explanation can hold.",
+        "b": "A is false, so both-true options are out.",
+        "c": "R is true, so c is wrong.",
+        "d": "Correct: R is true, and it is exactly why A is false: all n slots point to one list, so adj[0].append(1) shows up in every slot."
+      },
+      "explanation": "Use [[] for _ in range(n)] or defaultdict(list). The same trap appears with grids built as [[0] * c] * r."
+    },
+    {
+      "id": "popleft-cost",
+      "concept": "Graphs",
+      "type": "assertion",
+      "difficulty": 2,
+      "prompt": "Evaluate the assertion and the reason.",
+      "assertion": "BFS written with collections.deque and popleft runs in O(V + E) on an adjacency list.",
+      "reason": "list.pop(0) takes O(n) time.",
+      "correct": [
+        "b"
+      ],
+      "whys": {
+        "a": "R explains why a list is slow, not why the deque version is linear.",
+        "b": "Correct: both are true, but R is about the slower alternative; the linear bound comes from handling each vertex and edge once.",
+        "c": "R is true, so c is wrong.",
+        "d": "A is true, so d is wrong."
+      },
+      "explanation": "With a list as the queue each pop(0) is O(n), which can turn BFS into O(V * (V + E)) in the worst case."
+    },
+    {
+      "id": "recursion-limit",
+      "concept": "DFS recursion limits",
+      "type": "assertion",
+      "difficulty": 2,
+      "prompt": "Evaluate the assertion and the reason.",
+      "assertion": "A recursive DFS over a path graph of 5,000 nodes can raise RecursionError in default Python.",
+      "reason": "sys.setrecursionlimit permanently enlarges the C stack, so raising it is always safe.",
+      "correct": [
+        "c"
+      ],
+      "whys": {
+        "a": "R is false, so it cannot explain A.",
+        "b": "R is false, so no both-true option applies.",
+        "c": "Correct: A is true (the default limit is about 1000 frames), but R is false: raising the limit does not grow the C stack, and deep recursion can still crash the interpreter.",
+        "d": "A is true, so d is wrong."
+      },
+      "explanation": "Prefer an explicit stack for deep graphs. Raising the recursion limit is a stopgap."
+    },
+    {
+      "id": "visited-tuples",
+      "concept": "Graphs",
+      "type": "assertion",
+      "difficulty": 2,
+      "prompt": "Evaluate the assertion and the reason.",
+      "assertion": "A visited set of (r, c) tuples works for grid DFS, but a set of [r, c] lists raises TypeError.",
+      "reason": "Lists are mutable and therefore unhashable, while tuples of integers are hashable.",
+      "correct": [
+        "a"
+      ],
+      "whys": {
+        "a": "Correct: set members must be hashable, and only the tuple version is.",
+        "b": "R is exactly the reason, so it does explain A.",
+        "c": "R is true, so c is wrong.",
+        "d": "A is true, so d is wrong."
+      },
+      "explanation": "Alternatively encode a cell as r * cols + c and keep a set of integers."
+    },
+    {
+      "id": "adj-build",
+      "concept": "Graph representation",
+      "type": "single",
+      "difficulty": 2,
+      "prompt": "Which expression builds n independent empty lists to use as an adjacency list?",
+      "options": [
+        {
+          "id": "a",
+          "text": "[[] for _ in range(n)]",
+          "why": "Correct: the comprehension evaluates [] once per slot, creating n separate lists."
+        },
+        {
+          "id": "b",
+          "text": "[[]] * n",
+          "why": "This repeats one list object n times, so every slot is the same list."
+        },
+        {
+          "id": "c",
+          "text": "[list()] * n",
+          "why": "list() is evaluated once and then repeated, so the slots still share one list."
+        },
+        {
+          "id": "d",
+          "text": "dict.fromkeys(range(n), [])",
+          "why": "fromkeys uses the one default object for every key, so the lists are shared."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Same trap for grids: [[0] * c for _ in range(r)] is correct, [[0] * c] * r is not."
+    },
+    {
+      "id": "py-recursion",
+      "concept": "DFS recursion limits",
+      "type": "truefalse",
+      "difficulty": 2,
+      "prompt": "A recursive DFS over a path graph of 100,000 nodes will raise RecursionError in default CPython, so an explicit stack or raising the limit is needed.",
+      "options": [
+        {
+          "id": "a",
+          "text": "True",
+          "why": "Correct: the default limit is about 1000 frames, far below 100,000."
+        },
+        {
+          "id": "b",
+          "text": "False",
+          "why": "The default recursion limit is far smaller than 100,000."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Use an explicit list stack for iterative DFS, or raise sys.setrecursionlimit with care."
+    },
+    {
+      "id": "list-default",
+      "concept": "Graph representation",
+      "type": "truefalse",
+      "difficulty": 1,
+      "prompt": "In [0] * n used for in-degrees, assigning indeg[v] += 1 on one slot changes every slot because the zeros are shared.",
+      "options": [
+        {
+          "id": "a",
+          "text": "True",
+          "why": "Integers are immutable, so += rebinds one slot only."
+        },
+        {
+          "id": "b",
+          "text": "False",
+          "why": "Correct: += on an int creates a new int and stores it in that one slot, so the sharing trap only affects mutable items like lists."
+        }
+      ],
+      "correct": [
+        "b"
+      ],
+      "explanation": "So [0] * n is a fine counter array, whereas [[]] * n is not a fine array of lists."
+    }
+  ]
+}

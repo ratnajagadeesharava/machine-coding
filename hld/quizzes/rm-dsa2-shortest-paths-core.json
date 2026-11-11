@@ -1,0 +1,446 @@
+{
+  "id": "rm-dsa2-shortest-paths-core",
+  "title": "Shortest paths: concepts and traces",
+  "topic": "Interview roadmap",
+  "language": "neutral",
+  "series": "interview-roadmap-core",
+  "seriesTitle": "Interview roadmap: language-independent topics",
+  "seriesDescription": "Language-independent interview topics (concepts, SQL, design, AI engineering): no Java and no Python code or library names.",
+  "seriesOrder": 40,
+  "description": "Dijkstra, why negative edges break it, 0-1 BFS, Bellman-Ford for at most K stops and Floyd-Warshall, with traces and integer answers (no language-specific code).",
+  "source": "CLRS ch. 22-24; cp-algorithms; LeetCode Cheapest Flights Within K Stops, Network Delay Time, Path With Minimum Effort",
+  "estimatedMinutes": 15,
+  "questions": [
+    {
+      "id": "dijkstra-trace",
+      "concept": "Dijkstra",
+      "type": "integer",
+      "difficulty": 2,
+      "prompt": "Directed weighted graph with edges A->B 4, A->C 1, C->B 2, C->D 8, B->D 5, D->E 3. Run Dijkstra from A. What is the final shortest distance to E?",
+      "explanation": "Pop order: A(0), C(1), B(3 via C), D(8 via B, better than 1+8=9), E(11). Interviewers like this trace because the direct-looking route A->C->D is worse than A->C->B->D.",
+      "answer": 11
+    },
+    {
+      "id": "negative-edges",
+      "concept": "Negative edges",
+      "type": "single",
+      "difficulty": 2,
+      "prompt": "Why can Dijkstra return a wrong answer when the graph contains a negative edge weight?",
+      "explanation": "With non-negative weights, any path to a not-yet-popped node is at least as long as the current minimum, so pops are final. A negative edge breaks that. Use Bellman-Ford (or reweight with Johnson) instead.",
+      "options": [
+        {
+          "id": "a",
+          "text": "It treats a popped node as final, but a negative edge could still shorten it.",
+          "why": "Correct: the greedy \"finalised on pop\" invariant needs non-negative weights."
+        },
+        {
+          "id": "b",
+          "text": "A priority queue cannot store negative numbers, so such edges are silently dropped.",
+          "why": "Priority queues order negative numbers fine; the problem is the algorithm, not the container."
+        },
+        {
+          "id": "c",
+          "text": "It runs in exponential time as soon as one weight is below zero.",
+          "why": "Running time is not the issue; the answer itself becomes wrong."
+        },
+        {
+          "id": "d",
+          "text": "It visits nodes in an arbitrary order because ties are broken randomly by the heap.",
+          "why": "Ties do not matter; the invariant about finalised nodes is what breaks."
+        }
+      ],
+      "correct": [
+        "a"
+      ]
+    },
+    {
+      "id": "pick-algorithm",
+      "concept": "Choosing an algorithm",
+      "type": "matrix",
+      "difficulty": 2,
+      "prompt": "Match each shortest-path problem with the most suitable technique.",
+      "explanation": "BFS is O(V+E); 0-1 BFS is O(V+E) too, Dijkstra O(E log V), Bellman-Ford O(VE) (K+1 rounds for the K-stops variant), Floyd-Warshall O(V^3). Kruskal builds a spanning tree and is not a shortest-path method.",
+      "left": [
+        {
+          "id": "a",
+          "text": "Fewest hops in an unweighted graph"
+        },
+        {
+          "id": "b",
+          "text": "Weights are only 0 or 1"
+        },
+        {
+          "id": "c",
+          "text": "Non-negative weights, single source"
+        },
+        {
+          "id": "d",
+          "text": "Negative edges allowed, or at most K edges allowed"
+        },
+        {
+          "id": "e",
+          "text": "All pairs on a small dense graph"
+        }
+      ],
+      "right": [
+        {
+          "id": "p",
+          "text": "Dijkstra with a min-heap"
+        },
+        {
+          "id": "q",
+          "text": "Bellman-Ford"
+        },
+        {
+          "id": "r",
+          "text": "Floyd-Warshall"
+        },
+        {
+          "id": "s",
+          "text": "Kruskal with union-find"
+        },
+        {
+          "id": "t",
+          "text": "Plain BFS with a queue"
+        },
+        {
+          "id": "u",
+          "text": "0-1 BFS with a deque"
+        }
+      ],
+      "pairs": {
+        "a": "t",
+        "b": "u",
+        "c": "p",
+        "d": "q",
+        "e": "r"
+      }
+    },
+    {
+      "id": "bf-k-stops",
+      "concept": "Bellman-Ford with K stops",
+      "type": "integer",
+      "difficulty": 3,
+      "prompt": "Flights (from,to,price): 0->1 100, 1->2 100, 0->2 500, 2->3 100, 1->3 600. What is the cheapest price from city 0 to city 3 using at most K = 1 stop (at most 2 flights)?",
+      "explanation": "With 2 flights the options are 0->1->3 = 700 and 0->2->3 = 600. The 300 route 0->1->2->3 needs two stops. The classic trap is returning the unrestricted Dijkstra answer.",
+      "answer": 600
+    },
+    {
+      "id": "dijkstra-pseudo",
+      "concept": "Dijkstra",
+      "type": "code",
+      "difficulty": 2,
+      "prompt": "Write pseudocode for the main loop of Dijkstra with a min-heap and lazy deletion. dist[] is already initialised (0 for the source, infinity elsewhere) and the heap holds (0, src). Edges are (u, v, w) with w >= 0.",
+      "explanation": "This is the lazy-deletion version: heaps usually have no decrease-key, so duplicates are pushed and stale ones skipped on pop. Any consistent pseudocode with the same four steps is fine. Time O(E log V).",
+      "language": "pseudocode",
+      "starter": "",
+      "checks": [
+        {
+          "label": "pops the smallest (distance, node) pair",
+          "pattern": "pop"
+        },
+        {
+          "label": "skips stale entries (d > dist[u])",
+          "pattern": "d\\s*>\\s*dist\\s*\\[\\s*u\\s*\\]|d\\s*>\\s*dist\\s*\\(\\s*u\\s*\\)"
+        },
+        {
+          "label": "relaxes an edge when d + w improves dist[v]",
+          "pattern": "d\\s*\\+\\s*w\\s*<\\s*dist\\s*\\[\\s*v\\s*\\]|dist\\s*\\[\\s*u\\s*\\]\\s*\\+\\s*w\\s*<\\s*dist\\s*\\[\\s*v\\s*\\]"
+        },
+        {
+          "label": "pushes the improved distance back",
+          "pattern": "push|add|insert"
+        }
+      ],
+      "model": "while heap is not empty:\n    (d, u) = pop smallest from heap\n    if d > dist[u]: continue        # stale entry\n    for each edge (u, v, w):\n        if d + w < dist[v]:\n            dist[v] = d + w\n            push (dist[v], v) onto heap"
+    },
+    {
+      "id": "heap-fill",
+      "concept": "Lazy deletion",
+      "type": "fill",
+      "difficulty": 1,
+      "prompt": "Complete the description of heap-based Dijkstra with lazy deletion.",
+      "explanation": "Binary heaps have no cheap decrease-key, so duplicates are allowed and stale ones skipped. The heap holds at most E entries, so each push/pop is O(log E) = O(log V).",
+      "text": "Push {1} into the heap every time a distance improves; when an entry is popped, skip it if its distance is greater than {2}[u]. Total time is O({3}).",
+      "blanks": {
+        "1": "(dist, node)",
+        "2": "dist",
+        "3": "E log V"
+      },
+      "bank": [
+        "E log V",
+        "V^2",
+        "visited",
+        "V + E",
+        "(dist, node)",
+        "dist"
+      ]
+    },
+    {
+      "id": "copy-round",
+      "concept": "Bellman-Ford with K stops",
+      "type": "assertion",
+      "difficulty": 3,
+      "prompt": "Consider the K-stops variant of Bellman-Ford.",
+      "explanation": "Without the copy the K limit is silently violated. This is the single most common bug in Cheapest Flights Within K Stops.",
+      "assertion": "Each round must relax edges using a copy of the previous round's distances.",
+      "reason": "Relaxing in place lets one round chain several edges, so a path with more than one new edge can appear in a single round.",
+      "correct": [
+        "a"
+      ],
+      "whys": {
+        "a": "Right: the copy keeps \"round i\" meaning \"paths with at most i edges\", and the reason is exactly why.",
+        "b": "R is the explanation, not a side fact.",
+        "c": "A is true.",
+        "d": "R is true."
+      }
+    },
+    {
+      "id": "heap-complexity",
+      "concept": "Dijkstra",
+      "type": "assertion",
+      "difficulty": 2,
+      "prompt": "Consider the standard heap-based Dijkstra.",
+      "explanation": "A comes from at most E pushes/pops at O(log V) each. R is a correctness limit, a separate fact.",
+      "assertion": "Dijkstra with a binary heap runs in O((V + E) log V).",
+      "reason": "Dijkstra cannot handle negative edge weights.",
+      "correct": [
+        "b"
+      ],
+      "whys": {
+        "a": "R does not explain a running time.",
+        "b": "Right: both statements are true, but the negative-edge limitation says nothing about the complexity.",
+        "c": "R is true.",
+        "d": "A is true."
+      }
+    },
+    {
+      "id": "zero-one-bfs",
+      "concept": "0-1 BFS",
+      "type": "assertion",
+      "difficulty": 3,
+      "prompt": "Consider 0-1 BFS on a graph whose edge weights are only 0 or 1.",
+      "explanation": "The deque keeps distances in non-decreasing order, which is what removes the log factor.",
+      "assertion": "0-1 BFS runs in O(V + E).",
+      "reason": "It uses a priority queue, so every pop costs O(1).",
+      "correct": [
+        "c"
+      ],
+      "whys": {
+        "a": "R is false, so it cannot explain A.",
+        "b": "R is false.",
+        "c": "Right: 0-1 BFS uses a deque (weight 0 pushed to the front, weight 1 to the back); a priority-queue pop is O(log n), so R is false.",
+        "d": "A is true."
+      }
+    },
+    {
+      "id": "constant-offset",
+      "concept": "Negative edges",
+      "type": "assertion",
+      "difficulty": 3,
+      "prompt": "A developer wants to reuse Dijkstra on a graph with some negative weights.",
+      "explanation": "Example: a 3-edge path of total 3 vs a direct edge of weight 4 flips after adding 10 to each edge (33 vs 14). Johnson's algorithm reweights with potentials from Bellman-Ford instead.",
+      "assertion": "Adding a constant C to every edge weight until all are non-negative preserves the shortest paths.",
+      "reason": "A path with more edges receives a larger total increase than a path with fewer edges.",
+      "correct": [
+        "d"
+      ],
+      "whys": {
+        "a": "A is false, so R cannot explain it.",
+        "b": "A is false.",
+        "c": "A is false.",
+        "d": "Right: A is false precisely because R is true; the offset favours paths with fewer edges and can change the winner."
+      }
+    },
+    {
+      "id": "zero-one-facts",
+      "concept": "0-1 BFS",
+      "type": "multi",
+      "difficulty": 2,
+      "prompt": "Select all that apply: which statements about 0-1 BFS are correct?",
+      "explanation": "Typical use: grid problems where some moves are free (portals, same-direction moves) and others cost 1.",
+      "options": [
+        {
+          "id": "a",
+          "text": "A weight-0 edge sends the neighbour to the front of the deque.",
+          "why": "Correct: a free move keeps the distance level, so it is processed next."
+        },
+        {
+          "id": "b",
+          "text": "It works unchanged for edge weights 0, 1 and 2.",
+          "why": "Weight 2 breaks the two-level deque invariant; use Dijkstra or split edges."
+        },
+        {
+          "id": "c",
+          "text": "It needs no priority queue, giving O(V + E) time.",
+          "why": "Correct: the deque stays sorted by distance, which removes the log factor."
+        },
+        {
+          "id": "d",
+          "text": "It requires the graph to be acyclic.",
+          "why": "Cycles are fine; each node is finalised once like in Dijkstra."
+        }
+      ],
+      "correct": [
+        "a",
+        "c"
+      ]
+    },
+    {
+      "id": "heap-decrease",
+      "concept": "Lazy deletion",
+      "type": "truefalse",
+      "difficulty": 2,
+      "prompt": "True or false: a standard binary-heap priority queue provides an O(log n) decrease-key by value, so Dijkstra can update an existing entry in place.",
+      "explanation": "Libraries rarely offer decrease-key; the standard fix is to push a duplicate and skip stale entries when popped.",
+      "options": [
+        {
+          "id": "a",
+          "text": "True",
+          "why": "Typical library heaps expose only push, pop and peek; finding an arbitrary entry takes O(n)."
+        },
+        {
+          "id": "b",
+          "text": "False",
+          "why": "Correct: removing or updating an arbitrary element is linear time, so lazy deletion is the usual approach."
+        }
+      ],
+      "correct": [
+        "b"
+      ]
+    },
+    {
+      "id": "negative-cycle",
+      "concept": "Negative edges",
+      "type": "truefalse",
+      "difficulty": 2,
+      "prompt": "True or false: Bellman-Ford can detect a negative cycle reachable from the source by checking whether an extra V-th round still relaxes some edge.",
+      "explanation": "Detection needs the V-th round to change something. Shortest paths without negative cycles have at most V-1 edges.",
+      "options": [
+        {
+          "id": "a",
+          "text": "True",
+          "why": "Correct: shortest paths without negative cycles have at most V-1 edges, so a V-th relaxation proves a cycle."
+        },
+        {
+          "id": "b",
+          "text": "False",
+          "why": "A relaxation in round V is exactly the signal, so the statement is true."
+        }
+      ],
+      "correct": [
+        "a"
+      ]
+    },
+    {
+      "id": "portal-grid",
+      "concept": "0-1 BFS",
+      "type": "single",
+      "difficulty": 3,
+      "prompt": "A grid maze costs 1 per step, except stepping onto a portal cell costs 0. You need the minimum total cost from the top-left to the bottom-right. Which approach is the best fit?",
+      "explanation": "When weights are restricted to {0,1}, 0-1 BFS beats Dijkstra's log factor. Mentioning it shows you match the algorithm to the weight structure.",
+      "options": [
+        {
+          "id": "a",
+          "text": "Plain BFS with a queue, treating every move as one step regardless of portals.",
+          "why": "This ignores that portal steps are free, so the cost is overcounted."
+        },
+        {
+          "id": "b",
+          "text": "Bellman-Ford over every cell, V - 1 rounds.",
+          "why": "It is correct but needlessly slow, O(VE), on a large grid."
+        },
+        {
+          "id": "c",
+          "text": "0-1 BFS using a deque, portals pushed to the front.",
+          "why": "Correct: weights are only 0 and 1, so a deque gives O(V + E)."
+        },
+        {
+          "id": "d",
+          "text": "Floyd-Warshall on all cell pairs.",
+          "why": "O(V^3) on a grid is hopeless and computes far more than needed."
+        }
+      ],
+      "correct": [
+        "c"
+      ]
+    },
+    {
+      "id": "network-delay",
+      "concept": "Dijkstra",
+      "type": "integer",
+      "difficulty": 2,
+      "prompt": "A signal starts at node 1 of a directed graph with edges (u, v, time): (1,2,9), (1,4,2), (2,5,1), (4,2,4), (4,5,6), (3,2,3), (5,3,7), (3,1,5). How long until all 5 nodes have received it?",
+      "explanation": "Distances from node 1: node 4 = 2, node 2 = 6 (via 4), node 5 = 7, node 3 = 14 (via 5). The answer is the largest shortest distance, 14; if any node were unreachable the answer would be -1. Dijkstra, O(E log V).",
+      "answer": 14,
+      "tolerance": 0,
+      "unit": "time units"
+    },
+    {
+      "id": "floyd-order",
+      "concept": "Floyd-Warshall",
+      "type": "single",
+      "difficulty": 3,
+      "prompt": "In the triple loop of Floyd-Warshall, which loop variable must be the outermost?",
+      "explanation": "Time is O(V^3) and space O(V^2) with the in-place table. A negative value on the diagonal afterwards reveals a negative cycle.",
+      "options": [
+        {
+          "id": "a",
+          "text": "The source vertex i.",
+          "why": "With i outermost the table is read before all intermediate stops are allowed."
+        },
+        {
+          "id": "b",
+          "text": "The destination vertex j.",
+          "why": "The same flaw: intermediate vertices must be the outer loop."
+        },
+        {
+          "id": "c",
+          "text": "Any order works, since all three loops go from 0 to n - 1.",
+          "why": "The loop order changes which paths are considered at each point, so it matters."
+        },
+        {
+          "id": "d",
+          "text": "The intermediate vertex k.",
+          "why": "Correct: after round k, dist holds paths using only vertices 0..k as stops."
+        }
+      ],
+      "correct": [
+        "d"
+      ]
+    },
+    {
+      "id": "min-effort",
+      "concept": "Dijkstra",
+      "type": "single",
+      "difficulty": 3,
+      "prompt": "In a grid, the effort of a path is the largest absolute height difference between two consecutive cells on it, and you want the path with minimum effort. How should Dijkstra change?",
+      "explanation": "This is the minimax (bottleneck) path. The same Dijkstra skeleton with a different combine function also solves Swim in Rising Water; a binary search on the answer plus BFS is another valid approach.",
+      "options": [
+        {
+          "id": "a",
+          "text": "Keep summing step differences, since a smaller total always means smaller maximum.",
+          "why": "A small sum can hide one huge step, and a larger sum may have a smaller maximum."
+        },
+        {
+          "id": "b",
+          "text": "Use max(current effort, step difference) as the path cost instead of the sum.",
+          "why": "Correct: a bottleneck cost combines with max, and the greedy argument still holds."
+        },
+        {
+          "id": "c",
+          "text": "Use plain BFS, because every move to a neighbour counts as one step.",
+          "why": "Costs are height differences, so hop count is irrelevant."
+        },
+        {
+          "id": "d",
+          "text": "Use Bellman-Ford, because the differences can be negative.",
+          "why": "Absolute differences are never negative, so Dijkstra applies."
+        }
+      ],
+      "correct": [
+        "b"
+      ]
+    }
+  ]
+}

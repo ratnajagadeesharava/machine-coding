@@ -1,14 +1,15 @@
 {
-  "id": "rm-conc-collections-coordination",
-  "title": "Concurrency: collections, coordination and deadlocks",
+  "id": "rm-conc-collections-coordination-java",
+  "title": "Concurrency in Java: collections, coordination and deadlocks",
   "topic": "Interview roadmap",
-  "series": "interview-roadmap",
-  "seriesTitle": "Interview roadmap: topic quizzes",
+  "language": "java",
+  "series": "interview-roadmap-java",
+  "seriesTitle": "Interview roadmap: Java and Spring Boot",
   "seriesOrder": 22,
-  "seriesDescription": "Topic-by-topic JEE-style quizzes for the backend and AI-engineering interview roadmap: integer, assertion-reason, matrix match, fill-in-the-blanks, short code writing, plus multi-correct questions. Language core, concurrency, DSA, web frameworks, data access, databases, messaging, resilience, security, testing, system design, LLM and agent engineering.",
-  "description": "ConcurrentHashMap, BlockingQueue, CopyOnWriteArrayList, asyncio.Queue, latches, barriers, semaphores, the four deadlock conditions, lock ordering and reading thread dumps.",
-  "source": "Oracle Java docs (java.util.concurrent, BlockingQueue, ConcurrentHashMap); Java Concurrency in Practice; Python queue, threading and asyncio docs; py-spy README; Baeldung; GeeksforGeeks; DZone thread dump articles",
-  "estimatedMinutes": 15,
+  "seriesDescription": "Java and Spring Boot interview topics in JEE-Advanced style: integer, assertion-reason, matrix match, fill-in-the-blanks, short Java/SQL code and multi-correct questions. Java only: nothing here mixes in Python.",
+  "description": "ConcurrentHashMap, BlockingQueue, CopyOnWriteArrayList, latches, barriers, semaphores, lock ordering and reading thread dumps.",
+  "source": "Oracle Java docs (java.util.concurrent, BlockingQueue, ConcurrentHashMap, ThreadMXBean); Java Concurrency in Practice; Baeldung; GeeksforGeeks; DZone thread dump articles",
+  "estimatedMinutes": 17,
   "questions": [
     {
       "id": "chm-check-then-act",
@@ -234,31 +235,6 @@
       "explanation": "Without finally, one failing worker leaves the latch above zero and main waits forever. Executors or a loop over a list are equally valid; await(timeout, unit) is a safer variant."
     },
     {
-      "id": "py-semaphore-limit",
-      "concept": "Python coordination",
-      "type": "code",
-      "difficulty": 2,
-      "prompt": "Write an async Python function limited(sem, url) that waits for an asyncio.Semaphore before awaiting fetch(url) and returns the result, so at most N fetches run at once.",
-      "language": "python",
-      "checks": [
-        {
-          "label": "uses the semaphore (async with or acquire)",
-          "pattern": "async\\s+with\\s+sem|sem\\.acquire\\s*\\("
-        },
-        {
-          "label": "awaits fetch(url)",
-          "pattern": "await\\s+fetch\\s*\\(\\s*url\\s*\\)"
-        },
-        {
-          "label": "returns the result",
-          "pattern": "return"
-        }
-      ],
-      "model": "async def limited(sem, url):\n    async with sem:\n        return await fetch(url)",
-      "explanation": "async with releases the permit even if fetch raises. In threads the same idea uses threading.Semaphore with a plain with statement.",
-      "starter": "async def limited(sem, url):\n    "
-    },
-    {
       "id": "synchronized-map-iter",
       "concept": "Concurrent collections",
       "type": "assertion",
@@ -276,25 +252,6 @@
         "d": "A is true, so option d (A false) is wrong."
       },
       "explanation": "Compound actions on a synchronized wrapper (iteration, check-then-act) need the client to hold the wrapper's lock."
-    },
-    {
-      "id": "asyncio-queue-threads",
-      "concept": "asyncio.Queue",
-      "type": "assertion",
-      "difficulty": 3,
-      "prompt": "Read the assertion (A) and the reason (R), then choose the correct option.",
-      "assertion": "A worker thread may call asyncio.Queue.put_nowait() directly to hand items to coroutines.",
-      "reason": "asyncio.Queue is designed for coroutines on a single event loop and is documented as not thread-safe.",
-      "correct": [
-        "d"
-      ],
-      "whys": {
-        "a": "A is false, so the pair cannot be a valid explanation.",
-        "b": "A is false, so option b is wrong.",
-        "c": "A is false, so option c (A true) is wrong.",
-        "d": "Correct: R is true and A is false. From another thread use loop.call_soon_threadsafe(q.put_nowait, item) or asyncio.run_coroutine_threadsafe."
-      },
-      "explanation": "queue.Queue is for threads, asyncio.Queue for coroutines. Bridging needs call_soon_threadsafe."
     },
     {
       "id": "dump-blocked",
@@ -330,52 +287,6 @@
       "explanation": "BLOCKED vs WAITING is the thread-dump interview question. For deadlocks, jstack prints a \"Found one Java-level deadlock\" section. Also: jcmd <pid> Thread.print and kill -3."
     },
     {
-      "id": "coffman",
-      "concept": "Deadlocks",
-      "type": "multi",
-      "difficulty": 2,
-      "prompt": "Select all conditions that must hold simultaneously for a deadlock to occur (the Coffman conditions).",
-      "options": [
-        {
-          "id": "a",
-          "text": "Mutual exclusion",
-          "why": "Correct: at least one resource can be held by only one thread at a time."
-        },
-        {
-          "id": "b",
-          "text": "Hold and wait",
-          "why": "Correct: a thread holds one resource while waiting for another."
-        },
-        {
-          "id": "c",
-          "text": "No preemption",
-          "why": "Correct: resources cannot be forcibly taken from a holder."
-        },
-        {
-          "id": "d",
-          "text": "Circular wait",
-          "why": "Correct: a cycle of threads each waits for a resource held by the next."
-        },
-        {
-          "id": "e",
-          "text": "Thread starvation",
-          "why": "Not required: starvation is about unfairness, not a cycle."
-        },
-        {
-          "id": "f",
-          "text": "Priority inversion",
-          "why": "Not required: it is a scheduling problem, not a deadlock condition."
-        }
-      ],
-      "correct": [
-        "a",
-        "b",
-        "c",
-        "d"
-      ],
-      "explanation": "Break any one condition: lock ordering removes circular wait, tryLock with timeout removes hold-and-wait, and so on. The answer to 'how many conditions' is 4."
-    },
-    {
       "id": "lock-ordering",
       "concept": "Deadlocks",
       "type": "code",
@@ -399,39 +310,6 @@
       "model": "Account first = from.id < to.id ? from : to;\nAccount second = first == from ? to : from;\nsynchronized (first) {\n  synchronized (second) {\n    from.balance -= amt; to.balance += amt;\n  }\n}",
       "explanation": "A global lock order removes circular wait. If ids can tie, break ties with a separate tie-lock or identityHashCode. Verified to finish with 2 opposite-direction threads. ReentrantLock.tryLock with back-off is the alternative.",
       "starter": "void transfer(Account from, Account to, int amt) {\n  \n}"
-    },
-    {
-      "id": "py-spy",
-      "concept": "Thread dumps",
-      "type": "single",
-      "difficulty": 2,
-      "prompt": "A Python worker process hangs in production and you must see what each thread is doing without restarting or modifying it. Which command does that?",
-      "options": [
-        {
-          "id": "a",
-          "text": "py-spy dump --pid <pid>",
-          "why": "Correct: py-spy samples the process from outside and prints each thread's current Python stack."
-        },
-        {
-          "id": "b",
-          "text": "jstack <pid>",
-          "why": "jstack inspects JVM processes only."
-        },
-        {
-          "id": "c",
-          "text": "kill -9 <pid>",
-          "why": "SIGKILL ends the process and destroys the evidence."
-        },
-        {
-          "id": "d",
-          "text": "python -m pdb <pid>",
-          "why": "pdb launches scripts; it cannot attach to a running process by pid."
-        }
-      ],
-      "correct": [
-        "a"
-      ],
-      "explanation": "py-spy needs ptrace permission (often sudo, or CAP_SYS_PTRACE in containers). Alternatives: faulthandler.dump_traceback registered on a signal, or --native for C frames."
     },
     {
       "id": "chm-merge-count",
@@ -506,6 +384,94 @@
         "d": "s"
       },
       "explanation": "BlockingQueue methods come in four families: throws (add), special value (offer), blocks (put) and times out (offer with timeout). The overwrite behaviour is not offered by any standard BlockingQueue."
+    },
+    {
+      "id": "latch-extra-countdowns",
+      "concept": "CountDownLatch",
+      "type": "integer",
+      "difficulty": 1,
+      "prompt": "A CountDownLatch is created with new CountDownLatch(3) and countDown() is called 5 times. What does getCount() return?",
+      "answer": 0,
+      "tolerance": 0,
+      "unit": "count",
+      "explanation": "The count stops at zero and never goes negative, so the extra calls are ignored (verified by running it). Once at zero the latch stays open and cannot be reset, unlike a CyclicBarrier."
+    },
+    {
+      "id": "find-deadlock",
+      "concept": "Thread dumps",
+      "type": "single",
+      "difficulty": 3,
+      "prompt": "A running service may have deadlocked threads. How can the code itself detect that, without a restart?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Catch the DeadlockException that synchronized throws after a timeout.",
+          "why": "There is no such exception; synchronized waits forever."
+        },
+        {
+          "id": "b",
+          "text": "Loop over all threads and report any whose state is BLOCKED.",
+          "why": "BLOCKED only means contending for a monitor, which is normal; a deadlock needs a cycle."
+        },
+        {
+          "id": "c",
+          "text": "Call ThreadMXBean.findDeadlockedThreads() from java.lang.management.",
+          "why": "Correct: it returns the ids of threads blocked in a lock cycle, or null (verified: it reported 2 threads for a classic A/B deadlock)."
+        },
+        {
+          "id": "d",
+          "text": "Give every Object.wait() a timeout, so a stuck thread is flagged.",
+          "why": "A timeout wakes the thread but says nothing about a lock cycle."
+        }
+      ],
+      "correct": [
+        "c"
+      ],
+      "explanation": "jstack and jcmd <pid> Thread.print also print a \"Found one Java-level deadlock\" section. In production, expose findDeadlockedThreads through a health check or JMX."
+    },
+    {
+      "id": "chm-size-estimate",
+      "concept": "Concurrent collections",
+      "type": "assertion",
+      "difficulty": 3,
+      "prompt": "Read the assertion (A) and the reason (R), then choose the correct option.",
+      "assertion": "ConcurrentHashMap.size() is always an exact count at every instant, even while other threads add and remove entries.",
+      "reason": "ConcurrentHashMap iterators and bulk operations are weakly consistent: they reflect the map at some point during or after their creation.",
+      "correct": [
+        "d"
+      ],
+      "whys": {
+        "a": "A is false, so option a (A true and explained) cannot be right.",
+        "b": "A is false, so option b (both true) is wrong.",
+        "c": "R is true, so option c (R false) is wrong.",
+        "d": "Correct: under concurrent updates size() is only an estimate, while R states the weakly consistent behaviour of iterators correctly."
+      },
+      "explanation": "The Javadoc says size() is an estimate when updates are in flight. Use LongAdder or a separate counter if you need a cheap approximate total, and never base logic on size() == 0 under concurrency."
+    },
+    {
+      "id": "semaphore-guard",
+      "concept": "Semaphore",
+      "type": "code",
+      "difficulty": 2,
+      "prompt": "Given a field Semaphore sem and a method String fetch(String url), write the body of String limited(String url) throws InterruptedException that waits for a permit, returns fetch(url), and always gives the permit back.",
+      "language": "java",
+      "checks": [
+        {
+          "label": "acquires a permit",
+          "pattern": "sem\\.acquire\\s*\\("
+        },
+        {
+          "label": "releases in a finally block",
+          "pattern": "finally\\s*\\{[^}]*sem\\.release\\s*\\("
+        },
+        {
+          "label": "returns the fetch result",
+          "pattern": "return\\s+fetch\\s*\\(\\s*url\\s*\\)"
+        }
+      ],
+      "model": "sem.acquire();\ntry {\n  return fetch(url);\n} finally {\n  sem.release();\n}",
+      "explanation": "Acquire before the try so a failed acquire never releases a permit you do not hold. A try-with-resources wrapper or tryAcquire(timeout) are variations.",
+      "starter": "String limited(String url) throws InterruptedException {\n  \n}"
     }
   ]
 }

@@ -1,0 +1,317 @@
+{
+  "id": "rm-safety-python",
+  "title": "Agent safety in Python: sqlglot guards, Pydantic validation and retries",
+  "topic": "Interview roadmap",
+  "language": "python",
+  "series": "interview-roadmap-python",
+  "seriesTitle": "Interview roadmap: Python and FastAPI",
+  "seriesDescription": "Python and FastAPI interview topics in JEE-Advanced style: integer, assertion-reason, matrix match, fill-in-the-blanks, short Python/SQL code and multi-correct questions. Python only: nothing here mixes in Java.",
+  "seriesOrder": 104,
+  "description": "Python code for LLM agent safety: a sqlglot SELECT-only guard, Pydantic argument validation, allow-listed tool dispatch, validate-and-retry loops and idempotent payments.",
+  "source": "sqlglot docs (run locally, v30); Pydantic v2 docs (run locally); OWASP Top 10 for LLM Applications 2025; Stripe idempotent requests docs",
+  "estimatedMinutes": 18,
+  "questions": [
+    {
+      "id": "sqlglot-guard",
+      "concept": "SQL guard",
+      "type": "code",
+      "difficulty": 3,
+      "prompt": "Using sqlglot, write is_select_only(sql) -> bool for LLM-generated PostgreSQL. Return True only if the text parses into exactly one statement whose root node is a SELECT (exp.Select). Return False on a parse error.",
+      "language": "python",
+      "starter": "import sqlglot\nfrom sqlglot import exp\n\ndef is_select_only(sql: str) -> bool:\n    ",
+      "checks": [
+        {
+          "label": "parses with sqlglot",
+          "pattern": "sqlglot\\.parse\\w*\\s*\\("
+        },
+        {
+          "label": "handles parse errors",
+          "pattern": "except\\b"
+        },
+        {
+          "label": "requires exactly one statement",
+          "pattern": "len\\s*\\(\\s*\\w+\\s*\\)\\s*(==|!=)\\s*1"
+        },
+        {
+          "label": "checks the root is exp.Select",
+          "pattern": "(isinstance\\s*\\([^)]*exp\\.Select|\\.key\\s*==\\s*[\"']select[\"']|exp\\.Select)"
+        }
+      ],
+      "model": "def is_select_only(sql: str) -> bool:\n    try:\n        trees = sqlglot.parse(sql, read=\"postgres\")\n    except sqlglot.errors.SqlglotError:\n        return False\n    return len(trees) == 1 and isinstance(trees[0], exp.Select)",
+      "explanation": "Catch SqlglotError (the base class): unterminated strings raise TokenError, which is not a ParseError, so catching only ParseError would let it escape. Verified with sqlglot: 'SELECT 1; DROP TABLE t' parses to [Select, Drop], a WITH query parses to one Select, UNION parses to Union, and an empty string gives [None]. Other solutions pass (parse_one plus a check for extra statements, or walking the tree for Insert/Delete/Drop nodes). Real systems add more: in PostgreSQL SELECT ... INTO still parses as a Select but creates a table, so also use a read-only database role, a statement timeout and a LIMIT."
+    },
+    {
+      "id": "guard-count",
+      "concept": "SQL guard",
+      "type": "integer",
+      "difficulty": 3,
+      "prompt": "A guard built on sqlglot accepts SQL only if it parses into exactly one statement whose root node is a plain Select. Of these five inputs, how many pass: (1) SELECT 1; (2) SELECT 1; DROP TABLE t; (3) WITH x AS (SELECT 1) SELECT * FROM x; (4) SELECT 1 UNION SELECT 2; (5) DELETE FROM t?",
+      "answer": 2,
+      "unit": "inputs",
+      "explanation": "Inputs 1 and 3 pass (a WITH clause hangs off the Select node). Input 2 parses to two statements (Select and Drop), input 4 to a Union root, and input 5 to a Delete; I confirmed each with sqlglot.parse. Union is a common false rejection, so a production guard usually allows set operations explicitly."
+    },
+    {
+      "id": "pydantic-args",
+      "concept": "Schema validation",
+      "type": "code",
+      "difficulty": 2,
+      "prompt": "Write a Pydantic v2 model RefundArgs for an LLM tool call: order_id is a string that must match ORD- followed by exactly six digits, and amount is a float greater than 0 and at most 500.",
+      "language": "python",
+      "starter": "from pydantic import BaseModel, Field\n",
+      "checks": [
+        {
+          "label": "subclasses BaseModel",
+          "pattern": "class\\s+RefundArgs\\s*\\(\\s*BaseModel\\s*\\)"
+        },
+        {
+          "label": "constrains order_id with a pattern",
+          "pattern": "pattern\\s*=|regex\\s*=|constr\\s*\\(|StringConstraints|field_validator"
+        },
+        {
+          "label": "pattern mentions ORD- and six digits",
+          "pattern": "ORD-\\\\d\\{6\\}|ORD-\\[0-9\\]\\{6\\}|ORD-\\(\\?:\\\\d\\)\\{6\\}|ORD-.*6"
+        },
+        {
+          "label": "amount greater than 0",
+          "pattern": "gt\\s*=\\s*0|>\\s*0|PositiveFloat"
+        },
+        {
+          "label": "amount at most 500",
+          "pattern": "le\\s*=\\s*500|<=\\s*500"
+        }
+      ],
+      "model": "class RefundArgs(BaseModel):\n    order_id: str = Field(pattern=r\"^ORD-\\d{6}$\")\n    amount: float = Field(gt=0, le=500)",
+      "explanation": "In Pydantic v1 the argument was regex=. A field_validator or Annotated constraints also pass. Validate model output against this before the tool runs; reject, do not coerce silently."
+    },
+    {
+      "id": "retry-loop",
+      "concept": "Validate and retry",
+      "type": "code",
+      "difficulty": 2,
+      "prompt": "Write generate_valid(prompt, max_attempts=3). It calls llm(prompt + error_hint) to get JSON text, validates it with Answer.model_validate_json(text) (Pydantic), and returns the model. On a ValidationError it feeds the error text into the next attempt. After max_attempts failures it raises RuntimeError.",
+      "language": "python",
+      "starter": "from pydantic import ValidationError\n\ndef generate_valid(prompt, max_attempts=3):\n    ",
+      "checks": [
+        {
+          "label": "bounded loop over max_attempts",
+          "pattern": "for\\s+\\w+\\s+in\\s+range\\s*\\(\\s*max_attempts|while\\s+[^\\n]*(attempt|tries|max_attempts)"
+        },
+        {
+          "label": "validates with model_validate_json",
+          "pattern": "model_validate_json\\s*\\(|parse_raw\\s*\\(|\\.model_validate\\s*\\("
+        },
+        {
+          "label": "catches ValidationError",
+          "pattern": "except\\s*\\(?\\s*(pydantic\\.)?ValidationError"
+        },
+        {
+          "label": "feeds the error back",
+          "pattern": "str\\s*\\(\\s*\\w+\\s*\\)|f[\"'][^\"']*\\{\\s*\\w+\\s*\\}|\\.errors\\s*\\("
+        },
+        {
+          "label": "raises RuntimeError at the end",
+          "pattern": "raise\\s+RuntimeError"
+        }
+      ],
+      "model": "def generate_valid(prompt, max_attempts=3):\n    hint = \"\"\n    for _ in range(max_attempts):\n        text = llm(prompt + hint)\n        try:\n            return Answer.model_validate_json(text)\n        except ValidationError as e:\n            hint = f\"\\nPrevious output was invalid: {e}\"\n    raise RuntimeError(\"no valid output\")",
+      "explanation": "Other loops pass. The essentials: a hard attempt limit, the validation error fed back, and a deliberate failure path."
+    },
+    {
+      "id": "idempotent-fn",
+      "concept": "Idempotent actions",
+      "type": "code",
+      "difficulty": 3,
+      "prompt": "Write process_payment(key, amount) in Python. RESULTS is a module-level dict. If key is already in RESULTS return the stored result; otherwise call charge(amount), store the outcome under key and return it.",
+      "language": "python",
+      "starter": "RESULTS = {}\n\ndef process_payment(key, amount):\n    ",
+      "checks": [
+        {
+          "label": "defines process_payment",
+          "pattern": "def\\s+process_payment\\s*\\("
+        },
+        {
+          "label": "looks up the key first",
+          "pattern": "key\\s+in\\s+RESULTS|RESULTS\\.get\\s*\\(\\s*key"
+        },
+        {
+          "label": "calls charge(amount)",
+          "pattern": "charge\\s*\\(\\s*amount\\s*\\)"
+        },
+        {
+          "label": "stores the result under the key",
+          "pattern": "RESULTS\\s*\\[\\s*key\\s*\\]\\s*=|RESULTS\\.setdefault\\s*\\(\\s*key|RESULTS\\.update"
+        }
+      ],
+      "model": "def process_payment(key, amount):\n    if key in RESULTS:\n        return RESULTS[key]\n    result = charge(amount)\n    RESULTS[key] = result\n    return result",
+      "explanation": "In production the key and result live in a database with a unique constraint (or Redis SET NX) so two concurrent requests cannot both charge, and the key is bound to the request payload."
+    },
+    {
+      "id": "allow-list-dispatch",
+      "concept": "Allow-lists",
+      "type": "code",
+      "difficulty": 2,
+      "prompt": "TOOLS maps tool names to Python functions. Write call_tool(name, args) that raises PermissionError unless name is in the set ALLOWED, and otherwise calls the function with the dict args as keyword arguments and returns the result.",
+      "language": "python",
+      "checks": [
+        {
+          "label": "defines call_tool",
+          "pattern": "def\\s+call_tool\\s*\\("
+        },
+        {
+          "label": "checks the allow-list",
+          "pattern": "name\\s+(not\\s+in|in)\\s+ALLOWED"
+        },
+        {
+          "label": "refuses with PermissionError",
+          "pattern": "raise\\s+PermissionError"
+        },
+        {
+          "label": "calls with keyword arguments",
+          "pattern": "TOOLS\\s*\\[\\s*name\\s*\\]\\s*\\(\\s*\\*\\*\\s*args\\s*\\)"
+        }
+      ],
+      "model": "def call_tool(name, args):\n    if name not in ALLOWED:\n        raise PermissionError(f\"tool {name!r} is not allowed\")\n    return TOOLS[name](**args)",
+      "explanation": "Default deny: a name the model invents, or one that exists in TOOLS but was never approved for this task, is refused before anything runs. Validate args against the tool's schema as well. Checking membership in a set is constant time, but the point is the policy, not the speed.",
+      "starter": "ALLOWED = {\"search\", \"get_order\"}\n\ndef call_tool(name, args):\n    "
+    },
+    {
+      "id": "pydantic-error-count",
+      "concept": "Schema validation",
+      "type": "integer",
+      "difficulty": 2,
+      "prompt": "RefundArgs requires order_id to match ^ORD-\\d{6}$ and amount to be greater than 0 and at most 500. How many errors does the ValidationError report for RefundArgs.model_validate({'order_id': 'ORD-12', 'amount': 600})?",
+      "answer": 2,
+      "explanation": "Pydantic v2 collects every failing field in one ValidationError: the bad order_id pattern and the amount above 500, so error_count() is 2 (I ran it). Feeding all errors back to the model at once lets it fix everything in one retry.",
+      "unit": "errors"
+    },
+    {
+      "id": "lax-mode",
+      "concept": "Schema validation",
+      "type": "assertion",
+      "difficulty": 3,
+      "prompt": "Assertion and reason: read both statements and choose the right option.",
+      "assertion": "A Pydantic v2 model with a float field accepts the string '25.5' and stores the float 25.5 in its default mode.",
+      "reason": "With strict mode enabled, Pydantic rejects the string '25.5' for a float field instead of converting it.",
+      "correct": [
+        "b"
+      ],
+      "whys": {
+        "a": "Not chosen: R is true, but strict mode is a switch, not the reason lax mode coerces.",
+        "b": "Both true, but R does not explain A: A happens because lax mode applies compatible type coercion; strict mode is the opposite setting.",
+        "c": "Not chosen: A is true, so R being true does not make the pair A true and R false.",
+        "d": "Not chosen: A is true; I ran model_validate with the string and got 25.5."
+      },
+      "explanation": "For tool arguments decide deliberately: strict mode rejects a model that sends numbers as strings, lax mode quietly repairs them. Either way, validate before the tool runs."
+    },
+    {
+      "id": "select-into",
+      "concept": "SQL guard",
+      "type": "truefalse",
+      "difficulty": 3,
+      "prompt": "True or false: a sqlglot check that the single parsed statement is an exp.Select is enough to guarantee that an LLM-generated PostgreSQL query cannot change data.",
+      "options": [
+        {
+          "id": "a",
+          "text": "True",
+          "why": "A root Select does not prove read-only behaviour."
+        },
+        {
+          "id": "b",
+          "text": "False",
+          "why": "Right: SELECT * INTO new_t FROM t still parses to a Select (I ran it) yet creates a table, and functions such as pg_sleep run inside plain SELECTs."
+        }
+      ],
+      "correct": [
+        "b"
+      ],
+      "explanation": "Combine the parser guard with a read-only database role, a statement timeout and a row limit."
+    },
+    {
+      "id": "sqlglot-roots",
+      "concept": "SQL guard",
+      "type": "matrix",
+      "difficulty": 2,
+      "prompt": "Match each input to the type of the root node sqlglot.parse returns for PostgreSQL.",
+      "left": [
+        {
+          "id": "a",
+          "text": "SELECT 1"
+        },
+        {
+          "id": "b",
+          "text": "SELECT 1 UNION SELECT 2"
+        },
+        {
+          "id": "c",
+          "text": "DELETE FROM t"
+        },
+        {
+          "id": "d",
+          "text": "DROP TABLE t"
+        }
+      ],
+      "right": [
+        {
+          "id": "p",
+          "text": "exp.Select"
+        },
+        {
+          "id": "q",
+          "text": "exp.Union"
+        },
+        {
+          "id": "r",
+          "text": "exp.Delete"
+        },
+        {
+          "id": "s",
+          "text": "exp.Drop"
+        },
+        {
+          "id": "t",
+          "text": "exp.Insert"
+        }
+      ],
+      "pairs": {
+        "a": "p",
+        "b": "q",
+        "c": "r",
+        "d": "s"
+      },
+      "explanation": "I printed the types with sqlglot.parse(sql, read='postgres'). A guard that checks only for Select rejects the Union by accident; list the node types you accept."
+    },
+    {
+      "id": "sqlglot-except",
+      "concept": "SQL guard",
+      "type": "single",
+      "difficulty": 3,
+      "prompt": "Which exception should is_select_only catch around sqlglot.parse so that every unparseable input returns False?",
+      "options": [
+        {
+          "id": "a",
+          "text": "sqlglot.errors.SqlglotError, the common base class.",
+          "why": "Right: both ParseError and TokenError derive from it."
+        },
+        {
+          "id": "b",
+          "text": "sqlglot.errors.ParseError only, since parsing is what failed.",
+          "why": "An unterminated string raises TokenError, which is not a ParseError and would escape."
+        },
+        {
+          "id": "c",
+          "text": "ValueError, because malformed text is a value problem.",
+          "why": "sqlglot's errors do not derive from ValueError, so this would not catch them."
+        },
+        {
+          "id": "d",
+          "text": "KeyError, since the parser looks the keyword up in a table.",
+          "why": "Lookups inside the parser are internal; the public failures are SqlglotError subclasses."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "I ran sqlglot.parse(\"SELECT 'abc\", read='postgres') and it raised TokenError, whose parents are SqlglotError and Exception. Catching the base class turns every tokenising or parsing failure into a clean rejection."
+    }
+  ]
+}

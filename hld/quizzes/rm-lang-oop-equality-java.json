@@ -1,14 +1,15 @@
 {
-  "id": "rm-lang-oop-equality",
-  "title": "Language core: OOP, equality and hashing",
+  "id": "rm-lang-oop-equality-java",
+  "title": "Language core: OOP, equality and hashing (Java)",
   "topic": "Interview roadmap",
-  "series": "interview-roadmap",
-  "seriesTitle": "Interview roadmap: topic quizzes",
+  "series": "interview-roadmap-java",
+  "seriesTitle": "Interview roadmap: Java and Spring Boot",
   "seriesOrder": 10,
-  "seriesDescription": "Topic-by-topic JEE-style quizzes for the backend and AI-engineering interview roadmap: integer, assertion-reason, matrix match, fill-in-the-blanks, short code writing, plus multi-correct questions. Language core, concurrency, DSA, web frameworks, data access, databases, messaging, resilience, security, testing, system design, LLM and agent engineering.",
-  "description": "Interfaces vs abstract classes, records, sealed types, ABC and Protocol, dataclasses, composition over inheritance, and the equals/hashCode contract with its mutable-key traps.",
-  "source": "Oracle Java Tutorials; JLS 8.4.8, 15.12; Effective Java (Bloch); Python docs: abc, dataclasses, data model (__hash__), typing; Python MRO (C3) docs; Baeldung; Real Python; Toptal and GeeksforGeeks interview lists",
-  "estimatedMinutes": 14,
+  "seriesDescription": "Java and Spring Boot interview topics in JEE-Advanced style: integer, assertion-reason, matrix match, fill-in-the-blanks, short Java/SQL code and multi-correct questions. Java only: nothing here mixes in Python.",
+  "language": "java",
+  "description": "Interfaces vs abstract classes, records, sealed types, default-method diamonds, composition over inheritance, overloading vs overriding and the equals/hashCode contract with its mutable-key traps.",
+  "source": "Oracle Java Tutorials; JLS 8.4.8, 9.4.1.3, 15.12; Effective Java (Bloch) items 10, 11, 18; Baeldung; Toptal and GeeksforGeeks Java interview lists",
+  "estimatedMinutes": 15,
   "questions": [
     {
       "id": "abstract-state",
@@ -48,7 +49,7 @@
       "concept": "Modern language constructs",
       "type": "matrix",
       "difficulty": 2,
-      "prompt": "Match each construct to what it is for.",
+      "prompt": "Match each Java construct to what it is for.",
       "left": [
         {
           "id": "a",
@@ -60,11 +61,15 @@
         },
         {
           "id": "c",
-          "text": "Python Protocol"
+          "text": "Interface default method"
         },
         {
           "id": "d",
-          "text": "Python ABC with @abstractmethod"
+          "text": "Abstract class"
+        },
+        {
+          "id": "e",
+          "text": "Java enum"
         }
       ],
       "right": [
@@ -78,24 +83,29 @@
         },
         {
           "id": "r",
-          "text": "Structural typing: any class with the right methods satisfies it for the type checker"
+          "text": "Gives implementing classes a ready-made method body without a shared superclass"
         },
         {
           "id": "s",
-          "text": "Nominal base class: instantiating a subclass that skips an abstract method raises TypeError"
+          "text": "Cannot be instantiated but may hold per-object state and constructors for subclasses"
         },
         {
           "id": "t",
-          "text": "Automatically makes every attribute lazy-loaded"
+          "text": "A fixed set of named instances that no other code can extend"
+        },
+        {
+          "id": "u",
+          "text": "Automatically makes every field lazily loaded"
         }
       ],
       "pairs": {
         "a": "p",
         "b": "q",
         "c": "r",
-        "d": "s"
+        "d": "s",
+        "e": "t"
       },
-      "explanation": "Records and dataclasses remove boilerplate, sealed types give exhaustive switches, Protocol is the typed form of duck typing, and ABC enforces a contract by inheritance."
+      "explanation": "Records, sealed types and enums model closed or value-like data; default methods evolve interfaces; abstract classes share state."
     },
     {
       "id": "composition-over-inheritance",
@@ -126,75 +136,26 @@
       "explanation": "HashSet.addAll (inherited from AbstractCollection) calls the overridden add for every element, so each element is counted twice: 3 + 3 = 6. This is the textbook case for composition over inheritance. (Verified by running it.)"
     },
     {
-      "id": "abc-fill",
-      "concept": "Interfaces and abstract classes",
+      "id": "equals-contract-fill",
+      "concept": "Equality and hashing",
       "type": "fill",
       "difficulty": 1,
-      "prompt": "Complete the sentence about Python abstract base classes.",
-      "text": "A class that inherits from abc.ABC and leaves a method decorated with @{1} unimplemented raises {2} as soon as you try to instantiate it.",
+      "prompt": "Complete the sentence about the equals and hashCode contract.",
+      "text": "The equals contract requires it to be reflexive, {1}, transitive and consistent; if a.equals(b) is true then a.hashCode() must be {2} to b.hashCode(); a record generates both methods from its {3}.",
       "blanks": {
-        "1": "abstractmethod",
-        "2": "TypeError"
+        "1": "symmetric",
+        "2": "equal",
+        "3": "components"
       },
       "bank": [
-        "abstractmethod",
-        "TypeError",
-        "NotImplementedError",
-        "staticmethod"
+        "symmetric",
+        "equal",
+        "components",
+        "commutative",
+        "different",
+        "modifiers"
       ],
-      "explanation": "The check happens at instantiation, not at class definition. NotImplementedError is what a plain base-class method raises by convention when you do not use ABC."
-    },
-    {
-      "id": "frozen-dataclass",
-      "concept": "Dataclasses",
-      "type": "code",
-      "difficulty": 2,
-      "prompt": "Write a Python frozen dataclass named Point with float fields x and y so that instances are immutable and hashable.",
-      "language": "python",
-      "starter": "from dataclasses import dataclass\n",
-      "checks": [
-        {
-          "label": "uses @dataclass with frozen=True",
-          "pattern": "@\\s*(dataclasses\\.)?dataclass\\s*\\(\\s*[^)]*frozen\\s*=\\s*True"
-        },
-        {
-          "label": "class is named Point",
-          "pattern": "class\\s+Point"
-        },
-        {
-          "label": "x is a float field",
-          "pattern": "x\\s*:\\s*float"
-        },
-        {
-          "label": "y is a float field",
-          "pattern": "y\\s*:\\s*float"
-        }
-      ],
-      "model": "from dataclasses import dataclass\n\n@dataclass(frozen=True)\nclass Point:\n    x: float\n    y: float",
-      "explanation": "frozen=True makes assignment raise FrozenInstanceError and, together with the default eq=True, generates __hash__ from the fields. A NamedTuple would also work but is not what the question asks."
-    },
-    {
-      "id": "protocol-explicit",
-      "concept": "Interfaces and abstract classes",
-      "type": "truefalse",
-      "difficulty": 2,
-      "prompt": "A class must explicitly inherit from a typing.Protocol to satisfy it for a static type checker such as mypy.",
-      "options": [
-        {
-          "id": "a",
-          "text": "True",
-          "why": "Protocols are structural: the base class is not required."
-        },
-        {
-          "id": "b",
-          "text": "False",
-          "why": "Correct: mypy checks the method signatures, so no inheritance is needed (only @runtime_checkable matters for isinstance)."
-        }
-      ],
-      "correct": [
-        "b"
-      ],
-      "explanation": "That is the difference between nominal (ABC) and structural (Protocol) typing, the Python counterpart of Go-style interfaces."
+      "explanation": "Equal objects must have equal hashes; unequal objects may share a hash. Records derive equals/hashCode from their components."
     },
     {
       "id": "integer-cache",
@@ -233,6 +194,30 @@
       ],
       "model": "@Override public boolean equals(Object o) {\n  if (this == o) return true;\n  if (!(o instanceof Point)) return false;\n  Point p = (Point) o;\n  return x == p.x && y == p.y;\n}\n@Override public int hashCode() { return Objects.hash(x, y); }",
       "explanation": "A record Point(int x, int y) generates all of this. getClass() versus instanceof is a debate: instanceof is fine for a final class. Other correct spellings (31 * x + y) also pass."
+    },
+    {
+      "id": "record-pair",
+      "concept": "Modern language constructs",
+      "type": "code",
+      "difficulty": 1,
+      "prompt": "Write a Java record named Pair with a String component name and an int component age.",
+      "language": "java",
+      "checks": [
+        {
+          "label": "declares a record named Pair",
+          "pattern": "record\\s+Pair\\s*\\("
+        },
+        {
+          "label": "has String name",
+          "pattern": "String\\s+name"
+        },
+        {
+          "label": "has int age",
+          "pattern": "int\\s+age"
+        }
+      ],
+      "model": "record Pair(String name, int age) {}",
+      "explanation": "A record header declares the components; the compiler adds private final fields, accessors, equals, hashCode and toString."
     },
     {
       "id": "mutable-key",
@@ -285,25 +270,6 @@
         "d": "A is true, so this option is wrong."
       },
       "explanation": "Contract: equal objects must have equal hash codes; unequal objects may share a hash code (it only affects performance)."
-    },
-    {
-      "id": "frozen-hash",
-      "concept": "Equality and hashing",
-      "type": "assertion",
-      "difficulty": 3,
-      "prompt": "Read the assertion (A) and the reason (R), then choose the option that fits.",
-      "assertion": "A Python dataclass declared with @dataclass(frozen=True) is unhashable.",
-      "reason": "A dataclass with eq=True and frozen=False gets __hash__ set to None.",
-      "correct": [
-        "d"
-      ],
-      "whys": {
-        "a": "A is false, so this cannot be right.",
-        "b": "A is false.",
-        "c": "R is true, so option c is wrong.",
-        "d": "Correct: frozen=True with eq=True generates __hash__ from the fields, so A is false; R is true (the default mutable dataclass is unhashable)."
-      },
-      "explanation": "eq=True, frozen=False sets __hash__ to None; eq=True, frozen=True generates a field-based __hash__; unsafe_hash=True forces one."
     },
     {
       "id": "safe-keys",
@@ -363,6 +329,104 @@
         "d": "A is true: record classes are implicitly final."
       },
       "explanation": "Records are shallowly immutable data carriers: final class, final fields, accessors, and component-based equals/hashCode/toString."
+    },
+    {
+      "id": "multiple-extends",
+      "concept": "Interfaces and abstract classes",
+      "type": "assertion",
+      "difficulty": 2,
+      "prompt": "Read the assertion (A) and the reason (R), then choose the option that fits.",
+      "assertion": "A Java class can extend several abstract classes at the same time.",
+      "reason": "A Java class can implement several interfaces at the same time.",
+      "correct": [
+        "d"
+      ],
+      "whys": {
+        "a": "This option says both statements are true and R explains A, which does not match: A is false because Java has single inheritance of classes; R is true, and it is the reason interfaces are used for multiple types.",
+        "b": "This option says both statements are true but R does not explain A, which does not match: A is false because Java has single inheritance of classes; R is true, and it is the reason interfaces are used for multiple types.",
+        "c": "This option says A is true and R is false, which does not match: A is false because Java has single inheritance of classes; R is true, and it is the reason interfaces are used for multiple types.",
+        "d": "Correct: A is false because Java has single inheritance of classes; R is true, and it is the reason interfaces are used for multiple types."
+      },
+      "explanation": "Single class inheritance avoids state diamonds; multiple interface inheritance is allowed because interfaces carry no instance state."
+    },
+    {
+      "id": "diamond-default",
+      "concept": "Interfaces and abstract classes",
+      "type": "single",
+      "difficulty": 3,
+      "prompt": "What happens when this Java code is compiled?\n\ninterface A { default String who() { return \"A\"; } }\ninterface B extends A { default String who() { return \"B\"; } }\ninterface C extends A { default String who() { return \"C\"; } }\nclass D implements B, C { }\n\nWhat is the outcome?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Compile error: D inherits unrelated defaults for who() and must override it",
+          "why": "Correct: B and C each override A.who(), so neither is more specific and the class must resolve the conflict."
+        },
+        {
+          "id": "b",
+          "text": "It compiles and who() returns \"B\", because B is listed first",
+          "why": "Declaration order never resolves a default-method conflict."
+        },
+        {
+          "id": "c",
+          "text": "It compiles and who() returns \"A\", the common ancestor",
+          "why": "A is overridden by both B and C, so it is not the winner."
+        },
+        {
+          "id": "d",
+          "text": "It compiles and throws an error at run time on the first call",
+          "why": "The conflict is detected at compile time, not at run time."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Fix it by overriding: public String who() { return B.super.who(); }. Rule: a class wins over interfaces, a more specific interface wins over a less specific one, otherwise you must override."
+    },
+    {
+      "id": "interfaces-multiple",
+      "concept": "Interfaces and abstract classes",
+      "type": "truefalse",
+      "difficulty": 1,
+      "prompt": "A Java class can implement several interfaces but can extend only one class.",
+      "options": [
+        {
+          "id": "a",
+          "text": "True",
+          "why": "Correct: Java has single class inheritance and multiple interface inheritance."
+        },
+        {
+          "id": "b",
+          "text": "False",
+          "why": "The rule is exactly this; multiple class inheritance is what is forbidden."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Single inheritance of state avoids ambiguous fields; interfaces carry no instance state."
+    },
+    {
+      "id": "interface-fields",
+      "concept": "Interfaces and abstract classes",
+      "type": "truefalse",
+      "difficulty": 2,
+      "prompt": "A field declared in a Java interface is an ordinary per-object field that each implementing instance can change.",
+      "options": [
+        {
+          "id": "a",
+          "text": "True",
+          "why": "Interface fields are implicitly public static final constants, not per-object state."
+        },
+        {
+          "id": "b",
+          "text": "False",
+          "why": "Correct: interface fields are constants shared by all implementers."
+        }
+      ],
+      "correct": [
+        "b"
+      ],
+      "explanation": "Per-object mutable state needs an abstract or concrete class."
     },
     {
       "id": "overload-static-type",
@@ -429,62 +493,6 @@
         "a"
       ],
       "explanation": "Only instance methods are dispatched dynamically. Fields, static methods and private methods are bound by the static type, so avoid redeclaring fields in subclasses."
-    },
-    {
-      "id": "py-eq-unhashable",
-      "concept": "Equality and hashing",
-      "type": "truefalse",
-      "difficulty": 2,
-      "prompt": "In Python 3, a class that defines __eq__ but does not define __hash__ gets its __hash__ set to None, so its instances cannot be put in a set or used as dict keys.",
-      "options": [
-        {
-          "id": "a",
-          "text": "True",
-          "why": "Correct: defining __eq__ implicitly sets __hash__ = None, which is why {P(1)} raises TypeError."
-        },
-        {
-          "id": "b",
-          "text": "False",
-          "why": "Wrong: Python 3 does not keep the inherited identity hash once __eq__ is overridden, because equal objects must hash equally."
-        }
-      ],
-      "correct": [
-        "a"
-      ],
-      "explanation": "Python refuses to guess a hash consistent with your new equality. Add __hash__ over the same immutable fields, or use @dataclass(frozen=True). Verified by running it: set literal raises TypeError: unhashable type."
-    },
-    {
-      "id": "mro-diamond",
-      "concept": "Inheritance vs composition",
-      "type": "single",
-      "difficulty": 3,
-      "prompt": "What does this Python code print?\n\nclass A:\n    def who(self): return \"A\"\nclass B(A):\n    def who(self): return \"B\" + super().who()\nclass C(A):\n    def who(self): return \"C\" + super().who()\nclass D(B, C): pass\nprint(D().who())\n\nWhat is the output?",
-      "options": [
-        {
-          "id": "a",
-          "text": "BCA, following the C3 order D, B, C, A",
-          "why": "Correct: the C3 MRO of D is D, B, C, A and super() follows it, so B calls C, which calls A."
-        },
-        {
-          "id": "b",
-          "text": "BA, since super() goes to the declared parent",
-          "why": "Wrong: super() in B does not jump straight to its declared parent A; it goes to the next class in the instance MRO, which is C."
-        },
-        {
-          "id": "c",
-          "text": "BAC, since C runs after A finishes",
-          "why": "Wrong: A is the common base, so C3 linearisation places it after both B and C, never between them."
-        },
-        {
-          "id": "d",
-          "text": "TypeError, since the hierarchy is inconsistent",
-          "why": "Wrong: B and C list A consistently, so a valid linearisation exists and the class statement succeeds."
-        }
-      ],
-      "correct": [
-        "a"
-      ],
-      "explanation": "Python uses C3 linearisation (D.__mro__). Cooperative super() visits every class once in that order; Java has no such multiple-inheritance problem for classes."
     }
   ]
 }
