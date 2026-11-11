@@ -251,17 +251,17 @@
       "options": [
         {
           "id": "a",
-          "text": "The cast on the column means the predicate is no longer a plain condition on customer_id; compare customer_id = 5 instead.",
+          "text": "The cast on customer_id blocks index use; compare customer_id = 5 instead.",
           "why": "Right: wrapping an indexed column in a function or cast prevents index use unless an expression index exists."
         },
         {
           "id": "b",
-          "text": "The table is too small; PostgreSQL never uses an index below one million rows.",
+          "text": "The table is too small, because PostgreSQL never uses an index below one million rows.",
           "why": "There is no such threshold; the planner is purely cost based."
         },
         {
           "id": "c",
-          "text": "A composite index is only usable when every one of its columns appears in the WHERE clause.",
+          "text": "A composite index is only usable when every one of its columns appears in the WHERE clause of the query.",
           "why": "A leading-column condition is enough; the other columns can be omitted."
         },
         {
@@ -284,12 +284,12 @@
       "options": [
         {
           "id": "a",
-          "text": "Planner statistics are stale or missing; run ANALYZE (and check autovacuum) so estimates match.",
+          "text": "Statistics are stale or missing; run ANALYZE and check autovacuum.",
           "why": "Right: a 4,800x misestimate leads to bad join orders and scan choices."
         },
         {
           "id": "b",
-          "text": "The index on status is corrupt; run REINDEX immediately.",
+          "text": "The index on status is corrupt, so run REINDEX immediately to repair it and force its use.",
           "why": "The plan does not use an index, and nothing in it hints at corruption."
         },
         {
