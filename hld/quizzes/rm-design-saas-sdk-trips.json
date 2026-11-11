@@ -12,7 +12,7 @@
   "questions": [
     {
       "id": "tenancy-models",
-      "concept": "Multi-tenancy",
+      "concept": "Tenancy models",
       "type": "single",
       "difficulty": 2,
       "prompt": "A B2B SaaS has 20,000 small tenants with similar needs and a handful of large ones with compliance demands. Which isolation strategy is the sensible default?",
@@ -45,7 +45,7 @@
     },
     {
       "id": "rls",
-      "concept": "Multi-tenancy",
+      "concept": "Row level security",
       "type": "code",
       "difficulty": 3,
       "prompt": "In PostgreSQL, turn on row level security for table orders and add a policy named tenant_isolation that only lets rows through where tenant_id equals the uuid in the session setting app.tenant_id.",
@@ -73,7 +73,7 @@
     },
     {
       "id": "schema-count",
-      "concept": "Multi-tenancy",
+      "concept": "Schema per tenant",
       "type": "integer",
       "difficulty": 2,
       "prompt": "With schema-per-tenant, 5,000 tenants each have 120 tables. How many tables does the database catalogue hold?",
@@ -83,7 +83,7 @@
     },
     {
       "id": "noisy-neighbour",
-      "concept": "Multi-tenancy",
+      "concept": "Noisy neighbour",
       "type": "assertion",
       "difficulty": 2,
       "prompt": "Read the assertion and the reason, then choose the option that describes them correctly.",
@@ -102,7 +102,7 @@
     },
     {
       "id": "tenant-concerns",
-      "concept": "Multi-tenancy",
+      "concept": "Tenant mitigations",
       "type": "matrix",
       "difficulty": 2,
       "prompt": "Match each multi-tenant concern to the typical mitigation.",
@@ -165,7 +165,7 @@
     },
     {
       "id": "semver-minor",
-      "concept": "SDK versioning",
+      "concept": "Semantic versioning",
       "type": "integer",
       "difficulty": 1,
       "prompt": "Your SDK is at version 2.7.3 and you add a new backward-compatible method. What is the minor number of the next release version?",
@@ -174,7 +174,7 @@
     },
     {
       "id": "breaking",
-      "concept": "SDK versioning",
+      "concept": "Breaking changes",
       "type": "multi",
       "difficulty": 2,
       "prompt": "Which changes to a published Java SDK are breaking under semantic versioning? Select all that apply.",
@@ -209,7 +209,7 @@
     },
     {
       "id": "deprecate",
-      "concept": "SDK versioning",
+      "concept": "Deprecation",
       "type": "code",
       "difficulty": 2,
       "prompt": "In a Java SDK class, keep the old method String fetch(String id) working by delegating to the new fetch(String id, Options options) with Options.defaults(), and mark the old one deprecated since \"2.8\" and scheduled for removal.",
@@ -233,7 +233,7 @@
     },
     {
       "id": "leaky-types",
-      "concept": "SDK versioning",
+      "concept": "API surface",
       "type": "assertion",
       "difficulty": 3,
       "prompt": "Read the assertion and the reason, then choose the option that describes them correctly.",
@@ -252,7 +252,7 @@
     },
     {
       "id": "client-skew",
-      "concept": "SDK versioning",
+      "concept": "Version skew",
       "type": "assertion",
       "difficulty": 3,
       "prompt": "Read the assertion and the reason, then choose the option that describes them correctly.",
@@ -271,7 +271,7 @@
     },
     {
       "id": "ping-rate",
-      "concept": "Trip tracking",
+      "concept": "Ingestion estimate",
       "type": "integer",
       "difficulty": 2,
       "prompt": "One million trips are in progress and each driver app sends a GPS ping every 5 seconds. How many pings per second must the ingestion path handle on average?",
@@ -281,7 +281,7 @@
     },
     {
       "id": "ping-storage",
-      "concept": "Trip tracking",
+      "concept": "Ingestion estimate",
       "type": "integer",
       "difficulty": 3,
       "prompt": "The ingestion rate is 200,000 pings per second and each stored ping is 50 bytes. How many decimal gigabytes are written per day?",
@@ -324,7 +324,7 @@
     },
     {
       "id": "trip-state",
-      "concept": "Trip tracking",
+      "concept": "State and idempotency",
       "type": "fill",
       "difficulty": 2,
       "prompt": "Complete the correctness notes for the trip service.",
@@ -346,7 +346,7 @@
     },
     {
       "id": "trip-update",
-      "concept": "Trip tracking",
+      "concept": "Optimistic locking",
       "type": "code",
       "difficulty": 3,
       "prompt": "Write the SQL that completes a trip: set status to COMPLETED and increment version, but only if the row with id = 7 is still in status STARTED and has version = 3.",
@@ -374,7 +374,7 @@
     },
     {
       "id": "latest-pos",
-      "concept": "Trip tracking",
+      "concept": "Read model",
       "type": "assertion",
       "difficulty": 3,
       "prompt": "Read the assertion and the reason, then choose the option that describes them correctly.",
