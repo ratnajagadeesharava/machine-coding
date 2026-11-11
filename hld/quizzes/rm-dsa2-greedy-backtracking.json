@@ -39,22 +39,22 @@
       "options": [
         {
           "id": "a",
-          "text": "Any optimal solution can be transformed, step by step, into the greedy one without getting worse.",
+          "text": "Any optimal solution can be reshaped into the greedy one without getting worse.",
           "why": "Correct: swapping in the greedy choice never reduces quality, so greedy is optimal."
         },
         {
           "id": "b",
-          "text": "The greedy choice is optimal on every random test you ran.",
+          "text": "The greedy choice is optimal on every random test you ran, including large ones.",
           "why": "Tests are evidence, not a proof; an exchange argument is a proof."
         },
         {
           "id": "c",
-          "text": "The algorithm runs in O(n log n) because it sorts the input first.",
+          "text": "The algorithm runs in O(n log n) because it sorts the input first and then scans once.",
           "why": "Running time is separate from correctness; the argument is about optimality."
         },
         {
           "id": "d",
-          "text": "Every subproblem is solved once and cached in a table.",
+          "text": "Every subproblem is solved once and cached in a table for later reuse.",
           "why": "That describes dynamic programming memoisation, not an exchange argument."
         }
       ],
@@ -157,7 +157,7 @@
       "id": "perm-count",
       "concept": "Permutations",
       "type": "integer",
-      "difficulty": 2,
+      "difficulty": 1,
       "prompt": "How many distinct permutations does the multiset {A, A, B, C} have?",
       "answer": 12,
       "unit": "permutations",
@@ -171,7 +171,7 @@
       "prompt": "Candidates [2, 3, 6, 7] (each may be reused any number of times) and target 7. How many distinct combinations sum to 7?",
       "answer": 2,
       "unit": "combinations",
-      "explanation": "[2,2,3] and [7] are the only two. For example 2+2+3 = 7 and 7 = 7, while 3+3 = 6, 6+... and 2+2+2 = 6 fall short of 7 and cannot be completed with these candidates."
+      "explanation": "[2,2,3] and [7] are the only two. Every other path either overshoots 7 or leaves a remainder of 1, which no candidate can fill. Sorting and breaking when a candidate exceeds the remainder prunes the search."
     },
     {
       "id": "subsets-java",

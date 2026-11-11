@@ -75,7 +75,7 @@
       "concept": "DP complexity",
       "type": "matrix",
       "difficulty": 2,
-      "prompt": "Match each classic problem to the time complexity of its standard DP (m, n are string lengths; A is the amount or capacity; k is the number of coins or items).",
+      "prompt": "Match each classic problem to the time complexity of its standard solution (m, n are string or array lengths; k is the number of items; A is the capacity).",
       "left": [
         {
           "id": "a",
@@ -83,19 +83,19 @@
         },
         {
           "id": "b",
-          "text": "Minimum coins for amount A with k coin types"
-        },
-        {
-          "id": "c",
           "text": "0/1 knapsack with k items and capacity A"
         },
         {
+          "id": "c",
+          "text": "Longest increasing subsequence, simple DP over pairs"
+        },
+        {
           "id": "d",
-          "text": "Longest increasing subsequence with binary search"
+          "text": "Longest increasing subsequence with binary search (patience)"
         },
         {
           "id": "e",
-          "text": "Naive recursion for fib(n) without memo"
+          "text": "Naive recursive fib(n) without memoisation"
         }
       ],
       "right": [
@@ -105,11 +105,11 @@
         },
         {
           "id": "q",
-          "text": "O(A * k)"
+          "text": "O(k * A)"
         },
         {
           "id": "r",
-          "text": "O(k * A) with a different loop order"
+          "text": "O(n^2)"
         },
         {
           "id": "s",
@@ -121,7 +121,7 @@
         },
         {
           "id": "u",
-          "text": "O(n^2)"
+          "text": "O(A)"
         }
       ],
       "pairs": {
@@ -131,7 +131,7 @@
         "d": "s",
         "e": "t"
       },
-      "explanation": "The table size times work per cell gives the time: LCS m*n cells, coin change A states times k coins, knapsack k*A states. LIS drops from O(n^2) to O(n log n) with patience sorting. Without memoisation fib is exponential (about 1.6^n, bounded by 2^n)."
+      "explanation": "Time = number of states times work per state: LCS has m*n cells, knapsack k*A cells. The simple LIS DP compares each element with all earlier ones (n^2); keeping tails and binary searching gives n log n. Without memoisation fib branches twice per call, so it is exponential (bounded by 2^n; tighter is about 1.6^n)."
     },
     {
       "id": "knapsack-order",
@@ -291,7 +291,7 @@
       "options": [
         {
           "id": "a",
-          "text": "O(min(m, n)) with two rolling rows, at the cost of not recovering the edit script.",
+          "text": "O(min(m, n)) using two rolling rows, but no edit script.",
           "why": "Correct: keep two rows (or one row plus a saved diagonal), over the shorter string."
         },
         {
@@ -301,12 +301,12 @@
         },
         {
           "id": "c",
-          "text": "O(m * n) is unavoidable because every cell is needed later.",
+          "text": "O(m * n) is unavoidable because every cell is needed later in the computation.",
           "why": "Cells older than one row are never read again, so they can be discarded."
         },
         {
           "id": "d",
-          "text": "O(log m), by recursing on halves of the first string.",
+          "text": "O(log m), by recursing on halves of the first string as in divide and conquer.",
           "why": "That would describe divide and conquer, but edit distance does not split that way."
         }
       ],
@@ -329,17 +329,17 @@
         },
         {
           "id": "b",
-          "text": "The input arrives sorted, which means a DP table is always required.",
+          "text": "The input arrives sorted, which means a DP table is always required here.",
           "why": "Sorted input hints at binary search or two pointers; it says nothing about DP."
         },
         {
           "id": "c",
-          "text": "The answer must be reported as a single integer value.",
+          "text": "The answer must be reported as a single integer value, not a list or string.",
           "why": "Plenty of greedy and math problems return one integer."
         },
         {
           "id": "d",
-          "text": "The input size is small, with fewer than ten elements in total.",
+          "text": "The input size is small, with fewer than ten elements in total, for the whole problem.",
           "why": "Small n suggests brute force or backtracking, not specifically DP."
         }
       ],

@@ -1,0 +1,427 @@
+{
+  "id": "rm-data-pool-migrations",
+  "title": "Data access: connection pooling and schema migrations",
+  "topic": "Interview roadmap",
+  "series": "interview-roadmap",
+  "seriesTitle": "Interview roadmap: topic quizzes",
+  "seriesDescription": "Topic-by-topic JEE-style quizzes for the backend and AI-engineering interview roadmap: integer, assertion-reason, matrix match, fill-in-the-blanks, short code writing, plus multi-correct questions. Language core, concurrency, DSA, web frameworks, data access, databases, messaging, resilience, security, testing, system design, LLM and agent engineering.",
+  "seriesOrder": 62,
+  "description": "HikariCP and SQLAlchemy/asyncpg pool settings, the pool-sizing formula, Little's law and pool exhaustion; Flyway, Liquibase and Alembic migrations and zero-downtime schema changes.",
+  "source": "HikariCP wiki (About Pool Sizing); SQLAlchemy pooling docs; asyncpg docs; PostgreSQL docs (max_connections); Flyway, Liquibase and Alembic docs; Spring Boot reference",
+  "estimatedMinutes": 15,
+  "questions": [
+    {
+      "id": "pool-formula",
+      "concept": "Pool sizing",
+      "type": "integer",
+      "difficulty": 2,
+      "prompt": "The HikariCP \"About Pool Sizing\" guidance (from the PostgreSQL community) suggests connections = (core_count * 2) + effective_spindle_count as a starting point. The database server has 4 cores and its data lives on one effective spindle (a single SSD). How many connections should the pool start with?",
+      "answer": 9,
+      "explanation": "4 * 2 + 1 = 9. The point of the formula is that a small pool is usually enough: a database cannot run more CPU-bound queries in parallel than it has cores, and the rest just queue and context switch. Treat it as a starting point and load-test.",
+      "unit": "connections"
+    },
+    {
+      "id": "littles-law",
+      "concept": "Pool sizing",
+      "type": "integer",
+      "difficulty": 3,
+      "prompt": "A service handles 200 requests per second at steady state and each request holds a database connection for 50 ms on average. By Little's law, how many connections are in use on average?",
+      "answer": 10,
+      "explanation": "L = lambda * W = 200 req/s * 0.05 s = 10 connections busy on average. Size above the average for bursts, but a pool of 10-20 serves 200 req/s; the mistake is to take 200 requests as 200 connections.",
+      "unit": "connections"
+    },
+    {
+      "id": "pods-vs-max-connections",
+      "concept": "Pool exhaustion",
+      "type": "integer",
+      "difficulty": 3,
+      "prompt": "PostgreSQL runs with max_connections = 100 and the default superuser_reserved_connections = 3. Every application pod has a HikariCP pool with maximumPoolSize = 15 and all pools can be fully busy at peak. What is the largest number of pods that cannot exhaust the usable connections?",
+      "answer": 6,
+      "explanation": "100 - 3 = 97 usable connections; 6 pods need 90, 7 pods need 105 > 97. At that scale add PgBouncer (transaction pooling) or shrink the per-pod pool; per-instance pools multiply with every autoscaled pod.",
+      "unit": "pods"
+    },
+    {
+      "id": "bigger-pool",
+      "concept": "Pool sizing",
+      "type": "assertion",
+      "difficulty": 2,
+      "prompt": "Read the assertion (A) and the reason (R), then choose the option that fits.",
+      "assertion": "Raising a connection pool from 20 to 200 on the same database server often makes throughput worse, not better.",
+      "reason": "More simultaneously active connections than CPU cores add context switching, lock contention and cache pressure.",
+      "correct": [
+        "a"
+      ],
+      "whys": {
+        "a": "Correct: R is the mechanism behind A.",
+        "b": "R is exactly why A holds, so it does explain it.",
+        "c": "R is true, so this option wrongly calls it false.",
+        "d": "A is true in practice, so this option wrongly calls it false."
+      },
+      "explanation": "Requests wait in the pool queue instead of fighting inside the database. Add a bounded pool, short transactions and, if needed, PgBouncer rather than a bigger pool."
+    },
+    {
+      "id": "flyway-rerun",
+      "concept": "Schema migrations",
+      "type": "assertion",
+      "difficulty": 2,
+      "prompt": "Read the assertion (A) and the reason (R), then choose the option that fits.",
+      "assertion": "Flyway applies a versioned migration such as V3__add_status.sql exactly once per database.",
+      "reason": "Flyway re-executes a versioned migration whenever the checksum of its file changes.",
+      "correct": [
+        "c"
+      ],
+      "whys": {
+        "a": "R is false, so it cannot explain A.",
+        "b": "R is false, so this option wrongly calls both statements true.",
+        "c": "Correct: A is true; R is false because a changed checksum makes validation fail instead of re-running.",
+        "d": "A is true, so this option wrongly calls it false."
+      },
+      "explanation": "Only repeatable migrations (R__*.sql) re-run when their checksum changes. For a versioned migration that was already applied, fix forward with a new version, or use flyway repair deliberately."
+    },
+    {
+      "id": "ddl-auto-update",
+      "concept": "Schema migrations",
+      "type": "assertion",
+      "difficulty": 2,
+      "prompt": "Read the assertion (A) and the reason (R), then choose the option that fits.",
+      "assertion": "spring.jpa.hibernate.ddl-auto=update is a good way to manage the schema of a production database.",
+      "reason": "Hibernate update mode only adds missing tables and columns; it never drops or renames anything and keeps no history.",
+      "correct": [
+        "d"
+      ],
+      "whys": {
+        "a": "A is false, so both-true options are wrong.",
+        "b": "A is false, so both-true options are wrong.",
+        "c": "R is true, so this option wrongly calls it false.",
+        "d": "Correct: A is false because you get no reviewable, repeatable, ordered scripts, no renames or data fixes and no rollback story; R is true."
+      },
+      "explanation": "Use Flyway or Liquibase for production and, at most, ddl-auto=validate to check that entities match the schema."
+    },
+    {
+      "id": "hikari-fill",
+      "concept": "HikariCP",
+      "type": "fill",
+      "difficulty": 1,
+      "prompt": "Complete the HikariCP vocabulary.",
+      "text": "HikariCP's {1} defaults to 10. A thread that waits longer than {2} (30 seconds by default) for a connection gets an exception. {3} retires connections before the database or a firewall silently closes them, and {4} logs a warning with the stack trace of code that keeps a connection too long.",
+      "blanks": {
+        "1": "maximumPoolSize",
+        "2": "connectionTimeout",
+        "3": "maxLifetime",
+        "4": "leakDetectionThreshold"
+      },
+      "bank": [
+        "maximumPoolSize",
+        "connectionTimeout",
+        "maxLifetime",
+        "leakDetectionThreshold",
+        "idleTimeout",
+        "minimumIdle",
+        "validationTimeout"
+      ],
+      "explanation": "maxLifetime should be a few seconds shorter than any server or infrastructure timeout. leakDetectionThreshold is off (0) by default; set it in staging to find code that forgets to close or holds a connection across slow calls."
+    },
+    {
+      "id": "pool-symptoms",
+      "concept": "Pool exhaustion",
+      "type": "matrix",
+      "difficulty": 2,
+      "prompt": "Match each symptom to the most appropriate first response.",
+      "left": [
+        {
+          "id": "a",
+          "text": "SQLAlchemy: \"QueuePool limit of size 5 overflow 10 reached, connection timed out\""
+        },
+        {
+          "id": "b",
+          "text": "psycopg: \"server closed the connection unexpectedly\" after a quiet night"
+        },
+        {
+          "id": "c",
+          "text": "PostgreSQL: \"FATAL: sorry, too many clients already\""
+        },
+        {
+          "id": "d",
+          "text": "Hikari: \"Connection is not available, request timed out after 30000ms\""
+        }
+      ],
+      "right": [
+        {
+          "id": "p",
+          "text": "Return connections sooner: close sessions, shorten transactions, no slow I/O inside them"
+        },
+        {
+          "id": "q",
+          "text": "Enable pool_pre_ping or a pool_recycle shorter than the server or firewall idle timeout"
+        },
+        {
+          "id": "r",
+          "text": "Cap per-instance pool sizes or put PgBouncer in front of the database"
+        },
+        {
+          "id": "s",
+          "text": "Set leakDetectionThreshold to log where connections are being held"
+        },
+        {
+          "id": "t",
+          "text": "Raise max_connections to 10000"
+        }
+      ],
+      "pairs": {
+        "a": "p",
+        "b": "q",
+        "c": "r",
+        "d": "s"
+      },
+      "explanation": "Exhaustion (wait for a free connection) and stale connections (dead sockets in the pool) look different but both show up as pool errors. Raising max_connections just moves the memory cost to the database."
+    },
+    {
+      "id": "code-sqlalchemy-pool",
+      "concept": "SQLAlchemy engine pool",
+      "type": "code",
+      "difficulty": 2,
+      "prompt": "Create the SQLAlchemy engine `engine` for the URL in DATABASE_URL with a pool of 10 connections, at most 5 extra overflow connections, a 10 second wait for a free connection, and a liveness check on checkout.",
+      "language": "python",
+      "checks": [
+        {
+          "label": "calls create_engine",
+          "pattern": "create_engine\\s*\\("
+        },
+        {
+          "label": "sets pool_size=10",
+          "pattern": "pool_size\\s*=\\s*10"
+        },
+        {
+          "label": "sets max_overflow=5",
+          "pattern": "max_overflow\\s*=\\s*5"
+        },
+        {
+          "label": "sets pool_timeout=10",
+          "pattern": "pool_timeout\\s*=\\s*10"
+        },
+        {
+          "label": "enables pool_pre_ping",
+          "pattern": "pool_pre_ping\\s*=\\s*True"
+        }
+      ],
+      "model": "engine = create_engine(\n    DATABASE_URL, pool_size=10, max_overflow=5,\n    pool_timeout=10, pool_pre_ping=True)",
+      "explanation": "Defaults of the QueuePool are pool_size=5, max_overflow=10, pool_timeout=30. The hard cap per process is pool_size + max_overflow; remember to multiply by the number of processes."
+    },
+    {
+      "id": "code-hikari-yaml",
+      "concept": "HikariCP",
+      "type": "code",
+      "difficulty": 2,
+      "prompt": "Write the Spring Boot application.yml fragment that configures the Hikari pool with a maximum of 10 connections, a 3000 ms connection timeout and leak detection after 20000 ms.",
+      "language": "yaml",
+      "checks": [
+        {
+          "label": "uses the spring.datasource.hikari block",
+          "pattern": "hikari\\s*:"
+        },
+        {
+          "label": "sets maximum-pool-size to 10",
+          "pattern": "maximum-?pool-?size\\s*:\\s*10\\b"
+        },
+        {
+          "label": "sets connection-timeout to 3000",
+          "pattern": "connection-?timeout\\s*:\\s*3000\\b"
+        },
+        {
+          "label": "sets leak-detection-threshold to 20000",
+          "pattern": "leak-?detection-?threshold\\s*:\\s*20000\\b"
+        }
+      ],
+      "model": "spring:\n  datasource:\n    hikari:\n      maximum-pool-size: 10\n      connection-timeout: 3000\n      leak-detection-threshold: 20000",
+      "explanation": "Spring Boot relaxed binding accepts maximumPoolSize or maximum-pool-size. A short connection timeout makes overload fail fast instead of piling up threads."
+    },
+    {
+      "id": "code-asyncpg-pool",
+      "concept": "asyncpg pool",
+      "type": "code",
+      "difficulty": 2,
+      "prompt": "Using asyncpg and a DSN string `dsn`, create a pool with a minimum of 2 and a maximum of 10 connections, then acquire a connection from it and read the number of rows in table orders into `n`.",
+      "language": "python",
+      "checks": [
+        {
+          "label": "creates the pool with asyncpg.create_pool",
+          "pattern": "asyncpg\\.create_pool\\s*\\("
+        },
+        {
+          "label": "sets min_size=2 and max_size=10",
+          "pattern": "min_size\\s*=\\s*2[\\s\\S]*max_size\\s*=\\s*10|max_size\\s*=\\s*10[\\s\\S]*min_size\\s*=\\s*2"
+        },
+        {
+          "label": "acquires a connection with async with pool.acquire()",
+          "pattern": "async\\s+with\\s+\\w+\\.acquire\\s*\\(\\s*\\)"
+        },
+        {
+          "label": "awaits a query such as fetchval",
+          "pattern": "await\\s+\\w+\\.(fetchval|fetchrow|fetch)\\s*\\("
+        }
+      ],
+      "model": "pool = await asyncpg.create_pool(dsn, min_size=2, max_size=10)\nasync with pool.acquire() as conn:\n    n = await conn.fetchval(\"SELECT count(*) FROM orders\")",
+      "explanation": "Create the pool once at application start (for example in a FastAPI lifespan handler), not per request. asyncpg placeholders are $1, $2, and the default pool is min_size=10, max_size=10."
+    },
+    {
+      "id": "flyway-edited-migration",
+      "concept": "Schema migrations",
+      "type": "single",
+      "difficulty": 2,
+      "prompt": "A developer edits V3__add_status.sql after it already ran on staging, then deploys. What does Flyway do on staging at startup?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Validation fails on the checksum mismatch and the application refuses to start until it is repaired or fixed forward.",
+          "why": "Right: Flyway stores a checksum for each applied migration and validates it on migrate."
+        },
+        {
+          "id": "b",
+          "text": "It silently re-runs V3 and applies the new SQL.",
+          "why": "Versioned migrations are never re-run automatically."
+        },
+        {
+          "id": "c",
+          "text": "It computes the difference and applies only the new lines.",
+          "why": "Flyway has no concept of diffing a script."
+        },
+        {
+          "id": "d",
+          "text": "It ignores the change because V3 is already in flyway_schema_history.",
+          "why": "It does not ignore it: the stored checksum no longer matches."
+        }
+      ],
+      "correct": [
+        "b"
+      ],
+      "explanation": "Rule of the trade: applied migrations are immutable; add V4 to correct course. flyway repair realigns checksums only when you know the database really has the intended state."
+    },
+    {
+      "id": "migration-vocab",
+      "concept": "Schema migrations",
+      "type": "matrix",
+      "difficulty": 1,
+      "prompt": "Match each description to the Flyway, Liquibase or Alembic artifact.",
+      "left": [
+        {
+          "id": "a",
+          "text": "Flyway versioned migration file"
+        },
+        {
+          "id": "b",
+          "text": "Flyway repeatable migration file"
+        },
+        {
+          "id": "c",
+          "text": "Alembic's version bookkeeping table"
+        },
+        {
+          "id": "d",
+          "text": "Liquibase's applied-changesets table"
+        },
+        {
+          "id": "e",
+          "text": "Flyway's history table"
+        }
+      ],
+      "right": [
+        {
+          "id": "p",
+          "text": "V3__add_status.sql"
+        },
+        {
+          "id": "q",
+          "text": "R__refresh_views.sql"
+        },
+        {
+          "id": "r",
+          "text": "alembic_version"
+        },
+        {
+          "id": "s",
+          "text": "DATABASECHANGELOG"
+        },
+        {
+          "id": "t",
+          "text": "flyway_schema_history"
+        },
+        {
+          "id": "u",
+          "text": "schema_migrations"
+        }
+      ],
+      "pairs": {
+        "a": "p",
+        "b": "q",
+        "c": "r",
+        "d": "s",
+        "e": "t"
+      },
+      "explanation": "Liquibase identifies a changeset by id + author + file path and records it in DATABASECHANGELOG; Flyway orders by version and records checksums in flyway_schema_history; Alembic stores only the current revision id in alembic_version."
+    },
+    {
+      "id": "code-alembic-cmds",
+      "concept": "Alembic",
+      "type": "code",
+      "difficulty": 2,
+      "prompt": "Write the two shell commands that generate an Alembic revision named \"add status\" by comparing the models with the database, and then apply all pending revisions.",
+      "language": "bash",
+      "checks": [
+        {
+          "label": "generates a revision with --autogenerate",
+          "pattern": "alembic\\s+revision\\b[^\\n]*--autogenerate"
+        },
+        {
+          "label": "gives the revision a message with -m",
+          "pattern": "-m\\s+[\"']add status[\"']|--message[ =][\"']add status[\"']"
+        },
+        {
+          "label": "applies migrations with alembic upgrade head",
+          "pattern": "alembic\\s+upgrade\\s+head"
+        }
+      ],
+      "model": "alembic revision --autogenerate -m \"add status\"\nalembic upgrade head",
+      "explanation": "Always read the generated script: autogenerate cannot detect column renames (it emits drop + add), many constraint changes or data migrations. alembic downgrade -1 steps back one revision."
+    },
+    {
+      "id": "zero-downtime-migrations",
+      "concept": "Schema migrations",
+      "type": "multi",
+      "difficulty": 3,
+      "prompt": "Select all practices that make a schema change safer for a zero-downtime deployment on PostgreSQL.",
+      "options": [
+        {
+          "id": "a",
+          "text": "Add the new column as nullable, backfill in batches, then add the NOT NULL constraint in a later release.",
+          "why": "Right: avoids long locks and works with old and new code."
+        },
+        {
+          "id": "b",
+          "text": "Use CREATE INDEX CONCURRENTLY on a large live table (outside a transaction block).",
+          "why": "Right: it avoids blocking writes, at the cost of a slower build."
+        },
+        {
+          "id": "c",
+          "text": "Use expand/contract: ship code that works with both schemas before dropping the old column.",
+          "why": "Right: old and new application versions run side by side during a rolling deploy."
+        },
+        {
+          "id": "d",
+          "text": "Rename a column in one step while old and new application versions are both running.",
+          "why": "The old version immediately fails because its column no longer exists."
+        },
+        {
+          "id": "e",
+          "text": "Edit the already-applied migration file to include the extra change.",
+          "why": "Applied migrations are immutable; the change would never reach databases that already ran it."
+        }
+      ],
+      "correct": [
+        "a",
+        "b",
+        "c"
+      ],
+      "explanation": "Think in two phases per breaking change: expand (additive, compatible) then contract (cleanup after all code uses the new shape)."
+    }
+  ]
+}
