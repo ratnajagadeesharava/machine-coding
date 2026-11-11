@@ -37,6 +37,10 @@ The **Quizzes** tab (`/quiz.html`) is for checking what you know between intervi
   RAG, evals, agent safety, behavioural and company-domain topics. They are written in the style of JEE Advanced: **integer** answers, **assertion-reason**,
   **matrix match**, **drag-the-words fill-in-the-blanks**, **write a short piece of code** (Java, SQL, Python, YAML, shell ...; checked by pattern, with a model
   answer shown afterwards) and multi-correct questions. Facts were checked against documentation and by running code where possible; each quiz lists its sources.
+- **Three levels, so you can find things:** the Quizzes page opens with **subject cards** (Java and Spring Boot, Python and FastAPI, DSA, SQL and databases,
+  messaging, system design, backend concepts, AI engineering, behavioural prep) and a search box. Open a subject to see its **topic cards** (for example
+  *Java: multithreading*), open a topic to see its **quizzes**. Search works at every level and shows where each result lives. Java and Python quizzes
+  are never mixed: each has its own topics. The subject list lives in `shared/subjects.js`.
 - **Modes:** full quiz, **Quick 10** (a random ten), and **Retry missed** (only what you got wrong last time). A toggle switches between
   feedback after every question and exam style with everything revealed at the end.
 - **Every option explains itself** once you have answered, and a summary shows your score by concept, weakest first, with a review

@@ -284,7 +284,7 @@ html { scroll-behavior: auto; }
 :root[data-theme="dark"] .status.done { color: #6fdc9a; } :root[data-theme="dark"] .status.prog { background: #14284d; color: #9ec0ff; }
 
 /* ---- topics index ---- */
-.topic-card .topic-progress, .topic-head .topic-progress { display: flex; align-items: center; gap: 12px; font-size: 14px; }
+.topic-card .topic-progress, .topic-head .topic-progress, .subject-card .topic-progress { display: flex; align-items: center; gap: 12px; font-size: 14px; }
 .topic-progress .progress { flex: 1; max-width: 320px; height: 8px; }
 .topic-head { display: grid; gap: 8px; margin-bottom: 18px; }
 .topic-head h2 { font-family: var(--qdisplay); font-size: 30px; letter-spacing: -0.02em; }
@@ -339,3 +339,13 @@ html { scroll-behavior: auto; }
 .pb-offer { color: var(--ink); }
 .pb-actions { display: inline-flex; gap: 8px; }
 .btn.danger { color: var(--bad, #c0392b); border-color: var(--bad, #c0392b); }
+
+/* ---- subjects (the first level of the Quizzes page) ---- */
+.subject-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 16px; align-items: stretch; }
+.subject-card { display: flex; flex-direction: column; gap: 8px; cursor: pointer; transition: border-color .15s, transform .15s; }
+.subject-card:hover, .subject-card:focus-visible { border-color: var(--accent); transform: translateY(-2px); outline: none; }
+.subject-card .card-actions { margin-top: auto; }
+.subject-icon { width: 46px; height: 46px; border-radius: 12px; background: var(--accent-soft); display: grid; place-items: center; font-size: 24px; }
+.subject-card h3 { font-size: 18px; }
+.topic-grid-item { margin-bottom: 14px; }
+body[data-level="home"] .toc .toc-mark { font-size: 15px; background: transparent; }

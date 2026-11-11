@@ -140,3 +140,18 @@ for (const quiz of quizzes.filter((q) => q.id.startsWith('rm-'))) {
     if (quiz.language !== 'python') { const m = PY_TERMS.exec(text); assert.ok(!m, `${quiz.language} quiz mentions Python: "${m?.[0]}"`); }
   });
 }
+
+// ---------- every quiz belongs to a subject card on the Quizzes page ----------
+import { SUBJECTS, subjectIdForTopic } from '../shared/subjects.js';
+test('every quiz topic maps to a subject, and a subject never mixes Java and Python', () => {
+  const bySubject = new Map();
+  for (const q of quizzes) {
+    const topicId = q.series || `quiz-${q.id}`;
+    const sid = subjectIdForTopic(topicId);
+    assert.notEqual(sid, 'other', `${topicId} (${q.id}) has no subject: add it to shared/subjects.js`);
+    bySubject.set(sid, [...(bySubject.get(sid) || []), q.language || 'none']);
+  }
+  assert.ok(SUBJECTS.every((s) => s.title && s.description && s.icon));
+  assert.ok(!bySubject.get('java')?.some((l) => l !== 'java'), 'the Java subject holds only Java quizzes');
+  assert.ok(!bySubject.get('python')?.some((l) => l !== 'python'), 'the Python subject holds only Python quizzes');
+});

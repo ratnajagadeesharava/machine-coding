@@ -1,6 +1,7 @@
 // HLD Room quiz page: pick a quiz, answer with instant (or end-of-quiz) feedback, ask Claude to explain, review results,
 // and generate new quizzes with Claude. Progress lives in this browser's localStorage.
 import './apikey.js';
+import { SUBJECTS, subjectIdForTopic, topicRank } from '/shared/subjects.js';
 import { assertionBlock, codeWidget, fillWidget, integerWidget, matrixWidget } from './qtypes.js';
 import {
   isCorrect, numberFor, mulberry32, pickQuestions, presentQuestion, scoreAttempt, shuffle, validateQuiz,
@@ -238,7 +239,7 @@ const topicStats = (t) => ({
   running: t.items.some((q) => savedRun()?.quizId === q.id),
 });
 const routeTopic = () => { const m = /^#\/topic\/(.+)$/.exec(location.hash); return m ? decodeURIComponent(m[1]) : null; };
-const goTopic = (id) => { location.hash = id ? `#/topic/${encodeURIComponent(id)}` : ''; if (!id && !location.hash) renderCards(); };
+const goTopic = (id) => { if (id) location.hash = `#/topic/${encodeURIComponent(id)}`; else goSubject(null); };
 const searchTerm = () => (els.search?.value || '').trim().toLowerCase();
 const matches = (q, t) => !searchTerm() || `${q.title} ${q.description} ${q.topic} ${t?.title || ''}`.toLowerCase().includes(searchTerm());
 
@@ -249,27 +250,65 @@ function topicCard(t) {
     h('div', { class: 'card-top' }, h('h3', { text: t.title }),
       st.running ? h('span', { class: 'status prog', text: 'In progress' }) : st.done === t.items.length ? h('span', { class: 'status done', text: '✓ All done' }) : st.done ? h('span', { class: 'status prog', text: `${st.done}/${t.items.length} done` }) : null),
     t.description ? h('p', { class: 'muted', text: t.description }) : null,
-    h('div', { class: 'meta' }, h('span', { text: `${t.items.length} quizzes` }), h('span', { text: `${st.questions} questions` }), h('span', { text: fmtMinutes(st.minutes) })),
+    h('div', { class: 'meta' }, h('span', { text: `${t.items.length} quiz${t.items.length === 1 ? '' : 'zes'}` }), h('span', { text: `${st.questions} questions` }), h('span', { text: fmtMinutes(st.minutes) })),
     h('div', { class: 'topic-progress' }, h('span', { class: 'progress' }, h('i', { style: `width:${pct}%` })), h('span', { class: 'muted', text: `${st.done}/${t.items.length}` })),
     h('div', { class: 'card-actions' }, h('button', { class: 'btn primary small', type: 'button', text: st.done ? 'Continue' : 'Open topic', onclick: () => goTopic(t.id) })));
+}
+
+// Three levels: subjects (cards + search) -> topics inside a subject -> quizzes inside a topic.
+const routeSubject = () => { const m = /^#\/subject\/(.+)$/.exec(location.hash); return m ? decodeURIComponent(m[1]) : null; };
+const goSubject = (id) => { location.hash = id ? `#/subject/${encodeURIComponent(id)}` : ''; if (!id && !location.hash) renderCards(); };
+function buildSubjects(topics) {
+  const map = new Map(SUBJECTS.map((s) => [s.id, { ...s, topics: [] }]));
+  for (const t of topics) map.get(subjectIdForTopic(t.id)).topics.push(t);
+  for (const sj of map.values()) sj.topics.sort((a, b) => topicRank(a.id) - topicRank(b.id) || a.title.localeCompare(b.title));
+  return [...map.values()].filter((s) => s.topics.length);
+}
+const subjectQuizzes = (s) => s.topics.flatMap((t) => t.items);
+const subjectStats = (s) => {
+  const qs = subjectQuizzes(s);
+  return { quizzes: qs.length, done: qs.filter((q) => S.attempts[q.id]?.best != null).length, questions: qs.reduce((n, q) => n + q.questionCount, 0), minutes: qs.reduce((n, q) => n + q.estimatedMinutes, 0), running: qs.some((q) => savedRun()?.quizId === q.id) };
+};
+const textMatches = (text) => !searchTerm() || text.toLowerCase().includes(searchTerm());
+const topicMatches = (t) => textMatches(`${t.title} ${t.description}`) || t.items.some((q) => matches(q, t));
+
+function subjectCard(s) {
+  const st = subjectStats(s);
+  const pct = st.quizzes ? Math.round((st.done / st.quizzes) * 100) : 0;
+  const open = () => goSubject(s.id);
+  return h('article', { class: 'card subject-card', tabindex: '0', role: 'link', 'aria-label': `${s.title}: open`, dataset: { subject: s.id }, onclick: open, onkeydown: (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); open(); } } },
+    h('div', { class: 'subject-icon', 'aria-hidden': 'true', text: s.icon }),
+    h('div', { class: 'card-top' }, h('h3', { text: s.title }),
+      st.running ? h('span', { class: 'status prog', text: 'In progress' }) : st.done === st.quizzes ? h('span', { class: 'status done', text: '✓ All done' }) : null),
+    h('p', { class: 'muted', text: s.description }),
+    h('div', { class: 'meta' }, h('span', { text: `${s.topics.length} topic${s.topics.length === 1 ? '' : 's'}` }), h('span', { text: `${st.quizzes} quizzes` }), h('span', { text: `${st.questions} questions` })),
+    h('div', { class: 'topic-progress' }, h('span', { class: 'progress' }, h('i', { style: `width:${pct}%` })), h('span', { class: 'muted', text: `${st.done}/${st.quizzes}` })),
+    h('div', { class: 'card-actions' }, h('button', { class: 'btn primary small', type: 'button', text: st.done ? 'Continue' : 'Open subject', onclick: (e) => { e.stopPropagation(); open(); } })));
 }
 
 function renderCards() {
   els.cards.replaceChildren();
   const list = allQuizzes();
   const topics = buildTopics(list);
-  const open = routeTopic();
-  const topic = open ? topics.find((t) => t.id === open) : null;
-  if (open && !topic) { location.hash = ''; return; }
-  document.body.classList.toggle('in-topic', !!topic);
-  els.search.placeholder = topic ? `Search in ${topic.title}` : 'Search topics and quizzes';
-  els.heading.textContent = topic ? 'QUIZZES IN THIS TOPIC' : searchTerm() ? 'SEARCH RESULTS' : 'TOPICS';
+  const subjects = buildSubjects(topics);
+  const openTopic = routeTopic();
+  const topic = openTopic ? topics.find((t) => t.id === openTopic) : null;
+  if (openTopic && !topic) { location.hash = ''; return; }
+  const openSubject = routeSubject();
+  const subject = topic ? subjects.find((s) => s.topics.includes(topic)) : openSubject ? subjects.find((s) => s.id === openSubject) : null;
+  if (openSubject && !subject && !topic) { location.hash = ''; return; }
+  const level = topic ? 'topic' : subject ? 'subject' : 'home';
+  document.body.classList.toggle('in-topic', level !== 'home');
+  document.body.dataset.level = level;
+  els.search.placeholder = level === 'topic' ? `Search in ${topic.title}` : level === 'subject' ? `Search in ${subject.title}` : 'Search all quizzes';
+  els.search.setAttribute('aria-label', els.search.placeholder);
+  els.heading.textContent = level === 'topic' ? 'QUIZZES IN THIS TOPIC' : searchTerm() ? 'SEARCH RESULTS' : level === 'subject' ? `TOPICS IN ${subject.title.toUpperCase()}` : 'SUBJECTS';
   let shown = 0;
 
-  if (topic) {
+  if (level === 'topic') {
     const st = topicStats(topic);
     els.cards.append(h('div', { class: 'topic-head' },
-      h('a', { class: 'back', href: '#', onclick: (e) => { e.preventDefault(); goTopic(null); } }, '← All topics'),
+      h('a', { class: 'back', href: '#', onclick: (e) => { e.preventDefault(); goSubject(subject?.id || null); } }, `← ${subject ? subject.title : 'All subjects'}`),
       h('h2', { text: topic.title }),
       topic.description ? h('p', { class: 'muted', text: topic.description }) : null,
       h('div', { class: 'topic-progress' }, h('span', { class: 'progress' }, h('i', { style: `width:${Math.round((st.done / topic.items.length) * 100)}%` })), h('span', { class: 'muted', text: `${st.done}/${topic.items.length} done · ${st.questions} questions` }))));
@@ -278,27 +317,44 @@ function renderCards() {
       shown += 1;
       els.cards.append(h('div', { class: 'series-item' }, h('span', { class: 'series-num' + (badgeFor(q) != null ? ' done' : ''), text: badgeFor(q) != null ? '✓' : String(i + 1) }), quizCard(q, true)));
     });
+  } else if (level === 'subject') {
+    els.cards.append(h('div', { class: 'topic-head' },
+      h('a', { class: 'back', href: '#', onclick: (e) => { e.preventDefault(); goSubject(null); } }, '← All subjects'),
+      h('h2', { text: `${subject.icon} ${subject.title}` }),
+      h('p', { class: 'muted', text: subject.description })));
+    for (const t of subject.topics) {
+      if (!topicMatches(t)) continue;
+      shown += 1;
+      els.cards.append(h('div', { class: 'topic-grid-item' }, t.single ? quizCard(t.items[0], false) : topicCard(t)));
+    }
   } else if (searchTerm()) {
-    for (const t of topics) {
-      for (const q of t.items) {
-        if (!matches(q, t)) continue;
-        shown += 1;
-        els.cards.append(h('div', { class: 'result-item' },
-          t.single ? null : h('a', { class: 'crumb', href: `#/topic/${encodeURIComponent(t.id)}`, text: `${t.title} ›` }), quizCard(q, true)));
+    const hits = subjects.filter((s) => textMatches(`${s.title} ${s.description}`));
+    for (const s of hits) { shown += 1; els.cards.append(subjectCard(s)); }
+    for (const s of subjects) {
+      for (const t of s.topics) {
+        if (!t.single && textMatches(`${t.title} ${t.description}`)) { shown += 1; els.cards.append(h('div', { class: 'result-item' }, h('a', { class: 'crumb', href: `#/subject/${encodeURIComponent(s.id)}`, text: `${s.title} ›` }), topicCard(t))); }
+        for (const q of t.items) {
+          if (!matches(q, t)) continue;
+          shown += 1;
+          els.cards.append(h('div', { class: 'result-item' },
+            h('a', { class: 'crumb', href: t.single ? `#/subject/${encodeURIComponent(s.id)}` : `#/topic/${encodeURIComponent(t.id)}`, text: t.single ? `${s.title} ›` : `${s.title} › ${t.title} ›` }), quizCard(q, true)));
+        }
       }
     }
   } else {
-    for (const t of topics) { shown += 1; els.cards.append(t.single ? quizCard(t.items[0], false) : topicCard(t)); }
+    els.cards.classList.add('subject-grid');
+    for (const s of subjects) { shown += 1; els.cards.append(subjectCard(s)); }
   }
+  if (level !== 'home' || searchTerm()) els.cards.classList.remove('subject-grid');
   if (!list.length) els.cards.append(h('p', { class: 'empty', text: 'No quizzes yet. Create one with AI on the right.' }));
   els.noMatch.hidden = shown > 0 || !list.length;
-  renderToc(topics, topic);
-  els.stats.hidden = !!topic || !!searchTerm();
-  els.upnext.dataset.hide = topic || searchTerm() ? '1' : '';
+  renderToc(subjects, subject, topic);
+  els.stats.hidden = level !== 'home' || !!searchTerm();
+  els.upnext.dataset.hide = level !== 'home' || searchTerm() ? '1' : '';
   renderStats(list);
   renderUpNext();
-  const t = topic ? `${topic.title} - Quizzes` : 'Quizzes';
-  if (S.view === 'home') { document.title = `${t} - HLD Room`; els.title.textContent = topic ? topic.title : 'Quizzes'; els.sub.textContent = topic ? 'Pick a sub-topic quiz.' : 'Check what you know, then see why.'; }
+  const t = level === 'topic' ? topic.title : level === 'subject' ? subject.title : 'Quizzes';
+  if (S.view === 'home') { document.title = `${t} - HLD Room`; els.title.textContent = level === 'home' ? 'Quizzes' : t; els.sub.textContent = level === 'topic' ? 'Pick a quiz.' : level === 'subject' ? 'Pick a topic.' : 'Pick a subject, then a topic, then a quiz.'; }
 }
 
 // ---------- index (table of contents), stats and search ----------
@@ -310,22 +366,33 @@ function tocLink(q, num) {
     h('span', { class: 'toc-title', text: (t => t.charAt(0).toUpperCase() + t.slice(1))(q.title.replace(/^[A-Za-z ]+:\s*/, '')) }),
     best != null ? h('span', { class: 'toc-score', text: `${best}%` }) : null);
 }
-function renderToc(topics, topic) {
+function renderToc(subjects, subject, topic) {
   const nav = els.toc;
   nav.replaceChildren();
   if (topic) {
-    nav.append(h('a', { class: 'toc-back', href: '#', onclick: (e) => { e.preventDefault(); goTopic(null); } }, '← All topics'),
+    nav.append(h('a', { class: 'toc-back', href: '#', onclick: (e) => { e.preventDefault(); goSubject(subject?.id || null); } }, `← ${subject ? subject.title : 'All subjects'}`),
       h('div', { class: 'toc-head', text: topic.title.toUpperCase() }),
       h('div', { class: 'toc-group' }, ...topic.items.map((q, i) => tocLink(q, i + 1))));
     return;
   }
-  nav.append(h('div', { class: 'toc-head', text: 'TOPICS' }));
-  for (const t of topics) {
-    const st = topicStats(t);
-    nav.append(h('a', { class: 'toc-topic' + (st.done === t.items.length ? ' done' : ''), href: `#/topic/${encodeURIComponent(t.id)}`, onclick: (e) => { e.preventDefault(); if (t.single) gotoQuiz(t.items[0].id); else goTopic(t.id); } },
-      h('span', { class: 'toc-mark', text: st.done === t.items.length ? '✓' : String(t.items.length) }),
-      h('span', { class: 'toc-title', text: t.title }),
-      h('span', { class: 'toc-count', text: `${st.done}/${t.items.length}` })));
+  if (subject) {
+    nav.append(h('a', { class: 'toc-back', href: '#', onclick: (e) => { e.preventDefault(); goSubject(null); } }, '← All subjects'), h('div', { class: 'toc-head', text: subject.title.toUpperCase() }));
+    for (const t of subject.topics) {
+      const st = topicStats(t);
+      nav.append(h('a', { class: 'toc-topic' + (st.done === t.items.length ? ' done' : ''), href: `#/topic/${encodeURIComponent(t.id)}`, onclick: (e) => { e.preventDefault(); if (t.single) gotoQuiz(t.items[0].id); else goTopic(t.id); } },
+        h('span', { class: 'toc-mark', text: st.done === t.items.length ? '✓' : String(t.items.length) }),
+        h('span', { class: 'toc-title', text: t.title.replace(/^(Java|Python|Core): /, '') }),
+        h('span', { class: 'toc-count', text: `${st.done}/${t.items.length}` })));
+    }
+    return;
+  }
+  nav.append(h('div', { class: 'toc-head', text: 'SUBJECTS' }));
+  for (const sj of subjects) {
+    const st = subjectStats(sj);
+    nav.append(h('a', { class: 'toc-topic' + (st.done === st.quizzes ? ' done' : ''), href: `#/subject/${encodeURIComponent(sj.id)}`, onclick: (e) => { e.preventDefault(); goSubject(sj.id); } },
+      h('span', { class: 'toc-mark', text: sj.icon }),
+      h('span', { class: 'toc-title', text: sj.title }),
+      h('span', { class: 'toc-count', text: `${st.done}/${st.quizzes}` })));
   }
 }
 function gotoQuiz(id) {
@@ -338,7 +405,7 @@ function gotoQuiz(id) {
     card.classList.remove('flash'); void card.offsetWidth; card.classList.add('flash');
   };
   if (t && !t.single && routeTopic() !== t.id) { location.hash = `#/topic/${encodeURIComponent(t.id)}`; setTimeout(scroll, 60); return; }
-  if (t && t.single && routeTopic()) { goTopic(null); setTimeout(scroll, 60); return; }
+  if (t && t.single) { const sid = subjectIdForTopic(t.id); if (routeSubject() !== sid) { goSubject(sid); setTimeout(scroll, 60); return; } }
   scroll();
 }
 // One smart suggestion at the top: resume, practise weak spots, continue the series, or revisit an old quiz.
