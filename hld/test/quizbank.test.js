@@ -18,7 +18,7 @@ for (const quiz of quizzes) {
   test(`quiz "${quiz.id}" follows the quality rules`, () => {
     const singles = quiz.questions.filter((q) => q.type === 'single');
     // every option explains itself
-    for (const q of quiz.questions) for (const o of q.options) assert.ok(o.why && o.why.length >= 15, `${q.id}/${o.id} needs a "why"`);
+    for (const q of quiz.questions) for (const o of q.options || []) assert.ok(o.why && o.why.length >= 15, `${q.id}/${o.id} needs a "why"`);
     // the correct answer must not be recognisable by length alone
     let longest = 0;
     for (const q of singles) {
@@ -29,7 +29,7 @@ for (const quiz of quizzes) {
       const avg = others.reduce((a, b) => a + b, 0) / others.length;
       assert.ok(lens[c] <= avg * 1.8 && lens[c] >= avg * 0.45, `${q.id}: correct option length ${lens[c]} vs distractors ${Math.round(avg)}`);
     }
-    assert.ok(longest / singles.length <= 0.4, `correct option is the longest in ${longest}/${singles.length} single-answer questions`);
+    assert.ok(!singles.length || longest / singles.length <= 0.4, `correct option is the longest in ${longest}/${singles.length} single-answer questions`);
     // variety
     assert.ok(new Set(quiz.questions.map((q) => q.type)).size >= 2, 'mix question types');
     assert.ok(new Set(quiz.questions.map((q) => q.difficulty)).size === 3, 'cover all three difficulties');
@@ -42,6 +42,17 @@ for (const quiz of quizzes) {
     }
     // prompts are real questions or instructions
     for (const q of quiz.questions) assert.match(q.prompt, /[?.]$/, `${q.id} prompt should end with ? or .`);
+  });
+}
+
+for (const quiz of quizzes.filter((q) => q.series === 'interview-roadmap')) {
+  test(`roadmap quiz "${quiz.id}" mixes the JEE-style question types`, () => {
+    const types = new Set(quiz.questions.map((q) => q.type));
+    assert.ok(types.size >= 4, `only ${types.size} question types`);
+    assert.ok(types.has('code') && types.has('integer'), 'needs at least one code and one integer question');
+    const rich = quiz.questions.filter((q) => !['single', 'multi', 'truefalse'].includes(q.type)).length;
+    assert.ok(rich / quiz.questions.length >= 0.5, 'at least half of the questions should be integer/assertion/matrix/fill/code');
+    assert.ok(quiz.questions.length >= 10, 'roadmap quizzes need at least 10 questions');
   });
 }
 

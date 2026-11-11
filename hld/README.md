@@ -32,6 +32,11 @@ The **Quizzes** tab (`/quiz.html`) is for checking what you know between intervi
 
 - **Scaling Reads** ships with the app: 29 questions (single choice, select-all, true/false) covering indexing, denormalisation,
   read replicas, sharding, caching, invalidation, CDNs, hot keys and stampedes, and interview judgement.
+- **Interview roadmap series:** 67 topic quizzes (about 1,200 questions) that follow the backend / AI-engineering interview roadmap: language core, concurrency,
+  DSA, Spring Boot and FastAPI, data access, SQL and databases, messaging, resilience, observability, security, testing, system design, LLM, LangChain, LangGraph,
+  RAG, evals, agent safety, behavioural and company-domain topics. They are written in the style of JEE Advanced: **integer** answers, **assertion-reason**,
+  **matrix match**, **drag-the-words fill-in-the-blanks**, **write a short piece of code** (Java, SQL, Python, YAML, shell ...; checked by pattern, with a model
+  answer shown afterwards) and multi-correct questions. Facts were checked against documentation and by running code where possible; each quiz lists its sources.
 - **Modes:** full quiz, **Quick 10** (a random ten), and **Retry missed** (only what you got wrong last time). A toggle switches between
   feedback after every question and exam style with everything revealed at the end.
 - **Every option explains itself** once you have answered, and a summary shows your score by concept, weakest first, with a review

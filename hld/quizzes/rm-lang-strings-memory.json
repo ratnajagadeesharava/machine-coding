@@ -1,0 +1,589 @@
+{
+  "id": "rm-lang-strings-memory",
+  "title": "Language core: strings, immutability and memory",
+  "topic": "Interview roadmap",
+  "series": "interview-roadmap",
+  "seriesTitle": "Interview roadmap: topic quizzes",
+  "seriesOrder": 13,
+  "seriesDescription": "Topic-by-topic JEE-style quizzes for the backend and AI-engineering interview roadmap: integer, assertion-reason, matrix match, fill-in-the-blanks, short code writing, plus multi-correct questions. Language core, concurrency, DSA, web frameworks, data access, databases, messaging, resilience, security, testing, system design, LLM and agent engineering.",
+  "description": "String pool and == vs equals, StringBuilder, immutable classes, Python str/tuple and join, JVM heap/stack/generations/G1, leak causes, reference counting plus cyclic GC and __slots__.",
+  "source": "JLS 3.10.5, 15.18.1 and 15.29; Oracle JVM GC Tuning Guide; JEP 122 (Metaspace) and JEP 248 (G1 default for server-class machines in JDK 9); java.lang.ref docs; Java docs: String; Python docs: gc, copy, data model, FAQ; Baeldung; Real Python; Toptal interview list",
+  "estimatedMinutes": 16,
+  "questions": [
+    {
+      "id": "string-pool-count",
+      "concept": "String pool",
+      "type": "integer",
+      "difficulty": 2,
+      "prompt": "Consider:\nString a = \"hi\", b = \"hi\";\nString c = new String(\"hi\");\nString d = c.intern();\nHow many of these six expressions are true: a == b, a == c, a == d, c == d, a.equals(c), c.equals(d)?",
+      "answer": 4,
+      "explanation": "Literals share one pooled object (a == b). new String creates a separate heap object (a == c and c == d are false). intern() returns the pooled instance (a == d). Both equals calls are true. Total 4. (Verified by running it.)"
+    },
+    {
+      "id": "constant-folding",
+      "concept": "String pool",
+      "type": "single",
+      "difficulty": 3,
+      "prompt": "What do these Java comparisons print?\nString s1 = \"ab\", s2 = \"a\" + \"b\";\nString s3 = \"a\", s4 = s3 + \"b\";\nSystem.out.println((s1 == s2) + \" \" + (s1 == s4));\nWhat is printed?",
+      "options": [
+        {
+          "id": "a",
+          "text": "true true",
+          "why": "Only constant expressions are folded by the compiler; s3 is not a constant, so s4 is built at runtime."
+        },
+        {
+          "id": "b",
+          "text": "false false",
+          "why": "\"a\" + \"b\" is a compile-time constant and is interned, so s1 == s2 is true."
+        },
+        {
+          "id": "c",
+          "text": "true false",
+          "why": "Correct: s2 is folded to the pooled \"ab\", while s4 is created at runtime as a new object."
+        },
+        {
+          "id": "d",
+          "text": "false true",
+          "why": "It is the other way round: the constant matches, the runtime concatenation does not."
+        }
+      ],
+      "correct": [
+        "c"
+      ],
+      "explanation": "If s3 were declared final String s3 = \"a\", then s3 + \"b\" would be a constant expression and s1 == s4 would be true. Always compare strings with equals. (Verified by running it.)"
+    },
+    {
+      "id": "string-thread-safe",
+      "concept": "Immutability",
+      "type": "assertion",
+      "difficulty": 2,
+      "prompt": "Read the assertion (A) and the reason (R), then choose the option that fits.",
+      "assertion": "A Java String can be shared between threads without any synchronization.",
+      "reason": "A String caches its hash code after the first call to hashCode().",
+      "correct": [
+        "b"
+      ],
+      "whys": {
+        "a": "R is true, but caching is a performance detail that does not make sharing safe.",
+        "b": "Correct: both true; thread safety comes from immutability (final state), which also makes the cached hash safe, but caching does not cause it.",
+        "c": "R is true: String stores a hash field.",
+        "d": "A is true: immutable objects are inherently thread-safe."
+      },
+      "explanation": "Immutability buys thread safety, safe use as map keys, string pooling and security (a validated path cannot change after the check)."
+    },
+    {
+      "id": "stringbuilder-join",
+      "concept": "Mutable vs immutable strings",
+      "type": "code",
+      "difficulty": 1,
+      "prompt": "Given an int n, write Java that builds the string \"0,1,2,...,n-1\" (no trailing comma) in a variable s, using a StringBuilder instead of repeated + on a String.",
+      "language": "java",
+      "starter": "",
+      "checks": [
+        {
+          "label": "creates a StringBuilder",
+          "pattern": "new\\s+StringBuilder"
+        },
+        {
+          "label": "appends in a loop",
+          "pattern": "(for|while)[\\s\\S]*\\.append\\s*\\("
+        },
+        {
+          "label": "converts with toString()",
+          "pattern": "toString\\s*\\(\\s*\\)"
+        }
+      ],
+      "model": "StringBuilder sb = new StringBuilder();\nfor (int i = 0; i < n; i++) {\n  if (i > 0) sb.append(',');\n  sb.append(i);\n}\nString s = sb.toString();",
+      "explanation": "Using s += i in a loop creates a new String each iteration, which is O(n squared) in total. String.join or Collectors.joining are the stream alternatives; StringBuffer is the synchronized, slower older sibling."
+    },
+    {
+      "id": "tuple-mutation",
+      "concept": "Mutable vs immutable strings",
+      "type": "single",
+      "difficulty": 3,
+      "prompt": "What does this Python print?\nt = (1, [2, 3])\ntry:\n    t[1] += [4]\nexcept TypeError:\n    print(\"err\", t)\nWhat is the output?",
+      "options": [
+        {
+          "id": "a",
+          "text": "err (1, [2, 3])",
+          "why": "The list was extended in place before the failing re-assignment to the tuple slot."
+        },
+        {
+          "id": "b",
+          "text": "err (1, [2, 3, 4])",
+          "why": "Correct: += mutates the inner list, then trying to store it back into the tuple raises TypeError."
+        },
+        {
+          "id": "c",
+          "text": "(1, [2, 3, 4]) with no error line",
+          "why": "Item assignment on a tuple always fails, even if the value is the same object."
+        },
+        {
+          "id": "d",
+          "text": "err (1, [2, 3, 4, 4])",
+          "why": "The list is extended once, not twice."
+        }
+      ],
+      "correct": [
+        "b"
+      ],
+      "explanation": "A tuple is immutable in its references, not in the objects it refers to. This is why a tuple containing a list is not hashable. (Verified by running it.)"
+    },
+    {
+      "id": "why-string-immutable",
+      "concept": "Immutability",
+      "type": "fill",
+      "difficulty": 1,
+      "prompt": "Complete the sentence about Java strings.",
+      "text": "Because String is {1}, literals can be shared from the string {2}, and its {3} can be cached after the first computation.",
+      "blanks": {
+        "1": "immutable",
+        "2": "pool",
+        "3": "hashCode"
+      },
+      "bank": [
+        "immutable",
+        "pool",
+        "hashCode",
+        "volatile",
+        "length"
+      ],
+      "explanation": "The pool lives in the heap since Java 7. Immutability is a design choice enforced by a final class with private final fields, not by the final keyword on a variable."
+    },
+    {
+      "id": "final-reference",
+      "concept": "Immutability",
+      "type": "truefalse",
+      "difficulty": 1,
+      "prompt": "Declaring a variable final in Java (final List<String> names = new ArrayList<>();) makes the list it refers to immutable.",
+      "options": [
+        {
+          "id": "a",
+          "text": "True",
+          "why": "final only fixes the reference."
+        },
+        {
+          "id": "b",
+          "text": "False",
+          "why": "Correct: you can still call names.add(...); final prevents reassigning the variable, not mutating the object."
+        }
+      ],
+      "correct": [
+        "b"
+      ],
+      "explanation": "For real immutability use List.of / Collections.unmodifiableList (a view) or List.copyOf (a copy)."
+    },
+    {
+      "id": "immutable-class-recipe",
+      "concept": "Immutability",
+      "type": "multi",
+      "difficulty": 2,
+      "prompt": "Select all steps that are part of making a Java class truly immutable.",
+      "options": [
+        {
+          "id": "a",
+          "text": "Declare the class final (or make constructors private) so subclasses cannot add mutability.",
+          "why": "A subclass could otherwise override getters or add mutable state."
+        },
+        {
+          "id": "b",
+          "text": "Make all fields private and final.",
+          "why": "The core of immutability: fields set once in the constructor."
+        },
+        {
+          "id": "c",
+          "text": "Provide no setters or other mutators.",
+          "why": "No method may change observable state after construction."
+        },
+        {
+          "id": "d",
+          "text": "Copy mutable inputs and outputs, such as a Date or List, defensively.",
+          "why": "Otherwise callers keep a handle on the internal state."
+        },
+        {
+          "id": "e",
+          "text": "Implement Serializable.",
+          "why": "Unrelated to immutability and it adds extra concerns."
+        },
+        {
+          "id": "f",
+          "text": "Mark every getter synchronized.",
+          "why": "Unneeded: nothing changes after construction, so there are no races."
+        }
+      ],
+      "correct": [
+        "a",
+        "b",
+        "c",
+        "d"
+      ],
+      "explanation": "Records automate most of this, but remember they are only shallowly immutable: a record with a List component is only immutable if you copy the list with List.copyOf."
+    },
+    {
+      "id": "join-vs-concat",
+      "concept": "Mutable vs immutable strings",
+      "type": "single",
+      "difficulty": 2,
+      "prompt": "What is the idiomatic way to concatenate a list of 100,000 small strings named parts in Python?",
+      "options": [
+        {
+          "id": "a",
+          "text": "\"\".join(parts) in one pass",
+          "why": "Correct: it computes the total size once and copies each piece once, so it is linear."
+        },
+        {
+          "id": "b",
+          "text": "sum(parts, \"\")",
+          "why": "sum rejects strings on purpose and raises TypeError telling you to use \"\".join."
+        },
+        {
+          "id": "c",
+          "text": "result = \"\"\nfor p in parts: result += p",
+          "why": "Each += may copy the whole string so far; CPython sometimes optimises it, but it is not guaranteed on other implementations."
+        },
+        {
+          "id": "d",
+          "text": "functools.reduce(lambda a, b: a + b, parts)",
+          "why": "Equivalent to the repeated + loop, creating many intermediate strings."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "str is immutable, so building by repeated + is potentially quadratic. Use \"\".join(...), io.StringIO, or a list as the builder. (sum with strings verified to raise TypeError.)"
+    },
+    {
+      "id": "jvm-memory",
+      "concept": "Heap, stack and GC",
+      "type": "matrix",
+      "difficulty": 2,
+      "prompt": "Match each term with its description.",
+      "left": [
+        {
+          "id": "a",
+          "text": "Young generation"
+        },
+        {
+          "id": "b",
+          "text": "Old generation"
+        },
+        {
+          "id": "c",
+          "text": "Metaspace"
+        },
+        {
+          "id": "d",
+          "text": "G1 collector"
+        },
+        {
+          "id": "e",
+          "text": "Python cyclic GC (gc module)"
+        }
+      ],
+      "right": [
+        {
+          "id": "p",
+          "text": "Eden plus survivor spaces; collected by frequent, short minor GCs"
+        },
+        {
+          "id": "q",
+          "text": "Holds objects that survived several collections; collected less often"
+        },
+        {
+          "id": "r",
+          "text": "Class metadata stored in native memory (replaced PermGen in Java 8)"
+        },
+        {
+          "id": "s",
+          "text": "Region-based collector with a pause-time target, default since JDK 9"
+        },
+        {
+          "id": "t",
+          "text": "Finds unreachable reference cycles among container objects, supplementing reference counting"
+        },
+        {
+          "id": "u",
+          "text": "Per-thread frames holding local variables and call state"
+        }
+      ],
+      "pairs": {
+        "a": "p",
+        "b": "q",
+        "c": "r",
+        "d": "s",
+        "e": "t"
+      },
+      "explanation": "The generational hypothesis (most objects die young) drives the design. G1 became the default collector in JDK 9 for server-class machines (JEP 248; JEP 523 later extends this to all environments). The thread stack, the sixth right item, is a separate area per thread (-Xss)."
+    },
+    {
+      "id": "java-leaks",
+      "concept": "Memory leaks",
+      "type": "assertion",
+      "difficulty": 2,
+      "prompt": "Read the assertion (A) and the reason (R), then choose the option that fits.",
+      "assertion": "A Java application can leak memory even though it runs a garbage collector.",
+      "reason": "The garbage collector frees every object that is still reachable from a static collection.",
+      "correct": [
+        "c"
+      ],
+      "whys": {
+        "a": "R is false, so it cannot explain A.",
+        "b": "R is false.",
+        "c": "Correct: A is true (unwanted but reachable objects are never collected); R is false, since reachable objects are never freed.",
+        "d": "A is true."
+      },
+      "explanation": "GC reclaims unreachable objects only. A leak in Java means unintended reachability."
+    },
+    {
+      "id": "leak-causes",
+      "concept": "Memory leaks",
+      "type": "multi",
+      "difficulty": 2,
+      "prompt": "Select all common causes of memory leaks in a long-running Java service.",
+      "options": [
+        {
+          "id": "a",
+          "text": "A static Map used as a cache with no eviction or size bound.",
+          "why": "It lives as long as the class, so entries are always reachable."
+        },
+        {
+          "id": "b",
+          "text": "Listeners or callbacks registered but never deregistered.",
+          "why": "The publisher keeps a strong reference (the lapsed listener problem)."
+        },
+        {
+          "id": "c",
+          "text": "ThreadLocal values never removed in a pooled thread.",
+          "why": "Pool threads live forever, so their ThreadLocal map keeps the values."
+        },
+        {
+          "id": "d",
+          "text": "Local variables inside a method that has already returned.",
+          "why": "Their stack frame is gone, so they no longer keep objects alive."
+        },
+        {
+          "id": "e",
+          "text": "Allocating many short-lived objects in the young generation.",
+          "why": "This is what the young generation is designed for; it does not leak."
+        }
+      ],
+      "correct": [
+        "a",
+        "b",
+        "c"
+      ],
+      "explanation": "Diagnose with a heap dump (jmap, VisualVM, Eclipse MAT): look for the dominator tree and the GC roots keeping the objects alive."
+    },
+    {
+      "id": "gc-cycle",
+      "concept": "Heap, stack and GC",
+      "type": "integer",
+      "difficulty": 3,
+      "prompt": "class Node { Node next; }\nNode a = new Node(), b = new Node(), c = new Node();\na.next = b; b.next = c; c.next = b;\nb = null; c = null;\na.next = null;\nAfter this code, how many of the three Node objects are eligible for garbage collection?",
+      "answer": 2,
+      "explanation": "The variable a still references the first node, so it stays alive. After a.next = null nothing reaches b or c; their mutual cycle does not keep them reachable, so both are eligible: 2. Java uses reachability from GC roots, not reference counting."
+    },
+    {
+      "id": "slots-effect",
+      "concept": "Python memory",
+      "type": "single",
+      "difficulty": 2,
+      "prompt": "What happens when this Python code runs?\nclass S:\n    __slots__ = (\"x\", \"y\")\ns = S()\ns.z = 1\nWhat is the outcome?",
+      "options": [
+        {
+          "id": "a",
+          "text": "It works; z is stored in the instance __dict__",
+          "why": "A class with __slots__ has no per-instance __dict__ (unless \"__dict__\" is listed)."
+        },
+        {
+          "id": "b",
+          "text": "AttributeError is raised",
+          "why": "Correct: only the declared slots can be assigned, which also saves memory per instance."
+        },
+        {
+          "id": "c",
+          "text": "It is silently ignored",
+          "why": "Python raises instead of ignoring unknown attribute writes here."
+        },
+        {
+          "id": "d",
+          "text": "TypeError is raised at class definition",
+          "why": "The class defines fine; the error only appears on the illegal assignment."
+        }
+      ],
+      "correct": [
+        "b"
+      ],
+      "explanation": "__slots__ replaces the per-instance dict with fixed storage, cutting memory for millions of small objects. Drawbacks: no dynamic attributes, subclassing and multiple inheritance caveats, no weakrefs unless \"__weakref__\" is a slot. (Verified by running it.)"
+    },
+    {
+      "id": "refcount-cycles",
+      "concept": "Python memory",
+      "type": "assertion",
+      "difficulty": 3,
+      "prompt": "Read the assertion (A) and the reason (R), then choose the option that fits.",
+      "assertion": "In CPython, reference counting alone is enough to free objects that reference each other in a cycle.",
+      "reason": "CPython has a separate cyclic garbage collector for container objects.",
+      "correct": [
+        "d"
+      ],
+      "whys": {
+        "a": "A is false, so it cannot be explained.",
+        "b": "A is false.",
+        "c": "R is true, so c is wrong.",
+        "d": "Correct: a cycle keeps every count above zero, so A is false; that is exactly why the gc module exists (R is true)."
+      },
+      "explanation": "Refcounting frees most objects immediately and deterministically; the cyclic GC (generations 0-2) cleans up cycles later. Use weakref to avoid cycles in caches and observers."
+    },
+    {
+      "id": "stack-heap",
+      "concept": "Heap, stack and GC",
+      "type": "assertion",
+      "difficulty": 1,
+      "prompt": "Read the assertion (A) and the reason (R), then choose the option that fits.",
+      "assertion": "In Java, a local variable of reference type lives on the thread stack, while the object it points to lives on the heap.",
+      "reason": "Stack frames vanish when a method returns, whereas heap objects are reclaimed only by the garbage collector.",
+      "correct": [
+        "a"
+      ],
+      "whys": {
+        "a": "Correct: the second statement describes the different lifetimes of the two areas, which is why objects can outlive the frame that created them.",
+        "b": "R is relevant: it explains the lifecycle difference.",
+        "c": "R is true.",
+        "d": "A is true (escape analysis can sometimes avoid heap allocation, but the language model is as stated)."
+      },
+      "explanation": "Each thread has its own stack (StackOverflowError when too deep); the heap is shared (OutOfMemoryError when full)."
+    },
+    {
+      "id": "concat-precedence",
+      "concept": "String pool",
+      "type": "single",
+      "difficulty": 3,
+      "prompt": "What does this Java statement print?\n\nSystem.out.println(1 + 2 + \"x\" + 1 + 2);\n\nWhat is printed?",
+      "options": [
+        {
+          "id": "a",
+          "text": "3x12, because 1 + 2 is added before any String appears",
+          "why": "Correct: + is evaluated left to right, so 1 + 2 is integer addition (3) before the first String appears; after that every + is concatenation."
+        },
+        {
+          "id": "b",
+          "text": "12x12, because every + here is string concatenation",
+          "why": "Wrong: this treats every + as concatenation, but the first operands are both ints and are added numerically."
+        },
+        {
+          "id": "c",
+          "text": "3x3, because the trailing 1 + 2 is added numerically",
+          "why": "Wrong: once the left operand is a String, the trailing 1 + 2 is not added; each digit is appended as text."
+        },
+        {
+          "id": "d",
+          "text": "Compile error, because int and String cannot be added",
+          "why": "Wrong: the + operator converts non-String operands to text when the other operand is a String."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Precedence and associativity decide where numeric addition stops and concatenation starts. Also \"\" + 'a' + 1 gives \"a1\" but 'a' + 1 + \"\" gives \"98\". Verified by running it."
+    },
+    {
+      "id": "mutable-default-arg",
+      "concept": "Python memory",
+      "type": "integer",
+      "difficulty": 2,
+      "prompt": "Consider this Python code.\n\ndef add(x, acc=[]):\n    acc.append(x)\n    return len(acc)\n\nadd(1); add(2)\nprint(add(3))\n\nWhat number is printed?",
+      "answer": 3,
+      "tolerance": 0,
+      "explanation": "The default list is created once when the def statement runs and is shared by every call that omits acc, so after three calls it holds three items. Fix with acc=None and create the list inside the function. Verified by running it.",
+      "unit": "items"
+    },
+    {
+      "id": "shallow-vs-deep-copy",
+      "concept": "Python memory",
+      "type": "single",
+      "difficulty": 3,
+      "prompt": "What does this Python code print?\n\nimport copy\na = [[1], [2]]\nb = copy.copy(a)\nc = copy.deepcopy(a)\na[0].append(9)\nprint(b[0], c[0])\n\nWhat is the output?",
+      "options": [
+        {
+          "id": "a",
+          "text": "[1, 9] [1]",
+          "why": "Correct: copy.copy duplicates only the outer list, so b[0] is still the same inner list as a[0]; deepcopy cloned the inner lists too."
+        },
+        {
+          "id": "b",
+          "text": "[1] [1]",
+          "why": "Wrong: a shallow copy shares the inner objects, so the append through a[0] is visible through b[0]."
+        },
+        {
+          "id": "c",
+          "text": "[1, 9] [1, 9]",
+          "why": "Wrong: deepcopy recursively copies the inner lists, so c is unaffected by later changes to a."
+        },
+        {
+          "id": "d",
+          "text": "[1] [1, 9]",
+          "why": "Wrong: this reverses the two behaviours; the shallow copy is the one that still aliases the inner list."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "list(a), a[:] and a.copy() are all shallow. Use copy.deepcopy for nested mutable data. Verified by running it."
+    },
+    {
+      "id": "java-reference-types",
+      "concept": "Heap, stack and GC",
+      "type": "matrix",
+      "difficulty": 2,
+      "prompt": "Match each Java reference type with its behaviour.",
+      "left": [
+        {
+          "id": "a",
+          "text": "Strong reference"
+        },
+        {
+          "id": "b",
+          "text": "SoftReference"
+        },
+        {
+          "id": "c",
+          "text": "WeakReference"
+        },
+        {
+          "id": "d",
+          "text": "PhantomReference"
+        }
+      ],
+      "right": [
+        {
+          "id": "p",
+          "text": "Never cleared while the object is reachable through it; the normal kind"
+        },
+        {
+          "id": "q",
+          "text": "Cleared only when the JVM needs memory, so it suits memory-sensitive caches"
+        },
+        {
+          "id": "r",
+          "text": "Cleared at the next GC once the object has no strong or soft references, as WeakHashMap keys use"
+        },
+        {
+          "id": "s",
+          "text": "get() always returns null; it is enqueued after the object is finalised, for cleanup actions"
+        },
+        {
+          "id": "t",
+          "text": "Cleared the moment the variable holding it goes out of scope"
+        }
+      ],
+      "pairs": {
+        "a": "p",
+        "b": "q",
+        "c": "r",
+        "d": "s"
+      },
+      "explanation": "Soft for caches, weak for canonicalising maps and listener registries, phantom (or java.lang.ref.Cleaner) for post-mortem cleanup. The fifth right item is invented."
+    }
+  ]
+}

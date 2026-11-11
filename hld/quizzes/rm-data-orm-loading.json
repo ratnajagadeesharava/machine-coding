@@ -1,0 +1,497 @@
+{
+  "id": "rm-data-orm-loading",
+  "title": "Data access: ORMs, loading strategies and optimistic locking",
+  "topic": "Interview roadmap",
+  "series": "interview-roadmap",
+  "seriesTitle": "Interview roadmap: topic quizzes",
+  "seriesDescription": "Topic-by-topic JEE-style quizzes for the backend and AI-engineering interview roadmap: integer, assertion-reason, matrix match, fill-in-the-blanks, short code writing, plus multi-correct questions. Language core, concurrency, DSA, web frameworks, data access, databases, messaging, resilience, security, testing, system design, LLM and agent engineering.",
+  "seriesOrder": 60,
+  "description": "JPA/Hibernate and SQLAlchemy 2.0 mappings, Spring Data repositories, SQLModel, lazy vs eager loading, the N+1 problem and its fixes, plus @Version and version_id_col optimistic locking.",
+  "source": "Jakarta Persistence and Hibernate ORM 6 docs; Hibernate HQL guide (versioned updates); Spring Data JPA reference; SQLAlchemy 2.0 docs (relationship loading, versioning); SQLModel docs; Vlad Mihalcea (join fetch pagination, identity batching); Baeldung",
+  "estimatedMinutes": 16,
+  "questions": [
+    {
+      "id": "annotation-meanings",
+      "concept": "JPA mapping",
+      "type": "matrix",
+      "difficulty": 1,
+      "prompt": "Match each JPA/Hibernate attribute to what it does.",
+      "left": [
+        {
+          "id": "a",
+          "text": "mappedBy"
+        },
+        {
+          "id": "b",
+          "text": "@JoinColumn"
+        },
+        {
+          "id": "c",
+          "text": "cascade = CascadeType.ALL"
+        },
+        {
+          "id": "d",
+          "text": "orphanRemoval = true"
+        },
+        {
+          "id": "e",
+          "text": "@Version"
+        }
+      ],
+      "right": [
+        {
+          "id": "p",
+          "text": "Marks the inverse side; the other side owns the foreign key"
+        },
+        {
+          "id": "q",
+          "text": "Names the foreign-key column on the owning side"
+        },
+        {
+          "id": "r",
+          "text": "Propagates persist, merge and remove from parent to children"
+        },
+        {
+          "id": "s",
+          "text": "Deletes a child row once it is removed from the parent's collection"
+        },
+        {
+          "id": "t",
+          "text": "Adds a counter that is checked in the UPDATE's WHERE clause"
+        },
+        {
+          "id": "u",
+          "text": "Forces the association to load eagerly"
+        },
+        {
+          "id": "v",
+          "text": "Generates the primary key from a sequence"
+        }
+      ],
+      "pairs": {
+        "a": "p",
+        "b": "q",
+        "c": "r",
+        "d": "s",
+        "e": "t"
+      },
+      "explanation": "The owning side (the one without mappedBy, usually the @ManyToOne) is the only side Hibernate uses to write the foreign key. cascade moves operations down the tree, orphanRemoval deletes de-referenced children, @Version enables optimistic locking."
+    },
+    {
+      "id": "jpa-basics-fill",
+      "concept": "JPA mapping",
+      "type": "fill",
+      "difficulty": 1,
+      "prompt": "Complete the JPA fundamentals by dragging the right words into the blanks.",
+      "text": "A JPA entity needs a no-argument constructor and an {1} field. In a bidirectional association the side that declares {2} is the inverse side and does not write the foreign key. Store enums with @Enumerated({3}) so reordering the constants cannot corrupt data. Changing a managed entity inside a transaction is persisted by {4} at flush time, without calling save().",
+      "blanks": {
+        "1": "@Id",
+        "2": "mappedBy",
+        "3": "EnumType.STRING",
+        "4": "dirty checking"
+      },
+      "bank": [
+        "@Id",
+        "mappedBy",
+        "EnumType.STRING",
+        "dirty checking",
+        "EnumType.ORDINAL",
+        "@JoinColumn",
+        "lazy loading"
+      ],
+      "explanation": "ORDINAL stores the position of the constant, so inserting a new constant in the middle silently remaps old rows. Dirty checking compares each managed entity with its loaded snapshot at flush and issues UPDATEs for the differences."
+    },
+    {
+      "id": "sqlalchemy-basics-fill",
+      "concept": "SQLAlchemy 2.0 ORM",
+      "type": "fill",
+      "difficulty": 1,
+      "prompt": "Complete the SQLAlchemy 2.0 and SQLModel basics.",
+      "text": "In SQLAlchemy 2.0 a model derives from {1} and declares columns as `id: {2}[int] = mapped_column(primary_key=True)`. Queries run through `{3}.scalars(select(User))`. A SQLModel class becomes a database table only when it is declared with {4}.",
+      "blanks": {
+        "1": "DeclarativeBase",
+        "2": "Mapped",
+        "3": "session",
+        "4": "table=True"
+      },
+      "bank": [
+        "DeclarativeBase",
+        "Mapped",
+        "session",
+        "table=True",
+        "Column",
+        "engine",
+        "BaseModel"
+      ],
+      "explanation": "SQLModel combines Pydantic validation with SQLAlchemy mapping; without table=True a SQLModel class is just a Pydantic schema (useful for request/response models). Session.scalars() returns ORM objects rather than Row tuples."
+    },
+    {
+      "id": "osiv-lazy",
+      "concept": "Lazy loading",
+      "type": "assertion",
+      "difficulty": 2,
+      "prompt": "Read the assertion (A) and the reason (R), then choose the option that fits.",
+      "assertion": "With Spring Boot's default spring.jpa.open-in-view=true, a controller can still read a lazy collection of an entity returned by a service method.",
+      "reason": "The EntityManager stays bound to the web request thread until the response is rendered, so the Hibernate Session is still open.",
+      "correct": [
+        "a"
+      ],
+      "whys": {
+        "a": "True: the Session is still open, so the lazy proxy can initialise.",
+        "b": "R is the mechanism itself, so this option wrongly says it does not explain A.",
+        "c": "R is true here, so this option wrongly says it is false.",
+        "d": "A is true, so this option wrongly says it is false."
+      },
+      "explanation": "Open Session In View keeps the persistence context open for the whole request. It hides LazyInitializationException but holds a database connection until rendering ends and encourages N+1 in the view layer; many teams set it to false."
+    },
+    {
+      "id": "eager-default",
+      "concept": "Lazy loading",
+      "type": "assertion",
+      "difficulty": 3,
+      "prompt": "Read the assertion (A) and the reason (R), then choose the option that fits.",
+      "assertion": "A @ManyToOne association is EAGER by default in JPA, so loading an OrderLine also loads its Order.",
+      "reason": "FetchType.EAGER guarantees that one SQL JOIN is used in every query that loads the entity.",
+      "correct": [
+        "c"
+      ],
+      "whys": {
+        "a": "R is false, so it cannot be the explanation of A.",
+        "b": "R is false, so this option wrongly calls both statements true.",
+        "c": "Correct: A is true (ToOne defaults to EAGER) but R is false; EAGER only says the data must be loaded, not how.",
+        "d": "A is true, so this option wrongly says it is false."
+      },
+      "explanation": "EAGER with em.find() usually becomes a JOIN, but with JPQL, Criteria or Spring Data queries Hibernate runs the query first and then fires secondary SELECTs per row, which is a classic hidden N+1. Prefer LAZY everywhere and fetch explicitly per use case."
+    },
+    {
+      "id": "async-lazy",
+      "concept": "SQLAlchemy 2.0 ORM",
+      "type": "assertion",
+      "difficulty": 2,
+      "prompt": "Read the assertion (A) and the reason (R), then choose the option that fits.",
+      "assertion": "In SQLAlchemy 2.0 with asyncio, touching an unloaded lazy relationship on an object loaded through AsyncSession raises MissingGreenlet.",
+      "reason": "SQLAlchemy 2.0 recommends select() with session.scalars() as the primary query style.",
+      "correct": [
+        "b"
+      ],
+      "whys": {
+        "a": "The recommended query style has nothing to do with why lazy loading fails in async code.",
+        "b": "Both are true, but R does not explain A: lazy loading fails because it would need implicit blocking I/O inside the event loop.",
+        "c": "R is true, so this option wrongly says it is false.",
+        "d": "A is true, so this option wrongly says it is false."
+      },
+      "explanation": "Implicit lazy loading would issue I/O from a plain attribute access, which cannot be awaited. Use selectinload/joinedload up front, await session.refresh(obj, [\"rel\"]), or AsyncAttrs.awaitable_attrs."
+    },
+    {
+      "id": "version-bulk",
+      "concept": "Optimistic locking",
+      "type": "assertion",
+      "difficulty": 3,
+      "prompt": "Read the assertion (A) and the reason (R), then choose the option that fits.",
+      "assertion": "A JPQL bulk statement such as \"UPDATE Product p SET p.price = 0\" automatically increments the @Version column of the rows it touches.",
+      "reason": "For managed entities, the UPDATE that Hibernate flushes carries WHERE id = ? AND version = ?.",
+      "correct": [
+        "d"
+      ],
+      "whys": {
+        "a": "A is false, so this option wrongly accepts both.",
+        "b": "A is false, so this option wrongly says both are true.",
+        "c": "R is true, so this option wrongly says it is false.",
+        "d": "Correct: bulk statements bypass the persistence context and do not touch the version (HQL needs \"update versioned\" to do that); R describes the managed-entity path correctly."
+      },
+      "explanation": "Bulk JPQL/HQL and native SQL updates skip dirty checking, the first-level cache and version checks, so the version column is not touched by default. Hibernate's HQL has an opt-in keyword (update versioned Product ...), or you can bump the column yourself (set p.version = p.version + 1); otherwise avoid mixing bulk updates with versioned entities."
+    },
+    {
+      "id": "batchsize-count",
+      "concept": "N+1 problem",
+      "type": "integer",
+      "difficulty": 3,
+      "prompt": "50 Author entities are loaded with one query. Author.books is LAZY and mapped with @BatchSize(size = 10). A loop then calls author.getBooks().size() for every author. Counting the first query, how many SELECT statements does Hibernate run?",
+      "answer": 6,
+      "explanation": "The first touch of an uninitialised collection loads the collections of up to 10 not-yet-loaded owners with one IN query, so 50 authors need 5 batches: 1 + 5 = 6. Without @BatchSize it would be 1 + 50 = 51.",
+      "unit": "statements"
+    },
+    {
+      "id": "identity-map-count",
+      "concept": "N+1 problem",
+      "type": "integer",
+      "difficulty": 3,
+      "prompt": "12 Book rows belong to 4 distinct Authors. In SQLAlchemy 2.0 with default settings, `books = session.scalars(select(Book)).all()` runs once, then a loop reads the lazy many-to-one `book.author` for all 12 books. How many SELECT statements run in total?",
+      "answer": 5,
+      "explanation": "The Session identity map caches each Author by primary key, so only the first access per distinct author hits the database: 1 + 4 = 5, not 13. (Checked by counting cursor executions on SQLAlchemy.) A one-to-many loop would not have this saving.",
+      "unit": "statements"
+    },
+    {
+      "id": "n1-fixes",
+      "concept": "N+1 problem",
+      "type": "multi",
+      "difficulty": 2,
+      "prompt": "Select all valid ways to avoid the N+1 select problem when listing authors together with their books in Spring Data JPA.",
+      "options": [
+        {
+          "id": "a",
+          "text": "A @Query with JOIN FETCH on the books association.",
+          "why": "Right: one SQL statement returns authors and books together."
+        },
+        {
+          "id": "b",
+          "text": "@EntityGraph(attributePaths = \"books\") on the repository method.",
+          "why": "Right: it adds the fetch join declaratively."
+        },
+        {
+          "id": "c",
+          "text": "A DTO or interface projection that selects only the needed columns in one query.",
+          "why": "Right: no entities, no lazy loading, no N+1."
+        },
+        {
+          "id": "d",
+          "text": "Marking Author.books as FetchType.EAGER globally.",
+          "why": "JPQL and derived queries still load the collection with extra selects per author."
+        },
+        {
+          "id": "e",
+          "text": "Setting spring.jpa.show-sql=true.",
+          "why": "It only logs the statements; it does not change them."
+        }
+      ],
+      "correct": [
+        "a",
+        "b",
+        "c"
+      ],
+      "explanation": "Fix N+1 per use case (fetch join, entity graph, projection, batch fetching) instead of changing the mapping to EAGER. Detect it by logging statements or asserting query counts in tests."
+    },
+    {
+      "id": "paging-collection-fetch",
+      "concept": "N+1 problem",
+      "type": "single",
+      "difficulty": 3,
+      "prompt": "GET /authors?page=0&size=20 must return authors with their books. A JOIN FETCH on the books collection combined with Pageable makes Hibernate log that it applies firstResult/maxResults in memory. What is the usual fix?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Page the authors alone, then batch-load their books with @BatchSize or a second IN query.",
+          "why": "Right: the limit applies to authors in SQL and the children arrive in one extra statement."
+        },
+        {
+          "id": "b",
+          "text": "Switch Author.books to FetchType.EAGER so the join happens automatically.",
+          "why": "EAGER does not change how a paged JPQL query works and can add secondary selects."
+        },
+        {
+          "id": "c",
+          "text": "Keep the JOIN FETCH and raise the page size so that the in-memory paging stays cheap enough.",
+          "why": "Hibernate would load every author and book row into memory and page there."
+        },
+        {
+          "id": "d",
+          "text": "Turn on open-in-view so the books are fetched lazily while serialising.",
+          "why": "That is exactly N+1: one select per author while rendering JSON."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "A join to a collection multiplies parent rows, so SQL LIMIT would cut rows, not authors; Hibernate therefore pages in memory and logs a warning (HHH000104 in Hibernate 5, HHH90003004 in Hibernate 6). Split into two steps: page the parents first, then load the children with an IN query or @BatchSize. Setting hibernate.query.fail_on_pagination_over_collection_fetch=true turns the silent fallback into an error."
+    },
+    {
+      "id": "code-join-fetch",
+      "concept": "N+1 problem",
+      "type": "code",
+      "difficulty": 2,
+      "prompt": "Entity Author has a List<Book> books. In the Spring Data JPA interface AuthorRepository, declare a method findAllWithBooks() that returns List<Author> and loads every author together with its books in the same SELECT.",
+      "language": "java",
+      "checks": [
+        {
+          "label": "declares List<Author> findAllWithBooks()",
+          "pattern": "List\\s*<\\s*Author\\s*>\\s+findAllWithBooks\\s*\\(\\s*\\)"
+        },
+        {
+          "label": "fetches books in the same query (JOIN FETCH or an entity graph)",
+          "pattern": "join\\s+fetch\\s+\\w+\\.books|@EntityGraph\\s*\\([^)]*books"
+        },
+        {
+          "label": "declares the query with @Query or @EntityGraph",
+          "pattern": "@Query\\s*\\(|@EntityGraph\\s*\\("
+        }
+      ],
+      "model": "@Query(\"select distinct a from Author a join fetch a.books\")\nList<Author> findAllWithBooks();",
+      "explanation": "DISTINCT removes duplicate Author references produced by the join (Hibernate 6 de-duplicates automatically). An @EntityGraph on an overridden findAll() is an equally valid solution.",
+      "starter": "public interface AuthorRepository extends JpaRepository<Author, Long> {\n    \n}"
+    },
+    {
+      "id": "code-selectinload",
+      "concept": "SQLAlchemy 2.0 ORM",
+      "type": "code",
+      "difficulty": 2,
+      "prompt": "Models Author and Book exist, with Author.books a one-to-many relationship. Write the SQLAlchemy 2.0 statement `stmt` that selects all authors and loads their books collection with a second SELECT ... WHERE author_id IN (...) rather than a join.",
+      "language": "python",
+      "checks": [
+        {
+          "label": "selects Author with select()",
+          "pattern": "select\\s*\\(\\s*Author\\s*\\)"
+        },
+        {
+          "label": "passes a loader option through .options()",
+          "pattern": "\\.options\\s*\\("
+        },
+        {
+          "label": "uses selectinload on Author.books",
+          "pattern": "selectinload\\s*\\(\\s*Author\\.books\\s*\\)"
+        }
+      ],
+      "model": "stmt = select(Author).options(selectinload(Author.books))",
+      "explanation": "selectinload suits collections because it avoids the row multiplication of joinedload. joinedload is better for many-to-one. Both avoid the N+1 of the default lazy=\"select\"."
+    },
+    {
+      "id": "code-version-field",
+      "concept": "Optimistic locking",
+      "type": "code",
+      "difficulty": 2,
+      "prompt": "Add optimistic locking to the JPA entity Product: write the version attribute (the annotation and the field) that Hibernate checks and increments on every update.",
+      "language": "java",
+      "checks": [
+        {
+          "label": "uses the @Version annotation",
+          "pattern": "@Version\\b"
+        },
+        {
+          "label": "declares a numeric or timestamp field",
+          "pattern": "private\\s+(long|Long|int|Integer|short|Short|Instant|Timestamp|LocalDateTime)\\s+\\w+\\s*;"
+        }
+      ],
+      "model": "@Version\nprivate Long version;",
+      "explanation": "Hibernate adds \"AND version = ?\" to the UPDATE and increments the value; if zero rows match it throws OptimisticLockException (wrapped by Spring as ObjectOptimisticLockingFailureException). Prefer a numeric counter over a timestamp."
+    },
+    {
+      "id": "code-version-id-col",
+      "concept": "Optimistic locking",
+      "type": "code",
+      "difficulty": 3,
+      "prompt": "In a SQLAlchemy 2.0 declarative class Product, `version: Mapped[int] = mapped_column(default=1)` is already declared. Write the class-level line that tells the ORM to use it for optimistic locking.",
+      "language": "python",
+      "checks": [
+        {
+          "label": "sets __mapper_args__",
+          "pattern": "__mapper_args__\\s*="
+        },
+        {
+          "label": "configures version_id_col",
+          "pattern": "[\"']version_id_col[\"']\\s*:\\s*\\w+|version_id_col\\s*=\\s*\\w+"
+        }
+      ],
+      "model": "__mapper_args__ = {\"version_id_col\": version}",
+      "explanation": "On a stale update the UPDATE ... WHERE id = ? AND version = ? matches 0 rows and the Session raises StaleDataError (checked against SQLAlchemy 2.x). The keyword form __mapper_args__ = dict(version_id_col=version) is equivalent."
+    },
+    {
+      "id": "conflict-http",
+      "concept": "Optimistic locking",
+      "type": "single",
+      "difficulty": 2,
+      "prompt": "Two users edit the same Product form. The second save fails with ObjectOptimisticLockingFailureException. What should a REST API normally do?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Return 409 Conflict (or 412 with ETag) and let the client reload and re-apply its change.",
+          "why": "Right: the data changed underneath the client, so the user or client must merge."
+        },
+        {
+          "id": "b",
+          "text": "Retry the identical UPDATE in a loop until it finally succeeds, as the conflict is only transient.",
+          "why": "The stale version never matches again, so the loop would fail or need a reload anyway."
+        },
+        {
+          "id": "c",
+          "text": "Return 500 and alert, because it is an unexpected server error.",
+          "why": "It is an expected concurrency outcome and should map to a client-level conflict."
+        },
+        {
+          "id": "d",
+          "text": "Remove @Version so later saves silently overwrite the first one.",
+          "why": "That brings back lost updates."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Optimistic locking detects, it does not resolve, a conflict. Automatic retry is only safe for server-side read-modify-write that re-reads the row in each attempt."
+    },
+    {
+      "id": "identity-batching",
+      "concept": "Batch writes",
+      "type": "single",
+      "difficulty": 3,
+      "prompt": "An import job calls repository.saveAll(...) with 5,000 new entities and hibernate.jdbc.batch_size=50, yet the SQL log shows 5,000 separate INSERT statements on PostgreSQL. Which cause is the most likely?",
+      "options": [
+        {
+          "id": "a",
+          "text": "The id is mapped with GenerationType.IDENTITY, so Hibernate must run each INSERT at once to learn the key.",
+          "why": "Correct: the generated key is needed when persist() returns, so inserts cannot be queued and grouped at flush time."
+        },
+        {
+          "id": "b",
+          "text": "hibernate.jdbc.batch_size only applies to UPDATE statements, never to INSERTs.",
+          "why": "Batching works for INSERT, UPDATE and DELETE when the id strategy allows it."
+        },
+        {
+          "id": "c",
+          "text": "saveAll always issues one statement per entity because it runs inside a transaction.",
+          "why": "Transactions do not prevent batching; batching is applied to the statements inside a transaction."
+        },
+        {
+          "id": "d",
+          "text": "spring.jpa.open-in-view is true, and that setting disables JDBC batching for inserts.",
+          "why": "Open-in-view only keeps the session open during rendering and has no effect on statement batching."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "IDENTITY disables insert batching in Hibernate. Use a SEQUENCE generator (with an allocationSize that matches the database sequence increment) and consider hibernate.order_inserts=true; on MySQL, which has no sequences, accept the cost or batch with plain JDBC."
+    },
+    {
+      "id": "onetomany-join-table",
+      "concept": "JPA mapping",
+      "type": "integer",
+      "difficulty": 2,
+      "prompt": "Entity Order declares @OneToMany List<Line> lines with neither mappedBy nor @JoinColumn, and Line has no field pointing back to Order. When Hibernate generates the schema, how many tables does it create for these two entities in total, counting any link table?",
+      "answer": 3,
+      "tolerance": 0,
+      "explanation": "A unidirectional @OneToMany without @JoinColumn is mapped through a join table (orders_lines), so the tables are orders, line and the link table: 3. Add @JoinColumn(name = \"order_id\") or make it bidirectional with mappedBy to keep the foreign key in the line table and drop the extra table.",
+      "unit": "tables"
+    },
+    {
+      "id": "joinedload-unique",
+      "concept": "SQLAlchemy 2.0 ORM",
+      "type": "single",
+      "difficulty": 3,
+      "prompt": "In SQLAlchemy 2.0, `session.scalars(select(Author).options(joinedload(Author.books))).all()` raises InvalidRequestError about a missing unique() call. What is the intended fix?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Call .unique() on the result, or switch the collection load to selectinload.",
+          "why": "Correct: joined eager loading of a collection repeats the parent in each row, so 2.0 insists on explicit de-duplication."
+        },
+        {
+          "id": "b",
+          "text": "Add DISTINCT through session.execute(...).all() because the ORM deduplicates joins implicitly.",
+          "why": "The ORM does not deduplicate here, and plain .all() on the Result is exactly the call that raises the error."
+        },
+        {
+          "id": "c",
+          "text": "Set lazy='dynamic' on the relationship so no join is emitted.",
+          "why": "Dynamic loaders are legacy and unsupported with asyncio; they do not fix de-duplication of a joined load."
+        },
+        {
+          "id": "d",
+          "text": "Disable the identity map with expire_on_commit=False so rows stay unique.",
+          "why": "expire_on_commit controls attribute expiry after commit and has nothing to do with result de-duplication."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Because a joined load of a collection returns one row per child, 1.x silently de-duplicated while 2.0 asks you to say so (`.unique()`). For collections prefer selectinload, which avoids the row multiplication."
+    }
+  ]
+}

@@ -1,0 +1,464 @@
+{
+  "id": "rm-behav-star-leadership",
+  "title": "Behavioural: STAR and the Amazon Leadership Principles",
+  "topic": "Interview roadmap",
+  "series": "interview-roadmap",
+  "seriesTitle": "Interview roadmap: topic quizzes",
+  "seriesOrder": 106,
+  "seriesDescription": "Topic-by-topic JEE-style quizzes for the backend and AI-engineering interview roadmap: integer, assertion-reason, matrix match, fill-in-the-blanks, short code writing, plus multi-correct questions. Language core, concurrency, DSA, web frameworks, data access, databases, messaging, resilience, security, testing, system design, LLM and agent engineering.",
+  "description": "Structure STAR answers, map situations to the 16 Amazon Leadership Principles, recall what each principle means and spot what strengthens or weakens a story.",
+  "source": "Amazon Leadership Principles (aboutamazon.com); Amazon interview guide (aboutamazon.com) on STAR; Harvard Business Review on behavioural interviews; third-party prep guides for Bar Raiser details",
+  "estimatedMinutes": 14,
+  "questions": [
+    {
+      "id": "lp-count",
+      "concept": "Leadership principles",
+      "type": "integer",
+      "difficulty": 1,
+      "prompt": "How many Amazon Leadership Principles are there today?",
+      "answer": 16,
+      "unit": "principles",
+      "explanation": "There are 16. The two most recent additions (2021) are \"Strive to be Earth's Best Employer\" and \"Success and Scale Bring Broad Responsibility\"."
+    },
+    {
+      "id": "lp-added",
+      "concept": "Leadership principles",
+      "type": "integer",
+      "difficulty": 2,
+      "prompt": "In 2021 Amazon extended its Leadership Principles from 14 to 16. How many principles were added?",
+      "answer": 2,
+      "unit": "principles",
+      "explanation": "Two were added: Strive to be Earth's Best Employer, and Success and Scale Bring Broad Responsibility. The older 14 (Customer Obsession through Deliver Results) are what most technical stories map to."
+    },
+    {
+      "id": "pct-result",
+      "concept": "Quantifying results",
+      "type": "integer",
+      "difficulty": 1,
+      "prompt": "In your Result you say p95 latency fell from 800 ms to 200 ms. By what percentage did it fall?",
+      "answer": 75,
+      "unit": "%",
+      "explanation": "(800 - 200) / 800 = 75%. A number with a clear baseline is far more convincing than \"much faster\"."
+    },
+    {
+      "id": "situation-lp",
+      "concept": "Mapping situations",
+      "type": "matrix",
+      "difficulty": 2,
+      "prompt": "Match each short story to the Leadership Principle it demonstrates best.",
+      "left": [
+        {
+          "id": "a",
+          "text": "Fixed a flaky alert that no team owned because it kept paging customers"
+        },
+        {
+          "id": "b",
+          "text": "Read raw logs and found the dashboard double-counted retries"
+        },
+        {
+          "id": "c",
+          "text": "Disagreed with a design in review, then fully supported the team's decision"
+        },
+        {
+          "id": "d",
+          "text": "Replaced a three-service workflow with one scheduled job"
+        },
+        {
+          "id": "e",
+          "text": "Shipped a one-week prototype to test a reversible assumption"
+        }
+      ],
+      "right": [
+        {
+          "id": "p",
+          "text": "Ownership"
+        },
+        {
+          "id": "q",
+          "text": "Dive Deep"
+        },
+        {
+          "id": "r",
+          "text": "Have Backbone; Disagree and Commit"
+        },
+        {
+          "id": "s",
+          "text": "Invent and Simplify"
+        },
+        {
+          "id": "t",
+          "text": "Bias for Action"
+        },
+        {
+          "id": "u",
+          "text": "Frugality"
+        },
+        {
+          "id": "v",
+          "text": "Earn Trust"
+        }
+      ],
+      "pairs": {
+        "a": "p",
+        "b": "q",
+        "c": "r",
+        "d": "s",
+        "e": "t"
+      },
+      "explanation": "Most stories fit two or three principles; lead with the one the question asks about and keep the others in reserve for follow-ups."
+    },
+    {
+      "id": "lp-meaning",
+      "concept": "Leadership principles",
+      "type": "matrix",
+      "difficulty": 2,
+      "prompt": "Match each Leadership Principle to what it means.",
+      "left": [
+        {
+          "id": "a",
+          "text": "Frugality"
+        },
+        {
+          "id": "b",
+          "text": "Earn Trust"
+        },
+        {
+          "id": "c",
+          "text": "Insist on the Highest Standards"
+        },
+        {
+          "id": "d",
+          "text": "Think Big"
+        },
+        {
+          "id": "e",
+          "text": "Learn and Be Curious"
+        }
+      ],
+      "right": [
+        {
+          "id": "p",
+          "text": "Accomplish more with less; constraints breed resourcefulness"
+        },
+        {
+          "id": "q",
+          "text": "Listen attentively, speak candidly and be self-critical"
+        },
+        {
+          "id": "r",
+          "text": "Continually raise the bar and drive defect-free work"
+        },
+        {
+          "id": "s",
+          "text": "Create and communicate a bold direction that inspires results"
+        },
+        {
+          "id": "t",
+          "text": "Never done learning; always exploring ways to improve"
+        },
+        {
+          "id": "u",
+          "text": "Speed matters and many decisions are reversible"
+        }
+      ],
+      "pairs": {
+        "a": "p",
+        "b": "q",
+        "c": "r",
+        "d": "s",
+        "e": "t"
+      },
+      "explanation": "The unused meaning belongs to Bias for Action. Know each principle in one plain sentence."
+    },
+    {
+      "id": "star-fill",
+      "concept": "STAR structure",
+      "type": "fill",
+      "difficulty": 1,
+      "prompt": "Complete the STAR outline.",
+      "text": "STAR stands for {1}, Task, {2} and {3}; the {2} section should carry most of the answer because it shows what you personally did.",
+      "blanks": {
+        "1": "Situation",
+        "2": "Action",
+        "3": "Result"
+      },
+      "bank": [
+        "Situation",
+        "Action",
+        "Result",
+        "Strategy",
+        "Timeline"
+      ],
+      "explanation": "Keep Situation and Task short, spend your time on Action, and finish with a measurable Result and what you learned."
+    },
+    {
+      "id": "action-share",
+      "concept": "STAR structure",
+      "type": "assertion",
+      "difficulty": 1,
+      "prompt": "Read the assertion (A) and the reason (R), then choose the correct option.",
+      "assertion": "In a STAR answer most of the time should be spent on the Action.",
+      "reason": "Interviewers are assessing your individual contribution, not the team's overall outcome.",
+      "correct": [
+        "a"
+      ],
+      "whys": {
+        "a": "Correct: Action is where your decisions, trade-offs and ownership are visible.",
+        "b": "R is the direct reason.",
+        "c": "R is true.",
+        "d": "A is true."
+      },
+      "explanation": "Say \"I\" for your own actions and name teammates briefly when they contributed."
+    },
+    {
+      "id": "we-vs-i",
+      "concept": "STAR structure",
+      "type": "assertion",
+      "difficulty": 2,
+      "prompt": "Read the assertion (A) and the reason (R), then choose the correct option.",
+      "assertion": "Saying only \"we\" throughout a story hides your own contribution.",
+      "reason": "Interviewers want to hear only about solo projects, never about teamwork.",
+      "correct": [
+        "c"
+      ],
+      "whys": {
+        "a": "R is false so it cannot explain A.",
+        "b": "R is false, not just unrelated.",
+        "c": "Correct: A is true, but R is false; teamwork stories are welcome as long as your role is explicit.",
+        "d": "A is true."
+      },
+      "explanation": "A good test: could someone write down what you did, step by step, from your answer?"
+    },
+    {
+      "id": "disagree-commit",
+      "concept": "Leadership principles",
+      "type": "assertion",
+      "difficulty": 3,
+      "prompt": "Read the assertion (A) and the reason (R), then choose the correct option.",
+      "assertion": "Disagree and Commit means you keep resisting a decision after it has been made until you are proven right.",
+      "reason": "Once a decision is made, leaders support it fully even if they argued against it earlier.",
+      "correct": [
+        "d"
+      ],
+      "whys": {
+        "a": "A is false.",
+        "b": "A is false, so the pair cannot be both-true.",
+        "c": "R is true, so this option is wrong.",
+        "d": "Correct: A is false and R is true. You voice disagreement before the decision, then commit wholeheartedly."
+      },
+      "explanation": "Strong stories show the data you brought, the respectful push-back, and how you executed the final decision."
+    },
+    {
+      "id": "metric-story",
+      "concept": "STAR structure",
+      "type": "assertion",
+      "difficulty": 2,
+      "prompt": "Read the assertion (A) and the reason (R), then choose the correct option.",
+      "assertion": "Where possible, a story's Result should include a measurable outcome.",
+      "reason": "A single strong story can often be reused for more than one Leadership Principle.",
+      "correct": [
+        "b"
+      ],
+      "whys": {
+        "a": "R is true but about reuse, not about measuring results.",
+        "b": "Correct: both statements are true and independent.",
+        "c": "R is true.",
+        "d": "A is true."
+      },
+      "explanation": "Prepare roughly 8 to 10 stories with numbers, each tagged with two or three principles."
+    },
+    {
+      "id": "weak-star",
+      "concept": "STAR structure",
+      "type": "single",
+      "difficulty": 2,
+      "prompt": "Which sentence most weakens a STAR story that is meant to show Ownership?",
+      "options": [
+        {
+          "id": "a",
+          "text": "\"That part was the platform team's job, so I flagged it and moved on.\"",
+          "why": "Right: Ownership means acting beyond your narrow remit when it serves the customer."
+        },
+        {
+          "id": "b",
+          "text": "\"I took over the runbook after the incident, although it was never assigned to me, and fixed the gaps.\"",
+          "why": "This strengthens the story by showing initiative."
+        },
+        {
+          "id": "c",
+          "text": "\"I measured the problem first, then decided on the fix with the owning team's agreement.\"",
+          "why": "Data plus collaboration strengthens ownership."
+        },
+        {
+          "id": "d",
+          "text": "\"I stayed until the alerts stayed green for a week and wrote down what I learned.\"",
+          "why": "Follow-through is a sign of ownership."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Interviewers listen for scope: did you act on things nobody asked you to, and see them through?"
+    },
+    {
+      "id": "failure-story",
+      "concept": "Mistake stories",
+      "type": "single",
+      "difficulty": 2,
+      "prompt": "Asked \"Tell me about a time you failed\", which answer is strongest?",
+      "options": [
+        {
+          "id": "a",
+          "text": "A real mistake you caused, its impact, what you changed, and how it has not recurred.",
+          "why": "Right: ownership, honesty and learning with evidence."
+        },
+        {
+          "id": "b",
+          "text": "A failure that was really the fault of a colleague who missed the specification.",
+          "why": "Blaming others signals low ownership."
+        },
+        {
+          "id": "c",
+          "text": "\"I cannot think of a failure because I always double-check everything before releasing it.\"",
+          "why": "This reads as lacking self-awareness or being evasive."
+        },
+        {
+          "id": "d",
+          "text": "\"I sometimes work too hard and care too much, and that has occasionally slowed me down.\"",
+          "why": "A disguised strength is a well-known non-answer."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Choose a real, moderate-stakes failure, and finish with a systemic fix (a test, a checklist, an alert), not just \"I will try harder\"."
+    },
+    {
+      "id": "lp-recognise",
+      "concept": "Leadership principles",
+      "type": "multi",
+      "difficulty": 1,
+      "prompt": "Which of these is an Amazon Leadership Principle? Select all that apply.",
+      "options": [
+        {
+          "id": "a",
+          "text": "Frugality",
+          "why": "Right: accomplish more with less."
+        },
+        {
+          "id": "b",
+          "text": "Dive Deep",
+          "why": "Right: stay close to the details and audit often."
+        },
+        {
+          "id": "c",
+          "text": "Bias for Action",
+          "why": "Right: speed matters in business."
+        },
+        {
+          "id": "d",
+          "text": "Move Fast and Break Things",
+          "why": "This is a slogan associated with Facebook, not an Amazon principle."
+        }
+      ],
+      "correct": [
+        "a",
+        "b",
+        "c"
+      ],
+      "explanation": "Be careful with look-alikes from other companies' values."
+    },
+    {
+      "id": "result-line",
+      "concept": "Writing results",
+      "type": "code",
+      "difficulty": 2,
+      "prompt": "Write one or two sentences for the Result part of a STAR story about reducing API latency. Include a number with a before-and-after comparison, and say what you changed so it would not regress.",
+      "language": "text",
+      "starter": "Result: ",
+      "checks": [
+        {
+          "label": "includes a number",
+          "pattern": "\\d"
+        },
+        {
+          "label": "shows an improvement or change",
+          "pattern": "(fell|reduced|cut|improved|increased|dropped|saved|lowered|decreased|from\\s+\\S+\\s+to)"
+        },
+        {
+          "label": "says what prevents regression",
+          "pattern": "(added|alert|test|dashboard|monitor|runbook|checklist|ci\\b|so (it|that)|learn|since|now)"
+        }
+      ],
+      "model": "Result: p95 latency fell from 800 ms to 200 ms (75%), timeouts dropped from 40 a day to 2, and I added a load test to CI so the regression would be caught before release.",
+      "explanation": "This free-text question is graded by simple keyword patterns; any answer with a measured change and a preventive step passes. Quantify with a baseline."
+    },
+    {
+      "id": "bar-raiser",
+      "concept": "Interview loop",
+      "type": "single",
+      "difficulty": 2,
+      "prompt": "In an Amazon-style interview loop, what is the Bar Raiser?",
+      "options": [
+        {
+          "id": "a",
+          "text": "A specially trained interviewer from outside the hiring team who helps keep the hiring bar high.",
+          "why": "Right: independence from the team is the point, and the Bar Raiser's view carries special weight in the debrief."
+        },
+        {
+          "id": "b",
+          "text": "The hiring manager's own manager, who signs the offer letter after the loop has finished.",
+          "why": "The role is an independent interviewer, not a place in the reporting chain."
+        },
+        {
+          "id": "c",
+          "text": "A recruiter who negotiates the salary and the start date once the candidate has accepted.",
+          "why": "Compensation is handled by recruiting, not by the Bar Raiser."
+        },
+        {
+          "id": "d",
+          "text": "A coding judge who grades only the algorithm round and does not ask behavioural questions.",
+          "why": "Bar Raisers also probe Leadership Principles, so prepare stories for them as well."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Third-party prep guides describe a trained interviewer from another team with a strong say, often described as a veto, in the debrief; Amazon does not publish the details, so treat specifics as folklore. Practical takeaway: expect deep follow-ups on every story."
+    },
+    {
+      "id": "lp-added-2021",
+      "concept": "Leadership principles",
+      "type": "multi",
+      "difficulty": 2,
+      "prompt": "Which of these were added to the Leadership Principles in the 2021 update from 14 to 16? Select all that apply.",
+      "options": [
+        {
+          "id": "a",
+          "text": "Strive to be Earth's Best Employer",
+          "why": "One of the two additions announced in 2021."
+        },
+        {
+          "id": "b",
+          "text": "Success and Scale Bring Broad Responsibility",
+          "why": "The other 2021 addition, about the company's wider impact."
+        },
+        {
+          "id": "c",
+          "text": "Learn and Be Curious",
+          "why": "Added earlier (around 2015), so it was not part of the 2021 update."
+        },
+        {
+          "id": "d",
+          "text": "Deliver Results",
+          "why": "One of the original principles, not a 2021 addition."
+        }
+      ],
+      "correct": [
+        "a",
+        "b"
+      ],
+      "explanation": "Know the two newest by name; interviewers rarely ask about them directly, but 'Earth's Best Employer' stories (mentoring, safety, inclusion) are increasingly common."
+    }
+  ]
+}

@@ -1,0 +1,492 @@
+{
+  "id": "rm-final-network-oracle",
+  "title": "Final checks: network digital twins, graphs and cloud platform engineering",
+  "topic": "Interview roadmap",
+  "series": "interview-roadmap",
+  "seriesTitle": "Interview roadmap: topic quizzes",
+  "seriesOrder": 109,
+  "seriesDescription": "Topic-by-topic JEE-style quizzes for the backend and AI-engineering interview roadmap: integer, assertion-reason, matrix match, fill-in-the-blanks, short code writing, plus multi-correct questions. Language core, concurrency, DSA, web frameworks, data access, databases, messaging, resilience, security, testing, system design, LLM and agent engineering.",
+  "description": "Network digital twins (modelling, reachability, path analysis, config verification, snapshots), why graphs fit, and platform-engineering themes for a cloud vendor: multi-tenancy, SDKs, API versioning and reliability.",
+  "source": "Forward Networks product datasheets and Enterprise Strategy Group technical review (vendor framing; no independent accuracy benchmarks found); Oracle Cloud Infrastructure API and SDK docs (opc-retry-token, opc-request-id, work requests, SDK retries); Google SRE book (SLOs and error budgets); AWS Builders Library (retries, idempotent APIs); networking fundamentals",
+  "estimatedMinutes": 16,
+  "questions": [
+    {
+      "id": "what-twin",
+      "concept": "Network digital twin",
+      "type": "single",
+      "difficulty": 1,
+      "prompt": "What is a network digital twin in the sense of Forward Networks?",
+      "options": [
+        {
+          "id": "a",
+          "text": "A computed model built from collected device configs and state.",
+          "why": "Right: queries run on the model, with no packets sent into production."
+        },
+        {
+          "id": "b",
+          "text": "A second physical network mirroring production hardware port for port in a separate lab.",
+          "why": "That is a lab or staging network, not a software model."
+        },
+        {
+          "id": "c",
+          "text": "A packet-capture archive replayed through a simulator for each query that is asked.",
+          "why": "Capture data shows past traffic, not what could happen for any packet."
+        },
+        {
+          "id": "d",
+          "text": "A monitoring dashboard that pings every host every minute and plots the latency.",
+          "why": "Probing tests samples of traffic, not all possible behaviour."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Because the model is derived from configs and state, you can ask \"can A reach B and through which hops\" or verify a change before deploying."
+    },
+    {
+      "id": "hops",
+      "concept": "Path analysis",
+      "type": "integer",
+      "difficulty": 2,
+      "prompt": "A network graph has links A-B, B-C, C-F, A-D, D-E and E-F. What is the number of hops (links) on a shortest path from A to F?",
+      "answer": 3,
+      "unit": "hops",
+      "explanation": "Both A-B-C-F and A-D-E-F use 3 links, so there are two equal-cost shortest paths (think ECMP). A path-analysis tool must report all of them, not just the first."
+    },
+    {
+      "id": "bfs-reach",
+      "concept": "Reachability",
+      "type": "code",
+      "difficulty": 2,
+      "prompt": "Write Python reachable(graph, src, dst) where graph is a dict mapping a node to a list of neighbours. Return True if dst can be reached from src, using breadth-first search and not looping on cycles.",
+      "language": "python",
+      "starter": "from collections import deque\n\ndef reachable(graph, src, dst):\n    ",
+      "checks": [
+        {
+          "label": "uses a queue",
+          "pattern": "deque|queue|\\.pop\\s*\\(\\s*0\\s*\\)|popleft"
+        },
+        {
+          "label": "tracks visited nodes",
+          "pattern": "visited|seen"
+        },
+        {
+          "label": "loops until empty",
+          "pattern": "while\\s+\\w+"
+        },
+        {
+          "label": "reads neighbours from the graph",
+          "pattern": "graph\\s*\\[|graph\\.get\\s*\\("
+        },
+        {
+          "label": "returns True when found",
+          "pattern": "return\\s+True"
+        }
+      ],
+      "model": "seen = {src}\nq = deque([src])\nwhile q:\n    n = q.popleft()\n    if n == dst:\n        return True\n    for m in graph.get(n, []):\n        if m not in seen:\n            seen.add(m)\n            q.append(m)\nreturn False",
+      "explanation": "A DFS with an explicit stack also passes. Real network reachability additionally carries a set of packet headers along each edge and applies ACL, NAT and routing constraints at each hop, but the traversal skeleton is the same."
+    },
+    {
+      "id": "no-packets",
+      "concept": "Network digital twin",
+      "type": "assertion",
+      "difficulty": 2,
+      "prompt": "Read the assertion (A) and the reason (R), then choose the correct option.",
+      "assertion": "A path query on a digital twin does not need to send any packets into the live network.",
+      "reason": "The twin is computed from collected configuration and state, so forwarding behaviour can be derived from the model.",
+      "correct": [
+        "a"
+      ],
+      "whys": {
+        "a": "Correct: the model contains routes, ACLs and topology, so queries are answered by computation.",
+        "b": "R is the mechanism that makes A true.",
+        "c": "R is true.",
+        "d": "A is true."
+      },
+      "explanation": "Collection still needs read access to devices and clouds; the twin is only as fresh as its latest snapshot."
+    },
+    {
+      "id": "snapshot-diff",
+      "concept": "Snapshots and verification",
+      "type": "assertion",
+      "difficulty": 2,
+      "prompt": "Read the assertion (A) and the reason (R), then choose the correct option.",
+      "assertion": "Comparing two snapshots of the network shows how its behaviour changed between them.",
+      "reason": "A graph can store nodes and edges.",
+      "correct": [
+        "b"
+      ],
+      "whys": {
+        "a": "R is true but generic; it does not explain behavioural diffs.",
+        "b": "Correct: both true, independent. A snapshot is a point-in-time model; diffing configs and computed paths shows the effect of a change.",
+        "c": "R is true.",
+        "d": "A is true."
+      },
+      "explanation": "Useful in change review: show what became reachable, what stopped being reachable and which paths shifted."
+    },
+    {
+      "id": "ping-intent",
+      "concept": "Snapshots and verification",
+      "type": "assertion",
+      "difficulty": 3,
+      "prompt": "Read the assertion (A) and the reason (R), then choose the correct option.",
+      "assertion": "Verifying an intent such as \"production subnets must not reach development subnets\" is more complete on a model than by running pings.",
+      "reason": "A ping from one host tests every possible header, port and path through the network.",
+      "correct": [
+        "c"
+      ],
+      "whys": {
+        "a": "R is false, so it cannot explain A.",
+        "b": "R is false.",
+        "c": "Correct: A is true because a model can cover all headers and paths, whereas a ping tests one flow. R is false for the same reason.",
+        "d": "A is true."
+      },
+      "explanation": "Intent checks are assertions over the model, run on every snapshot or proposed change."
+    },
+    {
+      "id": "link-only",
+      "concept": "Reachability",
+      "type": "assertion",
+      "difficulty": 2,
+      "prompt": "Read the assertion (A) and the reason (R), then choose the correct option.",
+      "assertion": "Whether host A can reach host B depends only on whether a physical link path exists between them.",
+      "reason": "Routes, ACLs, NAT and VLAN configuration can all stop traffic along a physically connected path.",
+      "correct": [
+        "d"
+      ],
+      "whys": {
+        "a": "A is false.",
+        "b": "A is false.",
+        "c": "R is true.",
+        "d": "Correct: A is false and R is true; reachability is a logical property of configuration on top of the physical topology."
+      },
+      "explanation": "A classic outage cause: the link is up but an ACL or route blocks the flow."
+    },
+    {
+      "id": "graph-terms",
+      "concept": "Why graphs",
+      "type": "matrix",
+      "difficulty": 2,
+      "prompt": "Match each network-modelling concept to its graph or verification meaning.",
+      "left": [
+        {
+          "id": "a",
+          "text": "Node"
+        },
+        {
+          "id": "b",
+          "text": "Edge"
+        },
+        {
+          "id": "c",
+          "text": "Path query"
+        },
+        {
+          "id": "d",
+          "text": "Intent check"
+        },
+        {
+          "id": "e",
+          "text": "Snapshot"
+        }
+      ],
+      "right": [
+        {
+          "id": "p",
+          "text": "A device, interface or subnet"
+        },
+        {
+          "id": "q",
+          "text": "A link, adjacency or forwarding relation"
+        },
+        {
+          "id": "r",
+          "text": "Can A reach B, and hop by hop through which devices"
+        },
+        {
+          "id": "s",
+          "text": "A rule such as \"production must not reach development\""
+        },
+        {
+          "id": "t",
+          "text": "A point-in-time copy of collected network state"
+        },
+        {
+          "id": "u",
+          "text": "A packet capture file"
+        }
+      ],
+      "pairs": {
+        "a": "p",
+        "b": "q",
+        "c": "r",
+        "d": "s",
+        "e": "t"
+      },
+      "explanation": "Graphs fit because relationships are first-class and most questions are traversals."
+    },
+    {
+      "id": "twin-fill",
+      "concept": "Network digital twin",
+      "type": "fill",
+      "difficulty": 1,
+      "prompt": "Complete the digital twin sentence.",
+      "text": "A network digital twin is built from collected {1} and state, answers path questions through {2} analysis, and uses {3} to compare network behaviour over time.",
+      "blanks": {
+        "1": "configuration",
+        "2": "reachability",
+        "3": "snapshots"
+      },
+      "bank": [
+        "configuration",
+        "reachability",
+        "snapshots",
+        "packets",
+        "firmware"
+      ],
+      "explanation": "Collect, model, query, verify, then compare snapshots over time."
+    },
+    {
+      "id": "why-graph",
+      "concept": "Why graphs",
+      "type": "multi",
+      "difficulty": 2,
+      "prompt": "Why are graph structures a natural fit for network modelling? Select all that apply.",
+      "options": [
+        {
+          "id": "a",
+          "text": "Links between devices and interfaces are relationships in their own right.",
+          "why": "Right: edges map directly to links and adjacencies."
+        },
+        {
+          "id": "b",
+          "text": "Path and reachability questions are traversals that follow edges hop by hop.",
+          "why": "Right: BFS, DFS and shortest paths are standard graph operations."
+        },
+        {
+          "id": "c",
+          "text": "A graph removes the need to collect device configuration and state.",
+          "why": "The model is only as good as the collected data."
+        },
+        {
+          "id": "d",
+          "text": "A graph guarantees the network configuration is correct.",
+          "why": "A graph represents the network; correctness comes from verifying intent against it."
+        }
+      ],
+      "correct": [
+        "a",
+        "b"
+      ],
+      "explanation": "Be ready to compare with relational tables: multi-hop paths need recursive joins, which are awkward and slow compared with traversals."
+    },
+    {
+      "id": "error-budget",
+      "concept": "Reliability",
+      "type": "integer",
+      "difficulty": 2,
+      "prompt": "A service has a 99.9% monthly availability SLO measured by successful requests. In a month with 1,000,000 requests, how many failed requests does the error budget allow?",
+      "answer": 1000,
+      "unit": "requests",
+      "explanation": "0.1% of 1,000,000 = 1,000. When the budget is spent, teams slow releases and prioritise reliability work."
+    },
+    {
+      "id": "overcommit",
+      "concept": "Multi-tenancy",
+      "type": "integer",
+      "difficulty": 3,
+      "prompt": "A shared API can handle 800 requests per second. It gives each of 8 tenants a rate limit of 120 requests per second. By what percentage is the capacity over-subscribed (sum of limits versus capacity)?",
+      "answer": 20,
+      "unit": "%",
+      "explanation": "Sum of limits = 8 x 120 = 960; 960 / 800 = 1.2, so 20% over-subscribed. That can be acceptable because tenants rarely peak together, but it needs load shedding and monitoring."
+    },
+    {
+      "id": "breaking-change",
+      "concept": "API versioning",
+      "type": "single",
+      "difficulty": 2,
+      "prompt": "Which change to a public REST API most clearly requires a new major version?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Renaming a response field that existing clients read.",
+          "why": "Right: existing clients would break, so it needs a new version or a deprecation period."
+        },
+        {
+          "id": "b",
+          "text": "Adding a new optional field to a response.",
+          "why": "Additive and compatible if clients ignore unknown fields."
+        },
+        {
+          "id": "c",
+          "text": "Adding a new endpoint for a new feature.",
+          "why": "Additive; existing clients are unaffected."
+        },
+        {
+          "id": "d",
+          "text": "Adding an optional query parameter with a safe default.",
+          "why": "Backward compatible because old calls behave as before."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Rules of thumb: additive changes are compatible; removals, renames, type changes and new required inputs are breaking. Publish a deprecation policy and support old versions for a stated period."
+    },
+    {
+      "id": "tenant-isolation",
+      "concept": "Multi-tenancy",
+      "type": "single",
+      "difficulty": 3,
+      "prompt": "In a shared-schema multi-tenant database, a developer forgets a tenant_id filter in one query and leaks data. What is the best structural defence?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Enforce scoping below the app, e.g. row-level security.",
+          "why": "Right: make the safe path automatic so one missed WHERE cannot leak."
+        },
+        {
+          "id": "b",
+          "text": "Ask developers to remember the filter and add a reminder to the code review checklist for every pull request.",
+          "why": "Relies on human memory, which fails."
+        },
+        {
+          "id": "c",
+          "text": "Encrypt the tenant_id column so that other tenants cannot read the values in it.",
+          "why": "Encrypting the id does not stop a query from returning other tenants' rows."
+        },
+        {
+          "id": "d",
+          "text": "Give every tenant the same credentials so that queries cannot be mixed up by accident.",
+          "why": "Shared credentials remove isolation rather than adding it."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Related: per-tenant quotas against noisy neighbours, per-tenant encryption keys, and separate schemas or databases for strict isolation tiers."
+    },
+    {
+      "id": "sdk-retry",
+      "concept": "SDKs and reliability",
+      "type": "code",
+      "difficulty": 3,
+      "prompt": "Write Python call_with_retry(send, max_attempts=3). send() returns an object with an integer .status. Return the response unless the status is 429 or at least 500, in which case wait 2**attempt seconds (time.sleep) and try again. After max_attempts raise RuntimeError.",
+      "language": "python",
+      "starter": "import time\n\ndef call_with_retry(send, max_attempts=3):\n    ",
+      "checks": [
+        {
+          "label": "loops up to max_attempts",
+          "pattern": "for\\s+\\w+\\s+in\\s+range\\s*\\(\\s*max_attempts|while"
+        },
+        {
+          "label": "retries on 429",
+          "pattern": "429"
+        },
+        {
+          "label": "retries on 5xx",
+          "pattern": ">=\\s*500|>\\s*499|5\\d\\d|range\\s*\\(\\s*500"
+        },
+        {
+          "label": "sleeps with exponential backoff",
+          "pattern": "sleep\\s*\\([^)]*(\\*\\*|<<|\\*\\s*2)"
+        },
+        {
+          "label": "raises RuntimeError at the end",
+          "pattern": "raise\\s+RuntimeError"
+        }
+      ],
+      "model": "for attempt in range(max_attempts):\n    resp = send()\n    if resp.status != 429 and resp.status < 500:\n        return resp\n    time.sleep(2 ** attempt)\nraise RuntimeError(\"retries exhausted\")",
+      "explanation": "Real SDKs add jitter, a cap on the delay, respect Retry-After, and only retry idempotent calls or calls carrying an idempotency token."
+    },
+    {
+      "id": "retry-token",
+      "concept": "SDKs and reliability",
+      "type": "truefalse",
+      "difficulty": 2,
+      "prompt": "True or false: some Oracle Cloud Infrastructure create operations accept an opc-retry-token so a retried request is not executed twice.",
+      "options": [
+        {
+          "id": "a",
+          "text": "True",
+          "why": "Correct: OCI documents opc-retry-token for safe retries after timeouts or server errors (check each API reference to see which operations support it)."
+        },
+        {
+          "id": "b",
+          "text": "False",
+          "why": "The token exists for exactly this purpose."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "This is the same idea as a payment idempotency key: reuse the token when retrying the same operation."
+    },
+    {
+      "id": "opc-request-id",
+      "concept": "SDKs and reliability",
+      "type": "single",
+      "difficulty": 2,
+      "prompt": "An OCI API call fails intermittently and you open a ticket with Oracle support. Which value from the response helps them find that exact request?",
+      "options": [
+        {
+          "id": "a",
+          "text": "The opc-request-id response header, which is unique to the request.",
+          "why": "Right: Oracle documents it as the ID to provide when contacting support about a request."
+        },
+        {
+          "id": "b",
+          "text": "The opc-retry-token you sent, because it names the failing request on the service side.",
+          "why": "It is a client-supplied idempotency key, not a server-side trace ID."
+        },
+        {
+          "id": "c",
+          "text": "The compartment OCID, because every request in that compartment shares the same one.",
+          "why": "An OCID names a resource or container, not one individual request."
+        },
+        {
+          "id": "d",
+          "text": "The HTTP Date header, because support can look up requests by the second they arrived.",
+          "why": "Timestamps are not unique, so many requests would match."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Log opc-request-id on every failure, as you would log a trace id. It sits next to the idempotency token in importance but has a different job."
+    },
+    {
+      "id": "oci-work-request",
+      "concept": "SDKs and reliability",
+      "type": "single",
+      "difficulty": 3,
+      "prompt": "A CreateInstance call returns success in 200 ms, but the instance is not usable yet. How should a client wait for completion?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Poll the work request named by the opc-work-request-id header until it reports a terminal status.",
+          "why": "Right: long-running OCI operations are asynchronous and tracked by work requests."
+        },
+        {
+          "id": "b",
+          "text": "Retry the create call every second with the same opc-retry-token until the status code changes.",
+          "why": "A retry with the same token returns the original request, not completion."
+        },
+        {
+          "id": "c",
+          "text": "Sleep for a fixed 30 seconds, then assume the resource exists and continue the workflow.",
+          "why": "A fixed sleep is fragile and breaks on slow days or in other regions."
+        },
+        {
+          "id": "d",
+          "text": "Open a persistent TCP connection to the endpoint, which stays open until the instance boots.",
+          "why": "The API is plain request and response, with no held-open completion channel."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Pattern for any cloud API: submit, receive an operation id, poll with back-off, treat failure and timeout separately. Many SDKs also ship waiters that do this loop for you."
+    }
+  ]
+}

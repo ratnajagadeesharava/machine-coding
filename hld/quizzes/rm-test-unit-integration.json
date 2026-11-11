@@ -1,0 +1,452 @@
+{
+  "id": "rm-test-unit-integration",
+  "title": "Testing: unit, API and integration tests",
+  "topic": "Interview roadmap",
+  "series": "interview-roadmap",
+  "seriesTitle": "Interview roadmap: topic quizzes",
+  "seriesDescription": "Topic-by-topic JEE-style quizzes for the backend and AI-engineering interview roadmap: integer, assertion-reason, matrix match, fill-in-the-blanks, short code writing, plus multi-correct questions. Language core, concurrency, DSA, web frameworks, data access, databases, messaging, resilience, security, testing, system design, LLM and agent engineering.",
+  "seriesOrder": 84,
+  "description": "JUnit 5 and Mockito, pytest fixtures and unittest.mock, MockMvc, TestClient, @DataJpaTest, Testcontainers, test-case design with boundaries, edge cases and contract tests.",
+  "source": "JUnit 5 user guide; Mockito docs (strict stubs); Spring Boot testing reference (Testcontainers, @ServiceConnection); pytest docs; Python unittest.mock docs; FastAPI testing docs; Testcontainers docs; Pact docs",
+  "estimatedMinutes": 15,
+  "questions": [
+    {
+      "id": "junit-mockito",
+      "concept": "Unit tests and mocks",
+      "type": "code",
+      "difficulty": 2,
+      "prompt": "Write a JUnit 5 test method for PriceService (it has a PriceRepo repo field) that stubs repo.find(\"A\") to return 10, calls svc.price(\"A\"), asserts the result is 10 and verifies that repo.find(\"A\") was called once. Assume repo is a Mockito mock and svc is already built.",
+      "language": "java",
+      "checks": [
+        {
+          "label": "is a JUnit @Test",
+          "pattern": "@test"
+        },
+        {
+          "label": "stubs repo.find(\"A\") to return 10",
+          "pattern": "(when\\(\\s*repo\\.find\\(\\s*\"a\"\\s*\\)\\s*\\)\\s*\\.thenreturn|given\\(\\s*repo\\.find\\(\\s*\"a\"\\s*\\)\\s*\\)\\s*\\.willreturn)\\(\\s*10"
+        },
+        {
+          "label": "asserts the value",
+          "pattern": "assert(equals|that)\\("
+        },
+        {
+          "label": "verifies repo.find(\"A\") once",
+          "pattern": "(verify\\(\\s*repo(\\s*,\\s*times\\(1\\))?\\s*\\)\\.find\\(\\s*\"a\"|then\\(\\s*repo\\s*\\)\\.should(\\([^)]*\\))?\\(\\)\\.find\\(\\s*\"a\")"
+        }
+      ],
+      "model": "@Test\nvoid returnsPrice() {\n    when(repo.find(\"A\")).thenReturn(10);\n    assertEquals(10, svc.price(\"A\"));\n    verify(repo).find(\"A\");\n}",
+      "explanation": "Annotate the class with @ExtendWith(MockitoExtension.class) and use @Mock / @InjectMocks. BDDMockito given(...).willReturn(...) and AssertJ assertThat are equally valid."
+    },
+    {
+      "id": "mockmvc",
+      "concept": "MockMvc",
+      "type": "code",
+      "difficulty": 2,
+      "prompt": "Write a MockMvc call that GETs /api/orders/42, expects HTTP 200 and expects the JSON field id to equal 42. Assume a MockMvc named mockMvc.",
+      "language": "java",
+      "checks": [
+        {
+          "label": "performs a GET",
+          "pattern": "mockmvc\\.perform\\(\\s*get\\(\\s*\"/api/orders/42\""
+        },
+        {
+          "label": "expects status 200",
+          "pattern": "status\\(\\)\\.(isok\\(\\)|is\\(\\s*200\\s*\\))"
+        },
+        {
+          "label": "checks the JSON id",
+          "pattern": "jsonpath\\(\\s*\"\\$\\.id\"\\s*\\)\\.value\\(\\s*42"
+        }
+      ],
+      "model": "mockMvc.perform(get(\"/api/orders/42\"))\n    .andExpect(status().isOk())\n    .andExpect(jsonPath(\"$.id\").value(42));",
+      "explanation": "@WebMvcTest(OrderController.class) with a @MockBean/@MockitoBean service gives a fast web-layer test. perform throws Exception, so the test method declares throws Exception."
+    },
+    {
+      "id": "pytest-client",
+      "concept": "TestClient",
+      "type": "code",
+      "difficulty": 2,
+      "prompt": "Write a pytest function test_get_item using FastAPI's TestClient on app that requests /items/1, asserts a 200 status code and asserts the JSON id is 1.",
+      "language": "python",
+      "checks": [
+        {
+          "label": "defines a test function",
+          "pattern": "def\\s+test_get_item\\("
+        },
+        {
+          "label": "uses TestClient",
+          "pattern": "testclient\\("
+        },
+        {
+          "label": "asserts status 200",
+          "pattern": "status_code\\s*==\\s*200"
+        },
+        {
+          "label": "asserts the json id",
+          "pattern": "json\\(\\)\\[\\s*['\"]id['\"]\\s*\\]\\s*==\\s*1"
+        }
+      ],
+      "model": "def test_get_item():\n    client = TestClient(app)\n    r = client.get(\"/items/1\")\n    assert r.status_code == 200\n    assert r.json()[\"id\"] == 1",
+      "explanation": "No server is started: TestClient calls the ASGI app in-process. Use httpx.AsyncClient with ASGITransport for async tests, and app.dependency_overrides to swap the database dependency."
+    },
+    {
+      "id": "fixture-setups",
+      "concept": "pytest fixtures",
+      "type": "integer",
+      "difficulty": 2,
+      "prompt": "A function-scoped fixture db is requested by four plain tests and by one test parametrised with three values. How many times does the fixture run in a full session?",
+      "answer": 7,
+      "explanation": "Function scope sets up once per test invocation: 4 plain tests plus 3 parametrised cases make 7. With scope=\"module\" it would run once.",
+      "unit": "setups"
+    },
+    {
+      "id": "boundary",
+      "concept": "Boundary values",
+      "type": "integer",
+      "difficulty": 2,
+      "prompt": "A form accepts ages from 18 to 65 inclusive. How many test inputs does classic two-value boundary value analysis use (one just outside and one on each boundary)?",
+      "answer": 4,
+      "explanation": "The values are 17, 18, 65 and 66: the two boundaries plus the neighbour just outside each. Add a typical value in the middle for the equivalence class if you want.",
+      "unit": "inputs"
+    },
+    {
+      "id": "patch-where",
+      "concept": "unittest.mock",
+      "type": "single",
+      "difficulty": 3,
+      "prompt": "app/service.py does \"import requests\" and calls requests.get(...). Which unittest.mock target replaces it for a test of service.py?",
+      "options": [
+        {
+          "id": "a",
+          "text": "patch(\"app.service.requests.get\")",
+          "why": "Right: patch the name where the code under test looks it up."
+        },
+        {
+          "id": "b",
+          "text": "patch(\"app.service.get\", autospec=True)",
+          "why": "service.py imports the requests module and has no module-level name get, so patch raises AttributeError."
+        },
+        {
+          "id": "c",
+          "text": "patch(\"app.tests.requests.get\")",
+          "why": "The test module is not where service.py reads the name."
+        },
+        {
+          "id": "d",
+          "text": "patch(\"builtins.requests\")",
+          "why": "requests is not a builtin."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Where to patch: patch the name in the namespace that looks it up. Because service.py calls requests.get through the module, patch(\"app.service.requests.get\") works (patching \"requests.get\" would work too, but changes it for every module). For \"from requests import get\" you must patch app.service.get instead. Use autospec=True to make the mock honour the real signature."
+    },
+    {
+      "id": "spring-test",
+      "concept": "Spring test slices",
+      "type": "matrix",
+      "difficulty": 2,
+      "prompt": "Match each Spring test annotation or library to what it provides.",
+      "left": [
+        {
+          "id": "a",
+          "text": "@SpringBootTest"
+        },
+        {
+          "id": "b",
+          "text": "@WebMvcTest"
+        },
+        {
+          "id": "c",
+          "text": "@DataJpaTest"
+        },
+        {
+          "id": "d",
+          "text": "Testcontainers (@Container)"
+        }
+      ],
+      "right": [
+        {
+          "id": "p",
+          "text": "The full application context"
+        },
+        {
+          "id": "q",
+          "text": "Controller slice with MockMvc and no service beans"
+        },
+        {
+          "id": "r",
+          "text": "JPA slice with an embedded database and rollback after each test"
+        },
+        {
+          "id": "s",
+          "text": "A real database in Docker started for the test"
+        },
+        {
+          "id": "t",
+          "text": "A mock web server for outgoing HTTP"
+        }
+      ],
+      "pairs": {
+        "a": "p",
+        "b": "q",
+        "c": "r",
+        "d": "s"
+      },
+      "explanation": "Slices load only part of the context for speed. Use Testcontainers when H2 differs from production (jsonb, partial indexes, locking behaviour)."
+    },
+    {
+      "id": "datajpa-rollback",
+      "concept": "DataJpaTest",
+      "type": "assertion",
+      "difficulty": 1,
+      "prompt": "Read the assertion and the reason, then choose the option that describes them correctly.",
+      "assertion": "@DataJpaTest tests roll back their changes by default.",
+      "reason": "Each @DataJpaTest test runs inside a transaction that Spring rolls back when the test ends.",
+      "correct": [
+        "a"
+      ],
+      "whys": {
+        "a": "Right: the transactional test is the mechanism.",
+        "b": "The reason is the explanation.",
+        "c": "The assertion is true.",
+        "d": "The reason is true."
+      },
+      "explanation": "Remember that rollback also hides flush-time constraint errors; call flush() or entityManager.flush() when you want them to surface."
+    },
+    {
+      "id": "mockito-inline",
+      "concept": "Mockito",
+      "type": "assertion",
+      "difficulty": 3,
+      "prompt": "Read the assertion and the reason, then choose the option that describes them correctly.",
+      "assertion": "Mocking collaborators makes a unit test fast and isolated.",
+      "reason": "Since Mockito 5 the inline mock maker is the default, so final classes can be mocked.",
+      "correct": [
+        "b"
+      ],
+      "whys": {
+        "a": "The final-class fact does not explain speed or isolation.",
+        "b": "Right: both are true but independent.",
+        "c": "Both statements are true.",
+        "d": "The assertion is true."
+      },
+      "explanation": "Do not mock types you do not own or simple value objects; wrap them in an adapter you control instead."
+    },
+    {
+      "id": "springboottest-port",
+      "concept": "SpringBootTest",
+      "type": "assertion",
+      "difficulty": 3,
+      "prompt": "Read the assertion and the reason, then choose the option that describes them correctly.",
+      "assertion": "@SpringBootTest starts the complete application context.",
+      "reason": "@SpringBootTest always opens a real HTTP server on port 8080.",
+      "correct": [
+        "c"
+      ],
+      "whys": {
+        "a": "The reason is false.",
+        "b": "The reason is false.",
+        "c": "Right: the default webEnvironment is MOCK, and RANDOM_PORT must be requested explicitly.",
+        "d": "The assertion is the true statement."
+      },
+      "explanation": "Use webEnvironment = RANDOM_PORT with TestRestTemplate or WebTestClient when you need a real server."
+    },
+    {
+      "id": "mock-sut",
+      "concept": "Mockito",
+      "type": "assertion",
+      "difficulty": 2,
+      "prompt": "Read the assertion and the reason, then choose the option that describes them correctly.",
+      "assertion": "To isolate a class in a unit test you should mock the class under test itself.",
+      "reason": "Mocks replace collaborators with controllable stand-ins.",
+      "correct": [
+        "d"
+      ],
+      "whys": {
+        "a": "The assertion is false.",
+        "b": "The assertion is false.",
+        "c": "The reason is true.",
+        "d": "Right: mocking the class under test removes the very code you want to test; the reason is true."
+      },
+      "explanation": "Mock the dependencies of the class under test. Use a spy only when you must partially stub a real object."
+    },
+    {
+      "id": "contract-test",
+      "concept": "Test case design",
+      "type": "fill",
+      "difficulty": 2,
+      "prompt": "Complete the test strategy sentences.",
+      "text": "A consumer-driven {1} test (for example Pact) checks that a provider still honours what consumers rely on, without a full {2} environment, while tests of a pure function with plain inputs are {3} tests.",
+      "blanks": {
+        "1": "contract",
+        "2": "end-to-end",
+        "3": "unit"
+      },
+      "bank": [
+        "contract",
+        "end-to-end",
+        "unit",
+        "mutation",
+        "load",
+        "smoke"
+      ],
+      "explanation": "Contract tests catch breaking API changes early, which is what makes independent deployment of services safe."
+    },
+    {
+      "id": "edge-cases",
+      "concept": "Edge cases",
+      "type": "multi",
+      "difficulty": 2,
+      "prompt": "A function parseDate(\"dd/mm/yyyy\") returns a LocalDate. Which inputs are worthwhile edge cases? Select all that apply.",
+      "options": [
+        {
+          "id": "a",
+          "text": "29/02/2024 (valid leap day)",
+          "why": "Right: leap-year logic is a classic edge."
+        },
+        {
+          "id": "b",
+          "text": "29/02/2023 (impossible date)",
+          "why": "Right: it should be rejected."
+        },
+        {
+          "id": "c",
+          "text": "An empty string and null",
+          "why": "Right: error handling on missing input."
+        },
+        {
+          "id": "d",
+          "text": "15/06/2024 (another ordinary date)",
+          "why": "It repeats the happy path and adds little."
+        }
+      ],
+      "correct": [
+        "a",
+        "b",
+        "c"
+      ],
+      "explanation": "Edge cases come from boundaries, invalid input, empty values and special calendars."
+    },
+    {
+      "id": "flaky",
+      "concept": "Flaky tests",
+      "type": "single",
+      "difficulty": 3,
+      "prompt": "A test passes alone but fails in the full suite, and also fails near midnight. What is the most reliable cure for the time-related failure?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Inject a Clock (or freeze time) so the test controls \"now\"",
+          "why": "Right: time becomes an input, not an ambient dependency."
+        },
+        {
+          "id": "b",
+          "text": "Add Thread.sleep(2000) before the assertion so the clock ticks over",
+          "why": "Sleeping makes tests slow and still flaky."
+        },
+        {
+          "id": "c",
+          "text": "Retry the test up to five times in the CI config",
+          "why": "Retries hide the defect."
+        },
+        {
+          "id": "d",
+          "text": "Run the suite only during the daytime",
+          "why": "Scheduling around the bug does not fix it."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Flaky causes: shared state, ordering, time, randomness, concurrency and real network calls. Isolate each by injecting or seeding it."
+    },
+    {
+      "id": "context-cache",
+      "concept": "Context caching",
+      "type": "truefalse",
+      "difficulty": 3,
+      "prompt": "Using different @MockBean (or @MockitoBean) sets in different test classes can force Spring to build additional application contexts.",
+      "options": [
+        {
+          "id": "a",
+          "text": "True",
+          "why": "Right: the cache key includes the mock definitions, so each distinct set creates a new context."
+        },
+        {
+          "id": "b",
+          "text": "False",
+          "why": "The Spring TestContext cache is keyed by configuration, and mock beans are part of that configuration."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "To keep builds fast, share a base test configuration and avoid scattering @MockBean over many classes."
+    },
+    {
+      "id": "testcontainers-fill",
+      "concept": "Integration tests",
+      "type": "fill",
+      "difficulty": 2,
+      "prompt": "Complete the Testcontainers setup for Spring Boot 3.1 or later.",
+      "text": "Put {1} on the test class so containers are started and stopped, mark a static PostgreSQLContainer field with {2}, and add {3} to it so Spring Boot wires the datasource without a @DynamicPropertySource method.",
+      "blanks": {
+        "1": "@Testcontainers",
+        "2": "@Container",
+        "3": "@ServiceConnection"
+      },
+      "bank": [
+        "@Testcontainers",
+        "@Container",
+        "@ServiceConnection",
+        "@MockBean",
+        "@Transactional"
+      ],
+      "explanation": "A static container is shared by all tests in the class (faster); a non-static one restarts per test. @ServiceConnection needs the spring-boot-testcontainers dependency. Without Boot 3.1, @DynamicPropertySource with the container's getJdbcUrl() is the classic route."
+    },
+    {
+      "id": "strict-stubs",
+      "concept": "Unit tests and mocks",
+      "type": "assertion",
+      "difficulty": 3,
+      "prompt": "Read the assertion A and the reason R, then choose the correct relationship between them.",
+      "assertion": "With @ExtendWith(MockitoExtension.class), a test that stubs a method it never calls fails.",
+      "reason": "MockitoExtension uses strict stubs by default, so an unused stubbing is reported as UnnecessaryStubbingException.",
+      "correct": [
+        "a"
+      ],
+      "whys": {
+        "a": "Correct: both are true and the strict-stubs default is why the test fails.",
+        "b": "R explains A, so this is wrong.",
+        "c": "R is true, so this is wrong.",
+        "d": "A is true, so this is wrong."
+      },
+      "explanation": "Remove the dead stub, or mark a shared setup stub with lenient().when(...) or @MockitoSettings(strictness = LENIENT). Strictness catches stale tests."
+    },
+    {
+      "id": "parametrize-cross",
+      "concept": "Test design",
+      "type": "integer",
+      "difficulty": 2,
+      "prompt": "In pytest, a test function is decorated with @pytest.mark.parametrize(\"a\", [1, 2, 3]) and also with @pytest.mark.parametrize(\"b\", [10, 20]). How many test cases does pytest generate for it?",
+      "answer": 6,
+      "tolerance": 0,
+      "unit": "tests",
+      "explanation": "Stacked parametrize decorators form a cross product: 3 x 2 = 6 cases. Use a single parametrize with explicit tuples when you do not want every combination."
+    },
+    {
+      "id": "junit-instances",
+      "concept": "Unit tests and mocks",
+      "type": "integer",
+      "difficulty": 2,
+      "prompt": "A JUnit 5 test class has 3 @Test methods and uses the default lifecycle. How many instances of the test class does JUnit create to run it?",
+      "answer": 3,
+      "tolerance": 0,
+      "unit": "instances",
+      "explanation": "The default is Lifecycle.PER_METHOD, a new instance for every test method, which isolates field state. @TestInstance(PER_CLASS) would create just 1 and allow non-static @BeforeAll."
+    }
+  ]
+}

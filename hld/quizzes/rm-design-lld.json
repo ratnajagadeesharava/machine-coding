@@ -1,0 +1,420 @@
+{
+  "id": "rm-design-lld",
+  "title": "LLD: LRU cache, rate limiter, parking lot",
+  "topic": "Interview roadmap",
+  "series": "interview-roadmap",
+  "seriesTitle": "Interview roadmap: topic quizzes",
+  "seriesDescription": "Topic-by-topic JEE-style quizzes for the backend and AI-engineering interview roadmap: integer, assertion-reason, matrix match, fill-in-the-blanks, short code writing, plus multi-correct questions. Language core, concurrency, DSA, web frameworks, data access, databases, messaging, resilience, security, testing, system design, LLM and agent engineering.",
+  "seriesOrder": 89,
+  "description": "Low-level design: an LRU cache with LinkedHashMap or OrderedDict, a token bucket class, a parking lot class design with interfaces and ABCs, design patterns, and thread-safety follow-ups.",
+  "source": "Oracle Java docs (LinkedHashMap); Python docs (collections.OrderedDict, abc); Head First Design Patterns; Grokking the OOD interview problem lists; LeetCode 146 discussion",
+  "estimatedMinutes": 15,
+  "questions": [
+    {
+      "id": "lru-lhm",
+      "concept": "LRU cache",
+      "type": "code",
+      "difficulty": 2,
+      "prompt": "Write a generic Java class LRU<K,V> extending LinkedHashMap that keeps at most cap entries, evicting the least recently used one (cap is a constructor argument).",
+      "language": "java",
+      "checks": [
+        {
+          "label": "extends LinkedHashMap",
+          "pattern": "extends\\s+linkedhashmap"
+        },
+        {
+          "label": "access-order constructor (true)",
+          "pattern": "super\\([^)]*,\\s*true\\s*\\)"
+        },
+        {
+          "label": "overrides removeEldestEntry",
+          "pattern": "removeeldestentry"
+        },
+        {
+          "label": "evicts when size exceeds cap",
+          "pattern": "size\\(\\)\\s*>\\s*cap"
+        }
+      ],
+      "model": "class LRU<K,V> extends LinkedHashMap<K,V> {\n  private final int cap;\n  LRU(int cap) { super(16, 0.75f, true); this.cap = cap; }\n  @Override protected boolean removeEldestEntry(Map.Entry<K,V> e) { return size() > cap; }\n}",
+      "explanation": "accessOrder = true makes get() move an entry to the end. The interview follow-up is to implement the same with a HashMap plus a doubly linked list with head and tail sentinels, giving O(1) get and put."
+    },
+    {
+      "id": "lru-py",
+      "concept": "LRU cache",
+      "type": "code",
+      "difficulty": 2,
+      "prompt": "Write a Python class LRUCache with __init__(self, cap), get(key) returning -1 on a miss, and put(key, value), using collections.OrderedDict so both operations are O(1).",
+      "language": "python",
+      "checks": [
+        {
+          "label": "uses OrderedDict",
+          "pattern": "ordereddict"
+        },
+        {
+          "label": "moves a used key to the end",
+          "pattern": "move_to_end\\("
+        },
+        {
+          "label": "evicts the oldest with popitem(last=False)",
+          "pattern": "popitem\\(\\s*last\\s*=\\s*false\\s*\\)"
+        },
+        {
+          "label": "defines get and put",
+          "pattern": "def\\s+get\\([\\s\\S]*def\\s+put\\("
+        }
+      ],
+      "model": "class LRUCache:\n    def __init__(self, cap): self.cap, self.d = cap, OrderedDict()\n    def get(self, key):\n        if key not in self.d: return -1\n        self.d.move_to_end(key); return self.d[key]\n    def put(self, key, value):\n        self.d[key] = value; self.d.move_to_end(key)\n        if len(self.d) > self.cap: self.d.popitem(last=False)",
+      "explanation": "OrderedDict is itself a hash map plus a doubly linked list. The functools.lru_cache decorator is the standard-library answer when you only need function memoisation."
+    },
+    {
+      "id": "token-bucket",
+      "concept": "Rate limiter LLD",
+      "type": "code",
+      "difficulty": 3,
+      "prompt": "Write a thread-safe Java class TokenBucket(double capacity, double refillPerSecond) with a boolean tryAcquire() method that refills lazily from elapsed time (never above capacity), starts full and takes one token on success.",
+      "language": "java",
+      "checks": [
+        {
+          "label": "is synchronized or locked",
+          "pattern": "(synchronized|reentrantlock|atomic)"
+        },
+        {
+          "label": "caps tokens at capacity with Math.min",
+          "pattern": "math\\.min\\("
+        },
+        {
+          "label": "uses elapsed time",
+          "pattern": "(nanotime|currentTimeMillis|instant\\.now)"
+        },
+        {
+          "label": "has tryAcquire returning boolean",
+          "pattern": "boolean\\s+tryacquire\\(\\)"
+        }
+      ],
+      "model": "class TokenBucket {\n  private final double cap, rate; private double tokens; private long last = System.nanoTime();\n  TokenBucket(double cap, double rate) { this.cap = cap; this.rate = rate; this.tokens = cap; }\n  synchronized boolean tryAcquire() {\n    long now = System.nanoTime();\n    tokens = Math.min(cap, tokens + (now - last) / 1e9 * rate); last = now;\n    if (tokens >= 1) { tokens -= 1; return true; } return false;\n  }\n}",
+      "explanation": "Lazy refill avoids a timer thread. Use nanoTime (monotonic) rather than wall-clock time. Other correct versions use a lock or an AtomicLong with compare-and-set."
+    },
+    {
+      "id": "vehicle-abc",
+      "concept": "Parking lot LLD",
+      "type": "code",
+      "difficulty": 2,
+      "prompt": "Write Python for a parking lot: an abstract base class Vehicle with an abstract method spots_needed(self), and a concrete class Car(Vehicle) that needs 1 spot.",
+      "language": "python",
+      "checks": [
+        {
+          "label": "imports ABC / abstractmethod",
+          "pattern": "from\\s+abc\\s+import|import\\s+abc"
+        },
+        {
+          "label": "declares Vehicle as an ABC",
+          "pattern": "class\\s+vehicle\\(\\s*(abc\\.)?abc\\s*\\)"
+        },
+        {
+          "label": "marks the method @abstractmethod",
+          "pattern": "@(abc\\.)?abstractmethod"
+        },
+        {
+          "label": "Car subclasses Vehicle and returns 1",
+          "pattern": "class\\s+car\\(\\s*vehicle\\s*\\)[\\s\\S]*return\\s+1"
+        }
+      ],
+      "model": "from abc import ABC, abstractmethod\nclass Vehicle(ABC):\n    @abstractmethod\n    def spots_needed(self) -> int: ...\nclass Car(Vehicle):\n    def spots_needed(self): return 1",
+      "explanation": "Instantiating Vehicle raises TypeError, and subclasses that forget the method also cannot be instantiated. In Java the same idea is an interface or abstract class, with an enum for VehicleType."
+    },
+    {
+      "id": "lru-trace",
+      "concept": "LRU trace",
+      "type": "integer",
+      "difficulty": 2,
+      "prompt": "An LRU cache has capacity 3. Operations: put(1), put(2), put(3), get(1), put(4), get(3), put(5). What is the sum of the keys left in the cache?",
+      "answer": 12,
+      "explanation": "After put(4) key 2 is evicted; after get(3) the order is 1,4,3 (oldest first); put(5) evicts 1. Remaining keys 4, 3, 5 sum to 12."
+    },
+    {
+      "id": "bucket-trace",
+      "concept": "Token bucket",
+      "type": "integer",
+      "difficulty": 3,
+      "prompt": "A token bucket has capacity 5 and refills 2 tokens per second. It starts full, 5 requests are accepted at t = 0, then 10 requests arrive at t = 1.5 s (all at the same instant). How many of those 10 are accepted?",
+      "answer": 3,
+      "explanation": "1.5 s x 2 tokens/s = 3 tokens were refilled, so 3 requests succeed and 7 are rejected.",
+      "unit": "requests"
+    },
+    {
+      "id": "patterns",
+      "concept": "Design patterns",
+      "type": "matrix",
+      "difficulty": 2,
+      "prompt": "Match each parking-lot or cache design need to the pattern that fits best.",
+      "left": [
+        {
+          "id": "a",
+          "text": "Switch between hourly and flat pricing or LRU and LFU eviction"
+        },
+        {
+          "id": "b",
+          "text": "Create the right Spot subclass from a type"
+        },
+        {
+          "id": "c",
+          "text": "Update display boards when a spot is taken"
+        },
+        {
+          "id": "d",
+          "text": "A ticket moves from ISSUED to PAID to EXITED"
+        },
+        {
+          "id": "e",
+          "text": "Exactly one shared configuration object"
+        }
+      ],
+      "right": [
+        {
+          "id": "p",
+          "text": "Strategy"
+        },
+        {
+          "id": "q",
+          "text": "Factory"
+        },
+        {
+          "id": "r",
+          "text": "Observer"
+        },
+        {
+          "id": "s",
+          "text": "State"
+        },
+        {
+          "id": "t",
+          "text": "Singleton"
+        },
+        {
+          "id": "u",
+          "text": "Decorator"
+        }
+      ],
+      "pairs": {
+        "a": "p",
+        "b": "q",
+        "c": "r",
+        "d": "s",
+        "e": "t"
+      },
+      "explanation": "Name the pattern only after stating the problem it solves. Strategy is the most frequent LLD answer (pricing, eviction, rate-limiting algorithm)."
+    },
+    {
+      "id": "lru-on",
+      "concept": "LRU cache",
+      "type": "assertion",
+      "difficulty": 2,
+      "prompt": "Read the assertion and the reason, then choose the option that describes them correctly.",
+      "assertion": "An LRU cache built from a hash map and a doubly linked list supports O(1) get and put.",
+      "reason": "The map finds a node directly and the doubly linked list can unlink and move it without scanning.",
+      "correct": [
+        "a"
+      ],
+      "whys": {
+        "a": "Right: lookup is O(1) via the map and reordering is O(1) via the list pointers.",
+        "b": "The reason is the mechanism.",
+        "c": "The assertion is true.",
+        "d": "The reason is true."
+      },
+      "explanation": "A singly linked list would need the previous node to unlink, forcing an O(n) search."
+    },
+    {
+      "id": "abc-strategy",
+      "concept": "Interfaces and ABCs",
+      "type": "assertion",
+      "difficulty": 2,
+      "prompt": "Read the assertion and the reason, then choose the option that describes them correctly.",
+      "assertion": "Define PricingPolicy as an interface so the parking lot can swap pricing rules.",
+      "reason": "Python abstract base classes refuse instantiation while abstract methods are missing.",
+      "correct": [
+        "b"
+      ],
+      "whys": {
+        "a": "The ABC behaviour does not explain why an interface helps swapping.",
+        "b": "Right: both true, but swapping comes from programming to an interface, not from ABC enforcement.",
+        "c": "Both statements are true.",
+        "d": "The assertion is true."
+      },
+      "explanation": "Inject the policy through the constructor so tests can pass a fake."
+    },
+    {
+      "id": "lhm-thread",
+      "concept": "Thread safety",
+      "type": "assertion",
+      "difficulty": 3,
+      "prompt": "Read the assertion and the reason, then choose the option that describes them correctly.",
+      "assertion": "LinkedHashMap with accessOrder = true is a convenient base for an LRU cache.",
+      "reason": "LinkedHashMap is thread-safe, so concurrent get calls are safe.",
+      "correct": [
+        "c"
+      ],
+      "whys": {
+        "a": "The reason is false.",
+        "b": "The reason is false.",
+        "c": "Right: LinkedHashMap is not thread-safe and in access order even get() mutates it.",
+        "d": "The assertion is the true statement."
+      },
+      "explanation": "Wrap with Collections.synchronizedMap or guard get and put with one lock. Caffeine is the production answer."
+    },
+    {
+      "id": "spot-pricing",
+      "concept": "Parking lot LLD",
+      "type": "assertion",
+      "difficulty": 3,
+      "prompt": "Read the assertion and the reason, then choose the option that describes them correctly.",
+      "assertion": "The Spot class should compute the parking fee for the vehicle it holds.",
+      "reason": "The Single Responsibility Principle says a class should have one reason to change.",
+      "correct": [
+        "d"
+      ],
+      "whys": {
+        "a": "The assertion is false.",
+        "b": "The assertion is false.",
+        "c": "The reason is true.",
+        "d": "Right: pricing changes for business reasons unrelated to spots, so the assertion is false while the reason is true."
+      },
+      "explanation": "Put pricing in a PricingPolicy used by the Ticket or a payment service."
+    },
+    {
+      "id": "lru-parts",
+      "concept": "LinkedHashMap and OrderedDict",
+      "type": "fill",
+      "difficulty": 1,
+      "prompt": "Complete the LRU facts.",
+      "text": "LinkedHashMap is constructed with access order {1} and you override {2}; in Python the matching method on OrderedDict is {3}.",
+      "blanks": {
+        "1": "true",
+        "2": "removeEldestEntry",
+        "3": "move_to_end"
+      },
+      "bank": [
+        "true",
+        "removeEldestEntry",
+        "move_to_end",
+        "false",
+        "removeAll",
+        "popitem"
+      ],
+      "explanation": "The three-argument constructor is LinkedHashMap(initialCapacity, loadFactor, accessOrder)."
+    },
+    {
+      "id": "lru-thread",
+      "concept": "Thread safety",
+      "type": "single",
+      "difficulty": 3,
+      "prompt": "Why is a plain LinkedHashMap LRU unsafe for concurrent readers even if the threads only call get?",
+      "options": [
+        {
+          "id": "a",
+          "text": "get() reorders entries, so each read mutates it",
+          "why": "Right: concurrent reorders can corrupt the links or lose entries."
+        },
+        {
+          "id": "b",
+          "text": "get() always throws ConcurrentModificationException",
+          "why": "It is not guaranteed to throw; corruption can be silent."
+        },
+        {
+          "id": "c",
+          "text": "LinkedHashMap forbids more than one reader thread at any time",
+          "why": "No such restriction exists in the class."
+        },
+        {
+          "id": "d",
+          "text": "The hash function differs per thread",
+          "why": "Hashing is deterministic and does not depend on the thread."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Use a lock around get and put, or a concurrent cache library such as Caffeine."
+    },
+    {
+      "id": "lld-practice",
+      "concept": "LLD practice",
+      "type": "multi",
+      "difficulty": 2,
+      "prompt": "Which are sound LLD practices for the parking lot? Select all that apply.",
+      "options": [
+        {
+          "id": "a",
+          "text": "Use an enum for VehicleType rather than free strings",
+          "why": "Right: it is type-safe and exhaustive."
+        },
+        {
+          "id": "b",
+          "text": "Inject the pricing and allocation strategies through constructors",
+          "why": "Right: swappable and testable."
+        },
+        {
+          "id": "c",
+          "text": "Return Optional<Spot> from findSpot instead of null",
+          "why": "Right: the absence case is explicit."
+        },
+        {
+          "id": "d",
+          "text": "Expose a public mutable List<Spot> field for convenience",
+          "why": "Callers could corrupt the lot state; expose behaviour instead."
+        }
+      ],
+      "correct": [
+        "a",
+        "b",
+        "c"
+      ],
+      "explanation": "Clarify requirements, list entities, define interfaces, then write the core flow park and unpark first."
+    },
+    {
+      "id": "abc-needed",
+      "concept": "Interfaces and ABCs",
+      "type": "truefalse",
+      "difficulty": 2,
+      "prompt": "In Python, a class with an @abstractmethod that does not inherit from ABC (or use ABCMeta) still cannot be instantiated.",
+      "options": [
+        {
+          "id": "a",
+          "text": "True",
+          "why": "The decorator alone has no effect without the ABCMeta metaclass."
+        },
+        {
+          "id": "b",
+          "text": "False",
+          "why": "Right: abstract enforcement needs ABCMeta (usually via inheriting ABC); the decorator by itself is only a marker."
+        }
+      ],
+      "correct": [
+        "b"
+      ],
+      "explanation": "Running a class with @abstractmethod but no ABC base shows A() still instantiates fine."
+    },
+    {
+      "id": "dcl-volatile",
+      "concept": "Thread safety",
+      "type": "truefalse",
+      "difficulty": 3,
+      "prompt": "True or false: a double-checked locking Singleton in Java needs its instance field declared volatile so another thread cannot see a partially constructed object.",
+      "options": [
+        {
+          "id": "a",
+          "text": "True",
+          "why": "Right: without volatile the write of the reference can be reordered before the constructor's writes, so a second thread may see a half-built object (fixed by the Java 5 memory model with volatile)."
+        },
+        {
+          "id": "b",
+          "text": "False",
+          "why": "Incorrect: the synchronized block only protects the second check; the unsynchronised first read can still observe a reference to an unfinished object without volatile."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Cleaner alternatives are the initialisation-on-demand holder idiom or a single-element enum Singleton (Effective Java, Item 3), neither of which needs volatile."
+    }
+  ]
+}

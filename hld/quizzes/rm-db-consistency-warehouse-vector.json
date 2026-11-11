@@ -1,0 +1,492 @@
+{
+  "id": "rm-db-consistency-warehouse-vector",
+  "title": "CAP, warehouses and vector databases",
+  "topic": "Interview roadmap",
+  "series": "interview-roadmap",
+  "seriesTitle": "Interview roadmap: topic quizzes",
+  "seriesDescription": "Topic-by-topic JEE-style quizzes for the backend and AI-engineering interview roadmap: integer, assertion-reason, matrix match, fill-in-the-blanks, short code writing, plus multi-correct questions. Language core, concurrency, DSA, web frameworks, data access, databases, messaging, resilience, security, testing, system design, LLM and agent engineering.",
+  "seriesOrder": 73,
+  "description": "CAP and PACELC, consistency models, OLTP vs OLAP and columnar storage, Snowflake/Databricks basics, and vector search with pgvector (HNSW vs IVF, distance metrics) and Spring AI.",
+  "source": "Brewer/Gilbert-Lynch CAP; Abadi PACELC (2012); Jepsen consistency map; Snowflake and Databricks docs; pgvector README; Spring AI reference; Chroma and Qdrant docs",
+  "estimatedMinutes": 16,
+  "questions": [
+    {
+      "id": "cap-choice",
+      "concept": "CAP theorem",
+      "type": "single",
+      "difficulty": 2,
+      "prompt": "During a network partition between two data centres, a CP system will behave how?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Refuse some requests so that no client sees inconsistent data.",
+          "why": "Right: it gives up availability for the minority side to preserve consistency."
+        },
+        {
+          "id": "b",
+          "text": "Keep serving every request on both sides of the partition and merge the conflicting writes later.",
+          "why": "That is an AP choice (availability with eventual reconciliation)."
+        },
+        {
+          "id": "c",
+          "text": "Drop the partition by electing two leaders.",
+          "why": "Two leaders is split-brain, which breaks consistency."
+        },
+        {
+          "id": "d",
+          "text": "Choose between consistency and partition tolerance at design time.",
+          "why": "Partitions happen whether you like it or not; the real choice is C or A when they do."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "CAP is only about behaviour during a partition. Saying \"pick two of three\" is the classic interview trap; partition tolerance is not optional on a real network."
+    },
+    {
+      "id": "consistency-models",
+      "concept": "Consistency models",
+      "type": "matrix",
+      "difficulty": 3,
+      "prompt": "Match each consistency model with its guarantee.",
+      "left": [
+        {
+          "id": "l1",
+          "text": "Linearizability"
+        },
+        {
+          "id": "l2",
+          "text": "Sequential consistency"
+        },
+        {
+          "id": "l3",
+          "text": "Causal consistency"
+        },
+        {
+          "id": "l4",
+          "text": "Eventual consistency"
+        },
+        {
+          "id": "l5",
+          "text": "Read-your-writes"
+        }
+      ],
+      "right": [
+        {
+          "id": "r1",
+          "text": "Operations appear atomic at one instant between call and return, respecting real time"
+        },
+        {
+          "id": "r2",
+          "text": "All clients see one total order that respects each client's program order, not real time"
+        },
+        {
+          "id": "r3",
+          "text": "Writes that are causally related are seen in order by everyone"
+        },
+        {
+          "id": "r4",
+          "text": "With no new writes, all replicas eventually converge"
+        },
+        {
+          "id": "r5",
+          "text": "A client always sees its own earlier writes"
+        },
+        {
+          "id": "r6",
+          "text": "Every read sees the newest write on a majority of nodes with no ordering rules"
+        }
+      ],
+      "pairs": {
+        "l1": "r1",
+        "l2": "r2",
+        "l3": "r3",
+        "l4": "r4",
+        "l5": "r5"
+      },
+      "explanation": "Strong to weak: linearizable, sequential, causal, eventual. Read-your-writes, monotonic reads and writes-follow-reads are session guarantees often layered on weaker stores."
+    },
+    {
+      "id": "pacelc-else",
+      "concept": "PACELC",
+      "type": "assertion",
+      "difficulty": 3,
+      "prompt": "Read the assertion A and the reason R, then choose the correct relationship between them.",
+      "assertion": "Even when there is no partition, a synchronously replicated database trades latency for consistency.",
+      "reason": "A commit that waits for follower acknowledgements takes at least as long as the slowest awaited follower.",
+      "correct": [
+        "a"
+      ],
+      "whys": {
+        "a": "Correct: waiting for acks is exactly the latency cost of stronger consistency, the E L/C part of PACELC.",
+        "b": "R is the mechanism, so it explains A.",
+        "c": "R is true.",
+        "d": "A is true."
+      },
+      "explanation": "PACELC: if Partition choose A or C, Else choose Latency or Consistency. It describes the normal-case cost that CAP ignores. Abadi classifies Dynamo-style stores (Cassandra, Riak) as PA/EL and H-Store/VoltDB as PC/EC, and PNUTS as PC/EL."
+    },
+    {
+      "id": "sync-commit-latency",
+      "concept": "PACELC",
+      "type": "integer",
+      "difficulty": 2,
+      "prompt": "A leader commits with a local fsync of 2 ms and replicates in parallel to two synchronous followers whose acknowledgement round trips are 10 ms and 40 ms. It acknowledges the client only after the leader and both followers have confirmed. Assuming the local fsync happens first, what is the commit latency in ms?",
+      "answer": 42,
+      "tolerance": 0,
+      "unit": "ms",
+      "explanation": "2 ms for the local fsync, then the parallel replication is bound by the slower follower: 2 + 40 = 42. Waiting for only one follower (semi-synchronous) would give 2 + 10 = 12, which is the consistency/latency dial."
+    },
+    {
+      "id": "linearizable-read",
+      "concept": "Consistency models",
+      "type": "assertion",
+      "difficulty": 3,
+      "prompt": "Read the assertion A and the reason R, then choose the correct relationship between them.",
+      "assertion": "In a linearizable register, a read that begins after a write has completed must return that write or a newer one.",
+      "reason": "Linearizability only requires the operations of each single client to appear in that client's own order.",
+      "correct": [
+        "c"
+      ],
+      "whys": {
+        "a": "R is false, so it cannot explain A.",
+        "b": "R is false.",
+        "c": "Correct: A restates the real-time guarantee (true); R describes only per-client order, which is weaker (false).",
+        "d": "A is true."
+      },
+      "explanation": "Real-time ordering across clients is what distinguishes linearizability from sequential consistency."
+    },
+    {
+      "id": "columnar-fill",
+      "concept": "OLTP vs OLAP",
+      "type": "fill",
+      "difficulty": 1,
+      "prompt": "Complete the storage layout statements.",
+      "text": "{1} storage keeps each column's values together, so summing one column scans only that column; {2} storage keeps whole rows together and suits point lookups; Snowflake separates {3} from storage so each can scale independently.",
+      "blanks": {
+        "1": "Columnar",
+        "2": "row-oriented",
+        "3": "compute"
+      },
+      "bank": [
+        "Columnar",
+        "row-oriented",
+        "compute",
+        "memory",
+        "graph"
+      ],
+      "explanation": "OLTP (short transactions, row stores such as PostgreSQL) versus OLAP (wide scans and aggregates, columnar engines such as Snowflake, BigQuery, Redshift, ClickHouse)."
+    },
+    {
+      "id": "columnar-ratio",
+      "concept": "OLTP vs OLAP",
+      "type": "integer",
+      "difficulty": 2,
+      "prompt": "A table has 1,000,000 rows and 20 fixed-width columns of 8 bytes each. A query sums one column. Ignoring compression and metadata, how many times less data does a column store read than a row store?",
+      "answer": 20,
+      "tolerance": 0,
+      "unit": "x",
+      "explanation": "A row store reads whole rows: 20 x 8 bytes per row. A column store reads one 8-byte column: a 20x reduction. Compression of similar values in a column adds more."
+    },
+    {
+      "id": "warehouse-facts",
+      "concept": "Snowflake and Databricks",
+      "type": "multi",
+      "difficulty": 2,
+      "prompt": "Which statements about modern cloud warehouses are correct? Select all that apply.",
+      "options": [
+        {
+          "id": "a",
+          "text": "Snowflake separates storage from compute, so virtual warehouses can be resized or paused independently.",
+          "why": "Right: the core architectural idea."
+        },
+        {
+          "id": "b",
+          "text": "Databricks Delta Lake adds ACID transactions to files in object storage.",
+          "why": "Right: a transaction log over Parquet files is the lakehouse building block."
+        },
+        {
+          "id": "c",
+          "text": "Snowflake stores tables in compressed columnar micro-partitions.",
+          "why": "Right: pruning on partition metadata replaces most traditional indexing."
+        },
+        {
+          "id": "d",
+          "text": "A warehouse is the best store for thousands of single-row updates per second.",
+          "why": "That is an OLTP workload; warehouses favour bulk loads and large scans."
+        },
+        {
+          "id": "e",
+          "text": "You tune Snowflake mainly by creating B-tree indexes.",
+          "why": "Standard Snowflake tables have no user-managed B-tree indexes; clustering and pruning matter instead."
+        }
+      ],
+      "correct": [
+        "a",
+        "b",
+        "c"
+      ],
+      "explanation": "Snowflake = SQL warehouse as a service; Databricks = Spark plus Delta lakehouse. Both bill compute separately from storage."
+    },
+    {
+      "id": "warehouse-lake",
+      "concept": "Snowflake and Databricks",
+      "type": "matrix",
+      "difficulty": 2,
+      "prompt": "Match the data platform term with its meaning.",
+      "left": [
+        {
+          "id": "l1",
+          "text": "Data warehouse"
+        },
+        {
+          "id": "l2",
+          "text": "Data lake"
+        },
+        {
+          "id": "l3",
+          "text": "Lakehouse"
+        },
+        {
+          "id": "l4",
+          "text": "ELT"
+        }
+      ],
+      "right": [
+        {
+          "id": "r1",
+          "text": "Curated, schema-on-write tables optimised for SQL analytics"
+        },
+        {
+          "id": "r2",
+          "text": "Raw files in object storage, schema applied on read"
+        },
+        {
+          "id": "r3",
+          "text": "Open table format giving ACID tables on lake storage"
+        },
+        {
+          "id": "r4",
+          "text": "Load raw data first and transform it inside the target system"
+        },
+        {
+          "id": "r5",
+          "text": "Copy every row twice for redundancy"
+        }
+      ],
+      "pairs": {
+        "l1": "r1",
+        "l2": "r2",
+        "l3": "r3",
+        "l4": "r4"
+      },
+      "explanation": "ETL transforms before load; ELT loads first and transforms with the warehouse compute, which cloud warehouses made practical."
+    },
+    {
+      "id": "hnsw-exact",
+      "concept": "Vector search",
+      "type": "assertion",
+      "difficulty": 2,
+      "prompt": "Read the assertion A and the reason R, then choose the correct relationship between them.",
+      "assertion": "An HNSW index guarantees that a query returns the exact nearest neighbours.",
+      "reason": "HNSW is a graph-based approximate nearest-neighbour index that does not compare the query with every vector.",
+      "correct": [
+        "d"
+      ],
+      "whys": {
+        "a": "A is false.",
+        "b": "A is false, so a both-true option is wrong.",
+        "c": "R is true.",
+        "d": "Correct: HNSW trades recall for speed (A false); R is true."
+      },
+      "explanation": "Approximate indexes return the nearest neighbours with high but not perfect recall. Without an index, ORDER BY ... LIMIT is exact but scans every row."
+    },
+    {
+      "id": "pgvector-query",
+      "concept": "pgvector",
+      "type": "code",
+      "difficulty": 2,
+      "prompt": "Table items(id, embedding vector(3)). Write a query returning the ids of the 5 items closest to the vector [0.1, 0.2, 0.3] by cosine distance using pgvector.",
+      "language": "sql",
+      "starter": "SELECT ",
+      "checks": [
+        {
+          "label": "selects from items",
+          "pattern": "from\\s+items"
+        },
+        {
+          "label": "orders by embedding <=> a vector literal",
+          "pattern": "order\\s+by\\s+embedding\\s*<=>\\s*['\"]?\\[?"
+        },
+        {
+          "label": "limits to 5",
+          "pattern": "limit\\s+5"
+        }
+      ],
+      "model": "SELECT id FROM items ORDER BY embedding <=> '[0.1,0.2,0.3]' LIMIT 5;",
+      "explanation": "<=> is cosine distance, so ascending order puts the most similar first. A parameter placeholder or an explicit ::vector cast is equally valid."
+    },
+    {
+      "id": "pgvector-ops",
+      "concept": "pgvector",
+      "type": "matrix",
+      "difficulty": 2,
+      "prompt": "Match each pgvector operator with the distance it computes.",
+      "left": [
+        {
+          "id": "l1",
+          "text": "<->"
+        },
+        {
+          "id": "l2",
+          "text": "<=>"
+        },
+        {
+          "id": "l3",
+          "text": "<#>"
+        }
+      ],
+      "right": [
+        {
+          "id": "r1",
+          "text": "Euclidean (L2) distance"
+        },
+        {
+          "id": "r2",
+          "text": "Cosine distance"
+        },
+        {
+          "id": "r3",
+          "text": "Negative inner product"
+        },
+        {
+          "id": "r4",
+          "text": "Edit distance"
+        }
+      ],
+      "pairs": {
+        "l1": "r1",
+        "l2": "r2",
+        "l3": "r3"
+      },
+      "explanation": "<#> returns the negative inner product so that ORDER BY ascending still works; multiply by -1 to get the real dot product. For unit-length vectors, cosine and inner product give the same ranking."
+    },
+    {
+      "id": "hnsw-vs-ivf",
+      "concept": "Vector search",
+      "type": "single",
+      "difficulty": 3,
+      "prompt": "A pgvector table starts empty and receives rows continuously, with no maintenance window for rebuilding the index. Which index type fits better?",
+      "options": [
+        {
+          "id": "a",
+          "text": "HNSW, which has no training step and keeps good recall as rows arrive.",
+          "why": "Right: it builds incrementally; build time and memory are higher, recall and speed are better."
+        },
+        {
+          "id": "b",
+          "text": "IVFFlat, since its lists are chosen once on the data present at build time.",
+          "why": "Building on an empty table gives poor centroids, and recall degrades as data drifts."
+        },
+        {
+          "id": "c",
+          "text": "No index, because ANN indexes cannot be updated.",
+          "why": "Both HNSW and IVFFlat accept inserts, though IVFFlat quality drifts."
+        },
+        {
+          "id": "d",
+          "text": "A btree on the vector column, because it orders the dimensions.",
+          "why": "A btree cannot answer nearest-neighbour queries over a vector."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "IVFFlat: faster build, smaller index, needs data first, tune lists and probes. HNSW: slower build, bigger, better speed-recall trade-off, tune m, ef_construction and hnsw.ef_search."
+    },
+    {
+      "id": "ivf-probes",
+      "concept": "Vector search",
+      "type": "integer",
+      "difficulty": 3,
+      "prompt": "An IVFFlat index has 100 equally sized lists over 1,000,000 vectors and the query uses probes = 5. Roughly how many vectors does the query compare against?",
+      "answer": 50000,
+      "tolerance": 2000,
+      "unit": "vectors",
+      "explanation": "Each list holds about 10,000 vectors and 5 lists are scanned, so about 50,000. Raising probes increases recall and cost; probes = lists is an exact scan."
+    },
+    {
+      "id": "spring-ai-search",
+      "concept": "Vector store clients",
+      "type": "code",
+      "difficulty": 2,
+      "prompt": "With Spring AI, vectorStore is a VectorStore. Write the call that returns the 4 most similar documents to the text \"refund policy\" using a SearchRequest.",
+      "language": "java",
+      "starter": "List<Document> docs = ",
+      "checks": [
+        {
+          "label": "calls similaritySearch",
+          "pattern": "similaritySearch\\s*\\("
+        },
+        {
+          "label": "queries \"refund policy\"",
+          "pattern": "query\\s*\\(\\s*\"refund policy\"\\s*\\)"
+        },
+        {
+          "label": "sets topK to 4",
+          "pattern": "topk\\s*\\(\\s*4\\s*\\)"
+        }
+      ],
+      "model": "List<Document> docs = vectorStore.similaritySearch(SearchRequest.builder().query(\"refund policy\").topK(4).build());",
+      "explanation": "The builder style is Spring AI 1.0. A plain similaritySearch(\"refund policy\") string overload uses default topK. In Python, Chroma is collection.query(query_texts=[...], n_results=4) and Qdrant is client.query_points(collection_name, query=vector, limit=4)."
+    },
+    {
+      "id": "columnar-compress",
+      "concept": "OLTP vs OLAP",
+      "type": "assertion",
+      "difficulty": 2,
+      "prompt": "Read the assertion A and the reason R, then choose the correct relationship between them.",
+      "assertion": "Columnar storage compresses analytical data very well.",
+      "reason": "Typical OLAP queries read only a few columns of many rows.",
+      "correct": [
+        "b"
+      ],
+      "whys": {
+        "a": "Compression comes from similar values sitting together, not from which columns a query reads.",
+        "b": "Correct: both are true, but R explains why columnar is fast to read, not why it compresses.",
+        "c": "R is true.",
+        "d": "A is true."
+      },
+      "explanation": "Similar adjacent values enable run-length, dictionary and delta encoding. Fewer columns read gives I/O savings: a separate benefit."
+    },
+    {
+      "id": "code-hnsw-index",
+      "concept": "Vector search",
+      "type": "code",
+      "difficulty": 2,
+      "prompt": "Table items(id, embedding vector(3)) is searched by cosine distance. Write the pgvector statement that creates an HNSW index for that query.",
+      "language": "sql",
+      "checks": [
+        {
+          "label": "creates an index using hnsw",
+          "pattern": "create\\s+index[\\s\\S]*\\bon\\s+items\\s+using\\s+hnsw"
+        },
+        {
+          "label": "uses the cosine operator class",
+          "pattern": "embedding\\s+vector_cosine_ops"
+        }
+      ],
+      "model": "CREATE INDEX ON items USING hnsw (embedding vector_cosine_ops);",
+      "explanation": "The operator class must match the operator used in ORDER BY: vector_l2_ops for <->, vector_ip_ops for <#>, vector_cosine_ops for <=>; a mismatch means the index is not used. Optional WITH (m = 16, ef_construction = 64) are the documented defaults; at query time raise hnsw.ef_search (default 40) for better recall."
+    },
+    {
+      "id": "hnsw-defaults",
+      "concept": "Vector search",
+      "type": "integer",
+      "difficulty": 3,
+      "prompt": "In pgvector, an HNSW index returns at most hnsw.ef_search candidates per scan. With the default setting and a query ORDER BY embedding <-> q LIMIT 100 (no filtering), how many rows can the index scan return at most?",
+      "answer": 40,
+      "unit": "rows",
+      "explanation": "hnsw.ef_search defaults to 40, which caps the candidate list, so LIMIT 100 yields at most 40 rows unless you raise ef_search (up to 1000). Interviewers like this trap: increasing LIMIT without raising ef_search silently returns fewer rows than requested. Newer pgvector versions add iterative scans for filtered queries."
+    }
+  ]
+}

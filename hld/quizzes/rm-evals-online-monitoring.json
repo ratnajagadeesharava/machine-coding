@@ -1,0 +1,366 @@
+{
+  "id": "rm-evals-online-monitoring",
+  "title": "Evals: online monitoring, drift and red-teaming",
+  "topic": "Interview roadmap",
+  "series": "interview-roadmap",
+  "seriesTitle": "Interview roadmap: topic quizzes",
+  "seriesOrder": 103,
+  "seriesDescription": "Topic-by-topic JEE-style quizzes for the backend and AI-engineering interview roadmap: integer, assertion-reason, matrix match, fill-in-the-blanks, short code writing, plus multi-correct questions. Language core, concurrency, DSA, web frameworks, data access, databases, messaging, resilience, security, testing, system design, LLM and agent engineering.",
+  "description": "Traces, cost and latency arithmetic, percentiles, sampled online judging, drift types, canary and shadow releases, and red-team regression suites for LLM applications.",
+  "source": "OpenTelemetry GenAI semantic conventions; Google SRE book (error budgets); OWASP Top 10 for LLM Applications; Langfuse docs; garak, PyRIT, promptfoo docs",
+  "estimatedMinutes": 14,
+  "questions": [
+    {
+      "id": "cost-month",
+      "concept": "Cost monitoring",
+      "type": "integer",
+      "difficulty": 2,
+      "prompt": "Hypothetical prices: input tokens cost $2 per million and output tokens cost $8 per million. A request uses 1500 input tokens and 250 output tokens. What does 10,000 such requests cost, in dollars?",
+      "answer": 50,
+      "unit": "USD",
+      "explanation": "Per request: 1500 x $2/1M = $0.003 and 250 x $8/1M = $0.002, total $0.005. Times 10,000 gives $50. Output tokens are priced higher, so verbose answers and retry loops show up quickly in cost dashboards."
+    },
+    {
+      "id": "p95-count",
+      "concept": "Latency percentiles",
+      "type": "integer",
+      "difficulty": 1,
+      "prompt": "Over a window of 200 requests the p95 latency is 4.2 seconds. About how many of those 200 requests were slower than 4.2 seconds?",
+      "answer": 10,
+      "unit": "requests",
+      "explanation": "p95 means 95% of requests are at or below the value, so 5% of 200 = 10 are slower. Averages hide exactly these tail requests."
+    },
+    {
+      "id": "judge-budget",
+      "concept": "Online evaluation",
+      "type": "integer",
+      "difficulty": 2,
+      "prompt": "You receive 40,000 traces a day and an LLM judge scores a random 5% sample at $0.002 per judged trace. What is the daily judge cost in dollars?",
+      "answer": 4,
+      "unit": "USD",
+      "explanation": "5% of 40,000 = 2,000 judged traces; 2,000 x $0.002 = $4. Sampling keeps online quality monitoring cheap while still showing trends."
+    },
+    {
+      "id": "tail-latency",
+      "concept": "Latency percentiles",
+      "type": "assertion",
+      "difficulty": 1,
+      "prompt": "Read the assertion (A) and the reason (R), then choose the correct option.",
+      "assertion": "For an LLM endpoint you should alert on p95 or p99 latency, not only the mean.",
+      "reason": "The mean hides the slowest requests, which can affect a noticeable fraction of users.",
+      "correct": [
+        "a"
+      ],
+      "whys": {
+        "a": "Correct: tail percentiles expose slow outliers (long generations, retries, cold caches) that a mean smooths away.",
+        "b": "R is the direct reason, not a side fact.",
+        "c": "R is true.",
+        "d": "A is true; SRE practice monitors percentiles."
+      },
+      "explanation": "Track time to first token as well as total time for streaming responses."
+    },
+    {
+      "id": "token-trace",
+      "concept": "Tracing",
+      "type": "assertion",
+      "difficulty": 2,
+      "prompt": "Read the assertion (A) and the reason (R), then choose the correct option.",
+      "assertion": "Each LLM span in a trace should record the model name, version and token counts.",
+      "reason": "Token counts alone fully determine the latency of a request.",
+      "correct": [
+        "c"
+      ],
+      "whys": {
+        "a": "R is false, so it cannot explain A.",
+        "b": "R is false, not merely unrelated.",
+        "c": "Correct: A is true because cost and regressions are attributed per model and prompt version, but latency also depends on queueing, network, tool calls and output length.",
+        "d": "A is true, so this option is wrong."
+      },
+      "explanation": "Add prompt version, retrieval index version and user/session ids (hashed) as span attributes."
+    },
+    {
+      "id": "silent-drift",
+      "concept": "Drift",
+      "type": "assertion",
+      "difficulty": 3,
+      "prompt": "Read the assertion (A) and the reason (R), then choose the correct option.",
+      "assertion": "Output quality can degrade even when you have shipped no code change.",
+      "reason": "Provider-side model updates and shifts in the distribution of user inputs can change behaviour.",
+      "correct": [
+        "a"
+      ],
+      "whys": {
+        "a": "Correct: both are real causes of drift with no deploy on your side, which is why you pin versions and monitor continuously.",
+        "b": "R is the mechanism, so it does explain A.",
+        "c": "R is true.",
+        "d": "A is true."
+      },
+      "explanation": "Pin model snapshots, run the golden suite on a schedule, and watch online scores."
+    },
+    {
+      "id": "sampling-cost",
+      "concept": "Online evaluation",
+      "type": "assertion",
+      "difficulty": 2,
+      "prompt": "Read the assertion (A) and the reason (R), then choose the correct option.",
+      "assertion": "Scoring a random sample of production traces with an LLM judge keeps the cost of online evaluation bounded.",
+      "reason": "Thumbs-down feedback from users is a useful signal for choosing which traces to review.",
+      "correct": [
+        "b"
+      ],
+      "whys": {
+        "a": "R is true but it is about selecting traces, not about bounding cost.",
+        "b": "Correct: sampling bounds spend (A) and feedback-driven selection (R) is true but a different idea.",
+        "c": "R is true.",
+        "d": "A is true."
+      },
+      "explanation": "Combine random sampling for trend lines with targeted sampling of low-rated or high-cost traces."
+    },
+    {
+      "id": "monitor-pieces",
+      "concept": "Tracing",
+      "type": "matrix",
+      "difficulty": 2,
+      "prompt": "Match each monitoring tool or practice to its purpose.",
+      "left": [
+        {
+          "id": "a",
+          "text": "Trace with spans"
+        },
+        {
+          "id": "b",
+          "text": "Metric with an alert rule"
+        },
+        {
+          "id": "c",
+          "text": "Sampled online judge"
+        },
+        {
+          "id": "d",
+          "text": "Red-team suite"
+        },
+        {
+          "id": "e",
+          "text": "Shadow deployment"
+        }
+      ],
+      "right": [
+        {
+          "id": "p",
+          "text": "Follows one request through retrieval, LLM and tool calls with timings"
+        },
+        {
+          "id": "q",
+          "text": "Pages on-call when p95 latency crosses a threshold"
+        },
+        {
+          "id": "r",
+          "text": "Scores a sample of live outputs for quality"
+        },
+        {
+          "id": "s",
+          "text": "Replays injection, jailbreak and data-leak prompts before release"
+        },
+        {
+          "id": "t",
+          "text": "Mirrors live traffic to a new version without affecting users"
+        },
+        {
+          "id": "u",
+          "text": "Compresses embeddings"
+        }
+      ],
+      "pairs": {
+        "a": "p",
+        "b": "q",
+        "c": "r",
+        "d": "s",
+        "e": "t"
+      },
+      "explanation": "A good answer pairs each signal (traces, metrics, evals) with the question it answers (where, how bad, how good)."
+    },
+    {
+      "id": "otel-span",
+      "concept": "Tracing",
+      "type": "code",
+      "difficulty": 2,
+      "prompt": "In Python with OpenTelemetry, write a function call_llm(prompt) that runs inside a span named \"llm.call\" (use a tracer from trace.get_tracer) and sets a span attribute \"llm.model\" to MODEL before calling client.generate(prompt).",
+      "language": "python",
+      "starter": "from opentelemetry import trace\ntracer = trace.get_tracer(__name__)\n",
+      "checks": [
+        {
+          "label": "gets or uses a tracer",
+          "pattern": "tracer"
+        },
+        {
+          "label": "opens the span as a context manager",
+          "pattern": "with\\s+\\w+(\\.\\w+)*\\.start_as_current_span\\s*\\("
+        },
+        {
+          "label": "names the span llm.call",
+          "pattern": "[\"']llm\\.call[\"']"
+        },
+        {
+          "label": "sets the llm.model attribute",
+          "pattern": "set_attribute\\s*\\(\\s*[\"']llm\\.model[\"']"
+        },
+        {
+          "label": "calls client.generate",
+          "pattern": "client\\.generate\\s*\\("
+        }
+      ],
+      "model": "def call_llm(prompt):\n    with tracer.start_as_current_span(\"llm.call\") as span:\n        span.set_attribute(\"llm.model\", MODEL)\n        return client.generate(prompt)",
+      "explanation": "start_as_current_span ends the span and records exceptions for you. A decorator or start_span with try/finally also works but is more verbose; this check expects the context-manager form. The OpenTelemetry GenAI semantic conventions standardise attribute names such as gen_ai.request.model (still in development), so prefer those over invented keys like llm.model in real code."
+    },
+    {
+      "id": "redteam-pytest",
+      "concept": "Red-team suites",
+      "type": "code",
+      "difficulty": 3,
+      "prompt": "ATTACKS is a list of prompt-injection strings and SECRET is the system-prompt secret. Write a parametrized pytest test_no_leak that calls chatbot(prompt) and asserts SECRET never appears in the reply.",
+      "language": "python",
+      "starter": "import pytest\n",
+      "checks": [
+        {
+          "label": "parametrizes over ATTACKS",
+          "pattern": "pytest\\.mark\\.parametrize\\s*\\(\\s*[\"']\\w+[\"']\\s*,\\s*ATTACKS"
+        },
+        {
+          "label": "defines test_no_leak",
+          "pattern": "def\\s+test_no_leak\\s*\\("
+        },
+        {
+          "label": "calls chatbot",
+          "pattern": "chatbot\\s*\\("
+        },
+        {
+          "label": "asserts SECRET is absent",
+          "pattern": "assert\\s+SECRET\\s+not\\s+in|assert\\s+not\\s+\\(?\\s*SECRET\\s+in"
+        }
+      ],
+      "model": "@pytest.mark.parametrize(\"prompt\", ATTACKS)\ndef test_no_leak(prompt):\n    reply = chatbot(prompt)\n    assert SECRET not in reply",
+      "explanation": "Red-team prompts become regression tests: every new jailbreak you find is appended to ATTACKS. Also test paraphrased or encoded leaks, since exact-string checks miss base64 or translated output."
+    },
+    {
+      "id": "cost-jump",
+      "concept": "Cost monitoring",
+      "type": "single",
+      "difficulty": 3,
+      "prompt": "Cost per request doubled overnight with no deploy. What do you check first?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Per-trace token counts and retries, then provider changes.",
+          "why": "Right: traces reveal prompt growth, retry loops or a changed model, all causes of a cost jump."
+        },
+        {
+          "id": "b",
+          "text": "Whether the primary database needs another index on the users table to speed up login queries.",
+          "why": "Database indexes do not drive LLM token spend."
+        },
+        {
+          "id": "c",
+          "text": "Whether the CDN cache hit ratio for static images dropped during the last twenty four hours.",
+          "why": "Static assets are unrelated to LLM billing."
+        },
+        {
+          "id": "d",
+          "text": "Whether unit tests still pass on the main branch after the last merge.",
+          "why": "Passing tests say nothing about live token usage."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Slice cost by model, prompt version, tenant and endpoint. Budgets and per-tenant limits turn a surprise into an alert."
+    },
+    {
+      "id": "redteam-contents",
+      "concept": "Red-team suites",
+      "type": "multi",
+      "difficulty": 2,
+      "prompt": "What belongs in a red-team suite for an LLM assistant that reads documents and calls tools? Select all that apply.",
+      "options": [
+        {
+          "id": "a",
+          "text": "Indirect prompt injection hidden inside retrieved documents.",
+          "why": "Right: untrusted content that reaches the model is a primary attack path."
+        },
+        {
+          "id": "b",
+          "text": "Jailbreak attempts that try to override the system prompt.",
+          "why": "Right: the classic direct attack."
+        },
+        {
+          "id": "c",
+          "text": "Attempts to extract secrets, PII or other tenants' data.",
+          "why": "Right: data exfiltration is a core risk."
+        },
+        {
+          "id": "d",
+          "text": "Only polite, well-formed happy-path questions.",
+          "why": "Happy paths belong in the golden set; red-teaming needs adversarial inputs."
+        }
+      ],
+      "correct": [
+        "a",
+        "b",
+        "c"
+      ],
+      "explanation": "Tools such as garak, PyRIT and promptfoo automate attack generation; the OWASP LLM Top 10 is a good checklist."
+    },
+    {
+      "id": "drift-fill",
+      "concept": "Drift",
+      "type": "fill",
+      "difficulty": 2,
+      "prompt": "Complete the drift sentences.",
+      "text": "{1} drift is a change in the distribution of inputs, {2} drift is a change in what the correct output is for the same input, and pinning a model {3} avoids silent provider upgrades.",
+      "blanks": {
+        "1": "Data",
+        "2": "Concept",
+        "3": "snapshot"
+      },
+      "bank": [
+        "Data",
+        "Concept",
+        "snapshot",
+        "alias"
+      ],
+      "explanation": "A moving alias such as \"latest\" can change behaviour with no deploy. Pin a dated snapshot and upgrade deliberately after running the golden suite."
+    },
+    {
+      "id": "log-raw",
+      "concept": "Tracing",
+      "type": "truefalse",
+      "difficulty": 2,
+      "prompt": "True or false: it is always fine to store raw user prompts and model outputs in traces indefinitely, because it helps debugging.",
+      "options": [
+        {
+          "id": "a",
+          "text": "True",
+          "why": "Debugging value does not override privacy and retention duties."
+        },
+        {
+          "id": "b",
+          "text": "False",
+          "why": "Correct: prompts can contain PII or secrets, so redact or hash sensitive fields, set retention limits and restrict access."
+        }
+      ],
+      "correct": [
+        "b"
+      ],
+      "explanation": "Consider sampling full payloads and keeping only metadata for the rest."
+    },
+    {
+      "id": "error-budget",
+      "concept": "SLOs",
+      "type": "integer",
+      "difficulty": 2,
+      "prompt": "Your LLM endpoint has a 99.5% success-rate SLO and serves 200,000 requests a day. How many failed requests per day exhaust the error budget?",
+      "answer": 1000,
+      "unit": "requests",
+      "explanation": "The budget is 0.5% of 200,000 = 1,000 failures. Treat provider timeouts, refusals you count as failures and guardrail blocks consistently when defining a 'success'."
+    }
+  ]
+}
