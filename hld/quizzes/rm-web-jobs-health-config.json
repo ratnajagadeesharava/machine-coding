@@ -1,0 +1,390 @@
+{
+  "id": "rm-web-jobs-health-config",
+  "title": "Web framework: jobs, health checks and secrets",
+  "topic": "Interview roadmap",
+  "description": "Scheduled and background jobs, multi-instance duplicate runs, Actuator and FastAPI health checks with liveness vs readiness, plus configuration and secrets handling.",
+  "source": "Spring Framework scheduling docs; Spring Boot Actuator docs; ShedLock README; FastAPI BackgroundTasks docs; Celery docs; Kubernetes probe docs; redis-py docs",
+  "series": "interview-roadmap",
+  "seriesTitle": "Interview roadmap: topic quizzes",
+  "seriesDescription": "Topic-by-topic JEE-style quizzes for the backend and AI-engineering interview roadmap: integer, assertion-reason, matrix match, fill-in-the-blanks, short code writing, plus multi-correct questions. Language core, concurrency, DSA, web frameworks, data access, databases, messaging, resilience, security, testing, system design, LLM and agent engineering.",
+  "seriesOrder": 54,
+  "estimatedMinutes": 14,
+  "questions": [
+    {
+      "id": "cron-fires",
+      "concept": "Scheduled jobs (Spring)",
+      "type": "integer",
+      "difficulty": 1,
+      "prompt": "@Scheduled(cron = \"0 0/15 * * * *\") uses Spring's six-field cron (second minute hour day month weekday). How many times per hour does the method fire?",
+      "answer": 4,
+      "tolerance": 0,
+      "explanation": "Seconds=0, minutes=0/15 means minutes 0, 15, 30, 45 of every hour: 4 runs. Spring cron has a leading seconds field, unlike Unix cron.",
+      "unit": "runs"
+    },
+    {
+      "id": "duplicate-runs",
+      "concept": "Multi-instance jobs",
+      "type": "integer",
+      "difficulty": 3,
+      "prompt": "A Spring app with a nightly @Scheduled cleanup job is deployed as 3 identical replicas and nothing coordinates them. How many times does the cleanup run each night across the cluster?",
+      "answer": 3,
+      "tolerance": 0,
+      "explanation": "Each instance has its own scheduler, so the job runs 3 times. Fixes: a distributed lock (ShedLock, Redis SET NX, DB advisory lock), a leader election, or a dedicated scheduler instance or Kubernetes CronJob.",
+      "unit": "runs"
+    },
+    {
+      "id": "async-self-invocation",
+      "concept": "Background jobs (Spring)",
+      "type": "assertion",
+      "difficulty": 2,
+      "prompt": "Judge the assertion and the reason.",
+      "assertion": "A @Async method called from another method of the same class runs synchronously on the caller's thread.",
+      "reason": "The async behaviour is applied by a proxy, and an internal this.call() bypasses that proxy.",
+      "correct": [
+        "a"
+      ],
+      "whys": {
+        "a": "Correct: no proxy, no executor hand-off.",
+        "b": "Wrong: R explains A.",
+        "c": "Wrong: R is true.",
+        "d": "Wrong: A is true."
+      },
+      "explanation": "Put async methods on another bean, and remember @EnableAsync. Same pitfall as @Transactional and @Cacheable."
+    },
+    {
+      "id": "background-tasks-loss",
+      "concept": "Background jobs (FastAPI)",
+      "type": "assertion",
+      "difficulty": 2,
+      "prompt": "Judge the assertion and the reason.",
+      "assertion": "FastAPI BackgroundTasks run after the response has been sent.",
+      "reason": "BackgroundTasks run in the same process as the web server, so they are lost if that process dies.",
+      "correct": [
+        "b"
+      ],
+      "whys": {
+        "a": "Wrong: where they run does not explain when they run.",
+        "b": "Correct: both are true, but R is a separate durability limitation, not the reason for the timing.",
+        "c": "Wrong: R is true.",
+        "d": "Wrong: A is true."
+      },
+      "explanation": "Good for small jobs like e-mails. For retries, durability or heavy CPU work use Celery, RQ, Arq or a queue."
+    },
+    {
+      "id": "celery-exactly-once",
+      "concept": "Background jobs (Celery)",
+      "type": "assertion",
+      "difficulty": 3,
+      "prompt": "Judge the assertion and the reason.",
+      "assertion": "Celery tasks should be written to be idempotent.",
+      "reason": "Celery guarantees exactly-once execution by default.",
+      "correct": [
+        "c"
+      ],
+      "whys": {
+        "a": "Wrong: R is false.",
+        "b": "Wrong: R is not true.",
+        "c": "Correct: A is true, R is false; delivery is at-least-once, especially with acks_late or visibility timeouts.",
+        "d": "Wrong: A is true."
+      },
+      "explanation": "Redelivery after a worker crash or timeout can run a task twice, so use idempotency keys or upserts."
+    },
+    {
+      "id": "scheduled-pool",
+      "concept": "Scheduled jobs (Spring)",
+      "type": "assertion",
+      "difficulty": 3,
+      "prompt": "Judge the assertion and the reason.",
+      "assertion": "Spring's @Scheduled tasks run on a pool of 10 threads by default.",
+      "reason": "A @Scheduled method must take no arguments.",
+      "correct": [
+        "d"
+      ],
+      "whys": {
+        "a": "Wrong: A is false.",
+        "b": "Wrong: A is false.",
+        "c": "Wrong: A is false.",
+        "d": "Correct: the default scheduler is single-threaded (Boot's spring.task.scheduling.pool.size defaults to 1); R is true because the method must be void-compatible and argument-free."
+      },
+      "explanation": "One slow job can delay all others. Set spring.task.scheduling.pool.size or use your own TaskScheduler."
+    },
+    {
+      "id": "fastapi-background",
+      "concept": "Background jobs (FastAPI)",
+      "type": "code",
+      "difficulty": 2,
+      "prompt": "Write a FastAPI POST /signup handler signup(email: str, tasks: BackgroundTasks) that queues send_welcome_email(email) to run after the response and answers with status code 202.",
+      "language": "python",
+      "starter": "",
+      "checks": [
+        {
+          "label": "declares BackgroundTasks",
+          "pattern": "BackgroundTasks"
+        },
+        {
+          "label": "queues with add_task(send_welcome_email, ...)",
+          "pattern": "\\.add_task\\(\\s*send_welcome_email"
+        },
+        {
+          "label": "uses status_code=202",
+          "pattern": "status_code\\s*=\\s*202"
+        }
+      ],
+      "model": "@app.post(\"/signup\", status_code=202)\ndef signup(email: str, tasks: BackgroundTasks):\n    tasks.add_task(send_welcome_email, email)\n    return {\"status\": \"queued\"}",
+      "explanation": "The task function and args are passed separately to add_task. Both async and plain functions are accepted."
+    },
+    {
+      "id": "redis-job-lock",
+      "concept": "Multi-instance jobs",
+      "type": "code",
+      "difficulty": 3,
+      "prompt": "Python with redis-py: at the start of a scheduled job, take a lock so only one instance runs it. Use the single atomic call that sets key lock:nightly only if it does not exist, expiring after 300 seconds, and return early if the lock was not acquired.",
+      "language": "python",
+      "starter": "import redis\nr = redis.Redis()\n",
+      "checks": [
+        {
+          "label": "uses r.set with nx=True",
+          "pattern": "\\.set\\([^)]*nx\\s*=\\s*True"
+        },
+        {
+          "label": "sets a TTL with ex= (or px=)",
+          "pattern": "\\b(ex|px)\\s*=\\s*\\d+"
+        },
+        {
+          "label": "returns when the lock was not acquired",
+          "pattern": "if\\s+not\\s+[\\s\\S]*return|if\\s+\\w+\\s+is\\s+None[\\s\\S]*return"
+        }
+      ],
+      "model": "if not r.set(\"lock:nightly\", \"1\", nx=True, ex=300):\n    return  # another instance holds the lock\nrun_cleanup()",
+      "explanation": "SET NX EX is atomic, unlike SETNX followed by EXPIRE. Pick a TTL longer than the job, or renew it. Java equivalents: ShedLock's @SchedulerLock, or Redisson locks."
+    },
+    {
+      "id": "health-indicator",
+      "concept": "Health checks (Spring)",
+      "type": "code",
+      "difficulty": 2,
+      "prompt": "Write a Spring Boot Actuator health indicator bean PaymentsHealth for a boolean method gateway.ping(): report UP when true, otherwise DOWN with the detail \"gateway\" set to \"unreachable\".",
+      "language": "java",
+      "starter": "@Component\n",
+      "checks": [
+        {
+          "label": "implements HealthIndicator",
+          "pattern": "implements\\s+HealthIndicator"
+        },
+        {
+          "label": "returns Health.up()",
+          "pattern": "Health\\.up\\(\\)"
+        },
+        {
+          "label": "returns Health.down() with withDetail",
+          "pattern": "Health\\.down\\(\\)[\\s\\S]*withDetail\\("
+        }
+      ],
+      "model": "@Component\nclass PaymentsHealth implements HealthIndicator {\n  public Health health() {\n    return gateway.ping() ? Health.up().build()\n        : Health.down().withDetail(\"gateway\", \"unreachable\").build();\n  }\n}",
+      "explanation": "A bean named PaymentsHealth appears as payments in /actuator/health. Beware: adding a flaky dependency to the aggregate health can mark the whole app DOWN."
+    },
+    {
+      "id": "fastapi-ready",
+      "concept": "Health checks (FastAPI)",
+      "type": "code",
+      "difficulty": 2,
+      "prompt": "Write GET /health/ready for FastAPI. Call db_ping() (raises on failure); on success return {\"status\": \"ok\"}, on failure answer HTTP 503.",
+      "language": "python",
+      "starter": "from fastapi import HTTPException\n",
+      "checks": [
+        {
+          "label": "declares GET /health/ready",
+          "pattern": "@app\\.get\\(\\s*[\\\"']/health/ready[\\\"']"
+        },
+        {
+          "label": "calls db_ping() inside try/except",
+          "pattern": "try:[\\s\\S]*db_ping\\(\\)[\\s\\S]*except"
+        },
+        {
+          "label": "answers 503 on failure",
+          "pattern": "503"
+        }
+      ],
+      "model": "@app.get(\"/health/ready\")\ndef ready():\n    try:\n        db_ping()\n    except Exception:\n        raise HTTPException(status_code=503, detail=\"db down\")\n    return {\"status\": \"ok\"}",
+      "explanation": "A JSONResponse(status_code=503) is equally fine. Keep readiness cheap and time-boxed."
+    },
+    {
+      "id": "probe-matrix",
+      "concept": "Health checks",
+      "type": "matrix",
+      "difficulty": 2,
+      "prompt": "Match each probe or endpoint with what it means in Kubernetes / Spring Boot.",
+      "left": [
+        {
+          "id": "l1",
+          "text": "Liveness probe fails"
+        },
+        {
+          "id": "l2",
+          "text": "Readiness probe fails"
+        },
+        {
+          "id": "l3",
+          "text": "Startup probe"
+        },
+        {
+          "id": "l4",
+          "text": "/actuator/metrics"
+        }
+      ],
+      "right": [
+        {
+          "id": "r1",
+          "text": "The kubelet restarts the container"
+        },
+        {
+          "id": "r2",
+          "text": "The pod is removed from Service endpoints but is not restarted"
+        },
+        {
+          "id": "r3",
+          "text": "Other probes wait until a slow boot has finished"
+        },
+        {
+          "id": "r4",
+          "text": "Micrometer meters such as jvm.memory.used"
+        },
+        {
+          "id": "r5",
+          "text": "The cluster autoscaler adds replicas"
+        }
+      ],
+      "pairs": {
+        "l1": "r1",
+        "l2": "r2",
+        "l3": "r3",
+        "l4": "r4"
+      },
+      "explanation": "Boot exposes /actuator/health/liveness and /readiness probe groups (enabled automatically on Kubernetes, or via management.endpoint.health.probes.enabled)."
+    },
+    {
+      "id": "liveness-db",
+      "concept": "Health checks",
+      "type": "single",
+      "difficulty": 3,
+      "prompt": "Your service depends on a database. Where should the DB check live to avoid a restart storm during a DB outage?",
+      "options": [
+        {
+          "id": "a",
+          "text": "In readiness only; liveness should reflect only that the process itself is healthy.",
+          "why": "Readiness failure stops traffic without killing pods."
+        },
+        {
+          "id": "b",
+          "text": "In the liveness probe, so that pods that cannot reach the database are restarted quickly.",
+          "why": "A DB outage would restart every pod and extend recovery."
+        },
+        {
+          "id": "c",
+          "text": "In both probes with the same timeout.",
+          "why": "This still triggers restarts of healthy processes."
+        },
+        {
+          "id": "d",
+          "text": "In neither; health checks must never touch dependencies.",
+          "why": "Readiness checks on critical dependencies are standard."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Spring Boot's readiness group excludes external systems by default and liveness is for unrecoverable internal states."
+    },
+    {
+      "id": "secrets-practices",
+      "concept": "Config and secrets",
+      "type": "multi",
+      "difficulty": 2,
+      "prompt": "Select all that apply: which are sound practices for configuration and secrets?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Inject passwords via environment variables or a secrets manager.",
+          "why": "Keeps secrets out of the repository and image."
+        },
+        {
+          "id": "b",
+          "text": "Use @ConfigurationProperties with @Validated to fail fast on missing config.",
+          "why": "Binding validation stops the app at startup rather than at first use."
+        },
+        {
+          "id": "c",
+          "text": "Use SecretStr in pydantic settings so values are masked in repr and logs.",
+          "why": "get_secret_value() is required to read it."
+        },
+        {
+          "id": "d",
+          "text": "Commit application-prod.yml with the production DB password.",
+          "why": "Anything in git history is compromised."
+        },
+        {
+          "id": "e",
+          "text": "Log all settings at startup to help debugging.",
+          "why": "That writes secrets into log aggregation."
+        },
+        {
+          "id": "f",
+          "text": "Bake the API key into the Docker image.",
+          "why": "Anyone who can pull the image can read it."
+        }
+      ],
+      "correct": [
+        "a",
+        "b",
+        "c"
+      ],
+      "explanation": "Principle: config in the environment (12-factor), secrets from a vault, validate at boot, never log them."
+    },
+    {
+      "id": "config-binding",
+      "concept": "Config and secrets",
+      "type": "fill",
+      "difficulty": 2,
+      "prompt": "Fill in the configuration terms.",
+      "text": "Bind a property prefix to a typed class with {1}; Spring maps the environment variable {2} onto spring.datasource.url; pydantic hides a value in repr and logs by typing it as {3}.",
+      "blanks": {
+        "1": "@ConfigurationProperties",
+        "2": "SPRING_DATASOURCE_URL",
+        "3": "SecretStr"
+      },
+      "bank": [
+        "@ConfigurationProperties",
+        "SPRING_DATASOURCE_URL",
+        "SecretStr",
+        "@Value",
+        "str"
+      ],
+      "explanation": "@Value is for single properties. Relaxed binding upper-cases and replaces dots with underscores, so SPRING_DATASOURCE_URL works."
+    },
+    {
+      "id": "config-properties-record",
+      "concept": "Config and secrets",
+      "type": "code",
+      "difficulty": 2,
+      "prompt": "Write a Spring Boot immutable configuration class MailProps for properties under prefix app.mail with a String host and an int port, as a record bound by @ConfigurationProperties.",
+      "language": "java",
+      "starter": "",
+      "checks": [
+        {
+          "label": "uses @ConfigurationProperties with prefix app.mail",
+          "pattern": "@ConfigurationProperties\\(\\s*(prefix\\s*=\\s*)?\\\"app\\.mail\\\""
+        },
+        {
+          "label": "is a record (or class) named MailProps",
+          "pattern": "(record|class)\\s+MailProps"
+        },
+        {
+          "label": "has String host and int port",
+          "pattern": "String\\s+host[\\s\\S]*int\\s+port|int\\s+port[\\s\\S]*String\\s+host"
+        }
+      ],
+      "model": "@ConfigurationProperties(prefix = \"app.mail\")\npublic record MailProps(String host, int port) {}",
+      "explanation": "Register with @EnableConfigurationProperties(MailProps.class) or @ConfigurationPropertiesScan. Add @Validated and constraints for fail-fast startup."
+    }
+  ]
+}

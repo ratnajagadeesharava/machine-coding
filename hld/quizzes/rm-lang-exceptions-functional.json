@@ -1,0 +1,433 @@
+{
+  "id": "rm-lang-exceptions-functional",
+  "title": "Language core: exceptions, resources and functional style",
+  "topic": "Interview roadmap",
+  "series": "interview-roadmap",
+  "seriesTitle": "Interview roadmap: topic quizzes",
+  "seriesOrder": 12,
+  "seriesDescription": "Topic-by-topic JEE-style quizzes for the backend and AI-engineering interview roadmap: integer, assertion-reason, matrix match, fill-in-the-blanks, short code writing, plus multi-correct questions. Language core, concurrency, DSA, web frameworks, data access, databases, messaging, resilience, security, testing, system design, LLM and agent engineering.",
+  "description": "Checked vs unchecked, try-with-resources and suppressed exceptions, try/except/else/finally and context managers, plus streams, Optional, groupingBy, generators, comprehensions and lazy evaluation.",
+  "source": "Oracle Java Tutorials: exceptions, java.util.stream docs; JLS 14.20; Python docs: errors, contextlib, itertools; Real Python; Baeldung",
+  "estimatedMinutes": 16,
+  "questions": [
+    {
+      "id": "twr-first-line",
+      "concept": "Resource handling",
+      "type": "code",
+      "difficulty": 2,
+      "prompt": "Write a Java method static String firstLine(Path p) throws IOException that returns the first line of a text file and always closes the reader, using try-with-resources.",
+      "language": "java",
+      "starter": "static String firstLine(Path p) throws IOException {\n",
+      "checks": [
+        {
+          "label": "uses try ( ... ) resource syntax",
+          "pattern": "try\\s*\\("
+        },
+        {
+          "label": "opens a reader/scanner on the path",
+          "pattern": "(BufferedReader|Files\\.newBufferedReader|Scanner|Files\\.lines)"
+        },
+        {
+          "label": "reads a line and returns it",
+          "pattern": "(readLine\\s*\\(|nextLine\\s*\\(|findFirst\\s*\\(|orElse)"
+        },
+        {
+          "label": "returns a value",
+          "pattern": "return\\s"
+        }
+      ],
+      "model": "static String firstLine(Path p) throws IOException {\n  try (BufferedReader r = Files.newBufferedReader(p)) {\n    return r.readLine();\n  }\n}",
+      "explanation": "Resources declared in the parentheses must implement AutoCloseable and are closed automatically, even on exceptions. Files.lines(p) in a try-with-resources is equally valid."
+    },
+    {
+      "id": "finally-return-value",
+      "concept": "Exceptions in Java",
+      "type": "integer",
+      "difficulty": 3,
+      "prompt": "Consider:\nstatic int f() {\n  int x = 1;\n  try { return x; }\n  finally { x = 2; }\n}\nWhat does f() return?",
+      "answer": 1,
+      "explanation": "The return value is evaluated and saved before finally runs, so reassigning the local x in finally cannot change it. (A return inside finally would override it and also swallow exceptions, which is why it is a code smell.) Verified by running it."
+    },
+    {
+      "id": "twr-order",
+      "concept": "Resource handling",
+      "type": "assertion",
+      "difficulty": 2,
+      "prompt": "Read the assertion (A) and the reason (R), then choose the option that fits.",
+      "assertion": "In try-with-resources, resources are closed in the reverse order of their declaration.",
+      "reason": "A resource used in try-with-resources must implement AutoCloseable.",
+      "correct": [
+        "b"
+      ],
+      "whys": {
+        "a": "R is true but it does not explain the ordering; the reverse order exists because later resources may depend on earlier ones.",
+        "b": "Correct: both statements are true, but the AutoCloseable requirement is unrelated to the closing order.",
+        "c": "R is true: the compiler rejects other types.",
+        "d": "A is true: JLS 14.20.3 specifies reverse order."
+      },
+      "explanation": "Reverse closing mirrors construction, e.g. close the BufferedReader before the FileReader it wraps. Exceptions from close() are added as suppressed exceptions to the primary one."
+    },
+    {
+      "id": "exception-facts",
+      "concept": "Exceptions in Java",
+      "type": "multi",
+      "difficulty": 3,
+      "prompt": "Select all true statements about Java exceptions.",
+      "options": [
+        {
+          "id": "a",
+          "text": "If the try body throws A and close() then throws B, A propagates and B is attached via getSuppressed().",
+          "why": "Correct: this is how try-with-resources avoids losing the original failure."
+        },
+        {
+          "id": "b",
+          "text": "A custom class that extends RuntimeException is an unchecked exception.",
+          "why": "Correct: the compiler does not force callers to catch or declare it."
+        },
+        {
+          "id": "c",
+          "text": "catch (Exception e) also catches OutOfMemoryError.",
+          "why": "OutOfMemoryError is an Error, which is a sibling of Exception under Throwable."
+        },
+        {
+          "id": "d",
+          "text": "catch (IOException | Exception e) compiles as a multi-catch.",
+          "why": "It does not: alternatives in a multi-catch must not be subclasses of one another. (Statement is false, so do not select it.)"
+        },
+        {
+          "id": "e",
+          "text": "A finally block still runs if the try block calls System.exit(0).",
+          "why": "The JVM halts, so finally is skipped."
+        }
+      ],
+      "correct": [
+        "a",
+        "b"
+      ],
+      "explanation": "Unchecked exceptions signal programming errors; checked exceptions model recoverable conditions the caller must handle. Do not swallow exceptions silently, and wrap with a cause to keep the stack trace."
+    },
+    {
+      "id": "contextmanager-open",
+      "concept": "Resource handling",
+      "type": "code",
+      "difficulty": 2,
+      "prompt": "Write a Python context manager function opened(path) that opens a text file, yields it, and always closes it, so it can be used as: with opened(\"a.txt\") as f: ...  (write the function only).",
+      "language": "python",
+      "starter": "from contextlib import contextmanager\n",
+      "checks": [
+        {
+          "label": "uses @contextmanager or a class with __enter__",
+          "pattern": "(@\\s*(contextlib\\.)?contextmanager|__enter__)"
+        },
+        {
+          "label": "yields the file (or returns self)",
+          "pattern": "(yield\\b|return\\s+self)"
+        },
+        {
+          "label": "guarantees closing (finally, with open, or __exit__)",
+          "pattern": "(finally\\s*:|with\\s+open\\s*\\(|__exit__)"
+        },
+        {
+          "label": "opens the path",
+          "pattern": "open\\s*\\("
+        }
+      ],
+      "model": "@contextmanager\ndef opened(path):\n    f = open(path)\n    try:\n        yield f\n    finally:\n        f.close()",
+      "explanation": "A class defining __enter__ and __exit__ is equivalent. Putting yield inside with open(path) as f: also closes the file. Without try/finally an exception in the with-body would skip the cleanup after yield."
+    },
+    {
+      "id": "finally-order-py",
+      "concept": "Exceptions in Python",
+      "type": "single",
+      "difficulty": 2,
+      "prompt": "What does this Python code print?\ndef f():\n    try:\n        return \"try\"\n    finally:\n        print(\"finally\", end=\" \")\nprint(f())\nWhat is the output?",
+      "options": [
+        {
+          "id": "a",
+          "text": "try (then finally)",
+          "why": "finally runs before the function actually hands control back, so it prints first."
+        },
+        {
+          "id": "b",
+          "text": "finally try",
+          "why": "Correct: finally prints during the return, then print outputs the returned value."
+        },
+        {
+          "id": "c",
+          "text": "try",
+          "why": "The finally clause always runs on the way out, so something else is printed too."
+        },
+        {
+          "id": "d",
+          "text": "finally",
+          "why": "The returned string \"try\" is still printed by the outer print call."
+        }
+      ],
+      "correct": [
+        "b"
+      ],
+      "explanation": "try/except/else/finally: else runs only if no exception was raised, finally always runs. (Verified by running it.)"
+    },
+    {
+      "id": "try-clauses",
+      "concept": "Exceptions in Python",
+      "type": "fill",
+      "difficulty": 1,
+      "prompt": "Complete the Python exception clauses.",
+      "text": "In Python, the {1} clause of a try statement runs only when no exception occurred, and the {2} clause always runs; to re-raise with the original as the cause, write raise NewError from {3}.",
+      "blanks": {
+        "1": "else",
+        "2": "finally",
+        "3": "e"
+      },
+      "bank": [
+        "else",
+        "finally",
+        "e",
+        "except",
+        "None"
+      ],
+      "explanation": "else keeps the guarded region small so that only the risky call is covered by except. raise X from e sets __cause__; raise X from None suppresses the chain display."
+    },
+    {
+      "id": "exception-tools",
+      "concept": "Exceptions in Java",
+      "type": "matrix",
+      "difficulty": 2,
+      "prompt": "Match each tool to what it does.",
+      "left": [
+        {
+          "id": "a",
+          "text": "Java throws clause"
+        },
+        {
+          "id": "b",
+          "text": "Java try-with-resources"
+        },
+        {
+          "id": "c",
+          "text": "Python raise X from e"
+        },
+        {
+          "id": "d",
+          "text": "Python with statement"
+        }
+      ],
+      "right": [
+        {
+          "id": "p",
+          "text": "Declares the checked exceptions a method may let propagate"
+        },
+        {
+          "id": "q",
+          "text": "Closes AutoCloseable resources and records close failures as suppressed"
+        },
+        {
+          "id": "r",
+          "text": "Chains the original error into __cause__"
+        },
+        {
+          "id": "s",
+          "text": "Calls __enter__ on entry and __exit__ even when the body fails"
+        },
+        {
+          "id": "t",
+          "text": "Turns a checked exception into an unchecked one automatically"
+        }
+      ],
+      "pairs": {
+        "a": "p",
+        "b": "q",
+        "c": "r",
+        "d": "s"
+      },
+      "explanation": "Python has no checked exceptions; Java forces handling of checked ones, which is why many libraries (Spring) prefer unchecked exceptions."
+    },
+    {
+      "id": "stream-sum-squares",
+      "concept": "Streams and lambdas",
+      "type": "integer",
+      "difficulty": 2,
+      "prompt": "What does Stream.of(1,2,3,4,5,6).filter(n -> n % 2 == 0).map(n -> n * n).reduce(0, Integer::sum) evaluate to?",
+      "answer": 56,
+      "explanation": "Even numbers 2, 4, 6 are squared to 4, 16, 36 and summed: 56."
+    },
+    {
+      "id": "group-by-length",
+      "concept": "Streams and lambdas",
+      "type": "code",
+      "difficulty": 2,
+      "prompt": "Given List<String> words, write a Java stream expression that builds Map<Integer, List<String>> byLength grouping the words by their length.",
+      "language": "java",
+      "starter": "Map<Integer, List<String>> byLength = ",
+      "checks": [
+        {
+          "label": "streams the list",
+          "pattern": "stream\\s*\\(\\s*\\)"
+        },
+        {
+          "label": "collects with Collectors.groupingBy",
+          "pattern": "groupingBy\\s*\\("
+        },
+        {
+          "label": "classifier is the string length",
+          "pattern": "(String::length|\\.length\\s*\\(\\s*\\))"
+        }
+      ],
+      "model": "Map<Integer, List<String>> byLength = words.stream().collect(Collectors.groupingBy(String::length));",
+      "explanation": "Add a downstream collector for aggregation, e.g. groupingBy(String::length, Collectors.counting()). A plain loop with computeIfAbsent also works but is not what the stem asks."
+    },
+    {
+      "id": "lazy-streams",
+      "concept": "Streams and lambdas",
+      "type": "single",
+      "difficulty": 3,
+      "prompt": "What is printed?\nStream.of(\"a\", \"b\", \"c\")\n  .peek(s -> System.out.print(\"p\" + s + \" \"))\n  .filter(s -> !s.equals(\"b\"))\n  .findFirst();\nWhat is the output?",
+      "options": [
+        {
+          "id": "a",
+          "text": "pa pb pc",
+          "why": "Intermediate operations are lazy and findFirst short-circuits; the pipeline does not touch every element."
+        },
+        {
+          "id": "b",
+          "text": "pa only",
+          "why": "Correct: \"a\" passes the filter and findFirst stops the pipeline at once, so b and c are never visited."
+        },
+        {
+          "id": "c",
+          "text": "pa pb",
+          "why": "The first matching element ends the pipeline before b is pulled."
+        },
+        {
+          "id": "d",
+          "text": "no output",
+          "why": "findFirst is a terminal operation, so the pipeline runs."
+        }
+      ],
+      "correct": [
+        "b"
+      ],
+      "explanation": "Streams are pull-based and lazy: nothing happens until a terminal operation, and short-circuiting ops (findFirst, limit, anyMatch) stop early. A stream also cannot be reused: a second terminal operation throws IllegalStateException. (Verified by running it.)"
+    },
+    {
+      "id": "generator-exhaustion",
+      "concept": "Generators and comprehensions",
+      "type": "single",
+      "difficulty": 2,
+      "prompt": "What does this Python print?\ng = (x * x for x in range(3))\nprint(list(g), list(g), sum(g))\nWhat is the output?",
+      "options": [
+        {
+          "id": "a",
+          "text": "[0, 1, 4] [0, 1, 4] 5",
+          "why": "That would be true for a list, not a generator; the iterator is consumed by the first list(g)."
+        },
+        {
+          "id": "b",
+          "text": "[0, 1, 4] [] 5",
+          "why": "sum(g) also sees an exhausted generator."
+        },
+        {
+          "id": "c",
+          "text": "[0, 1, 4] [] 0",
+          "why": "Correct: the first list drains the generator, so the second list and the sum see nothing."
+        },
+        {
+          "id": "d",
+          "text": "TypeError: generator is exhausted",
+          "why": "Python does not raise here; an exhausted generator simply yields nothing more."
+        }
+      ],
+      "correct": [
+        "c"
+      ],
+      "explanation": "Generators are one-shot iterators. If you need two passes, build a list, tee with itertools.tee, or recreate the generator. (Verified by running it.)"
+    },
+    {
+      "id": "chunks-generator",
+      "concept": "Generators and comprehensions",
+      "type": "code",
+      "difficulty": 2,
+      "prompt": "Write a Python generator function chunks(seq, n) that yields successive slices of length n from the sequence (the last one may be shorter).",
+      "language": "python",
+      "starter": "",
+      "checks": [
+        {
+          "label": "defines chunks as a function",
+          "pattern": "def\\s+chunks\\s*\\("
+        },
+        {
+          "label": "is a generator (yield)",
+          "pattern": "yield\\b"
+        },
+        {
+          "label": "slices the sequence",
+          "pattern": "(\\[[^\\]]*:[^\\]]*\\]|islice)"
+        },
+        {
+          "label": "steps through with range or a loop",
+          "pattern": "(range\\s*\\(|while|islice)"
+        }
+      ],
+      "model": "def chunks(seq, n):\n    for i in range(0, len(seq), n):\n        yield seq[i:i + n]",
+      "explanation": "itertools.batched(it, n) does this in Python 3.12+. A generator keeps memory flat because it produces one chunk at a time."
+    },
+    {
+      "id": "orelse-eager",
+      "concept": "Streams and lambdas",
+      "type": "assertion",
+      "difficulty": 3,
+      "prompt": "Read the assertion (A) and the reason (R), then choose the option that fits.",
+      "assertion": "In Java, optional.orElse(expensive()) calls expensive() even when the Optional already holds a value.",
+      "reason": "Java evaluates method arguments eagerly before the method is invoked.",
+      "correct": [
+        "a"
+      ],
+      "whys": {
+        "a": "Correct: arguments are evaluated first, so use orElseGet(() -> expensive()) to defer the work.",
+        "b": "R is the reason for A, not an unrelated fact.",
+        "c": "R is true for Java.",
+        "d": "A is true."
+      },
+      "explanation": "orElseGet takes a Supplier and runs it only when empty. Also avoid Optional.get() without a check; prefer orElseThrow, map and ifPresent."
+    },
+    {
+      "id": "generator-lazy",
+      "concept": "Generators and comprehensions",
+      "type": "assertion",
+      "difficulty": 2,
+      "prompt": "Read the assertion (A) and the reason (R), then choose the option that fits.",
+      "assertion": "Calling a Python generator function runs none of its body until the first next() call.",
+      "reason": "A generator function computes all of its values into a list when it is called.",
+      "correct": [
+        "c"
+      ],
+      "whys": {
+        "a": "R is false, so it cannot explain A.",
+        "b": "R is false.",
+        "c": "Correct: A is true (the call just creates a generator object); R is false, since values are produced lazily one at a time.",
+        "d": "A is true."
+      },
+      "explanation": "That laziness lets generators model infinite sequences and stream large files without loading them into memory."
+    },
+    {
+      "id": "comprehension-scope",
+      "concept": "Generators and comprehensions",
+      "type": "assertion",
+      "difficulty": 3,
+      "prompt": "Read the assertion (A) and the reason (R), then choose the option that fits.",
+      "assertion": "In Python 3, the loop variable of a list comprehension remains visible in the enclosing scope after the comprehension ends.",
+      "reason": "In Python 2, list comprehension variables leaked into the enclosing scope.",
+      "correct": [
+        "d"
+      ],
+      "whys": {
+        "a": "A is false in Python 3.",
+        "b": "A is false in Python 3.",
+        "c": "R is true, so c is wrong.",
+        "d": "Correct: Python 3 gives comprehensions their own scope (A is false); R is true for Python 2."
+      },
+      "explanation": "A for loop statement still leaks its variable; only comprehensions and generator expressions have their own scope."
+    }
+  ]
+}

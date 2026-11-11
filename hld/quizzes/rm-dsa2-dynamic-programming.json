@@ -1,0 +1,375 @@
+{
+  "id": "rm-dsa2-dynamic-programming",
+  "title": "DSA: dynamic programming",
+  "topic": "Interview roadmap",
+  "series": "interview-roadmap",
+  "seriesTitle": "Interview roadmap: topic quizzes",
+  "seriesDescription": "Topic-by-topic JEE-style quizzes for the backend and AI-engineering interview roadmap: integer, assertion-reason, matrix match, fill-in-the-blanks, short code writing, plus multi-correct questions. Language core, concurrency, DSA, web frameworks, data access, databases, messaging, resilience, security, testing, system design, LLM and agent engineering.",
+  "seriesOrder": 43,
+  "description": "State, transition and base case; coin change, counting ways, knapsack, edit distance, space optimisation, and when DP beats greedy.",
+  "source": "CLRS ch. 14-15; Python functools docs; LeetCode Coin Change, Edit Distance, House Robber; MIT 6.006 DP lectures",
+  "estimatedMinutes": 15,
+  "questions": [
+    {
+      "id": "min-coins",
+      "concept": "Coin change",
+      "type": "integer",
+      "difficulty": 2,
+      "prompt": "Coins are {1, 5, 6, 9} and the amount is 11. Using dp[a] = min(dp[a - c] + 1), what is the minimum number of coins?",
+      "answer": 2,
+      "unit": "coins",
+      "explanation": "dp[11] = dp[5] + 1 = 2 via 5 + 6 (dp[5] = 1). Largest-first greedy picks 9 + 1 + 1 = 3 coins, which is why greedy is wrong here."
+    },
+    {
+      "id": "coin-ways",
+      "concept": "Counting ways",
+      "type": "integer",
+      "difficulty": 2,
+      "prompt": "How many distinct combinations of coins {1, 2, 5} sum to 5, where the order of coins does not matter?",
+      "answer": 4,
+      "unit": "ways",
+      "explanation": "5; 2+2+1; 2+1+1+1; 1+1+1+1+1 = 4. With the coin loop outside and the amount loop inside, dp[5] = 4. If order mattered (compositions) it would be 9."
+    },
+    {
+      "id": "edit-distance",
+      "concept": "Edit distance",
+      "type": "integer",
+      "difficulty": 2,
+      "prompt": "What is the Levenshtein edit distance (insert, delete, substitute, each cost 1) between \"kitten\" and \"sitting\"?",
+      "answer": 3,
+      "unit": "edits",
+      "explanation": "kitten -> sitten (substitute k->s) -> sittin (substitute e->i) -> sitting (insert g) = 3. The DP table cell dp[6][7] holds this value."
+    },
+    {
+      "id": "house-robber",
+      "concept": "Table tracing",
+      "type": "integer",
+      "difficulty": 2,
+      "prompt": "House Robber with values [2, 7, 9, 3, 1]: dp[i] = max(dp[i-1], dp[i-2] + a[i]) with dp[0] = 2, dp[1] = 7. What is dp[4]?",
+      "answer": 12,
+      "explanation": "dp = [2, 7, 11, 11, 12]: dp[2] = max(7, 2+9) = 11, dp[3] = max(11, 7+3) = 11, dp[4] = max(11, 11+1) = 12 (rob houses with 2, 9 and 1)."
+    },
+    {
+      "id": "dp-recipe",
+      "concept": "DP method",
+      "type": "fill",
+      "difficulty": 1,
+      "prompt": "Complete the three parts of every DP solution.",
+      "text": "First define the {1} (what dp[i] means), then the {2} (how it comes from smaller states), then the {3} case that needs no recursion.",
+      "blanks": {
+        "1": "state",
+        "2": "transition",
+        "3": "base"
+      },
+      "bank": [
+        "state",
+        "transition",
+        "base",
+        "greedy",
+        "heuristic"
+      ],
+      "explanation": "Saying these three out loud in an interview structures the whole answer. Then name the time (states x work per state) and the space."
+    },
+    {
+      "id": "dp-complexity",
+      "concept": "DP complexity",
+      "type": "matrix",
+      "difficulty": 2,
+      "prompt": "Match each classic problem to the time complexity of its standard DP (m, n are string lengths; A is the amount or capacity; k is the number of coins or items).",
+      "left": [
+        {
+          "id": "a",
+          "text": "Longest common subsequence of two strings"
+        },
+        {
+          "id": "b",
+          "text": "Minimum coins for amount A with k coin types"
+        },
+        {
+          "id": "c",
+          "text": "0/1 knapsack with k items and capacity A"
+        },
+        {
+          "id": "d",
+          "text": "Longest increasing subsequence with binary search"
+        },
+        {
+          "id": "e",
+          "text": "Naive recursion for fib(n) without memo"
+        }
+      ],
+      "right": [
+        {
+          "id": "p",
+          "text": "O(m * n)"
+        },
+        {
+          "id": "q",
+          "text": "O(A * k)"
+        },
+        {
+          "id": "r",
+          "text": "O(k * A) with a different loop order"
+        },
+        {
+          "id": "s",
+          "text": "O(n log n)"
+        },
+        {
+          "id": "t",
+          "text": "O(2^n)"
+        },
+        {
+          "id": "u",
+          "text": "O(n^2)"
+        }
+      ],
+      "pairs": {
+        "a": "p",
+        "b": "q",
+        "c": "r",
+        "d": "s",
+        "e": "t"
+      },
+      "explanation": "The table size times work per cell gives the time: LCS m*n cells, coin change A states times k coins, knapsack k*A states. LIS drops from O(n^2) to O(n log n) with patience sorting. Without memoisation fib is exponential (about 1.6^n, bounded by 2^n)."
+    },
+    {
+      "id": "knapsack-order",
+      "concept": "0/1 knapsack",
+      "type": "assertion",
+      "difficulty": 3,
+      "prompt": "In the 1D-array version of 0/1 knapsack, dp[w] = max(dp[w], dp[w - wt] + val).",
+      "assertion": "The capacity loop must run from high to low for 0/1 knapsack.",
+      "reason": "Iterating downward ensures dp[w - wt] still holds the previous item's row, so each item is used at most once.",
+      "correct": [
+        "a"
+      ],
+      "whys": {
+        "a": "Right: the downward order is required precisely because of R.",
+        "b": "R is the explanation.",
+        "c": "A is true.",
+        "d": "R is true."
+      },
+      "explanation": "Iterating upward lets dp[w - wt] already include the current item, which gives the unbounded knapsack (items reusable). Same loop, opposite direction, different problem."
+    },
+    {
+      "id": "combos-order",
+      "concept": "Counting ways",
+      "type": "assertion",
+      "difficulty": 3,
+      "prompt": "Count the combinations (order irrelevant) of coins that make an amount.",
+      "assertion": "The loop over coins must be the outer loop and the loop over amounts the inner one.",
+      "reason": "The min-coins DP over an amount runs in O(amount * coins).",
+      "correct": [
+        "b"
+      ],
+      "whys": {
+        "a": "R does not explain loop order.",
+        "b": "Right: both are true, but complexity says nothing about why the coin loop must be outer.",
+        "c": "R is true.",
+        "d": "A is true."
+      },
+      "explanation": "Coins outer fixes the order in which coin types are considered, so each multiset counts once. Amount outer, coins inner counts ordered sequences (2+1 and 1+2 separately)."
+    },
+    {
+      "id": "topdown-bottomup",
+      "concept": "DP method",
+      "type": "assertion",
+      "difficulty": 2,
+      "prompt": "Compare memoised recursion with a bottom-up table for the same recurrence.",
+      "assertion": "Top-down memoisation and bottom-up tabulation evaluate the same recurrence.",
+      "reason": "Top-down always uses less memory than bottom-up.",
+      "correct": [
+        "c"
+      ],
+      "whys": {
+        "a": "R is false, so it cannot explain A.",
+        "b": "R is false.",
+        "c": "Right: A is true, but top-down also pays for the recursion stack and a hash map or array, and rolling arrays only work bottom-up, so R is false.",
+        "d": "A is true."
+      },
+      "explanation": "Top-down computes only reachable states and is easier to write; bottom-up avoids stack overflow and permits space optimisation."
+    },
+    {
+      "id": "coin-java",
+      "concept": "Coin change",
+      "type": "code",
+      "difficulty": 2,
+      "prompt": "Write a Java method int coinChange(int[] coins, int amount) that returns the minimum number of coins for the amount, or -1 if impossible. Use an int[] dp table.",
+      "language": "java",
+      "starter": "int coinChange(int[] coins, int amount) {\n  \n}",
+      "checks": [
+        {
+          "label": "uses an int[] dp of size amount + 1",
+          "pattern": "int\\s*\\[\\s*\\]\\s*dp\\s*=\\s*new\\s+int\\s*\\[\\s*amount\\s*\\+\\s*1\\s*\\]"
+        },
+        {
+          "label": "sets dp[0] = 0",
+          "pattern": "dp\\s*\\[\\s*0\\s*\\]\\s*=\\s*0"
+        },
+        {
+          "label": "fills the rest with a large sentinel",
+          "pattern": "Arrays\\.fill|MAX_VALUE|amount\\s*\\+\\s*1|INF"
+        },
+        {
+          "label": "takes Math.min of dp[a - c] + 1",
+          "pattern": "Math\\.min[\\s\\S]*dp\\s*\\[\\s*\\w+\\s*-\\s*\\w+\\s*\\]\\s*\\+\\s*1"
+        }
+      ],
+      "model": "int[] dp = new int[amount + 1];\nArrays.fill(dp, amount + 1); dp[0] = 0;\nfor (int a = 1; a <= amount; a++)\n  for (int c : coins) if (c <= a) dp[a] = Math.min(dp[a], dp[a - c] + 1);\nreturn dp[amount] > amount ? -1 : dp[amount];",
+      "explanation": "amount + 1 works as infinity because no valid answer exceeds amount coins; avoid Integer.MAX_VALUE + 1 overflow. Time O(amount * coins), space O(amount). A BFS over amounts is another valid solution. I ran the model: {1,5,6,9}, 11 gives 2 and {2}, 3 gives -1."
+    },
+    {
+      "id": "edit-python",
+      "concept": "Edit distance",
+      "type": "code",
+      "difficulty": 3,
+      "prompt": "Write a Python function edit_distance(a, b) returning the Levenshtein distance, using top-down memoisation with functools.cache (or lru_cache) on a helper go(i, j) over the prefix lengths.",
+      "language": "python",
+      "starter": "from functools import cache\n\ndef edit_distance(a, b):\n    ",
+      "checks": [
+        {
+          "label": "memoises the helper",
+          "pattern": "@\\s*(functools\\.)?(lru_)?cache|memo|dp"
+        },
+        {
+          "label": "has base cases returning i or j when one prefix is empty",
+          "pattern": "return\\s+(i|j)\\b"
+        },
+        {
+          "label": "takes the min of three transitions plus 1",
+          "pattern": "1\\s*\\+\\s*min\\s*\\(|min\\s*\\([\\s\\S]*\\)\\s*\\+\\s*1"
+        },
+        {
+          "label": "moves diagonally for equal characters",
+          "pattern": "\\[\\s*i\\s*-\\s*1\\s*\\]\\s*==\\s*\\w+\\s*\\[\\s*j\\s*-\\s*1\\s*\\]|go\\s*\\(\\s*i\\s*-\\s*1\\s*,\\s*j\\s*-\\s*1\\s*\\)"
+        }
+      ],
+      "model": "@cache\ndef go(i, j):\n    if i == 0: return j\n    if j == 0: return i\n    if a[i-1] == b[j-1]: return go(i-1, j-1)\n    return 1 + min(go(i-1, j), go(i, j-1), go(i-1, j-1))\nreturn go(len(a), len(b))",
+      "explanation": "State: go(i, j) = distance between the first i chars of a and the first j of b. Delete, insert and substitute are the three neighbours. Time and space O(m * n). Note the recursion depth is m + n, so very long strings need the bottom-up table. A bottom-up solution passes only if it names dp."
+    },
+    {
+      "id": "dp-signals",
+      "concept": "DP method",
+      "type": "multi",
+      "difficulty": 2,
+      "prompt": "Select all that apply: which of these are textbook overlapping-subproblem problems, suited to DP?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Minimum coins to make an amount.",
+          "why": "Correct: dp[a] is reused by many larger amounts."
+        },
+        {
+          "id": "b",
+          "text": "Longest common subsequence of two strings.",
+          "why": "Correct: prefix pairs (i, j) are shared by many paths."
+        },
+        {
+          "id": "c",
+          "text": "Merge sort on an array.",
+          "why": "Its subproblems are disjoint halves that never repeat, so memoising adds nothing."
+        },
+        {
+          "id": "d",
+          "text": "Binary search for a value in a sorted array.",
+          "why": "Each step discards half the range and never revisits a subproblem."
+        }
+      ],
+      "correct": [
+        "a",
+        "b"
+      ],
+      "explanation": "DP needs optimal substructure plus overlapping subproblems. Divide and conquer has substructure but no overlap."
+    },
+    {
+      "id": "dp-space",
+      "concept": "Space optimisation",
+      "type": "single",
+      "difficulty": 3,
+      "prompt": "The edit distance table is (m+1) x (n+1). Each cell depends only on the previous row and the current row. What is the best auxiliary space for just the distance value?",
+      "options": [
+        {
+          "id": "a",
+          "text": "O(min(m, n)) with two rolling rows, at the cost of not recovering the edit script.",
+          "why": "Correct: keep two rows (or one row plus a saved diagonal), over the shorter string."
+        },
+        {
+          "id": "b",
+          "text": "O(1), since a distance is one number.",
+          "why": "The next cell needs a whole row of earlier values, so constant space is not enough."
+        },
+        {
+          "id": "c",
+          "text": "O(m * n) is unavoidable because every cell is needed later.",
+          "why": "Cells older than one row are never read again, so they can be discarded."
+        },
+        {
+          "id": "d",
+          "text": "O(log m), by recursing on halves of the first string.",
+          "why": "That would describe divide and conquer, but edit distance does not split that way."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Reconstructing the actual operations needs the full table (or Hirschberg's divide-and-conquer trick). Mention the trade-off."
+    },
+    {
+      "id": "dp-vs-greedy",
+      "concept": "DP method",
+      "type": "single",
+      "difficulty": 2,
+      "prompt": "Which observation best tells you to reach for DP instead of a greedy algorithm?",
+      "options": [
+        {
+          "id": "a",
+          "text": "A local best choice can block a better global one, and subproblems recur.",
+          "why": "Correct: greedy fails when local optimum is not global (e.g. coins {1,5,6,9}), and recurrence reuse is what DP caches."
+        },
+        {
+          "id": "b",
+          "text": "The input arrives sorted, which means a DP table is always required.",
+          "why": "Sorted input hints at binary search or two pointers; it says nothing about DP."
+        },
+        {
+          "id": "c",
+          "text": "The answer must be reported as a single integer value.",
+          "why": "Plenty of greedy and math problems return one integer."
+        },
+        {
+          "id": "d",
+          "text": "The input size is small, with fewer than ten elements in total.",
+          "why": "Small n suggests brute force or backtracking, not specifically DP."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Test greedy with a counterexample first; if you cannot find one, try an exchange argument; otherwise DP."
+    },
+    {
+      "id": "knapsack-pseudo",
+      "concept": "DP complexity",
+      "type": "truefalse",
+      "difficulty": 3,
+      "prompt": "True or false: because the 0/1 knapsack DP runs in O(n * W), it is a polynomial-time algorithm, so it proves that knapsack is not NP-hard.",
+      "options": [
+        {
+          "id": "a",
+          "text": "True",
+          "why": "W is a number, not its length."
+        },
+        {
+          "id": "b",
+          "text": "False",
+          "why": "Correct: W is encoded in log W bits, so n * W is exponential in the input size. It is pseudo-polynomial."
+        }
+      ],
+      "correct": [
+        "b"
+      ],
+      "explanation": "A classic follow-up. Knapsack is NP-hard (weakly), and the DP is efficient only when W is small."
+    }
+  ]
+}

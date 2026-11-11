@@ -1,0 +1,392 @@
+{
+  "id": "rm-db-scaling-tenancy",
+  "title": "Scaling databases and multi-tenancy",
+  "topic": "Interview roadmap",
+  "series": "interview-roadmap",
+  "seriesTitle": "Interview roadmap: topic quizzes",
+  "seriesDescription": "Topic-by-topic JEE-style quizzes for the backend and AI-engineering interview roadmap: integer, assertion-reason, matrix match, fill-in-the-blanks, short code writing, plus multi-correct questions. Language core, concurrency, DSA, web frameworks, data access, databases, messaging, resilience, security, testing, system design, LLM and agent engineering.",
+  "seriesOrder": 71,
+  "description": "Replication, partitioning, sharding, consistent hashing and quorum arithmetic, then the three multi-tenancy models and PostgreSQL row-level security.",
+  "source": "Designing Data-Intensive Applications; PostgreSQL docs (partitioning, row security); Dynamo paper; Karger et al. consistent hashing; AWS SaaS tenant isolation whitepaper",
+  "estimatedMinutes": 16,
+  "questions": [
+    {
+      "id": "modn-moved",
+      "concept": "Sharding",
+      "type": "integer",
+      "difficulty": 2,
+      "prompt": "Keys 0 to 19 are placed with shard = key mod N. The cluster grows from N=4 to N=5 shards. How many of the 20 keys end up on a different shard?",
+      "answer": 16,
+      "tolerance": 0,
+      "unit": "keys",
+      "explanation": "Only keys 0, 1, 2, 3 keep the same remainder under mod 4 and mod 5, so 20 - 4 = 16 move. About 80 percent of data moves, which is why plain modulo hashing is a poor fit for elastic clusters."
+    },
+    {
+      "id": "ring-moved",
+      "concept": "Consistent hashing",
+      "type": "integer",
+      "difficulty": 2,
+      "prompt": "A consistent hash ring has 9 nodes with well balanced virtual nodes and holds 1,000,000 keys. One node is added (10 nodes). About how many keys are expected to move to the new node?",
+      "answer": 100000,
+      "tolerance": 5000,
+      "unit": "keys",
+      "explanation": "The new node takes about 1/(N+1) of the keyspace, 1/10 of 1,000,000 = 100,000, and all moved keys go to the new node only. Compare with mod-N, where most keys would move."
+    },
+    {
+      "id": "quorum-read",
+      "concept": "Quorum",
+      "type": "integer",
+      "difficulty": 2,
+      "prompt": "A leaderless store has replication factor N=5 and writes use W=4. What is the smallest read quorum R that guarantees every read overlaps the latest acknowledged write (R + W > N)?",
+      "answer": 2,
+      "tolerance": 0,
+      "unit": "replicas",
+      "explanation": "R + 4 > 5 means R > 1, so R = 2. Overlap guarantees at least one replica in the read set saw the write, but you still need versions or timestamps to pick it."
+    },
+    {
+      "id": "quorum-failures",
+      "concept": "Quorum",
+      "type": "integer",
+      "difficulty": 2,
+      "prompt": "Cassandra-style RF=5 with QUORUM reads and QUORUM writes. At most how many replicas of a partition can be down while both reads and writes still succeed?",
+      "answer": 2,
+      "tolerance": 0,
+      "unit": "replicas",
+      "explanation": "Quorum = floor(5/2) + 1 = 3, so 5 - 3 = 2 replicas may be down."
+    },
+    {
+      "id": "partition-kinds",
+      "concept": "Partitioning",
+      "type": "matrix",
+      "difficulty": 2,
+      "prompt": "Match each partitioning or sharding scheme with its defining trait.",
+      "left": [
+        {
+          "id": "l1",
+          "text": "Range partitioning"
+        },
+        {
+          "id": "l2",
+          "text": "Hash partitioning"
+        },
+        {
+          "id": "l3",
+          "text": "List partitioning"
+        },
+        {
+          "id": "l4",
+          "text": "Directory (lookup) sharding"
+        }
+      ],
+      "right": [
+        {
+          "id": "r1",
+          "text": "Cheap to drop old data, but the newest range can become hot"
+        },
+        {
+          "id": "r2",
+          "text": "Even spread of keys, but range scans touch every partition"
+        },
+        {
+          "id": "r3",
+          "text": "Rows go to a partition by explicit values such as country"
+        },
+        {
+          "id": "r4",
+          "text": "A mapping service decides placement and allows flexible rebalancing"
+        },
+        {
+          "id": "r5",
+          "text": "Placement depends on row insertion order"
+        }
+      ],
+      "pairs": {
+        "l1": "r1",
+        "l2": "r2",
+        "l3": "r3",
+        "l4": "r4"
+      },
+      "explanation": "Range suits time series and retention. Hash spreads load. List is explicit. Directory sharding adds a lookup hop and a component that must itself be highly available."
+    },
+    {
+      "id": "virtual-nodes",
+      "concept": "Consistent hashing",
+      "type": "single",
+      "difficulty": 2,
+      "prompt": "Why do production consistent-hashing rings place many virtual nodes per physical server?",
+      "options": [
+        {
+          "id": "a",
+          "text": "So load evens out and the keys of a failed node spread over many peers.",
+          "why": "Right: with one point per server, arc lengths vary a lot and the heir of a dead node takes everything."
+        },
+        {
+          "id": "b",
+          "text": "To make hash lookups O(1) instead of O(log n), because the ring becomes a flat array.",
+          "why": "Lookup is still a binary search over the sorted ring; vnodes make the ring larger."
+        },
+        {
+          "id": "c",
+          "text": "To guarantee strong consistency between all replicas of a key at all times.",
+          "why": "Virtual nodes are about placement and balance, not consistency."
+        },
+        {
+          "id": "d",
+          "text": "To avoid needing any hash function, since the node names place themselves.",
+          "why": "The ring is built from hashes of node ids and keys."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Vnodes also let you give bigger machines more tokens. Dynamo, Cassandra and many caches use them."
+    },
+    {
+      "id": "replicas-writes",
+      "concept": "Replication",
+      "type": "assertion",
+      "difficulty": 2,
+      "prompt": "Read the assertion A and the reason R, then choose the correct relationship between them.",
+      "assertion": "Adding read replicas to a single-leader database does not increase its write throughput.",
+      "reason": "Every replica has to apply every write that the leader accepts.",
+      "correct": [
+        "a"
+      ],
+      "whys": {
+        "a": "Correct: all writes still go through the leader and each replica replays the full write stream.",
+        "b": "R is the direct reason replicas do not help writes.",
+        "c": "R is true.",
+        "d": "A is true."
+      },
+      "explanation": "Read replicas scale reads. To scale writes you need sharding (or a multi-leader or leaderless design with its own conflict handling)."
+    },
+    {
+      "id": "time-key-hot",
+      "concept": "Sharding",
+      "type": "truefalse",
+      "difficulty": 2,
+      "prompt": "True or false: range sharding a write-heavy events table on created_at sends nearly all new writes to the same shard.",
+      "options": [
+        {
+          "id": "a",
+          "text": "True",
+          "why": "Right: new rows always have the largest timestamp, so they land in the last range."
+        },
+        {
+          "id": "b",
+          "text": "False",
+          "why": "Not so: monotonically increasing keys concentrate inserts on the newest range."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Hash the key (or add a bucket prefix) to spread inserts, accepting that range queries become scatter-gather. The classic fix is a composite key such as (hash(user_id) mod 16, created_at)."
+    },
+    {
+      "id": "quorum-overlap",
+      "concept": "Quorum",
+      "type": "assertion",
+      "difficulty": 3,
+      "prompt": "Read the assertion A and the reason R, then choose the correct relationship between them.",
+      "assertion": "With N replicas, W write acknowledgements and R read replies, R + W > N guarantees a read set shares at least one replica with the last successful write set.",
+      "reason": "Quorum reads and writes are always sent to the same fixed set of replicas.",
+      "correct": [
+        "c"
+      ],
+      "whys": {
+        "a": "R is false so it cannot explain A.",
+        "b": "R is false, so this \"both true\" choice is wrong.",
+        "c": "Correct: the pigeonhole overlap is true, but the sets can differ between operations; R is false.",
+        "d": "A is true, so it is not an A-false case."
+      },
+      "explanation": "Overlap is a pigeonhole argument, not a fixed membership. Sloppy quorums and hinted handoff weaken it, and concurrent writes still need conflict resolution."
+    },
+    {
+      "id": "hash-vs-range-scan",
+      "concept": "Sharding",
+      "type": "assertion",
+      "difficulty": 2,
+      "prompt": "Read the assertion A and the reason R, then choose the correct relationship between them.",
+      "assertion": "Hash sharding makes range scans on the shard key expensive.",
+      "reason": "Consistent hashing moves only a small fraction of keys when a node is added.",
+      "correct": [
+        "b"
+      ],
+      "whys": {
+        "a": "The ring property does not explain why scans scatter.",
+        "b": "Correct: both are true, but R describes rebalancing while A describes key locality.",
+        "c": "R is true.",
+        "d": "A is true: neighbouring keys hash to unrelated places."
+      },
+      "explanation": "Hashing destroys ordering, so a range query fans out to all shards. Consistent hashing is about cheap membership change."
+    },
+    {
+      "id": "multi-tenant-choice",
+      "concept": "Multi-tenancy models",
+      "type": "single",
+      "difficulty": 2,
+      "prompt": "A B2B SaaS expects 20,000 small tenants of a few hundred rows each. Which isolation model is the most economical default?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Shared tables with a tenant_id column and row-level security.",
+          "why": "Right: one set of tables and one migration run covers every tenant at the lowest cost."
+        },
+        {
+          "id": "b",
+          "text": "A separate database instance for each tenant, sized to its data.",
+          "why": "Twenty thousand instances is costly to run, patch and monitor for tiny tenants."
+        },
+        {
+          "id": "c",
+          "text": "A separate cloud account for every tenant, with its own network.",
+          "why": "The highest isolation but wildly excessive for small tenants."
+        },
+        {
+          "id": "d",
+          "text": "A separate schema per tenant and a migration per schema.",
+          "why": "Possible, but 20,000 schemas strain the catalog and every migration runs 20,000 times."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Pooled model for many small tenants; schema or database per tenant for few large, regulated or noisy tenants. Many teams hybridise: pooled default, dedicated for enterprise."
+    },
+    {
+      "id": "rls-gotchas",
+      "concept": "Row-level security",
+      "type": "multi",
+      "difficulty": 3,
+      "prompt": "Which statements about PostgreSQL row-level security (RLS) are true? Select all that apply.",
+      "options": [
+        {
+          "id": "a",
+          "text": "Superusers and roles with BYPASSRLS skip the policies.",
+          "why": "Right: connect the app with a plain role, never a superuser."
+        },
+        {
+          "id": "b",
+          "text": "The table owner is exempt unless FORCE ROW LEVEL SECURITY is set.",
+          "why": "Right: owners bypass by default, which surprises people running migrations as the app user."
+        },
+        {
+          "id": "c",
+          "text": "Policies are only enforced once ALTER TABLE ... ENABLE ROW LEVEL SECURITY has been run.",
+          "why": "Right: creating a policy alone does nothing until RLS is enabled on the table."
+        },
+        {
+          "id": "d",
+          "text": "A policy using current_setting('app.tenant_id') is safe with any pooler if set with a plain SET.",
+          "why": "A session-level SET can leak into the next client on a pooled connection; use SET LOCAL inside a transaction."
+        },
+        {
+          "id": "e",
+          "text": "RLS removes the need for a tenant_id index.",
+          "why": "The policy predicate is added to queries, so tenant_id still needs a (leading) index."
+        }
+      ],
+      "correct": [
+        "a",
+        "b",
+        "c"
+      ],
+      "explanation": "RLS is defence in depth: the app should still filter, but a forgotten WHERE no longer leaks data. Test policies as the real application role."
+    },
+    {
+      "id": "rls-policy",
+      "concept": "Row-level security",
+      "type": "code",
+      "difficulty": 2,
+      "prompt": "Table invoices(id, tenant_id uuid, amount). Write the SQL to turn on row-level security for it and add a policy named tenant_isolation that only allows rows whose tenant_id equals the uuid in the session setting app.tenant_id.",
+      "language": "sql",
+      "starter": "",
+      "checks": [
+        {
+          "label": "enables row level security",
+          "pattern": "enable\\s+row\\s+level\\s+security"
+        },
+        {
+          "label": "creates policy tenant_isolation on invoices",
+          "pattern": "create\\s+policy\\s+tenant_isolation\\s+on\\s+invoices"
+        },
+        {
+          "label": "compares tenant_id to current_setting",
+          "pattern": "tenant_id\\s*=\\s*current_setting\\(\\s*'app\\.tenant_id'"
+        },
+        {
+          "label": "has a USING clause",
+          "pattern": "using\\s*\\("
+        }
+      ],
+      "model": "ALTER TABLE invoices ENABLE ROW LEVEL SECURITY;\nCREATE POLICY tenant_isolation ON invoices USING (tenant_id = current_setting('app.tenant_id')::uuid);",
+      "explanation": "The cast to uuid is optional if you compare as text. Add WITH CHECK to constrain inserts and updates too (it defaults to the USING expression). The app sets the value with SET LOCAL app.tenant_id = ... per transaction."
+    },
+    {
+      "id": "tenancy-fill",
+      "concept": "Multi-tenancy models",
+      "type": "fill",
+      "difficulty": 1,
+      "prompt": "Fill in the three classic multi-tenancy models.",
+      "text": "In the pooled model every tenant shares the same tables and a {1} column; in the {2} model each tenant gets its own namespace inside one database; in the {3} model each tenant gets a separate database.",
+      "blanks": {
+        "1": "tenant_id",
+        "2": "schema-per-tenant",
+        "3": "database-per-tenant"
+      },
+      "bank": [
+        "tenant_id",
+        "schema-per-tenant",
+        "database-per-tenant",
+        "shard key",
+        "table-per-tenant"
+      ],
+      "explanation": "Isolation and per-tenant backup/restore improve left to right, while cost and operational burden (migrations, connections, monitoring) grow."
+    },
+    {
+      "id": "set-vs-set-local",
+      "concept": "Row-level security",
+      "type": "assertion",
+      "difficulty": 3,
+      "prompt": "Read the assertion A and the reason R, then choose the correct relationship between them.",
+      "assertion": "Running a plain SET app.tenant_id = ... on a PgBouncer connection in transaction pooling mode is a safe way to scope tenant queries.",
+      "reason": "In transaction pooling mode the server connection is returned to the pool after each transaction and handed to a different client.",
+      "correct": [
+        "d"
+      ],
+      "whys": {
+        "a": "A is false, so R cannot explain a true A.",
+        "b": "A is false, so this cannot be a both-true case.",
+        "c": "R is true.",
+        "d": "Correct: R is true and is the very reason the plain SET leaks to the next client; use SET LOCAL within the transaction."
+      },
+      "explanation": "Session state does not survive pooling safely. SET LOCAL (or set_config(..., true)) lasts only until the end of the transaction."
+    },
+    {
+      "id": "ring-lookup",
+      "concept": "Consistent hashing",
+      "type": "code",
+      "difficulty": 3,
+      "prompt": "ring is a list of (hash, node) tuples sorted by hash. Write def get_node(ring, h) that returns the node owning hash h: the first entry with hash >= h, wrapping around to the first entry past the end. Use the bisect module.",
+      "language": "python",
+      "starter": "import bisect\n\n",
+      "checks": [
+        {
+          "label": "uses bisect",
+          "pattern": "bisect"
+        },
+        {
+          "label": "defines get_node",
+          "pattern": "def\\s+get_node\\s*\\("
+        },
+        {
+          "label": "wraps around the end of the ring",
+          "pattern": "%\\s*len\\(|<\\s*len\\(|>=\\s*len\\(|==\\s*len\\(|ring\\[0\\]"
+        }
+      ],
+      "model": "def get_node(ring, h):\n    i = bisect.bisect_left(ring, (h,))\n    return ring[i % len(ring)][1]",
+      "explanation": "A tuple (h,) sorts before any (h, node), so bisect_left finds the first entry with hash >= h. Using a separate list of hashes with bisect_right or an explicit if-wrap is equally valid, but check the boundary rule."
+    }
+  ]
+}

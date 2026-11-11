@@ -1,0 +1,450 @@
+{
+  "id": "rm-conc-pools-async",
+  "title": "Concurrency: thread pools and async composition",
+  "topic": "Interview roadmap",
+  "series": "interview-roadmap",
+  "seriesTitle": "Interview roadmap: topic quizzes",
+  "seriesOrder": 21,
+  "seriesDescription": "Topic-by-topic JEE-style quizzes for the backend and AI-engineering interview roadmap: integer, assertion-reason, matrix match, fill-in-the-blanks, short code writing, plus multi-correct questions. Language core, concurrency, DSA, web frameworks, data access, databases, messaging, resilience, security, testing, system design, LLM and agent engineering.",
+  "description": "ThreadPoolExecutor sizing, queue and maximumPoolSize behaviour, shutdown, Futures, CompletableFuture chains, virtual threads, concurrent.futures and asyncio gather/timeout.",
+  "source": "Oracle Java docs (ThreadPoolExecutor, CompletableFuture, JEP 444); Java Concurrency in Practice; Python concurrent.futures and asyncio docs; Baeldung; Real Python",
+  "estimatedMinutes": 16,
+  "questions": [
+    {
+      "id": "tpe-five-tasks",
+      "concept": "ThreadPoolExecutor behaviour",
+      "type": "integer",
+      "difficulty": 2,
+      "prompt": "new ThreadPoolExecutor(2, 4, 60, SECONDS, new ArrayBlockingQueue<>(2)) receives 5 tasks that each block for a long time. How many worker threads exist after the 5 submissions?",
+      "answer": 3,
+      "tolerance": 0,
+      "explanation": "Tasks 1-2 start core threads. Tasks 3-4 fill the queue (capacity 2). Task 5 finds the queue full and the pool below maximumPoolSize, so a third thread is created. Threads beyond core are added only when the queue is full. Verified by running it.",
+      "unit": "threads"
+    },
+    {
+      "id": "tpe-unbounded",
+      "concept": "ThreadPoolExecutor behaviour",
+      "type": "integer",
+      "difficulty": 3,
+      "prompt": "new ThreadPoolExecutor(2, 10, 60, SECONDS, new LinkedBlockingQueue<>()) receives 100 tasks that each block for a long time. What is the largest number of worker threads that will ever exist?",
+      "answer": 2,
+      "tolerance": 0,
+      "explanation": "An unbounded queue never reports full, so the pool never grows past corePoolSize and maximumPoolSize is ignored. The 98 waiting tasks pile up in memory. This is the classic newFixedThreadPool pitfall.",
+      "unit": "threads"
+    },
+    {
+      "id": "pool-size-io",
+      "concept": "Pool sizing",
+      "type": "integer",
+      "difficulty": 3,
+      "prompt": "Using the sizing rule threads = cores x (1 + wait time / compute time), how many threads suit an 8-core machine whose tasks spend 90 ms waiting on a database and 10 ms computing?",
+      "answer": 80,
+      "tolerance": 0,
+      "explanation": "wait/compute = 90/10 = 9, so 8 x (1 + 9) = 80. For CPU-bound work use about cores (or cores + 1). Treat the formula as a starting point and load test.",
+      "unit": "threads"
+    },
+    {
+      "id": "executors-factory",
+      "concept": "Executors factories",
+      "type": "matrix",
+      "difficulty": 1,
+      "prompt": "Match each Executors factory method with its main characteristic.",
+      "left": [
+        {
+          "id": "l1",
+          "text": "newFixedThreadPool(n)"
+        },
+        {
+          "id": "l2",
+          "text": "newCachedThreadPool()"
+        },
+        {
+          "id": "l3",
+          "text": "newSingleThreadExecutor()"
+        },
+        {
+          "id": "l4",
+          "text": "newScheduledThreadPool(n)"
+        },
+        {
+          "id": "l5",
+          "text": "newVirtualThreadPerTaskExecutor()"
+        }
+      ],
+      "right": [
+        {
+          "id": "r1",
+          "text": "n core threads with an unbounded LinkedBlockingQueue"
+        },
+        {
+          "id": "r2",
+          "text": "Hands tasks over via SynchronousQueue and creates threads on demand without a limit"
+        },
+        {
+          "id": "r3",
+          "text": "One worker thread, so tasks run strictly one after another"
+        },
+        {
+          "id": "r4",
+          "text": "Runs tasks after a delay or repeatedly at a fixed rate"
+        },
+        {
+          "id": "r5",
+          "text": "Starts a new virtual thread for every task (Java 21)"
+        },
+        {
+          "id": "r6",
+          "text": "ArrayBlockingQueue(100) with CallerRunsPolicy"
+        }
+      ],
+      "pairs": {
+        "l1": "r1",
+        "l2": "r2",
+        "l3": "r3",
+        "l4": "r4",
+        "l5": "r5"
+      },
+      "explanation": "Both fixed and cached pools have a trap: fixed has an unbounded queue (memory), cached has unbounded threads. Production code often builds a ThreadPoolExecutor by hand with a bounded queue."
+    },
+    {
+      "id": "rejection-policy",
+      "concept": "ThreadPoolExecutor behaviour",
+      "type": "fill",
+      "difficulty": 2,
+      "prompt": "Complete the sentences about what happens when the queue is full and the pool is at maximumPoolSize.",
+      "text": "The default policy, {1}, throws RejectedExecutionException. {2} makes the submitting thread run the task itself, which slows producers down. {3} silently drops the new task.",
+      "blanks": {
+        "1": "AbortPolicy",
+        "2": "CallerRunsPolicy",
+        "3": "DiscardPolicy"
+      },
+      "bank": [
+        "AbortPolicy",
+        "CallerRunsPolicy",
+        "DiscardPolicy",
+        "DiscardOldestPolicy",
+        "ThreadPoolPolicy"
+      ],
+      "explanation": "CallerRunsPolicy gives natural back-pressure. DiscardOldestPolicy drops the task at the head of the queue instead (ThreadPoolPolicy does not exist)."
+    },
+    {
+      "id": "executor-shutdown",
+      "concept": "ExecutorService shutdown",
+      "type": "code",
+      "difficulty": 2,
+      "prompt": "Given ExecutorService pool, write the standard shutdown sequence: stop accepting tasks, wait up to 30 seconds for running tasks, and force-cancel if they did not finish.",
+      "language": "java",
+      "checks": [
+        {
+          "label": "calls shutdown()",
+          "pattern": "shutdown\\s*\\(\\s*\\)"
+        },
+        {
+          "label": "waits with awaitTermination",
+          "pattern": "awaitTermination\\s*\\("
+        },
+        {
+          "label": "falls back to shutdownNow()",
+          "pattern": "shutdownNow\\s*\\(\\s*\\)"
+        }
+      ],
+      "model": "pool.shutdown();\ntry {\n  if (!pool.awaitTermination(30, TimeUnit.SECONDS)) pool.shutdownNow();\n} catch (InterruptedException e) {\n  pool.shutdownNow();\n  Thread.currentThread().interrupt();\n}",
+      "explanation": "shutdown() lets queued work finish; shutdownNow() interrupts workers and returns the never-started tasks. Re-asserting the interrupt flag is good manners. Java 19+ also has ExecutorService.close() in try-with-resources."
+    },
+    {
+      "id": "submit-swallows",
+      "concept": "Futures",
+      "type": "single",
+      "difficulty": 2,
+      "prompt": "A task passed to ExecutorService.submit(...) throws a RuntimeException and nobody ever calls get() on the returned Future. What happens?",
+      "options": [
+        {
+          "id": "a",
+          "text": "The exception is captured in the Future and silently lost.",
+          "why": "Correct: submit wraps the task in a FutureTask that stores the failure until get() throws ExecutionException."
+        },
+        {
+          "id": "b",
+          "text": "The exception is logged by the pool and the worker thread dies.",
+          "why": "The default pool prints nothing for submit() tasks; with execute() the uncaught handler does run."
+        },
+        {
+          "id": "c",
+          "text": "The whole ExecutorService shuts down immediately.",
+          "why": "A task failure never shuts a pool down."
+        },
+        {
+          "id": "d",
+          "text": "The exception is rethrown on the thread that called submit.",
+          "why": "submit returns normally; the failure surfaces only through Future.get()."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "With execute(Runnable) an uncaught exception reaches the thread's UncaughtExceptionHandler. With submit() you must call get() or add logging inside the task."
+    },
+    {
+      "id": "map-order",
+      "concept": "concurrent.futures",
+      "type": "single",
+      "difficulty": 2,
+      "prompt": "What does this Python code print?\n\nwith ThreadPoolExecutor(3) as ex:\n    print(list(ex.map(work, [3, 1, 2])))\n\nwhere work(n) sleeps n tenths of a second and returns n.",
+      "options": [
+        {
+          "id": "a",
+          "text": "[3, 1, 2], following the input order",
+          "why": "Correct: map yields results in the order of the inputs, even though the 1 finishes first."
+        },
+        {
+          "id": "b",
+          "text": "[1, 2, 3], following the finish order",
+          "why": "That would be completion order, which is what as_completed gives, not map."
+        },
+        {
+          "id": "c",
+          "text": "[3, 2, 1], sorted from largest to smallest",
+          "why": "Nothing in map sorts results in descending order."
+        },
+        {
+          "id": "d",
+          "text": "It prints in random order depending on the scheduler.",
+          "why": "Result order from map is deterministic."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Executor.map preserves input order (blocking on the earliest unfinished result); use as_completed(futures) to process in completion order. Exceptions are raised when the result is reached."
+    },
+    {
+      "id": "fixed-pool-oom",
+      "concept": "Thread pools",
+      "type": "assertion",
+      "difficulty": 2,
+      "prompt": "Read the assertion (A) and the reason (R), then choose the correct option.",
+      "assertion": "Executors.newFixedThreadPool is risky when tasks arrive faster than they complete.",
+      "reason": "Its LinkedBlockingQueue is unbounded, so the queue can grow until the JVM runs out of memory.",
+      "correct": [
+        "a"
+      ],
+      "whys": {
+        "a": "Correct: the unbounded queue is the mechanism; the pool never rejects, it just queues.",
+        "b": "Both are true, but R is the direct reason, not an unrelated fact.",
+        "c": "R is true, so A is not the only true statement here.",
+        "d": "A is true: unbounded growth is a real production failure."
+      },
+      "explanation": "Prefer a ThreadPoolExecutor with a bounded queue and an explicit RejectedExecutionHandler."
+    },
+    {
+      "id": "cf-chain",
+      "concept": "CompletableFuture",
+      "type": "code",
+      "difficulty": 2,
+      "prompt": "Assume CompletableFuture<User> fetchUser(int id) and CompletableFuture<List<Order>> fetchOrders(User u) already exist. Write one chained expression that fetches the user, then their orders, maps the result to the number of orders, and returns 0 if anything fails.",
+      "language": "java",
+      "checks": [
+        {
+          "label": "starts with fetchUser(...)",
+          "pattern": "fetchUser\\s*\\("
+        },
+        {
+          "label": "chains the dependent call with thenCompose",
+          "pattern": "thenCompose\\s*\\("
+        },
+        {
+          "label": "maps with thenApply",
+          "pattern": "thenApply\\s*\\("
+        },
+        {
+          "label": "handles failure with exceptionally or handle",
+          "pattern": "exceptionally\\s*\\(|handle\\s*\\("
+        }
+      ],
+      "model": "CompletableFuture<Integer> count = fetchUser(id)\n    .thenCompose(u -> fetchOrders(u))\n    .thenApply(List::size)\n    .exceptionally(e -> 0);",
+      "explanation": "fetchOrders returns a future, so the step must be thenCompose (flatMap). exceptionally sees a CompletionException wrapping the real cause. Using handle((v, e) -> ...) is an equally valid answer.",
+      "starter": "CompletableFuture<Integer> count ="
+    },
+    {
+      "id": "then-apply-trap",
+      "concept": "CompletableFuture",
+      "type": "single",
+      "difficulty": 2,
+      "prompt": "fetchOrders(user) returns CompletableFuture<List<Order>>. What type does userFuture.thenApply(u -> fetchOrders(u)) have?",
+      "options": [
+        {
+          "id": "a",
+          "text": "CompletableFuture<CompletableFuture<List<Order>>>",
+          "why": "Correct: thenApply wraps whatever the function returns, giving a nested future."
+        },
+        {
+          "id": "b",
+          "text": "CompletableFuture<List<Order>>, flattened by thenApply",
+          "why": "That is what thenCompose returns by flattening the inner future."
+        },
+        {
+          "id": "c",
+          "text": "List<Order>, unwrapped by blocking inside thenApply",
+          "why": "thenApply never blocks to unwrap; you would call join() for that."
+        },
+        {
+          "id": "d",
+          "text": "CompletableFuture<Void>, because the result is discarded",
+          "why": "Only thenAccept/thenRun produce Void futures."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "thenApply is map, thenCompose is flatMap. allOf(...) returns CompletableFuture<Void>, so collect values by calling join() on the individual futures afterwards."
+    },
+    {
+      "id": "cf-exceptionally-print",
+      "concept": "CompletableFuture",
+      "type": "single",
+      "difficulty": 3,
+      "prompt": "Consider the code below.\n\nCompletableFuture.supplyAsync(() -> { throw new IllegalStateException(\"boom\"); })\n    .exceptionally(e -> { System.out.println(e.getClass().getSimpleName()); return 1; });\n\nWhat class name does the handler print?",
+      "options": [
+        {
+          "id": "a",
+          "text": "CompletionException",
+          "why": "Correct: a failure from supplyAsync reaches downstream stages wrapped in a CompletionException; e.getCause() is the IllegalStateException."
+        },
+        {
+          "id": "b",
+          "text": "IllegalStateException",
+          "why": "The cause is unwrapped only via getCause(); the handler receives the wrapper here."
+        },
+        {
+          "id": "c",
+          "text": "ExecutionException",
+          "why": "ExecutionException is what Future.get() throws, not what stage callbacks receive."
+        },
+        {
+          "id": "d",
+          "text": "RuntimeException",
+          "why": "The wrapper is the more specific CompletionException subclass of it."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Verified by running it. join() throws CompletionException, get() throws ExecutionException. Unwrap with getCause() when mapping errors."
+    },
+    {
+      "id": "async-gather-timeout",
+      "concept": "asyncio",
+      "type": "code",
+      "difficulty": 3,
+      "prompt": "Write a Python coroutine fetch_all(urls) that calls the existing coroutine fetch(url) for every url concurrently and returns the list of results in input order, raising TimeoutError if the whole batch takes more than 2 seconds.",
+      "language": "python",
+      "checks": [
+        {
+          "label": "runs the coroutines concurrently with gather",
+          "pattern": "gather\\s*\\("
+        },
+        {
+          "label": "enforces a 2 second limit via wait_for or timeout",
+          "pattern": "wait_for\\s*\\(|asyncio\\.timeout\\s*\\(|timeout\\s*\\("
+        },
+        {
+          "label": "uses await",
+          "pattern": "await\\s"
+        },
+        {
+          "label": "unpacks the generated coroutines with *",
+          "pattern": "\\*\\s*\\(|\\*\\s*\\["
+        },
+        {
+          "label": "mentions 2 seconds",
+          "pattern": "\\b2(\\.0)?\\b"
+        }
+      ],
+      "model": "async def fetch_all(urls):\n    return await asyncio.wait_for(\n        asyncio.gather(*(fetch(u) for u in urls)), timeout=2)",
+      "explanation": "gather returns results in argument order. On Python 3.11+ async with asyncio.timeout(2): return await asyncio.gather(...) is an equivalent alternative. On timeout the gathered awaitables are cancelled.",
+      "starter": "async def fetch_all(urls):\n    "
+    },
+    {
+      "id": "gather-one-second",
+      "concept": "asyncio",
+      "type": "assertion",
+      "difficulty": 2,
+      "prompt": "Read the assertion (A) and the reason (R), then choose the correct option.",
+      "assertion": "Awaiting three asyncio.sleep(1) coroutines with asyncio.gather finishes in about 1 second.",
+      "reason": "The asyncio event loop starts one thread per coroutine so that they run in parallel.",
+      "correct": [
+        "c"
+      ],
+      "whys": {
+        "a": "A is true but R is false, so R cannot explain it.",
+        "b": "R is false, so option b is wrong.",
+        "c": "Correct: the sleeps overlap because the single-threaded loop switches at each await. There is one thread, so R is false.",
+        "d": "A is true, so option d is wrong."
+      },
+      "explanation": "asyncio is cooperative concurrency on one thread. A blocking call such as time.sleep(1) would serialise the three coroutines to about 3 seconds."
+    },
+    {
+      "id": "blocking-in-loop",
+      "concept": "asyncio",
+      "type": "multi",
+      "difficulty": 3,
+      "prompt": "A FastAPI endpoint declared with async def calls the blocking requests.get(...) and the service stalls under load. Select all valid fixes.",
+      "options": [
+        {
+          "id": "a",
+          "text": "Declare the endpoint with plain def so FastAPI runs it in its thread pool",
+          "why": "Correct: FastAPI runs sync endpoints in a worker thread, off the event loop."
+        },
+        {
+          "id": "b",
+          "text": "Use an async HTTP client such as httpx.AsyncClient with await",
+          "why": "Correct: it yields to the loop while waiting for the network."
+        },
+        {
+          "id": "c",
+          "text": "Wrap the call in await asyncio.to_thread(requests.get, url)",
+          "why": "Correct: the blocking call runs in a thread while the loop stays free."
+        },
+        {
+          "id": "d",
+          "text": "Add the async keyword to the helper that calls requests.get",
+          "why": "Wrong: async def does not make blocking code non-blocking; it still stalls the loop."
+        },
+        {
+          "id": "e",
+          "text": "Run the app with more asyncio tasks",
+          "why": "Wrong: more tasks on a blocked loop just wait behind it."
+        }
+      ],
+      "correct": [
+        "a",
+        "b",
+        "c"
+      ],
+      "explanation": "Rule: never block the event loop. Either stay async end to end, or push blocking work to a thread (to_thread, run_in_executor) or process pool."
+    },
+    {
+      "id": "virtual-cpu",
+      "concept": "Virtual threads",
+      "type": "truefalse",
+      "difficulty": 3,
+      "prompt": "Java 21 virtual threads are the best fit for CPU-bound number crunching, because they are cheaper to create than platform threads.",
+      "options": [
+        {
+          "id": "a",
+          "text": "True",
+          "why": "Cheap creation helps blocking I/O concurrency, not CPU throughput."
+        },
+        {
+          "id": "b",
+          "text": "False",
+          "why": "Correct: virtual threads are scheduled on a small pool of carrier threads, so CPU-bound work gains nothing over about one thread per core. They shine when many tasks mostly block on I/O."
+        }
+      ],
+      "correct": [
+        "b"
+      ],
+      "explanation": "Virtual threads (JEP 444) make thread-per-request affordable for blocking I/O. Do not pool them, and avoid long synchronized blocks around blocking calls (pinning on 21)."
+    }
+  ]
+}

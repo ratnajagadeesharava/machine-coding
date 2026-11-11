@@ -1,0 +1,415 @@
+{
+  "id": "rm-web-rest-validation-errors",
+  "title": "Web framework: REST, validation and errors",
+  "topic": "Interview roadmap",
+  "description": "REST controllers and routing, status codes, request validation with DTOs, response models, and global error handling in Spring Boot and FastAPI.",
+  "source": "Spring MVC and Bean Validation docs; Spring Framework ProblemDetail docs; FastAPI docs (handling errors, response model); Pydantic docs; MDN HTTP status codes; Baeldung",
+  "series": "interview-roadmap",
+  "seriesTitle": "Interview roadmap: topic quizzes",
+  "seriesDescription": "Topic-by-topic JEE-style quizzes for the backend and AI-engineering interview roadmap: integer, assertion-reason, matrix match, fill-in-the-blanks, short code writing, plus multi-correct questions. Language core, concurrency, DSA, web frameworks, data access, databases, messaging, resilience, security, testing, system design, LLM and agent engineering.",
+  "seriesOrder": 51,
+  "estimatedMinutes": 15,
+  "questions": [
+    {
+      "id": "status-matrix-1",
+      "concept": "HTTP status codes",
+      "type": "matrix",
+      "difficulty": 1,
+      "prompt": "Match each situation with the most appropriate HTTP status code.",
+      "left": [
+        {
+          "id": "l1",
+          "text": "POST created a new order"
+        },
+        {
+          "id": "l2",
+          "text": "Signup rejected: the e-mail already exists (unique constraint)"
+        },
+        {
+          "id": "l3",
+          "text": "DELETE succeeded and there is nothing to return"
+        },
+        {
+          "id": "l4",
+          "text": "Valid login, but the user may not access the admin area"
+        },
+        {
+          "id": "l5",
+          "text": "Request has no or an invalid credential"
+        }
+      ],
+      "right": [
+        {
+          "id": "r1",
+          "text": "201"
+        },
+        {
+          "id": "r2",
+          "text": "409"
+        },
+        {
+          "id": "r3",
+          "text": "204"
+        },
+        {
+          "id": "r4",
+          "text": "403"
+        },
+        {
+          "id": "r5",
+          "text": "401"
+        },
+        {
+          "id": "r6",
+          "text": "400"
+        },
+        {
+          "id": "r7",
+          "text": "422"
+        }
+      ],
+      "pairs": {
+        "l1": "r1",
+        "l2": "r2",
+        "l3": "r3",
+        "l4": "r4",
+        "l5": "r5"
+      },
+      "explanation": "201 Created (with a Location header), 409 Conflict for state conflicts such as duplicates, 204 No Content, 403 Forbidden for authenticated-but-not-allowed and 401 Unauthorized for missing or bad credentials. 422 is for well-formed but semantically invalid bodies."
+    },
+    {
+      "id": "spring-valid-status",
+      "concept": "Request validation (Spring)",
+      "type": "integer",
+      "difficulty": 2,
+      "prompt": "A Spring MVC controller takes @Valid @RequestBody CreateUserRequest. The JSON body violates a @NotBlank constraint and nothing else customises error handling. What HTTP status code does the client receive?",
+      "answer": 400,
+      "tolerance": 0,
+      "explanation": "The resolver throws MethodArgumentNotValidException, which DefaultHandlerExceptionResolver turns into 400 Bad Request. FastAPI uses 422 instead.",
+      "unit": "HTTP status"
+    },
+    {
+      "id": "pydantic-error-count",
+      "concept": "Request validation (FastAPI)",
+      "type": "integer",
+      "difficulty": 2,
+      "prompt": "A FastAPI route takes body UserIn with name: str = Field(min_length=2), age: int = Field(ge=18) and password: str (required). A client posts {\"name\": \"b\", \"age\": 10}. How many entries are in the 422 response's detail list?",
+      "answer": 3,
+      "tolerance": 0,
+      "explanation": "Pydantic collects all errors rather than stopping at the first: name too short, age below 18, and password missing. One entry each."
+    },
+    {
+      "id": "route-order-trap",
+      "concept": "REST routing (FastAPI)",
+      "type": "single",
+      "difficulty": 3,
+      "prompt": "These routes are declared in this order: @app.get(\"/users/{uid}\") def get(uid: int) and then @app.get(\"/users/me\") def me(). What does GET /users/me return?",
+      "options": [
+        {
+          "id": "a",
+          "text": "422 with an int parsing error on uid.",
+          "why": "Routes match in declaration order, so /users/{uid} captures 'me' and int validation fails."
+        },
+        {
+          "id": "b",
+          "text": "200 with the body \"me\".",
+          "why": "This would only happen if the static route was declared first."
+        },
+        {
+          "id": "c",
+          "text": "404 because the paths are ambiguous.",
+          "why": "FastAPI does not detect ambiguity; the first matching route wins."
+        },
+        {
+          "id": "d",
+          "text": "500 at startup because the two route patterns overlap and clash.",
+          "why": "Declaring both is legal and causes no startup error."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Declare fixed paths (/users/me) before parameterised ones (/users/{uid}). Verified by running the app."
+    },
+    {
+      "id": "rest-controller-create",
+      "concept": "REST endpoints (Spring)",
+      "type": "code",
+      "difficulty": 2,
+      "prompt": "Write a Spring @RestController method for POST /users. It takes a validated CreateUserRequest body, calls service.create(req) which returns a UserResponse, and answers 201 Created with that body.",
+      "language": "java",
+      "starter": "@RestController\npublic class UserController {\n  private final UserService service;\n  // constructor omitted\n",
+      "checks": [
+        {
+          "label": "maps POST /users",
+          "pattern": "@PostMapping\\(\\s*(value\\s*=\\s*)?[\\\"']/users[\\\"']|@RequestMapping\\([^)]*POST"
+        },
+        {
+          "label": "validates with @Valid @RequestBody",
+          "pattern": "@Valid\\s+@RequestBody|@RequestBody\\s+@Valid"
+        },
+        {
+          "label": "returns status 201",
+          "pattern": "HttpStatus\\.CREATED|\\.created\\(|status\\(\\s*201\\s*\\)|@ResponseStatus"
+        }
+      ],
+      "model": "  @PostMapping(\"/users\")\n  public ResponseEntity<UserResponse> create(@Valid @RequestBody CreateUserRequest req) {\n    UserResponse out = service.create(req);\n    return ResponseEntity.status(HttpStatus.CREATED).body(out);\n  }\n}",
+      "explanation": "ResponseEntity.created(uri).body(out) is even better because it sets the Location header. @ResponseStatus(HttpStatus.CREATED) on the method is another valid way."
+    },
+    {
+      "id": "pydantic-validator",
+      "concept": "Request validation (FastAPI)",
+      "type": "code",
+      "difficulty": 2,
+      "prompt": "Write a Pydantic v2 model SignupIn with email: str and password: str (at least 8 characters, using Field). Add a field_validator on email that raises ValueError unless it contains '@' and otherwise returns it lower-cased.",
+      "language": "python",
+      "starter": "from pydantic import BaseModel, Field, field_validator\n",
+      "checks": [
+        {
+          "label": "extends BaseModel",
+          "pattern": "class\\s+SignupIn\\s*\\(\\s*BaseModel\\s*\\)"
+        },
+        {
+          "label": "password uses Field(min_length=8)",
+          "pattern": "Field\\(\\s*[^)]*min_length\\s*=\\s*8"
+        },
+        {
+          "label": "uses @field_validator(\"email\") with @classmethod",
+          "pattern": "@field_validator\\(\\s*[\\\"']email[\\\"']\\s*\\)\\s*\\n\\s*@classmethod"
+        },
+        {
+          "label": "raises ValueError for a missing @",
+          "pattern": "raise\\s+ValueError"
+        }
+      ],
+      "model": "class SignupIn(BaseModel):\n    email: str\n    password: str = Field(min_length=8)\n\n    @field_validator(\"email\")\n    @classmethod\n    def check_email(cls, v):\n        if \"@\" not in v:\n            raise ValueError(\"invalid email\")\n        return v.lower()",
+      "explanation": "Pydantic v2 uses field_validator (v1 used validator). A ValueError in a validator becomes a 422 entry in FastAPI. Annotated types such as EmailStr (needs email-validator) are an alternative."
+    },
+    {
+      "id": "controller-advice-problemdetail",
+      "concept": "Error handling (Spring)",
+      "type": "code",
+      "difficulty": 3,
+      "prompt": "Write a Spring global handler: a class annotated for all controllers with an @ExceptionHandler method for MethodArgumentNotValidException that returns a ProblemDetail with status 400 and the detail \"Validation failed\".",
+      "language": "java",
+      "starter": "",
+      "checks": [
+        {
+          "label": "uses @RestControllerAdvice or @ControllerAdvice",
+          "pattern": "@(Rest)?ControllerAdvice"
+        },
+        {
+          "label": "handles MethodArgumentNotValidException via @ExceptionHandler",
+          "pattern": "@ExceptionHandler\\(\\s*(value\\s*=\\s*)?MethodArgumentNotValidException\\.class"
+        },
+        {
+          "label": "returns ProblemDetail with BAD_REQUEST / 400",
+          "pattern": "ProblemDetail[\\s\\S]*(BAD_REQUEST|400)"
+        }
+      ],
+      "model": "@RestControllerAdvice\nclass ApiErrors {\n  @ExceptionHandler(MethodArgumentNotValidException.class)\n  ProblemDetail onInvalid(MethodArgumentNotValidException ex) {\n    return ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, \"Validation failed\");\n  }\n}",
+      "explanation": "ProblemDetail is Spring 6 / Boot 3's RFC 7807-style body (media type application/problem+json). Extending ResponseEntityExceptionHandler is another common pattern."
+    },
+    {
+      "id": "fastapi-exception-handler",
+      "concept": "Error handling (FastAPI)",
+      "type": "code",
+      "difficulty": 2,
+      "prompt": "A custom exception class OutOfStock(Exception) exists. Register a FastAPI handler so it produces HTTP 409 with JSON {\"error\": \"out_of_stock\"}.",
+      "language": "python",
+      "starter": "from fastapi.responses import JSONResponse\n",
+      "checks": [
+        {
+          "label": "registers with @app.exception_handler(OutOfStock)",
+          "pattern": "@app\\.exception_handler\\(\\s*OutOfStock\\s*\\)|add_exception_handler\\(\\s*OutOfStock"
+        },
+        {
+          "label": "handler takes (request, exc)",
+          "pattern": "def\\s+\\w+\\s*\\(\\s*\\w+\\s*,\\s*\\w+"
+        },
+        {
+          "label": "returns a JSONResponse with status 409",
+          "pattern": "JSONResponse\\([\\s\\S]*409"
+        }
+      ],
+      "model": "@app.exception_handler(OutOfStock)\nasync def out_of_stock_handler(request, exc):\n    return JSONResponse(status_code=409, content={\"error\": \"out_of_stock\"})",
+      "explanation": "Handlers receive the request and the exception. For built-in errors you can override RequestValidationError or HTTPException handlers the same way."
+    },
+    {
+      "id": "notnull-empty-string",
+      "concept": "Request validation (Spring)",
+      "type": "assertion",
+      "difficulty": 2,
+      "prompt": "Judge the assertion and the reason.",
+      "assertion": "In Bean Validation, a String field annotated only with @NotNull accepts the empty string.",
+      "reason": "@NotNull checks only that the value is not null.",
+      "correct": [
+        "a"
+      ],
+      "whys": {
+        "a": "Correct: \"\" is not null, so @NotNull passes; @NotEmpty or @NotBlank is needed to reject it.",
+        "b": "Wrong: R is exactly the reason.",
+        "c": "Wrong: R is true.",
+        "d": "Wrong: A is true."
+      },
+      "explanation": "NotNull < NotEmpty < NotBlank. NotBlank also rejects whitespace-only strings and applies to CharSequence only. Also remember @Size(min=3) passes null."
+    },
+    {
+      "id": "path-param-422",
+      "concept": "REST routing (FastAPI)",
+      "type": "assertion",
+      "difficulty": 1,
+      "prompt": "Judge the assertion and the reason.",
+      "assertion": "FastAPI answers 422 when a path parameter declared as int receives the text abc.",
+      "reason": "FastAPI is built on top of Starlette.",
+      "correct": [
+        "b"
+      ],
+      "whys": {
+        "a": "Wrong: Starlette alone would not give 422; Pydantic validation does.",
+        "b": "Correct: both are true, but the 422 comes from Pydantic type validation of the declared annotation.",
+        "c": "Wrong: R is true.",
+        "d": "Wrong: A is true; the detail has type int_parsing."
+      },
+      "explanation": "FastAPI validates path, query, header and body values against type hints and returns 422 with a detail array on failure."
+    },
+    {
+      "id": "response-model-filter",
+      "concept": "DTO vs entity",
+      "type": "assertion",
+      "difficulty": 2,
+      "prompt": "Judge the assertion and the reason.",
+      "assertion": "A FastAPI route with response_model=UserOut will not leak a password field returned by the function.",
+      "reason": "response_model only affects the OpenAPI docs and never changes the response body.",
+      "correct": [
+        "c"
+      ],
+      "whys": {
+        "a": "Wrong: R is false.",
+        "b": "Wrong: R is not true.",
+        "c": "Correct: A is true because the return value is filtered and serialised through UserOut; R is false because filtering is real.",
+        "d": "Wrong: A is true."
+      },
+      "explanation": "response_model validates and filters the output, so extra fields are dropped. The same discipline in Spring is returning a DTO or record rather than the JPA entity."
+    },
+    {
+      "id": "body-validation-exception",
+      "concept": "DTO vs entity",
+      "type": "assertion",
+      "difficulty": 2,
+      "prompt": "Judge the assertion and the reason.",
+      "assertion": "In Spring, a @Valid failure on a @RequestBody makes Spring throw ConstraintViolationException.",
+      "reason": "A @Valid failure on a @RequestBody makes Spring throw MethodArgumentNotValidException.",
+      "correct": [
+        "d"
+      ],
+      "whys": {
+        "a": "Wrong: A is false.",
+        "b": "Wrong: A is false.",
+        "c": "Wrong: A is false.",
+        "d": "Correct: body binding errors raise MethodArgumentNotValidException; ConstraintViolationException belongs to method-level validation (@Validated)."
+      },
+      "explanation": "Handle MethodArgumentNotValidException for bodies and ConstraintViolationException (or HandlerMethodValidationException in Spring 6.1+) for parameters."
+    },
+    {
+      "id": "binding-annotations",
+      "concept": "REST endpoints (Spring)",
+      "type": "fill",
+      "difficulty": 1,
+      "prompt": "Fill in the Spring MVC binding annotations.",
+      "text": "Use {1} to bind a segment of the URL path, {2} to bind a query-string parameter, and {3} to deserialise the JSON request body.",
+      "blanks": {
+        "1": "@PathVariable",
+        "2": "@RequestParam",
+        "3": "@RequestBody"
+      },
+      "bank": [
+        "@PathVariable",
+        "@RequestParam",
+        "@RequestBody",
+        "@RequestHeader",
+        "@ModelAttribute"
+      ],
+      "explanation": "@RequestHeader reads headers and @ModelAttribute binds form fields. In FastAPI the equivalents are inferred from the signature: Path(), Query() and a Pydantic body parameter."
+    },
+    {
+      "id": "endpoint-output",
+      "concept": "Response model",
+      "type": "single",
+      "difficulty": 3,
+      "prompt": "Given @app.post(\"/users\", response_model=UserOut) def mk(u: UserIn): return u, where UserIn has name (stripped and title-cased by a validator), age and password, and UserOut has only name and age. A client posts {\"name\": \" bo \", \"age\": 20, \"password\": \"x\"}. What comes back?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Status 200 with {\"name\": \"Bo\", \"age\": 20}.",
+          "why": "The validator ran on input and the filter dropped password on output."
+        },
+        {
+          "id": "b",
+          "text": "Status 201 with {\"name\": \"bo\", \"age\": 20, \"password\": \"x\"} echoed back to the client.",
+          "why": "Default status is 200 and password is filtered out."
+        },
+        {
+          "id": "c",
+          "text": "Status 422 because the returned object is not a UserOut.",
+          "why": "FastAPI converts the returned object via the response model."
+        },
+        {
+          "id": "d",
+          "text": "Status 200 with {\"name\": \" bo \", \"age\": 20}.",
+          "why": "The input validator already cleaned the name before the handler ran."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Verified by running it. POST gives 200 unless status_code=201 is declared."
+    },
+    {
+      "id": "fastapi-error-codes",
+      "concept": "Error handling (FastAPI)",
+      "type": "multi",
+      "difficulty": 2,
+      "prompt": "Select all that apply: which of these are default FastAPI/Starlette behaviours?",
+      "options": [
+        {
+          "id": "a",
+          "text": "A missing required query parameter gives 422.",
+          "why": "The query parameter is validated and a missing value is a validation error."
+        },
+        {
+          "id": "b",
+          "text": "An unknown URL gives 404.",
+          "why": "No route matches, so Starlette returns Not Found."
+        },
+        {
+          "id": "c",
+          "text": "A POST to a path that only has GET gives 405.",
+          "why": "The path matches but the method does not, so Method Not Allowed."
+        },
+        {
+          "id": "d",
+          "text": "raise HTTPException(404, \"nope\") gives JSON {\"detail\": \"nope\"}.",
+          "why": "The default handler serialises detail as JSON."
+        },
+        {
+          "id": "e",
+          "text": "An unhandled ValueError in the route gives 400.",
+          "why": "Unhandled exceptions become a 500 Internal Server Error."
+        },
+        {
+          "id": "f",
+          "text": "A validation error gives 400 with a plain text body.",
+          "why": "FastAPI returns 422 with a JSON detail list."
+        }
+      ],
+      "correct": [
+        "a",
+        "b",
+        "c",
+        "d"
+      ],
+      "explanation": "Verified by running the app. Customise with exception_handler for HTTPException, RequestValidationError or your own types."
+    }
+  ]
+}

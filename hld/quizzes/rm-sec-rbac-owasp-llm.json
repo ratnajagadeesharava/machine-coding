@@ -1,0 +1,400 @@
+{
+  "id": "rm-sec-rbac-owasp-llm",
+  "title": "RBAC, OWASP basics and LLM risks",
+  "topic": "Interview roadmap",
+  "series": "interview-roadmap",
+  "seriesTitle": "Interview roadmap: topic quizzes",
+  "seriesDescription": "Topic-by-topic JEE-style quizzes for the backend and AI-engineering interview roadmap: integer, assertion-reason, matrix match, fill-in-the-blanks, short code writing, plus multi-correct questions. Language core, concurrency, DSA, web frameworks, data access, databases, messaging, resilience, security, testing, system design, LLM and agent engineering.",
+  "seriesOrder": 83,
+  "description": "Role and permission checks (@PreAuthorize, FastAPI dependencies), SQL injection, XSS, CSRF, CORS and secrets handling, and LLM risks: prompt injection and cross-tenant leaks.",
+  "source": "OWASP Top 10 and Cheat Sheet Series; OWASP API Security Top 10; OWASP Top 10 for LLM Applications; Spring Security reference; FastAPI docs; Oracle JDBC docs",
+  "estimatedMinutes": 15,
+  "questions": [
+    {
+      "id": "preauthorize",
+      "concept": "RBAC",
+      "type": "code",
+      "difficulty": 2,
+      "prompt": "Annotate a Spring service method Order getOrder(String ownerId, long id) so it runs only for users with the ADMIN role or when ownerId equals the authenticated user's name. Write the annotation line.",
+      "language": "java",
+      "checks": [
+        {
+          "label": "uses @PreAuthorize",
+          "pattern": "@preauthorize\\("
+        },
+        {
+          "label": "allows the ADMIN role",
+          "pattern": "(hasrole\\(\\s*['\"]admin['\"]\\s*\\)|hasauthority\\(\\s*['\"]role_admin['\"]\\s*\\))"
+        },
+        {
+          "label": "compares #ownerId with the authentication name",
+          "pattern": "#ownerid\\s*==\\s*(authentication\\.name|principal\\.username)"
+        },
+        {
+          "label": "joins with or",
+          "pattern": "\\bor\\b|\\|\\|"
+        }
+      ],
+      "model": "@PreAuthorize(\"hasRole('ADMIN') or #ownerId == authentication.name\")",
+      "explanation": "hasRole adds the ROLE_ prefix, so hasRole('ADMIN') matches the authority ROLE_ADMIN. The annotation only works when @EnableMethodSecurity is present and the bean is called through its Spring proxy, so self-invocation bypasses it."
+    },
+    {
+      "id": "fastapi-role",
+      "concept": "RBAC",
+      "type": "code",
+      "difficulty": 2,
+      "prompt": "Write a FastAPI dependency factory require_role(role) that depends on get_current_user, raises HTTPException 403 when role is not in user.roles, and otherwise returns the user.",
+      "language": "python",
+      "checks": [
+        {
+          "label": "defines require_role",
+          "pattern": "def\\s+require_role\\("
+        },
+        {
+          "label": "uses Depends(get_current_user)",
+          "pattern": "depends\\(\\s*get_current_user"
+        },
+        {
+          "label": "raises HTTPException 403",
+          "pattern": "httpexception\\([^)]*(403|http_403)"
+        },
+        {
+          "label": "returns the user",
+          "pattern": "return\\s+user"
+        }
+      ],
+      "model": "def require_role(role: str):\n    def checker(user=Depends(get_current_user)):\n        if role not in user.roles:\n            raise HTTPException(status_code=403)\n        return user\n    return checker",
+      "explanation": "Use it as @router.delete(\"/x\", dependencies=[Depends(require_role(\"admin\"))]). A closure-returning dependency is the idiom; a class with __call__ is an alternative."
+    },
+    {
+      "id": "access-models",
+      "concept": "RBAC",
+      "type": "matrix",
+      "difficulty": 2,
+      "prompt": "Match each access-control model to its defining idea.",
+      "left": [
+        {
+          "id": "a",
+          "text": "RBAC"
+        },
+        {
+          "id": "b",
+          "text": "ABAC"
+        },
+        {
+          "id": "c",
+          "text": "ACL"
+        },
+        {
+          "id": "d",
+          "text": "ReBAC"
+        }
+      ],
+      "right": [
+        {
+          "id": "p",
+          "text": "Permissions are granted to roles, and users hold roles"
+        },
+        {
+          "id": "q",
+          "text": "Decisions evaluate attributes of user, resource and context"
+        },
+        {
+          "id": "r",
+          "text": "Each object carries a list of who may do what"
+        },
+        {
+          "id": "s",
+          "text": "Access follows relationships in a graph, such as owner or member of"
+        },
+        {
+          "id": "t",
+          "text": "Access is granted by network location only"
+        }
+      ],
+      "pairs": {
+        "a": "p",
+        "b": "q",
+        "c": "r",
+        "d": "s"
+      },
+      "explanation": "Real systems combine them: roles for coarse access, attributes or ownership checks for fine access (the ownerId == name check above is attribute-style)."
+    },
+    {
+      "id": "server-side-authz",
+      "concept": "RBAC",
+      "type": "assertion",
+      "difficulty": 1,
+      "prompt": "Read the assertion and the reason, then choose the option that describes them correctly.",
+      "assertion": "Authorisation must be enforced on the server even when the UI hides forbidden buttons.",
+      "reason": "Broken access control was ranked first in the OWASP Top 10 (2021 edition).",
+      "correct": [
+        "b"
+      ],
+      "whys": {
+        "a": "The ranking is true but it is not why server-side checks are needed.",
+        "b": "Right: both are true; the real cause is that clients are untrusted, which the ranking merely reflects.",
+        "c": "The reason is also true.",
+        "d": "The assertion is true."
+      },
+      "explanation": "Hiding UI is usability; checking on the server is security. Missing object-level checks (BOLA) lead the OWASP API Security list too."
+    },
+    {
+      "id": "prepared-stmt",
+      "concept": "SQL injection",
+      "type": "code",
+      "difficulty": 2,
+      "prompt": "This code is injectable: String sql = \"SELECT * FROM users WHERE email = '\" + email + \"'\"; Statement st = conn.createStatement(); ResultSet rs = st.executeQuery(sql); Rewrite it with a PreparedStatement and a bound parameter.",
+      "language": "java",
+      "checks": [
+        {
+          "label": "uses prepareStatement",
+          "pattern": "preparestatement\\("
+        },
+        {
+          "label": "uses a ? placeholder",
+          "pattern": "\\?"
+        },
+        {
+          "label": "binds the value with a setter",
+          "pattern": "\\.set(string|object)\\(\\s*1\\s*,\\s*email"
+        },
+        {
+          "label": "executes the query",
+          "pattern": "executequery\\("
+        }
+      ],
+      "model": "PreparedStatement ps = conn.prepareStatement(\"SELECT * FROM users WHERE email = ?\");\nps.setString(1, email);\nResultSet rs = ps.executeQuery();",
+      "explanation": "Parameters travel separately from the SQL text, so data can never change the query structure. Table and column names cannot be bound; allowlist them. JPA named parameters and Spring JdbcTemplate placeholders do the same."
+    },
+    {
+      "id": "py-param",
+      "concept": "SQL injection",
+      "type": "code",
+      "difficulty": 2,
+      "prompt": "Using the Python DB-API with sqlite3 (cursor cur), run the query SELECT * FROM users WHERE email = <email> safely with the variable email and assign cur.fetchone() to row.",
+      "language": "python",
+      "checks": [
+        {
+          "label": "uses execute",
+          "pattern": "cur\\.execute\\("
+        },
+        {
+          "label": "uses a placeholder",
+          "pattern": "(\\?|%s|:email)"
+        },
+        {
+          "label": "passes the value separately",
+          "pattern": "(,\\s*\\(\\s*email\\s*,\\s*\\)|,\\s*\\[\\s*email|,\\s*\\{\\s*['\"]email['\"])"
+        },
+        {
+          "label": "fetches one row",
+          "pattern": "fetchone\\(\\)"
+        }
+      ],
+      "model": "cur.execute(\"SELECT * FROM users WHERE email = ?\", (email,))\nrow = cur.fetchone()",
+      "explanation": "The one-element tuple needs the trailing comma. psycopg and mysql drivers use %s, sqlite3 uses ?. Never use f-strings to build SQL."
+    },
+    {
+      "id": "sqli-rows",
+      "concept": "SQL injection",
+      "type": "integer",
+      "difficulty": 2,
+      "prompt": "The users table has 7 rows. Code builds \"SELECT * FROM users WHERE name = '\" + input + \"'\" and the attacker sends the input x' OR '1'='1. How many rows come back?",
+      "answer": 7,
+      "explanation": "The query becomes WHERE name = 'x' OR '1'='1', and the OR condition is true for every row, so all 7 return. The same trick with UNION or stacked statements can read other tables.",
+      "unit": "rows"
+    },
+    {
+      "id": "bcrypt-cost",
+      "concept": "Secrets and passwords",
+      "type": "integer",
+      "difficulty": 2,
+      "prompt": "bcrypt's cost factor is a work exponent. How many key-expansion rounds does cost factor 12 perform?",
+      "answer": 4096,
+      "explanation": "The work is 2^cost, so 2^12 = 4096. Each +1 doubles the time, which lets you tune hashing speed as hardware improves.",
+      "unit": "rounds"
+    },
+    {
+      "id": "csrf",
+      "concept": "CSRF",
+      "type": "multi",
+      "difficulty": 2,
+      "prompt": "Which measures help against CSRF for a cookie-authenticated web app? Select all that apply.",
+      "options": [
+        {
+          "id": "a",
+          "text": "SameSite=Lax or Strict on the session cookie",
+          "why": "Right: the browser withholds the cookie on cross-site requests."
+        },
+        {
+          "id": "b",
+          "text": "A synchroniser or double-submit CSRF token on state-changing requests",
+          "why": "Right: the attacker's page cannot read the token."
+        },
+        {
+          "id": "c",
+          "text": "Checking Origin or Referer on unsafe methods",
+          "why": "Right: a defence in depth check."
+        },
+        {
+          "id": "d",
+          "text": "Escaping HTML on output",
+          "why": "That stops XSS, not CSRF."
+        },
+        {
+          "id": "e",
+          "text": "Configuring CORS with Access-Control-Allow-Origin: *",
+          "why": "CORS relaxes the browser's read restrictions, it is not a CSRF defence."
+        }
+      ],
+      "correct": [
+        "a",
+        "b",
+        "c"
+      ],
+      "explanation": "Spring Security enables CSRF protection by default for browser flows; stateless bearer-token APIs often disable it deliberately."
+    },
+    {
+      "id": "csrf-bearer",
+      "concept": "CSRF",
+      "type": "truefalse",
+      "difficulty": 3,
+      "prompt": "A stateless API that authenticates only with an Authorization: Bearer header (never cookies) is not vulnerable to classic CSRF.",
+      "options": [
+        {
+          "id": "a",
+          "text": "True",
+          "why": "Right: browsers do not attach an Authorization header automatically on cross-site requests."
+        },
+        {
+          "id": "b",
+          "text": "False",
+          "why": "Cookies are attached automatically, bearer headers are not, so the CSRF mechanism has nothing to ride on."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "The caveat: if the token is kept in a cookie, or XSS can read it, other attacks remain."
+    },
+    {
+      "id": "cors-server",
+      "concept": "CORS",
+      "type": "truefalse",
+      "difficulty": 2,
+      "prompt": "Configuring CORS on the server stops other sites and tools such as curl from calling the API.",
+      "options": [
+        {
+          "id": "a",
+          "text": "True",
+          "why": "CORS does not authenticate or block callers."
+        },
+        {
+          "id": "b",
+          "text": "False",
+          "why": "Right: CORS is enforced by browsers to control which origins may read responses; curl ignores it, so you still need authentication."
+        }
+      ],
+      "correct": [
+        "b"
+      ],
+      "explanation": "In FastAPI, CORSMiddleware with an explicit allow_origins list is correct; avoid allow_origins=[\"*\"] together with credentials."
+    },
+    {
+      "id": "owasp-defences",
+      "concept": "OWASP basics",
+      "type": "fill",
+      "difficulty": 1,
+      "prompt": "Match defence to attack by filling the blanks.",
+      "text": "Stop XSS with output {1} and a Content-Security-Policy, stop SQL injection with {2} queries, and stop CSRF with SameSite cookies and anti-forgery {3}.",
+      "blanks": {
+        "1": "encoding",
+        "2": "parameterised",
+        "3": "tokens"
+      },
+      "bank": [
+        "encoding",
+        "parameterised",
+        "tokens",
+        "hashing",
+        "compression",
+        "proxies"
+      ],
+      "explanation": "Defences are specific: encoding fits XSS, parameters fit SQLi, tokens fit CSRF."
+    },
+    {
+      "id": "injection-filter",
+      "concept": "LLM risks",
+      "type": "assertion",
+      "difficulty": 2,
+      "prompt": "Read the assertion and the reason, then choose the option that describes them correctly.",
+      "assertion": "Blocking the phrase \"ignore previous instructions\" fully prevents prompt injection.",
+      "reason": "Attackers can paraphrase, translate or encode their instructions.",
+      "correct": [
+        "d"
+      ],
+      "whys": {
+        "a": "The assertion is false.",
+        "b": "The assertion is false.",
+        "c": "The reason is true.",
+        "d": "Right: the assertion is false because keyword filters are easily evaded, and the reason says why."
+      },
+      "explanation": "Treat model output and tool arguments as untrusted, limit the tools the agent can reach, and require confirmation for risky actions."
+    },
+    {
+      "id": "tenant-rag",
+      "concept": "LLM risks",
+      "type": "assertion",
+      "difficulty": 3,
+      "prompt": "Read the assertion and the reason, then choose the option that describes them correctly.",
+      "assertion": "In a multi-tenant RAG app the tenant filter must be applied inside the vector search query.",
+      "reason": "If the system prompt says \"only reveal data for tenant A\", the model will reliably refuse to expose other tenants' documents.",
+      "correct": [
+        "c"
+      ],
+      "whys": {
+        "a": "The reason is false.",
+        "b": "The reason is false.",
+        "c": "Right: prompts are not an access control; the filter belongs in retrieval code.",
+        "d": "The assertion is true."
+      },
+      "explanation": "Enforce isolation before text enters the context: tenant id filter or separate namespace per tenant, then check document ACLs."
+    },
+    {
+      "id": "tenant-leak",
+      "concept": "LLM risks",
+      "type": "multi",
+      "difficulty": 3,
+      "prompt": "Which controls prevent cross-tenant data leaks in an LLM feature? Select all that apply.",
+      "options": [
+        {
+          "id": "a",
+          "text": "Apply the tenant id as a mandatory filter or namespace in retrieval",
+          "why": "Right: nothing from another tenant can reach the prompt."
+        },
+        {
+          "id": "b",
+          "text": "Include the tenant id in semantic-cache keys",
+          "why": "Right: otherwise tenant A's cached answer can be served to B."
+        },
+        {
+          "id": "c",
+          "text": "Check each retrieved document against the caller's permissions",
+          "why": "Right: filters can be misconfigured; this is the second lock."
+        },
+        {
+          "id": "d",
+          "text": "Tell the model in the prompt not to mention other tenants",
+          "why": "A prompt is advice, not enforcement."
+        }
+      ],
+      "correct": [
+        "a",
+        "b",
+        "c"
+      ],
+      "explanation": "Defence in depth: isolate at retrieval, cache and logging layers; never rely on the model to police access."
+    }
+  ]
+}

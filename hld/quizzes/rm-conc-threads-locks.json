@@ -1,0 +1,480 @@
+{
+  "id": "rm-conc-threads-locks",
+  "title": "Concurrency: threads, locks and visibility",
+  "topic": "Interview roadmap",
+  "series": "interview-roadmap",
+  "seriesTitle": "Interview roadmap: topic quizzes",
+  "seriesOrder": 20,
+  "seriesDescription": "Topic-by-topic JEE-style quizzes for the backend and AI-engineering interview roadmap: integer, assertion-reason, matrix match, fill-in-the-blanks, short code writing, plus multi-correct questions. Language core, concurrency, DSA, web frameworks, data access, databases, messaging, resilience, security, testing, system design, LLM and agent engineering.",
+  "description": "Thread lifecycle and states, GIL limits, synchronized vs ReentrantLock vs Python Lock, volatile, happens-before, atomics, CAS and check-then-act races.",
+  "source": "Oracle Java tutorials and Java Language Spec ch.17; Java Concurrency in Practice; Python threading docs and GIL glossary; Baeldung; Real Python",
+  "estimatedMinutes": 16,
+  "questions": [
+    {
+      "id": "run-vs-start",
+      "concept": "Thread basics",
+      "type": "single",
+      "difficulty": 2,
+      "prompt": "What does this Java snippet print?\n\nnew Thread(() -> System.out.println(Thread.currentThread().getName()), \"worker\").run();\n\nWhat is printed?",
+      "options": [
+        {
+          "id": "a",
+          "text": "main, because run() executes on the calling thread",
+          "why": "Correct: run() is an ordinary method call, so the lambda executes on the calling thread, which is main."
+        },
+        {
+          "id": "b",
+          "text": "worker, the name given to the new thread",
+          "why": "The name \"worker\" belongs to a thread that was never started; run() does not create one."
+        },
+        {
+          "id": "c",
+          "text": "Thread-0, the default name of a new thread",
+          "why": "Thread-0 is the default name of the first thread created without a name, and no new thread starts here."
+        },
+        {
+          "id": "d",
+          "text": "Nothing, because the thread is never started",
+          "why": "run() executes the body synchronously, so it prints before the statement finishes."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "start() asks the JVM to create a new thread of execution that then calls run(). Calling run() directly is a plain method call. Interviewers love this trap."
+    },
+    {
+      "id": "thread-states",
+      "concept": "Thread states",
+      "type": "matrix",
+      "difficulty": 2,
+      "prompt": "Match each java.lang.Thread.State with the situation that puts a thread in it.",
+      "left": [
+        {
+          "id": "l1",
+          "text": "NEW"
+        },
+        {
+          "id": "l2",
+          "text": "RUNNABLE"
+        },
+        {
+          "id": "l3",
+          "text": "BLOCKED"
+        },
+        {
+          "id": "l4",
+          "text": "WAITING"
+        },
+        {
+          "id": "l5",
+          "text": "TIMED_WAITING"
+        }
+      ],
+      "right": [
+        {
+          "id": "r1",
+          "text": "Created with new Thread(...) but start() not yet called"
+        },
+        {
+          "id": "r2",
+          "text": "Running on a CPU or ready to run"
+        },
+        {
+          "id": "r3",
+          "text": "Trying to enter a synchronized block whose monitor another thread holds"
+        },
+        {
+          "id": "r4",
+          "text": "Inside Object.wait() or Thread.join() with no timeout"
+        },
+        {
+          "id": "r5",
+          "text": "Inside Thread.sleep(100)"
+        },
+        {
+          "id": "r6",
+          "text": "Finished executing run()"
+        }
+      ],
+      "pairs": {
+        "l1": "r1",
+        "l2": "r2",
+        "l3": "r3",
+        "l4": "r4",
+        "l5": "r5"
+      },
+      "explanation": "Thread.State has six values; the sixth (TERMINATED) is the distractor here. A thread contending for a monitor is BLOCKED, while one parked by wait/join/LockSupport.park is WAITING."
+    },
+    {
+      "id": "gil-io",
+      "concept": "GIL and threads",
+      "type": "truefalse",
+      "difficulty": 1,
+      "prompt": "In CPython, a thread that is blocked waiting on a network socket releases the GIL, so Python threads can overlap I/O waits and speed up I/O-bound programs.",
+      "options": [
+        {
+          "id": "a",
+          "text": "True",
+          "why": "Correct: blocking I/O calls release the GIL, so other threads run while one waits."
+        },
+        {
+          "id": "b",
+          "text": "False",
+          "why": "The GIL is released around blocking system calls, so threading does help I/O-bound code."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "The GIL only stops two threads executing Python bytecode at the same instant. Waiting on I/O is not executing bytecode, so threads still overlap waits. (CPython 3.13 also ships an optional experimental free-threaded build, PEP 703.)"
+    },
+    {
+      "id": "cpu-bound-python",
+      "concept": "GIL and threads",
+      "type": "single",
+      "difficulty": 2,
+      "prompt": "A Python service must hash 4 GB of files on an 8-core machine using pure-Python-heavy CPU work. Which approach gives the best speed-up in standard CPython?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Split the files across a ProcessPoolExecutor with about 8 workers.",
+          "why": "Correct: each process has its own interpreter and its own GIL, so work runs on all cores."
+        },
+        {
+          "id": "b",
+          "text": "Start 8 threading.Thread workers, one per core, and join them all at the end.",
+          "why": "Threads share one GIL, so CPU-bound bytecode still runs on one core at a time."
+        },
+        {
+          "id": "c",
+          "text": "Run the hashing in 8 asyncio tasks gathered together on one event loop.",
+          "why": "asyncio is cooperative on a single thread; CPU work never yields, so it is no faster."
+        },
+        {
+          "id": "d",
+          "text": "Lower sys.setswitchinterval so threads swap more often.",
+          "why": "A shorter switch interval only adds overhead; it does not allow parallel bytecode execution."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "CPU-bound work needs processes (multiprocessing, ProcessPoolExecutor), a native extension that releases the GIL, or a free-threaded build. Note hashlib releases the GIL for large buffers, a nuance worth mentioning."
+    },
+    {
+      "id": "gil-not-atomic",
+      "concept": "GIL is not thread-safety",
+      "type": "assertion",
+      "difficulty": 2,
+      "prompt": "Read the assertion (A) and the reason (R), then choose the correct option.",
+      "assertion": "In CPython, several threads running counter += 1 on a shared int can lose updates even though the GIL exists.",
+      "reason": "The GIL can hand control to another thread between the bytecodes that load, add and store the value.",
+      "correct": [
+        "a"
+      ],
+      "whys": {
+        "a": "Correct: += compiles to separate load, add, store steps and a thread switch between them loses an update, which is exactly why the GIL does not make it safe.",
+        "b": "R is the actual mechanism behind A, so \"true but not the explanation\" understates it.",
+        "c": "R is true: bytecode-level switching between load, add and store is real, so R is not false.",
+        "d": "A is true, not false: GIL protects the interpreter internals, not your read-modify-write sequences."
+      },
+      "explanation": "The GIL protects CPython's internals. Compound operations such as +=, check-then-set on a dict, or append-after-length-check are not atomic. Use threading.Lock or a queue."
+    },
+    {
+      "id": "lost-update-max",
+      "concept": "Visibility and atomics",
+      "type": "integer",
+      "difficulty": 2,
+      "prompt": "Four threads each execute count++ 250 times on a shared non-volatile int field that starts at 0, with no synchronization. What is the largest final value that is possible?",
+      "answer": 1000,
+      "tolerance": 0,
+      "explanation": "Each increment adds at most 1, and there are 4 x 250 = 1000 increments, so 1000 is the upper bound. Lost updates only make the result smaller (and it can be much smaller). The interview point: count++ is read, add, write, not atomic."
+    },
+    {
+      "id": "sync-counter",
+      "concept": "synchronized",
+      "type": "code",
+      "difficulty": 1,
+      "prompt": "Write a Java class Counter with a private int field, a method increment() and a method int get(), made thread-safe using the intrinsic lock (synchronized).",
+      "language": "java",
+      "checks": [
+        {
+          "label": "declares increment()",
+          "pattern": "increment\\s*\\("
+        },
+        {
+          "label": "uses synchronized (or an explicit lock)",
+          "pattern": "synchronized|\\.lock\\(\\)"
+        },
+        {
+          "label": "provides int get()",
+          "pattern": "int\\s+get\\s*\\("
+        },
+        {
+          "label": "increments the field",
+          "pattern": "(\\+\\+|\\+=\\s*1|=\\s*\\w+\\s*\\+\\s*1)"
+        }
+      ],
+      "model": "class Counter {\n  private int count;\n  public synchronized void increment() { count++; }\n  public synchronized int get() { return count; }\n}",
+      "explanation": "Both methods must use the same lock: a synchronized reader gives visibility as well as mutual exclusion. AtomicInteger or ReentrantLock are other valid solutions; the grader accepts an explicit lock too.",
+      "starter": "class Counter {\n  \n}"
+    },
+    {
+      "id": "trylock-timeout",
+      "concept": "ReentrantLock",
+      "type": "code",
+      "difficulty": 3,
+      "prompt": "Given a field ReentrantLock lock, write a snippet that tries to acquire the lock for at most 1 second, runs doWork() only if it got the lock, and always releases it.",
+      "language": "java",
+      "checks": [
+        {
+          "label": "calls tryLock with a timeout",
+          "pattern": "tryLock\\s*\\("
+        },
+        {
+          "label": "uses try/finally",
+          "pattern": "try\\s*\\{[\\s\\S]*finally"
+        },
+        {
+          "label": "calls unlock()",
+          "pattern": "unlock\\s*\\(\\s*\\)"
+        },
+        {
+          "label": "uses TimeUnit or a time argument",
+          "pattern": "TimeUnit|Duration|,\\s*\\d"
+        }
+      ],
+      "model": "if (lock.tryLock(1, TimeUnit.SECONDS)) {\n  try { doWork(); }\n  finally { lock.unlock(); }\n}",
+      "explanation": "The unlock goes in finally, and the try starts only after the lock was acquired, otherwise you would unlock a lock you do not hold (IllegalMonitorStateException). tryLock(timeout) also throws InterruptedException."
+    },
+    {
+      "id": "py-account-lock",
+      "concept": "Python Lock",
+      "type": "code",
+      "difficulty": 2,
+      "prompt": "Write a Python class Account with self.balance = 0, a threading.Lock stored on the instance, and a method withdraw(amount) that returns False if funds are insufficient and otherwise subtracts the amount and returns True. The check and the subtraction must be atomic.",
+      "language": "python",
+      "checks": [
+        {
+          "label": "creates a threading.Lock",
+          "pattern": "Lock\\s*\\("
+        },
+        {
+          "label": "holds the lock with 'with' (or acquire/release)",
+          "pattern": "with\\s+self\\.\\w+|\\.acquire\\("
+        },
+        {
+          "label": "defines withdraw",
+          "pattern": "def\\s+withdraw\\s*\\("
+        },
+        {
+          "label": "subtracts the amount",
+          "pattern": "-=\\s*amount|=\\s*self\\.balance\\s*-\\s*amount"
+        }
+      ],
+      "model": "import threading\n\nclass Account:\n    def __init__(self):\n        self.balance = 0\n        self._lock = threading.Lock()\n\n    def withdraw(self, amount):\n        with self._lock:\n            if self.balance < amount:\n                return False\n            self.balance -= amount\n            return True",
+      "explanation": "Checking the balance outside the lock and subtracting inside it is still a check-then-act race. Use a context manager so the lock is released on every return path and exception.",
+      "starter": "import threading\n\nclass Account:\n    "
+    },
+    {
+      "id": "reentrant-vs-sync",
+      "concept": "ReentrantLock",
+      "type": "multi",
+      "difficulty": 2,
+      "prompt": "Select all features that ReentrantLock offers and the synchronized keyword does not.",
+      "options": [
+        {
+          "id": "a",
+          "text": "A tryLock() that returns immediately or after a timeout",
+          "why": "Correct: synchronized has no way to give up waiting for a monitor."
+        },
+        {
+          "id": "b",
+          "text": "lockInterruptibly(), so a waiting thread can be interrupted",
+          "why": "Correct: a thread blocked entering synchronized cannot be interrupted."
+        },
+        {
+          "id": "c",
+          "text": "An optional fairness policy (new ReentrantLock(true))",
+          "why": "Correct: monitors give no fairness guarantee."
+        },
+        {
+          "id": "d",
+          "text": "Automatic release if the guarded code throws an exception",
+          "why": "False: this is a feature of synchronized; with ReentrantLock you must unlock in finally."
+        },
+        {
+          "id": "e",
+          "text": "A thread may re-acquire a lock it already holds",
+          "why": "True for both, so it does not distinguish the two."
+        }
+      ],
+      "correct": [
+        "a",
+        "b",
+        "c"
+      ],
+      "explanation": "Choose ReentrantLock for tryLock, interruptible or timed waits, fairness and multiple Conditions. Otherwise synchronized is simpler and cannot leak a lock. Both are reentrant."
+    },
+    {
+      "id": "dcl-volatile",
+      "concept": "Visibility and atomics",
+      "type": "single",
+      "difficulty": 3,
+      "prompt": "What is the bug here?\n\nclass Cfg {\n  private static Cfg inst;\n  static Cfg get() {\n    if (inst == null) {\n      synchronized (Cfg.class) {\n        if (inst == null) inst = new Cfg();\n      }\n    }\n    return inst;\n  }\n}\n\nWhich statement identifies the bug?",
+      "options": [
+        {
+          "id": "a",
+          "text": "inst is not volatile, so a thread may see a non-null reference to a partly constructed Cfg.",
+          "why": "Correct: without volatile the write of the reference can be reordered with the constructor's writes."
+        },
+        {
+          "id": "b",
+          "text": "Two Cfg objects are always created, because the first null check is outside the synchronized block.",
+          "why": "The second check inside synchronized prevents duplicates; the issue is safe publication."
+        },
+        {
+          "id": "c",
+          "text": "It deadlocks because the synchronized block takes the lock on a Class object.",
+          "why": "Locking Cfg.class is legal and cannot deadlock here."
+        },
+        {
+          "id": "d",
+          "text": "Static fields cannot be read outside a synchronized block.",
+          "why": "Static fields read fine; the problem is the missing happens-before edge."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Fix with private static volatile Cfg inst, or use the initialization-on-demand holder idiom or an enum singleton. Since Java 5 volatile forbids that reordering."
+    },
+    {
+      "id": "volatile-atomic",
+      "concept": "Visibility and atomics",
+      "type": "assertion",
+      "difficulty": 3,
+      "prompt": "Read the assertion (A) and the reason (R), then choose the correct option.",
+      "assertion": "Declaring a counter volatile makes counter++ atomic.",
+      "reason": "A volatile write is visible to subsequent reads of that field by other threads.",
+      "correct": [
+        "d"
+      ],
+      "whys": {
+        "a": "A is false, so this option cannot be right.",
+        "b": "A is false, so option b (both true) is wrong.",
+        "c": "A is false, so option c (A true) is wrong.",
+        "d": "Correct: volatile gives visibility and ordering, but counter++ is still read, add, write. Two threads can read the same value and both write back value + 1."
+      },
+      "explanation": "Use AtomicInteger/LongAdder or a lock for compound actions. volatile is fine for a flag that one thread writes and others read."
+    },
+    {
+      "id": "happens-before",
+      "concept": "Visibility and atomics",
+      "type": "fill",
+      "difficulty": 2,
+      "prompt": "Complete the Java Memory Model happens-before rules.",
+      "text": "A write to a {1} field happens-before every later read of that field. An unlock of a monitor happens-before every later {2} of the same monitor. A call to Thread.{3}() happens-before every action in the started thread.",
+      "blanks": {
+        "1": "volatile",
+        "2": "lock",
+        "3": "start"
+      },
+      "bank": [
+        "volatile",
+        "lock",
+        "start",
+        "final",
+        "join",
+        "interrupt"
+      ],
+      "explanation": "These edges (plus thread join, final fields and executor submission) are what the JMM guarantees. Without an edge, one thread may never see another's write."
+    },
+    {
+      "id": "cas-print",
+      "concept": "Atomics and CAS",
+      "type": "single",
+      "difficulty": 2,
+      "prompt": "What does this print?\n\nAtomicInteger ai = new AtomicInteger(5);\nSystem.out.println(ai.compareAndSet(5, 8) + \" \" + ai.compareAndSet(5, 9) + \" \" + ai.get() + \" \" + ai.getAndIncrement() + \" \" + ai.incrementAndGet());\n\nWhat is printed?",
+      "options": [
+        {
+          "id": "a",
+          "text": "true false 8 8 10",
+          "why": "Correct: first CAS 5 to 8 succeeds, second fails because the value is now 8, getAndIncrement returns 8 (value 9), incrementAndGet returns 10."
+        },
+        {
+          "id": "b",
+          "text": "true true 9 9 10",
+          "why": "The second CAS expects 5 but the value is 8, so it fails and returns false."
+        },
+        {
+          "id": "c",
+          "text": "true false 8 9 10 (getAndIncrement returns the new value)",
+          "why": "getAndIncrement returns the old value (8), not the new one (9)."
+        },
+        {
+          "id": "d",
+          "text": "true false 8 8 9",
+          "why": "incrementAndGet increments 9 and returns 10, not 9."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "compareAndSet(expect, update) succeeds only if the current value equals expect, as one atomic hardware instruction. Retry loops around CAS give lock-free algorithms (and the ABA problem)."
+    },
+    {
+      "id": "py-check-then-act",
+      "concept": "Python thread-safety",
+      "type": "single",
+      "difficulty": 3,
+      "prompt": "Many threads run the code below against a shared dict cache. Which statement is accurate?\n\nif key not in cache:\n    cache[key] = compute(key)\nreturn cache[key]\n\nPick one.",
+      "options": [
+        {
+          "id": "a",
+          "text": "compute(key) can run twice for the same key, since check and store are separate steps.",
+          "why": "Correct: two threads can both see the key missing and both compute; each dict operation is atomic but the sequence is not."
+        },
+        {
+          "id": "b",
+          "text": "It is safe, because every dict operation is atomic under the GIL.",
+          "why": "Individual operations are atomic, but the two-step check-then-act is not."
+        },
+        {
+          "id": "c",
+          "text": "It raises RuntimeError: dictionary changed size during iteration of the cache.",
+          "why": "That error appears when iterating while mutating; there is no iteration here."
+        },
+        {
+          "id": "d",
+          "text": "It is safe as long as compute is a pure function without side effects.",
+          "why": "Purity avoids wrong values but not duplicate work or the race itself."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Guard the whole sequence with a Lock (or use a per-key lock / functools.lru_cache for pure functions). The same shape in Java is the containsKey-then-put bug."
+    },
+    {
+      "id": "callable-vs-runnable",
+      "concept": "Callable and Runnable",
+      "type": "assertion",
+      "difficulty": 1,
+      "prompt": "Read the assertion (A) and the reason (R), then choose the correct option.",
+      "assertion": "A Java Callable<V> can return a result and throw a checked exception, unlike Runnable.",
+      "reason": "Runnable.run() is declared to return Object and to throw Exception.",
+      "correct": [
+        "c"
+      ],
+      "whys": {
+        "a": "R is false, so it cannot be the correct explanation.",
+        "b": "R is false, so option b (both true) is wrong.",
+        "c": "Correct: Callable.call() returns V and may throw Exception. Runnable.run() returns void and declares no checked exceptions, so R is false.",
+        "d": "A is true, so option d (A false) is wrong."
+      },
+      "explanation": "Executors accept both; submit(Callable) returns a Future<V> whose get() rethrows failures wrapped in ExecutionException."
+    }
+  ]
+}

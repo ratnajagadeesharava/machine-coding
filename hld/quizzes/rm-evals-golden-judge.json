@@ -1,0 +1,363 @@
+{
+  "id": "rm-evals-golden-judge",
+  "title": "Evals: golden datasets, CI gates and LLM-as-judge",
+  "topic": "Interview roadmap",
+  "series": "interview-roadmap",
+  "seriesTitle": "Interview roadmap: topic quizzes",
+  "seriesOrder": 102,
+  "seriesDescription": "Topic-by-topic JEE-style quizzes for the backend and AI-engineering interview roadmap: integer, assertion-reason, matrix match, fill-in-the-blanks, short code writing, plus multi-correct questions. Language core, concurrency, DSA, web frameworks, data access, databases, messaging, resilience, security, testing, system design, LLM and agent engineering.",
+  "description": "Golden datasets, regression suites with pytest, CI thresholds, LLM-as-judge rubrics and biases, calibration against human labels, and the Ragas, DeepEval and Langfuse tooling.",
+  "source": "Zheng et al., Judging LLM-as-a-Judge with MT-Bench (2023); Ragas docs; DeepEval docs; Langfuse docs; pytest docs; Hamel Husain on evals",
+  "estimatedMinutes": 14,
+  "questions": [
+    {
+      "id": "gate-failures",
+      "concept": "Regression suites in CI",
+      "type": "integer",
+      "difficulty": 1,
+      "prompt": "Your golden suite has 200 cases and the CI gate requires a pass rate of at least 92%. What is the maximum number of failing cases that still lets the build pass?",
+      "answer": 16,
+      "unit": "cases",
+      "explanation": "92% of 200 is 184 passes, so at most 200 - 184 = 16 failures are tolerated. Many teams also gate on per-category minimums so a critical category cannot hide inside the average."
+    },
+    {
+      "id": "pytest-gate",
+      "concept": "Regression suites in CI",
+      "type": "code",
+      "difficulty": 2,
+      "prompt": "Write a pytest test named test_golden_pass_rate that calls run_eval() (it returns a list of dicts, each with a boolean key \"passed\") and fails the build if the pass rate is below 0.9.",
+      "language": "python",
+      "starter": "def test_golden_pass_rate():\n    ",
+      "checks": [
+        {
+          "label": "defines test_golden_pass_rate",
+          "pattern": "def\\s+test_golden_pass_rate\\s*\\("
+        },
+        {
+          "label": "calls run_eval()",
+          "pattern": "run_eval\\s*\\(\\s*\\)"
+        },
+        {
+          "label": "reads the passed flag",
+          "pattern": "passed"
+        },
+        {
+          "label": "divides by the number of results",
+          "pattern": "/\\s*len\\s*\\("
+        },
+        {
+          "label": "asserts against 0.9",
+          "pattern": "assert[^\\n]*0?\\.9|0?\\.9[^\\n]*assert"
+        }
+      ],
+      "model": "def test_golden_pass_rate():\n    results = run_eval()\n    rate = sum(r[\"passed\"] for r in results) / len(results)\n    assert rate >= 0.9, f\"pass rate {rate:.0%}\"",
+      "explanation": "Other forms pass (statistics.mean, numpy, asserting on a precomputed number of failures). Put a message in the assert so the CI log says what failed."
+    },
+    {
+      "id": "pytest-param",
+      "concept": "Regression suites in CI",
+      "type": "code",
+      "difficulty": 2,
+      "prompt": "Write a parametrized pytest that loads a list of cases from golden.json (each has \"id\", \"question\" and \"expected_contains\") and, for each, asserts that answer(question) contains expected_contains ignoring case. Use the case id as the test id.",
+      "language": "python",
+      "starter": "import json\nimport pytest\n",
+      "checks": [
+        {
+          "label": "loads golden.json",
+          "pattern": "json\\.load\\s*\\("
+        },
+        {
+          "label": "uses pytest.mark.parametrize",
+          "pattern": "pytest\\.mark\\.parametrize"
+        },
+        {
+          "label": "calls answer(...)",
+          "pattern": "answer\\s*\\("
+        },
+        {
+          "label": "compares ignoring case",
+          "pattern": "lower\\s*\\(|casefold\\s*\\(|re\\.I|IGNORECASE"
+        },
+        {
+          "label": "asserts containment",
+          "pattern": "assert[^\\n]*\\bin\\b"
+        }
+      ],
+      "model": "CASES = json.load(open(\"golden.json\"))\n\n@pytest.mark.parametrize(\"case\", CASES, ids=lambda c: c[\"id\"])\ndef test_golden(case):\n    out = answer(case[\"question\"])\n    assert case[\"expected_contains\"].lower() in out.lower()",
+      "explanation": "Each case becomes its own test, so the CI report names the exact failing case. Other correct forms (re.search with IGNORECASE) pass."
+    },
+    {
+      "id": "pin-model",
+      "concept": "Regression suites in CI",
+      "type": "assertion",
+      "difficulty": 2,
+      "prompt": "Read the assertion (A) and the reason (R), then choose the correct option.",
+      "assertion": "For regression runs you should pin the model snapshot and use temperature 0.",
+      "reason": "Provider aliases can point at newer model versions over time, and sampling adds run-to-run variation.",
+      "correct": [
+        "a"
+      ],
+      "whys": {
+        "a": "Correct: both effects make results flaky or drift silently, so pinning removes them (temperature 0 reduces but may not fully eliminate non-determinism).",
+        "b": "R is not a side fact; it is the reason pinning is advised.",
+        "c": "R is true: floating aliases do move.",
+        "d": "A is true; pinning is standard practice."
+      },
+      "explanation": "Also record prompt version, retrieval index version and dataset version with each run so results are comparable."
+    },
+    {
+      "id": "verbosity",
+      "concept": "LLM-as-judge biases",
+      "type": "assertion",
+      "difficulty": 2,
+      "prompt": "Read the assertion (A) and the reason (R), then choose the correct option.",
+      "assertion": "LLM judges tend to prefer longer answers, which is called verbosity bias.",
+      "reason": "Verbosity bias disappears once the judge prompt says to be objective and fair.",
+      "correct": [
+        "c"
+      ],
+      "whys": {
+        "a": "R is false, so it cannot be the explanation.",
+        "b": "R is false, not merely unrelated.",
+        "c": "Correct: A is true (documented in the MT-Bench work), but a polite instruction alone does not remove it; use rubrics, length controls and human calibration.",
+        "d": "A is true, so this option is wrong."
+      },
+      "explanation": "Mitigations: criteria-based rubrics, penalise padding explicitly, compare against reference answers, and check score vs length correlation."
+    },
+    {
+      "id": "position-swap",
+      "concept": "LLM-as-judge biases",
+      "type": "assertion",
+      "difficulty": 3,
+      "prompt": "Read the assertion (A) and the reason (R), then choose the correct option.",
+      "assertion": "In pairwise judging, running each comparison in both orders (A,B then B,A) reduces position bias.",
+      "reason": "A judge can be calibrated against human labels by measuring agreement with Cohen's kappa.",
+      "correct": [
+        "b"
+      ],
+      "whys": {
+        "a": "R is true but it concerns calibration, not order effects, so it does not explain A.",
+        "b": "Correct: swapping removes first-position preference (A true), and kappa-based calibration (R true) is a separate technique.",
+        "c": "R is true: kappa corrects raw agreement for chance.",
+        "d": "A is true; inconsistent verdicts across orders are usually treated as ties."
+      },
+      "explanation": "If the verdict flips when the order flips, treat it as a tie or as low-confidence."
+    },
+    {
+      "id": "self-preference",
+      "concept": "LLM-as-judge biases",
+      "type": "assertion",
+      "difficulty": 3,
+      "prompt": "Read the assertion (A) and the reason (R), then choose the correct option.",
+      "assertion": "A model is an unbiased judge of its own outputs.",
+      "reason": "Judges often score text that resembles their own style or wording more favourably (self-preference bias).",
+      "correct": [
+        "d"
+      ],
+      "whys": {
+        "a": "A is false, so no reason can make this pair correct.",
+        "b": "A is false.",
+        "c": "R is true, so this option is wrong.",
+        "d": "Correct: A is false because of self-preference bias, and R is true. Prefer a different or stronger judge model family and verify with humans."
+      },
+      "explanation": "Use a judge from a different family than the generator where possible, and spot-check with human labels."
+    },
+    {
+      "id": "kappa",
+      "concept": "Calibrating the judge",
+      "type": "integer",
+      "difficulty": 3,
+      "prompt": "A judge and a human agree on 90% of 100 labelled answers. By chance alone the expected agreement is 50%. Compute Cohen's kappa = (observed - expected) / (1 - expected), multiplied by 100.",
+      "answer": 80,
+      "explanation": "(0.90 - 0.50) / (1 - 0.50) = 0.80. Kappa discounts agreement that would happen by luck, which matters when one label dominates."
+    },
+    {
+      "id": "rubric-design",
+      "concept": "LLM-as-judge rubrics",
+      "type": "single",
+      "difficulty": 2,
+      "prompt": "Which judge prompt design gives the most reliable and debuggable scores for a support-bot answer?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Separate criteria with anchored definitions per score level, reasoning first, then a score.",
+          "why": "Right: anchored rubrics and short rationale reduce noise and make failures inspectable."
+        },
+        {
+          "id": "b",
+          "text": "\"Rate the answer from 1 to 10 for overall quality.\" with no further instruction at all given to the judge model.",
+          "why": "Vague scales produce noisy, clustered scores that drift between runs."
+        },
+        {
+          "id": "c",
+          "text": "Ask the judge to reply with only the number, hiding its reasoning, so that scores are cheaper to generate for every case.",
+          "why": "Hiding the rationale saves little and makes the verdicts impossible to audit."
+        },
+        {
+          "id": "d",
+          "text": "Show the judge the candidate model name so it can account for what that model usually does well or badly.",
+          "why": "Revealing identity adds bias; judges should be blind to the source."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Keep scales small (pass/fail or 1-5 with anchors), judge one criterion per call where possible, and version the rubric like code."
+    },
+    {
+      "id": "calibrate-steps",
+      "concept": "Calibrating the judge",
+      "type": "multi",
+      "difficulty": 2,
+      "prompt": "Which steps belong in calibrating an LLM judge before you trust it in CI? Select all that apply.",
+      "options": [
+        {
+          "id": "a",
+          "text": "Have humans label a stratified sample of real outputs.",
+          "why": "Right: you need ground truth to measure against."
+        },
+        {
+          "id": "b",
+          "text": "Measure agreement (kappa or per-class precision/recall) and iterate on the rubric.",
+          "why": "Right: tune the prompt and examples until agreement is acceptable."
+        },
+        {
+          "id": "c",
+          "text": "Skip human labels if the judge model is the largest available.",
+          "why": "Size does not prove it matches your quality bar."
+        },
+        {
+          "id": "d",
+          "text": "Accept the judge after it looks sensible on three examples.",
+          "why": "Three examples cannot show reliability."
+        }
+      ],
+      "correct": [
+        "a",
+        "b"
+      ],
+      "explanation": "Re-check calibration when the judge model, rubric or traffic mix changes."
+    },
+    {
+      "id": "eval-tools",
+      "concept": "Eval tooling",
+      "type": "matrix",
+      "difficulty": 2,
+      "prompt": "Match each tool or technique to its role.",
+      "left": [
+        {
+          "id": "a",
+          "text": "Ragas"
+        },
+        {
+          "id": "b",
+          "text": "DeepEval"
+        },
+        {
+          "id": "c",
+          "text": "Langfuse"
+        },
+        {
+          "id": "d",
+          "text": "pytest"
+        }
+      ],
+      "right": [
+        {
+          "id": "p",
+          "text": "RAG metrics such as faithfulness, answer relevancy and context precision/recall"
+        },
+        {
+          "id": "q",
+          "text": "Unit-test-style LLM metrics (for example G-Eval) that run under pytest"
+        },
+        {
+          "id": "r",
+          "text": "Tracing plus datasets, scores and LLM-as-judge evaluators in a UI"
+        },
+        {
+          "id": "s",
+          "text": "Test runner whose exit code gates the CI pipeline"
+        },
+        {
+          "id": "t",
+          "text": "Approximate nearest neighbour index"
+        }
+      ],
+      "pairs": {
+        "a": "p",
+        "b": "q",
+        "c": "r",
+        "d": "s"
+      },
+      "explanation": "Tools overlap, so describe the role you need (metrics, test harness, observability) and pick accordingly."
+    },
+    {
+      "id": "golden-fill",
+      "concept": "Golden datasets",
+      "type": "fill",
+      "difficulty": 1,
+      "prompt": "Complete the golden-dataset guidance.",
+      "text": "A golden set should include {1} questions, edge cases and past {2}; run a small subset on every pull request and the full suite {3}.",
+      "blanks": {
+        "1": "typical",
+        "2": "production failures",
+        "3": "nightly"
+      },
+      "bank": [
+        "typical",
+        "production failures",
+        "nightly",
+        "random noise",
+        "never"
+      ],
+      "explanation": "Add each real incident as a new case with the expected behaviour so it can never regress silently. Version the dataset."
+    },
+    {
+      "id": "judge-deterministic",
+      "concept": "LLM-as-judge rubrics",
+      "type": "truefalse",
+      "difficulty": 1,
+      "prompt": "True or false: with temperature 0 an LLM judge is guaranteed to return the same score every run.",
+      "options": [
+        {
+          "id": "a",
+          "text": "True",
+          "why": "Even at temperature 0, batching and hardware effects can change outputs."
+        },
+        {
+          "id": "b",
+          "text": "False",
+          "why": "Correct: determinism is not guaranteed, and a provider model update can change scores, so repeat borderline cases and pin versions."
+        }
+      ],
+      "correct": [
+        "b"
+      ],
+      "explanation": "Estimate judge noise by re-scoring a sample several times."
+    },
+    {
+      "id": "reference-free",
+      "concept": "Eval tooling",
+      "type": "truefalse",
+      "difficulty": 2,
+      "prompt": "True or false: a RAG faithfulness metric (does the answer follow from the retrieved context) can be computed without a ground-truth answer.",
+      "options": [
+        {
+          "id": "a",
+          "text": "True",
+          "why": "Correct: it compares the answer against the retrieved context, so no reference answer is required."
+        },
+        {
+          "id": "b",
+          "text": "False",
+          "why": "It needs context and answer, not a gold answer."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Reference-free metrics are useful for online monitoring on unlabeled traffic, but still need calibration."
+    }
+  ]
+}

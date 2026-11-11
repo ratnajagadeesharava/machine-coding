@@ -1,0 +1,401 @@
+{
+  "id": "rm-lang-collections-generics",
+  "title": "Language core: collections internals, generics and type hints",
+  "topic": "Interview roadmap",
+  "series": "interview-roadmap",
+  "seriesTitle": "Interview roadmap: topic quizzes",
+  "seriesOrder": 11,
+  "seriesDescription": "Topic-by-topic JEE-style quizzes for the backend and AI-engineering interview roadmap: integer, assertion-reason, matrix match, fill-in-the-blanks, short code writing, plus multi-correct questions. Language core, concurrency, DSA, web frameworks, data access, databases, messaging, resilience, security, testing, system design, LLM and agent engineering.",
+  "description": "HashMap buckets, resize and treeify, ArrayList vs LinkedList vs ArrayDeque, TreeMap, CME traps, Python dict/list/set/deque, Java generics (bounds, wildcards, erasure) and Python typing.",
+  "source": "OpenJDK HashMap source and JEP 180; Java Collections Framework docs; Oracle Java Tutorials: Generics; Python docs: data structures, typing; Baeldung; Real Python",
+  "estimatedMinutes": 15,
+  "questions": [
+    {
+      "id": "hashmap-first-resize",
+      "concept": "HashMap internals",
+      "type": "integer",
+      "difficulty": 2,
+      "prompt": "A new HashMap<>() has the default capacity of 16 and load factor 0.75. Counting from 1, which put of a new distinct key makes the table resize for the first time?",
+      "answer": 13,
+      "explanation": "Threshold = 16 x 0.75 = 12. The resize runs when the size exceeds the threshold, so the 13th insertion doubles the table to 32 (HashMap.putVal: if (++size > threshold) resize())."
+    },
+    {
+      "id": "treeify-min-capacity",
+      "concept": "HashMap internals",
+      "type": "integer",
+      "difficulty": 3,
+      "prompt": "Since Java 8 a long collision chain in a HashMap bin can be converted into a red-black tree, but only if the table capacity is at least some minimum; below it the table is resized instead. What is that minimum capacity (MIN_TREEIFY_CAPACITY)?",
+      "answer": 64,
+      "explanation": "TREEIFY_THRESHOLD = 8 (chain length), UNTREEIFY_THRESHOLD = 6, MIN_TREEIFY_CAPACITY = 64. Trees give O(log n) worst-case lookups for Comparable keys instead of O(n)."
+    },
+    {
+      "id": "structure-complexity",
+      "concept": "Collection choice",
+      "type": "matrix",
+      "difficulty": 2,
+      "prompt": "Match each structure to its defining property.",
+      "left": [
+        {
+          "id": "a",
+          "text": "ArrayList"
+        },
+        {
+          "id": "b",
+          "text": "LinkedList"
+        },
+        {
+          "id": "c",
+          "text": "ArrayDeque"
+        },
+        {
+          "id": "d",
+          "text": "TreeMap"
+        },
+        {
+          "id": "e",
+          "text": "Python collections.deque"
+        }
+      ],
+      "right": [
+        {
+          "id": "p",
+          "text": "Resizable array: O(1) get(i), amortised O(1) append, O(n) insert in the middle"
+        },
+        {
+          "id": "q",
+          "text": "Doubly linked nodes: O(1) unlink at a known node but O(n) get(i)"
+        },
+        {
+          "id": "r",
+          "text": "Circular array: O(1) at both ends, no null elements"
+        },
+        {
+          "id": "s",
+          "text": "Red-black tree: sorted keys, O(log n) get/put"
+        },
+        {
+          "id": "t",
+          "text": "Doubly linked blocks: O(1) append/popleft, O(n) indexing in the middle"
+        },
+        {
+          "id": "u",
+          "text": "Hash table with insertion-ordered iteration"
+        }
+      ],
+      "pairs": {
+        "a": "p",
+        "b": "q",
+        "c": "r",
+        "d": "s",
+        "e": "t"
+      },
+      "explanation": "In practice ArrayList and ArrayDeque win on cache locality; LinkedList is rarely the right answer because get(i) walks the nodes and every element costs an allocation."
+    },
+    {
+      "id": "arraydeque-vs-linkedlist",
+      "concept": "Collection choice",
+      "type": "assertion",
+      "difficulty": 2,
+      "prompt": "Read the assertion (A) and the reason (R), then choose the option that fits.",
+      "assertion": "ArrayDeque is usually a better choice than LinkedList for a stack or a queue in Java.",
+      "reason": "ArrayDeque stores elements in a contiguous circular array and allocates no node object per element.",
+      "correct": [
+        "a"
+      ],
+      "whys": {
+        "a": "Correct: less memory, better cache locality and no per-node allocation make it faster in typical use.",
+        "b": "R is not only true but is the main reason for A.",
+        "c": "R is true: the implementation is a resizable circular array.",
+        "d": "A is true; the Javadoc says ArrayDeque is likely faster than Stack as a stack and than LinkedList as a queue."
+      },
+      "explanation": "ArrayDeque rejects null elements and is not thread-safe. Prefer it over the legacy Stack class and over LinkedList for queues."
+    },
+    {
+      "id": "remove-evens",
+      "concept": "Iteration and fail-fast",
+      "type": "code",
+      "difficulty": 2,
+      "prompt": "Write one Java statement or a short loop that removes all even numbers from a List<Integer> named nums without throwing ConcurrentModificationException.",
+      "language": "java",
+      "starter": "",
+      "checks": [
+        {
+          "label": "uses removeIf or an explicit Iterator.remove",
+          "pattern": "(removeIf\\s*\\(|iterator\\s*\\(\\s*\\)[\\s\\S]*\\.remove\\s*\\(|\\bit\\.remove\\s*\\()"
+        },
+        {
+          "label": "tests evenness with % 2",
+          "pattern": "%\\s*2"
+        }
+      ],
+      "model": "nums.removeIf(n -> n % 2 == 0);",
+      "explanation": "removeIf is the idiom. An explicit Iterator with it.remove() is equally valid; a for-each loop that calls nums.remove(...) is the bug being avoided."
+    },
+    {
+      "id": "cme-trap",
+      "concept": "Iteration and fail-fast",
+      "type": "single",
+      "difficulty": 3,
+      "prompt": "What does this Java snippet print?\nList<Integer> l = new ArrayList<>(List.of(1, 2, 3));\nfor (Integer i : l) {\n  if (i == 2) l.remove(i);\n}\nSystem.out.println(l);\nWhat is the output?",
+      "options": [
+        {
+          "id": "a",
+          "text": "[1, 3], no exception",
+          "why": "Correct: remove(Object) deletes 2; size becomes 2 and the cursor is already 2, so hasNext() is false and no check for modification ever runs."
+        },
+        {
+          "id": "b",
+          "text": "ConcurrentModificationException",
+          "why": "This is the usual result, but here hasNext() returns false before next() can call checkForComodification()."
+        },
+        {
+          "id": "c",
+          "text": "[1, 2, 3]",
+          "why": "The element is removed from the list; nothing restores it."
+        },
+        {
+          "id": "d",
+          "text": "[1]",
+          "why": "Only the element equal to 2 is removed, and the loop ends rather than removing more."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Fail-fast iterators check modCount in next(), not in hasNext(). Removing the second-to-last element is the one case that silently works; removing the first would throw. (Verified by running it.)"
+    },
+    {
+      "id": "dict-order",
+      "concept": "Python collections",
+      "type": "truefalse",
+      "difficulty": 1,
+      "prompt": "In Python 3.7 and later, a dict iterates its keys in insertion order as part of the language guarantee.",
+      "options": [
+        {
+          "id": "a",
+          "text": "True",
+          "why": "Correct: this became a language guarantee in 3.7 (an implementation detail of CPython 3.6)."
+        },
+        {
+          "id": "b",
+          "text": "False",
+          "why": "It is guaranteed, not just a CPython quirk; collections.OrderedDict only adds extras like move_to_end and order-sensitive equality."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "CPython keeps a compact entries array plus a sparse index table. Mutating a dict while iterating it raises RuntimeError: dictionary changed size during iteration."
+    },
+    {
+      "id": "python-dict-internals",
+      "concept": "Python collections",
+      "type": "fill",
+      "difficulty": 2,
+      "prompt": "Complete the sentence about CPython dictionaries.",
+      "text": "CPython implements a dict as a {1} table that resolves collisions with {2} addressing (probing), so a lookup is {3} on average.",
+      "blanks": {
+        "1": "hash",
+        "2": "open",
+        "3": "O(1)"
+      },
+      "bank": [
+        "hash",
+        "open",
+        "O(1)",
+        "chaining",
+        "O(log n)",
+        "sorted"
+      ],
+      "explanation": "Java HashMap chains colliding entries in a bin (list or tree); CPython probes other slots in the same table. Keys must be hashable, which is why lists cannot be dict keys."
+    },
+    {
+      "id": "list-object-invariance",
+      "concept": "Generics and type erasure",
+      "type": "assertion",
+      "difficulty": 2,
+      "prompt": "Read the assertion (A) and the reason (R), then choose the option that fits.",
+      "assertion": "A List<String> can be passed where a List<Object> is expected in Java.",
+      "reason": "String is a subtype of Object.",
+      "correct": [
+        "d"
+      ],
+      "whys": {
+        "a": "A is false, so no explanation can be right.",
+        "b": "A is false.",
+        "c": "R is true, so this option is wrong.",
+        "d": "Correct: generics are invariant, so List<String> is not a List<Object> (use List<? extends Object> or List<?>), even though String extends Object."
+      },
+      "explanation": "Invariance exists so that you cannot add an Integer through a List<Object> alias to a list that really holds strings. Arrays are covariant and pay for it with ArrayStoreException."
+    },
+    {
+      "id": "erasure-facts",
+      "concept": "Generics and type erasure",
+      "type": "multi",
+      "difficulty": 3,
+      "prompt": "Select all true statements about Java generics and type erasure.",
+      "options": [
+        {
+          "id": "a",
+          "text": "new ArrayList<String>().getClass() == new ArrayList<Integer>().getClass()",
+          "why": "Correct: the type arguments are erased, so both are the same runtime class."
+        },
+        {
+          "id": "b",
+          "text": "Inside class Box<T>, the expression new T() does not compile.",
+          "why": "Correct: T is erased to Object (or its bound), so the runtime has no idea which class to instantiate."
+        },
+        {
+          "id": "c",
+          "text": "Inside class Box<T>, the expression new T[10] does not compile.",
+          "why": "Correct: generic array creation is rejected because arrays need the reified element type."
+        },
+        {
+          "id": "d",
+          "text": "void f(List<String>) and void f(List<Integer>) can be declared as overloads in one class.",
+          "why": "Both erase to f(List), a name clash compile error."
+        },
+        {
+          "id": "e",
+          "text": "A primitive such as int can be used as a type argument: List<int>.",
+          "why": "Type arguments must be reference types; use List<Integer>."
+        }
+      ],
+      "correct": [
+        "a",
+        "b",
+        "c"
+      ],
+      "explanation": "Erasure replaces type variables with their bound (Object by default) and inserts casts; generics exist only at compile time. Workarounds: pass a Class<T> token, or use a Supplier<T>."
+    },
+    {
+      "id": "bounded-max",
+      "concept": "Generics and type erasure",
+      "type": "code",
+      "difficulty": 2,
+      "prompt": "Write a static generic Java method max that takes a non-empty List<T>, where T is bounded so its elements can be compared, and returns the largest element.",
+      "language": "java",
+      "starter": "static ",
+      "checks": [
+        {
+          "label": "declares a bounded type parameter T extends Comparable",
+          "pattern": "<\\s*T\\s+extends\\s+Comparable"
+        },
+        {
+          "label": "compares elements with compareTo (or a Comparator)",
+          "pattern": "(compareTo\\s*\\(|compare\\s*\\()"
+        },
+        {
+          "label": "method is called max and takes a List/Collection",
+          "pattern": "max\\s*\\(\\s*(final\\s+)?(List|Collection|Iterable)\\s*<"
+        },
+        {
+          "label": "returns T",
+          "pattern": "\\bT\\s+max\\b"
+        }
+      ],
+      "model": "static <T extends Comparable<T>> T max(List<T> list) {\n  T best = list.get(0);\n  for (T t : list) if (t.compareTo(best) > 0) best = t;\n  return best;\n}",
+      "explanation": "The most general signature is <T extends Comparable<? super T>>. A stream with Collections.max(list) is the one-liner; alternative implementations that satisfy the bound are accepted."
+    },
+    {
+      "id": "pecs",
+      "concept": "Generics and type erasure",
+      "type": "single",
+      "difficulty": 3,
+      "prompt": "Given void copy(List<? extends Number> src, List<? super Integer> dst), which statement compiles inside the method?",
+      "options": [
+        {
+          "id": "a",
+          "text": "dst.add(Integer.valueOf(1));",
+          "why": "Correct: a List<? super Integer> is a consumer; any Integer fits whatever supertype list it really is."
+        },
+        {
+          "id": "b",
+          "text": "src.add(Integer.valueOf(1000));",
+          "why": "src may be a List<Double>; the compiler cannot allow any add except null."
+        },
+        {
+          "id": "c",
+          "text": "Integer x = dst.get(0);",
+          "why": "dst could be a List<Number> or List<Object>, so get only promises Object."
+        },
+        {
+          "id": "d",
+          "text": "Number n = dst.get(0);",
+          "why": "dst could be a List<Object>, so a Number is not guaranteed; only Object is."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "PECS: Producer Extends, Consumer Super. Read from ? extends, write to ? super. (Verified by compiling it.)"
+    },
+    {
+      "id": "typevar-first",
+      "concept": "Type hints",
+      "type": "code",
+      "difficulty": 2,
+      "prompt": "Write a Python function first(items) with type hints using a TypeVar named T so that mypy infers the element type of the sequence it returns.",
+      "language": "python",
+      "starter": "from typing import Sequence, TypeVar\n",
+      "checks": [
+        {
+          "label": "declares a TypeVar (or PEP 695 [T] syntax)",
+          "pattern": "(TypeVar\\s*\\(|def\\s+first\\s*\\[)"
+        },
+        {
+          "label": "function is named first",
+          "pattern": "def\\s+first\\b"
+        },
+        {
+          "label": "parameter is a Sequence/list of T",
+          "pattern": "(Sequence|list|List|Iterable)\\s*\\[\\s*T\\s*\\]"
+        },
+        {
+          "label": "returns T",
+          "pattern": "->\\s*T\\b"
+        }
+      ],
+      "model": "T = TypeVar(\"T\")\n\ndef first(items: Sequence[T]) -> T:\n    return items[0]",
+      "explanation": "On Python 3.12+ you can write def first[T](items: Sequence[T]) -> T. Type hints are not enforced at runtime; mypy or pyright check them statically."
+    },
+    {
+      "id": "treeified-bins",
+      "concept": "HashMap internals",
+      "type": "assertion",
+      "difficulty": 3,
+      "prompt": "Read the assertion (A) and the reason (R), then choose the option that fits.",
+      "assertion": "Since Java 8 a HashMap with many colliding Comparable keys keeps lookups at O(log n) instead of O(n).",
+      "reason": "TreeMap keeps its keys in sorted order.",
+      "correct": [
+        "b"
+      ],
+      "whys": {
+        "a": "R is true but it describes TreeMap, not the in-bin trees; it does not explain A.",
+        "b": "Correct: both are true, but R is about a different class. Treeified bins are red-black trees, though a plain HashMap iteration order stays unsorted.",
+        "c": "R is a true statement about TreeMap.",
+        "d": "A is true: that is the point of treeification (JEP 180)."
+      },
+      "explanation": "JEP 180 improved HashMap under heavy collisions, notably hash-flooding attacks. The tree uses hashCode then compareTo or a tie-breaker."
+    },
+    {
+      "id": "deque-vs-list-pop",
+      "concept": "Python collections",
+      "type": "assertion",
+      "difficulty": 2,
+      "prompt": "Read the assertion (A) and the reason (R), then choose the option that fits.",
+      "assertion": "collections.deque.popleft() takes O(1) time, whereas list.pop(0) takes O(n).",
+      "reason": "A Python list is implemented as a doubly linked list of nodes.",
+      "correct": [
+        "c"
+      ],
+      "whys": {
+        "a": "R is false: a list is a dynamic array of pointers.",
+        "b": "R is false, so option b cannot hold.",
+        "c": "Correct: A is true (the list shifts every remaining pointer); R is false because CPython lists are arrays of pointers (that is why index access is O(1)).",
+        "d": "A is true, so d is wrong."
+      },
+      "explanation": "Use deque for queues (BFS); a list is fine for stacks (append/pop at the end)."
+    }
+  ]
+}

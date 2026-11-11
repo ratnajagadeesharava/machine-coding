@@ -1,0 +1,408 @@
+{
+  "id": "rm-llm-basics",
+  "title": "LLM basics: tokens, structured output, hallucinations",
+  "topic": "Interview roadmap",
+  "series": "interview-roadmap",
+  "seriesTitle": "Interview roadmap: topic quizzes",
+  "seriesDescription": "Topic-by-topic JEE-style quizzes for the backend and AI-engineering interview roadmap: integer, assertion-reason, matrix match, fill-in-the-blanks, short code writing, plus multi-correct questions. Language core, concurrency, DSA, web frameworks, data access, databases, messaging, resilience, security, testing, system design, LLM and agent engineering.",
+  "seriesOrder": 90,
+  "description": "Token and cost arithmetic, context budgets, sampling, structured output and tool calling, and how to control hallucinations.",
+  "source": "OpenAI API docs; Anthropic API docs; LangChain docs; Spring AI reference; LangChain4j docs",
+  "estimatedMinutes": 16,
+  "questions": [
+    {
+      "id": "cost-1000-requests",
+      "concept": "Token cost arithmetic",
+      "type": "integer",
+      "difficulty": 2,
+      "prompt": "A model is priced at $3 per 1 million input tokens and $15 per 1 million output tokens. Each request sends 4,000 input tokens and gets 1,000 output tokens. What is the total cost in dollars of 1,000 such requests?",
+      "answer": 27,
+      "explanation": "Input: 1,000 x 4,000 = 4,000,000 tokens = 4 x $3 = $12. Output: 1,000 x 1,000 = 1,000,000 tokens = 1 x $15 = $15. Total $27. Interview habit: always price input and output separately because output tokens cost several times more.",
+      "unit": "dollars"
+    },
+    {
+      "id": "rag-chunks-fit",
+      "concept": "Context window budget",
+      "type": "integer",
+      "difficulty": 2,
+      "prompt": "A model has an 8,192-token context window (input plus output). You reserve 1,000 tokens for the answer, the system prompt takes 500, the chat history 1,200 and the user question 300. Each retrieved chunk is 800 tokens. What is the maximum number of whole chunks you can add?",
+      "answer": 6,
+      "explanation": "Fixed parts: 1,000 + 500 + 1,200 + 300 = 3,000. Left: 8,192 - 3,000 = 5,192. 5,192 / 800 = 6.49, so 6 whole chunks. The output reserve counts against the window, which is the usual miss.",
+      "unit": "chunks"
+    },
+    {
+      "id": "latency-estimate",
+      "concept": "Latency",
+      "type": "integer",
+      "difficulty": 2,
+      "prompt": "A streaming call has a time to first token of 1 second, then generates 50 tokens per second. How many seconds until the last token arrives for a 250-token answer?",
+      "answer": 6,
+      "explanation": "250 tokens / 50 tokens per second = 5 seconds of generation, plus 1 second to the first token = 6 seconds. Streaming does not shorten this total; it cuts the time the user waits to see something (1 second).",
+      "unit": "seconds"
+    },
+    {
+      "id": "temp-zero-not-deterministic",
+      "concept": "Sampling parameters",
+      "type": "assertion",
+      "difficulty": 3,
+      "prompt": "Assertion and reason: read both statements and choose the right option.",
+      "assertion": "Setting temperature to 0 does not guarantee byte-identical output on repeated calls to a hosted model.",
+      "reason": "Floating-point reductions and request batching on GPUs can change which token wins when scores are nearly tied.",
+      "correct": [
+        "a"
+      ],
+      "whys": {
+        "a": "Right: near-ties plus non-deterministic numerics are why even greedy decoding can differ between calls.",
+        "b": "R is true and it is in fact the explanation, so b is wrong.",
+        "c": "A is true: providers state determinism is not guaranteed, so c is wrong.",
+        "d": "A is true, so d is wrong."
+      },
+      "explanation": "Temperature 0 means greedy decoding, but hosted inference is not bit-exact. Providers describe seeds and temperature 0 as best effort. For tests, assert on structure or use a recorded fake model instead of exact strings."
+    },
+    {
+      "id": "rag-vs-temperature",
+      "concept": "Hallucinations",
+      "type": "assertion",
+      "difficulty": 2,
+      "prompt": "Assertion and reason: read both statements and choose the right option.",
+      "assertion": "Retrieval-augmented generation reduces hallucinations on questions about a company's internal policies.",
+      "reason": "Temperature 0 makes a model's output more repeatable across calls.",
+      "correct": [
+        "b"
+      ],
+      "whys": {
+        "a": "R does not explain A: repeatability is not what grounds the answer in documents.",
+        "b": "Both are true, and the explanation link is missing, which is exactly b.",
+        "c": "R is true (lower temperature reduces randomness), so c is wrong.",
+        "d": "A is true: grounding the answer in retrieved text is the standard control."
+      },
+      "explanation": "RAG helps because the facts are supplied in the prompt instead of being recalled from weights. Low temperature reduces randomness but a model can repeat the same wrong answer every time."
+    },
+    {
+      "id": "input-output-pricing",
+      "concept": "Token cost arithmetic",
+      "type": "assertion",
+      "difficulty": 1,
+      "prompt": "Assertion and reason: read both statements and choose the right option.",
+      "assertion": "Providers usually bill output tokens at a higher rate per token than input tokens.",
+      "reason": "Providers bill by the number of characters in the request rather than by tokens.",
+      "correct": [
+        "c"
+      ],
+      "whys": {
+        "a": "R is false, so it cannot explain A.",
+        "b": "R is false, so b is wrong.",
+        "c": "A is true (output is generated one token at a time and is priced higher) and R is false: billing is per token.",
+        "d": "A is true, so d is wrong."
+      },
+      "explanation": "Billing is per token, with separate input and output rates, and often a discounted rate for cached input. Use the provider's usage field in the response rather than estimating."
+    },
+    {
+      "id": "function-calling-executes",
+      "concept": "Tool and function calling",
+      "type": "assertion",
+      "difficulty": 2,
+      "prompt": "Assertion and reason: read both statements and choose the right option.",
+      "assertion": "In function calling, the model executes the function on the provider's servers and returns the result.",
+      "reason": "The model returns a tool call containing a function name and JSON arguments, and your own code runs the function.",
+      "correct": [
+        "d"
+      ],
+      "whys": {
+        "a": "A is false, so a is wrong.",
+        "b": "A is false, so b is wrong.",
+        "c": "R is true, so c is wrong.",
+        "d": "A is false: the model only proposes the call. R is true and describes the real contract."
+      },
+      "explanation": "The loop is: send tool schemas, model replies with tool_calls, your code executes, you send the result back as a tool message, the model writes the final answer. This is why you validate arguments and enforce permissions in your own code."
+    },
+    {
+      "id": "hallucination-controls",
+      "concept": "Hallucinations",
+      "type": "matrix",
+      "difficulty": 2,
+      "prompt": "Match each hallucination cause with the most direct control.",
+      "left": [
+        {
+          "id": "a",
+          "text": "Fact is private or newer than the training data"
+        },
+        {
+          "id": "b",
+          "text": "Output must be machine-readable fields, but the model writes free text"
+        },
+        {
+          "id": "c",
+          "text": "Model states claims no source supports"
+        },
+        {
+          "id": "d",
+          "text": "Model guesses at arithmetic or a database lookup"
+        },
+        {
+          "id": "e",
+          "text": "Sampling picks unlikely tokens and the text drifts"
+        }
+      ],
+      "right": [
+        {
+          "id": "p",
+          "text": "Retrieval grounding (RAG)"
+        },
+        {
+          "id": "q",
+          "text": "Schema-constrained structured output"
+        },
+        {
+          "id": "r",
+          "text": "Require citations and an abstain-if-unsupported rule"
+        },
+        {
+          "id": "s",
+          "text": "Delegate to a calculator or SQL tool"
+        },
+        {
+          "id": "t",
+          "text": "Lower temperature or top_p"
+        },
+        {
+          "id": "u",
+          "text": "Increase max_tokens"
+        }
+      ],
+      "pairs": {
+        "a": "p",
+        "b": "q",
+        "c": "r",
+        "d": "s",
+        "e": "t"
+      },
+      "explanation": "Match the control to the failure mechanism. max_tokens only caps length, so it fixes none of these."
+    },
+    {
+      "id": "sdk-names",
+      "concept": "SDK and framework names",
+      "type": "fill",
+      "difficulty": 1,
+      "prompt": "Complete the Java-side framework names.",
+      "text": "Spring AI's {1} builds a request with prompt().user(...).call(), and .{2}(Person.class) maps the reply to a Java object. LangChain4j's {3} turns an interface into a model-backed proxy.",
+      "blanks": {
+        "1": "ChatClient",
+        "2": "entity",
+        "3": "AiServices"
+      },
+      "bank": [
+        "ChatClient",
+        "entity",
+        "AiServices",
+        "LlmTemplate",
+        "parse",
+        "ChatFactory"
+      ],
+      "explanation": "Spring AI: ChatClient, with entity(Class) for structured output. LangChain4j: AiServices.create(Interface.class, model). Both are the Java answers to LangChain's chain plus with_structured_output."
+    },
+    {
+      "id": "tokens-window",
+      "concept": "Context window budget",
+      "type": "fill",
+      "difficulty": 1,
+      "prompt": "Complete the vocabulary.",
+      "text": "A {1} splits text into {2}, and the {3} window limits the input plus the output together.",
+      "blanks": {
+        "1": "tokenizer",
+        "2": "tokens",
+        "3": "context"
+      },
+      "bank": [
+        "tokenizer",
+        "tokens",
+        "context",
+        "embedding",
+        "words"
+      ],
+      "explanation": "Tokens are sub-word pieces, so token counts differ from word counts and differ between model families. Count with the provider's tokenizer or the usage field."
+    },
+    {
+      "id": "pydantic-structured-output",
+      "concept": "Structured output",
+      "type": "code",
+      "difficulty": 2,
+      "prompt": "Using Pydantic v2 and LangChain, define a model Invoice with str fields vendor and currency and a float field total, then wrap an existing chat model variable llm so it returns Invoice objects.",
+      "language": "python",
+      "checks": [
+        {
+          "label": "defines Invoice as a Pydantic BaseModel",
+          "pattern": "class\\s+Invoice\\s*\\(\\s*BaseModel\\s*\\)"
+        },
+        {
+          "label": "declares vendor, total and currency fields",
+          "pattern": "vendor\\s*:\\s*str[\\s\\S]*total\\s*:\\s*float|total\\s*:\\s*float[\\s\\S]*vendor\\s*:\\s*str"
+        },
+        {
+          "label": "calls with_structured_output with Invoice",
+          "pattern": "with_structured_output\\(\\s*Invoice"
+        }
+      ],
+      "model": "class Invoice(BaseModel):\n    vendor: str\n    total: float\n    currency: str\n\nstructured = llm.with_structured_output(Invoice)",
+      "explanation": "with_structured_output(Schema) returns a runnable whose invoke() gives a validated Invoice instance. Field order and Field(description=...) extras are free. Always handle validation failure (retry or repair) in production.",
+      "starter": "from pydantic import BaseModel\n"
+    },
+    {
+      "id": "tool-schema-json",
+      "concept": "Tool and function calling",
+      "type": "code",
+      "difficulty": 2,
+      "prompt": "Write the JSON tool definition (OpenAI Chat Completions style) for a function get_weather with one required string parameter city.",
+      "language": "json",
+      "checks": [
+        {
+          "label": "type is function",
+          "pattern": "\"type\"\\s*:\\s*\"function\""
+        },
+        {
+          "label": "names the function get_weather",
+          "pattern": "\"name\"\\s*:\\s*\"get_weather\""
+        },
+        {
+          "label": "has a parameters object with a city property",
+          "pattern": "\"parameters\"[\\s\\S]*\"city\""
+        },
+        {
+          "label": "lists city as required",
+          "pattern": "\"required\"\\s*:\\s*\\[\\s*\"city\""
+        }
+      ],
+      "model": "{\"type\": \"function\", \"function\": {\"name\": \"get_weather\", \"description\": \"Current weather for a city\",\n \"parameters\": {\"type\": \"object\", \"properties\": {\"city\": {\"type\": \"string\"}}, \"required\": [\"city\"]}}}",
+      "explanation": "Parameters are a JSON Schema object. The Responses API and Anthropic (input_schema) use slightly different wrappers, but the JSON Schema core is the same. A description helps the model decide when to call."
+    },
+    {
+      "id": "token-cost-function",
+      "concept": "Token cost arithmetic",
+      "type": "code",
+      "difficulty": 2,
+      "prompt": "Write a Python function cost_usd(in_tok, out_tok, in_price=3.0, out_price=15.0) that returns the dollar cost, where prices are dollars per 1 million tokens.",
+      "language": "python",
+      "checks": [
+        {
+          "label": "defines cost_usd with the right name",
+          "pattern": "def\\s+cost_usd\\s*\\("
+        },
+        {
+          "label": "divides by one million (1_000_000 or 1e6)",
+          "pattern": "1_?000_?000|1e6"
+        },
+        {
+          "label": "multiplies tokens by the matching price",
+          "pattern": "in_tok\\s*\\*\\s*in_price[\\s\\S]*out_tok\\s*\\*\\s*out_price|out_tok\\s*\\*\\s*out_price[\\s\\S]*in_tok\\s*\\*\\s*in_price|in_price\\s*\\*\\s*in_tok[\\s\\S]*out_price\\s*\\*\\s*out_tok"
+        },
+        {
+          "label": "returns the value",
+          "pattern": "return\\s"
+        }
+      ],
+      "model": "def cost_usd(in_tok, out_tok, in_price=3.0, out_price=15.0):\n    return (in_tok * in_price + out_tok * out_price) / 1_000_000",
+      "explanation": "Price per million tokens means divide the weighted token sum by 1,000,000. Equivalent forms (two divisions, a constant) are fine. With the defaults, 2,000 in and 500 out is $0.0135."
+    },
+    {
+      "id": "anthropic-messages-call",
+      "concept": "SDK and framework names",
+      "type": "code",
+      "difficulty": 2,
+      "prompt": "With the Anthropic Python SDK and an existing client variable, call the Messages API with model name 'claude-sonnet-4-5', a cap of 300 output tokens and one user message 'Summarise RAG in one line'.",
+      "language": "python",
+      "checks": [
+        {
+          "label": "calls client.messages.create",
+          "pattern": "client\\.messages\\.create\\s*\\("
+        },
+        {
+          "label": "sets max_tokens (required in this API)",
+          "pattern": "max_tokens\\s*=\\s*300"
+        },
+        {
+          "label": "passes a user role message",
+          "pattern": "role[\"']\\s*:\\s*[\"']user"
+        },
+        {
+          "label": "passes the prompt text",
+          "pattern": "Summarise RAG in one line"
+        }
+      ],
+      "model": "resp = client.messages.create(model=\"claude-sonnet-4-5\", max_tokens=300,\n    messages=[{\"role\": \"user\", \"content\": \"Summarise RAG in one line\"}])",
+      "explanation": "Unlike OpenAI Chat Completions, Anthropic requires max_tokens. A system prompt goes in the separate system parameter, not as a message. The model id here is only an example; any valid id passes."
+    },
+    {
+      "id": "grounding-control",
+      "concept": "Hallucinations",
+      "type": "single",
+      "difficulty": 2,
+      "prompt": "A support bot must answer from your current refund policy PDF and never invent terms. Which change addresses the root cause best?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Retrieve the relevant policy passages and require an answer that cites them or says it does not know.",
+          "why": "Right: it supplies the facts and gives the model an allowed way to abstain."
+        },
+        {
+          "id": "b",
+          "text": "Switch to a larger, more capable model and keep the same prompt, trusting its broader knowledge of the world.",
+          "why": "A bigger model still has no access to your private policy text."
+        },
+        {
+          "id": "c",
+          "text": "Set temperature to 0 and keep the same prompt so that the answers become consistent between calls.",
+          "why": "This reduces randomness, but a confident wrong answer can repeat every time."
+        },
+        {
+          "id": "d",
+          "text": "Raise max_tokens so the model can explain its reasoning at greater length in every reply.",
+          "why": "Longer answers give more room to invent, not fewer errors."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Hallucination controls start with grounding and abstention. Sampling settings and model size help at the margin, they do not supply missing facts."
+    },
+    {
+      "id": "sampling-params",
+      "concept": "Sampling parameters",
+      "type": "multi",
+      "difficulty": 2,
+      "prompt": "Which statements about sampling parameters are true? Select all that apply.",
+      "options": [
+        {
+          "id": "a",
+          "text": "Temperature rescales the logits before softmax, so lower values make the distribution sharper.",
+          "why": "True: low temperature concentrates probability on the top tokens."
+        },
+        {
+          "id": "b",
+          "text": "top_p = 0.9 keeps the smallest set of tokens whose cumulative probability reaches 0.9.",
+          "why": "True: this is nucleus sampling."
+        },
+        {
+          "id": "c",
+          "text": "temperature = 0 guarantees identical output on every call.",
+          "why": "False: hosted inference can still vary slightly."
+        },
+        {
+          "id": "d",
+          "text": "Provider docs generally advise changing temperature or top_p, not both at once.",
+          "why": "True: the two interact, so tune one at a time."
+        },
+        {
+          "id": "e",
+          "text": "A higher temperature reduces the number of output tokens billed.",
+          "why": "False: billing depends on the tokens generated, not on the sampling randomness."
+        }
+      ],
+      "correct": [
+        "a",
+        "b",
+        "d"
+      ],
+      "explanation": "Sampling reshapes the next-token distribution; it does not change pricing. For extraction and tests use low temperature; for brainstorming use higher."
+    }
+  ]
+}

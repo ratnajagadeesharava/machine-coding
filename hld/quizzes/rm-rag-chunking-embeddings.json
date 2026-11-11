@@ -1,0 +1,382 @@
+{
+  "id": "rm-rag-chunking-embeddings",
+  "title": "RAG: chunking, embeddings and hybrid search",
+  "topic": "Interview roadmap",
+  "series": "interview-roadmap",
+  "seriesTitle": "Interview roadmap: topic quizzes",
+  "seriesOrder": 100,
+  "seriesDescription": "Topic-by-topic JEE-style quizzes for the backend and AI-engineering interview roadmap: integer, assertion-reason, matrix match, fill-in-the-blanks, short code writing, plus multi-correct questions. Language core, concurrency, DSA, web frameworks, data access, databases, messaging, resilience, security, testing, system design, LLM and agent engineering.",
+  "description": "How documents are split into chunks, embedded, indexed and searched: chunk-count arithmetic, cosine similarity, BM25 plus vectors, reciprocal rank fusion and reranking.",
+  "source": "LangChain text-splitter docs; Pinecone and Weaviate learning centre; Cormack et al. RRF paper (2009); Robertson BM25; Sentence-Transformers docs; OpenAI embeddings docs",
+  "estimatedMinutes": 15,
+  "questions": [
+    {
+      "id": "chunk-count",
+      "concept": "Chunking",
+      "type": "integer",
+      "difficulty": 2,
+      "prompt": "A document has 2000 tokens. You split it with a sliding window of chunk size 500 tokens and overlap 100 tokens (stride 400); the last chunk may be shorter. How many chunks are produced?",
+      "answer": 5,
+      "unit": "chunks",
+      "explanation": "Chunks start at 0, 400, 800, 1200 and 1600. The fifth chunk covers 1600-2000 (the window would reach 2100, so it is cut at the end). A sixth would start at 2000 with nothing left. General rule: ceil((L - overlap) / (size - overlap)) when L > size."
+    },
+    {
+      "id": "overlap-why",
+      "concept": "Chunking",
+      "type": "assertion",
+      "difficulty": 1,
+      "prompt": "Read the assertion (A) and the reason (R), then choose the correct option.",
+      "assertion": "Adding a modest overlap between consecutive chunks reduces the chance that an answer split across a boundary is lost.",
+      "reason": "The overlapping text is present in both neighbouring chunks, so either chunk can carry the full sentence or idea.",
+      "correct": [
+        "a"
+      ],
+      "whys": {
+        "a": "Correct: the duplicated region keeps boundary-straddling content intact in at least one chunk.",
+        "b": "R is not merely a side fact here; it is exactly the mechanism.",
+        "c": "R is true: overlap duplicates text in both chunks.",
+        "d": "A is true; overlap is the standard mitigation for boundary cuts."
+      },
+      "explanation": "Typical overlap is 10-20% of the chunk size. More overlap costs storage, embedding spend and duplicate hits in the results."
+    },
+    {
+      "id": "big-chunks",
+      "concept": "Chunking",
+      "type": "assertion",
+      "difficulty": 2,
+      "prompt": "Read the assertion (A) and the reason (R), then choose the correct option.",
+      "assertion": "Making chunks as large as possible always improves retrieval precision.",
+      "reason": "Larger chunks give the generator more surrounding context for each retrieved passage.",
+      "correct": [
+        "d"
+      ],
+      "whys": {
+        "a": "A is false, so no explanation can rescue it.",
+        "b": "A is false, so the pair cannot be both-true.",
+        "c": "R is true, so this option is wrong.",
+        "d": "Correct: big chunks blur many topics into one embedding, which lowers precision, even though they do give more context."
+      },
+      "explanation": "Chunk size is a trade-off: small chunks give sharp embeddings but lose context; large chunks keep context but dilute the vector. Parent-document retrieval tries to get both."
+    },
+    {
+      "id": "chunk-strategies",
+      "concept": "Chunking",
+      "type": "matrix",
+      "difficulty": 2,
+      "prompt": "Match each chunking strategy to what it does.",
+      "left": [
+        {
+          "id": "a",
+          "text": "Fixed-size"
+        },
+        {
+          "id": "b",
+          "text": "Recursive character"
+        },
+        {
+          "id": "c",
+          "text": "Semantic"
+        },
+        {
+          "id": "d",
+          "text": "Parent-document (small-to-big)"
+        },
+        {
+          "id": "e",
+          "text": "Header-based (Markdown/HTML)"
+        }
+      ],
+      "right": [
+        {
+          "id": "p",
+          "text": "Cuts every N characters or tokens regardless of structure"
+        },
+        {
+          "id": "q",
+          "text": "Tries separators in order (paragraph, line, space, character) until pieces fit the size"
+        },
+        {
+          "id": "r",
+          "text": "Embeds sentences and starts a new chunk where adjacent similarity drops"
+        },
+        {
+          "id": "s",
+          "text": "Indexes small child chunks but returns the larger parent passage to the LLM"
+        },
+        {
+          "id": "t",
+          "text": "Splits at heading boundaries and keeps the section title as metadata"
+        },
+        {
+          "id": "u",
+          "text": "Re-scores the top results with a cross-encoder"
+        }
+      ],
+      "pairs": {
+        "a": "p",
+        "b": "q",
+        "c": "r",
+        "d": "s",
+        "e": "t"
+      },
+      "explanation": "Fixed-size is the cheapest baseline; recursive is the common default; semantic costs extra embedding calls; parent-document and header-based exploit document structure."
+    },
+    {
+      "id": "splitter-config",
+      "concept": "Chunking",
+      "type": "code",
+      "difficulty": 2,
+      "prompt": "Using LangChain, write Python that creates a RecursiveCharacterTextSplitter with chunk_size 800, chunk_overlap 100 and the separators paragraph break, newline, space, then empty string (in that order).",
+      "language": "python",
+      "starter": "from langchain_text_splitters import RecursiveCharacterTextSplitter\n",
+      "checks": [
+        {
+          "label": "uses RecursiveCharacterTextSplitter",
+          "pattern": "RecursiveCharacterTextSplitter\\s*\\("
+        },
+        {
+          "label": "chunk_size is 800",
+          "pattern": "chunk_size\\s*=\\s*800"
+        },
+        {
+          "label": "chunk_overlap is 100",
+          "pattern": "chunk_overlap\\s*=\\s*100"
+        },
+        {
+          "label": "lists separators from paragraph down to empty string",
+          "pattern": "separators\\s*=\\s*\\[\\s*[\"']\\\\n\\\\n[\"']\\s*,\\s*[\"']\\\\n[\"']\\s*,\\s*[\"'] [\"']\\s*,\\s*[\"']{2}\\s*\\]"
+        }
+      ],
+      "model": "splitter = RecursiveCharacterTextSplitter(\n    chunk_size=800,\n    chunk_overlap=100,\n    separators=[\"\\n\\n\", \"\\n\", \" \", \"\"],\n)\nchunks = splitter.split_text(text)",
+      "explanation": "By default the size is measured in characters (len), not tokens; use from_tiktoken_encoder to count tokens. chunk_overlap must be smaller than chunk_size or the splitter raises a ValueError. The separators list is also the default order."
+    },
+    {
+      "id": "cosine-calc",
+      "concept": "Embeddings and similarity",
+      "type": "integer",
+      "difficulty": 1,
+      "prompt": "Two 2-dimensional embeddings are a = (3, 4) and b = (4, 3). Compute cosine similarity multiplied by 100.",
+      "answer": 96,
+      "explanation": "dot = 3*4 + 4*3 = 24 and both norms are 5, so cosine = 24/25 = 0.96. Cosine ignores vector length and measures only direction."
+    },
+    {
+      "id": "cosine-dot",
+      "concept": "Embeddings and similarity",
+      "type": "assertion",
+      "difficulty": 2,
+      "prompt": "Read the assertion (A) and the reason (R), then choose the correct option.",
+      "assertion": "For L2-normalised embeddings, ranking by cosine similarity gives the same order as ranking by dot product.",
+      "reason": "Cosine similarity always lies between -1 and 1.",
+      "correct": [
+        "b"
+      ],
+      "whys": {
+        "a": "R is true but it is a range property; it says nothing about why the orders match.",
+        "b": "Correct: with unit vectors the denominators are 1, so cosine equals the dot product. The -1 to 1 range is true but unrelated to that.",
+        "c": "R is true, so A-true-R-false is wrong.",
+        "d": "A is true: that is why many vector DBs offer a fast dot-product index on normalised vectors."
+      },
+      "explanation": "Many embedding APIs return normalised vectors, so a dot-product index is equivalent to cosine and slightly cheaper."
+    },
+    {
+      "id": "ann-index",
+      "concept": "Vector search",
+      "type": "single",
+      "difficulty": 2,
+      "prompt": "Why do production vector stores use approximate nearest neighbour indexes such as HNSW instead of exact search?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Brute force scales linearly with corpus size; ANN trades some recall for speed.",
+          "why": "Right: HNSW and IVF cut the search space and expose recall-vs-speed knobs like ef_search or nprobe."
+        },
+        {
+          "id": "b",
+          "text": "ANN indexes return exactly the same top-k as brute force while using much less disk space.",
+          "why": "ANN is approximate; some true neighbours can be missed."
+        },
+        {
+          "id": "c",
+          "text": "Exact search cannot be combined with cosine similarity, only with Euclidean distance.",
+          "why": "Brute-force cosine search works; it is just slow at scale."
+        },
+        {
+          "id": "d",
+          "text": "HNSW removes the need to embed documents because it indexes the raw text directly.",
+          "why": "Documents are still embedded; the index only organises vectors."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Interviewers like the follow-up: measure recall of the ANN index against brute force on a sample before trusting it."
+    },
+    {
+      "id": "hybrid-fill",
+      "concept": "Hybrid search",
+      "type": "fill",
+      "difficulty": 2,
+      "prompt": "Complete the description of hybrid search.",
+      "text": "Hybrid search runs {1} (lexical) and vector search separately and merges the two rankings with {2}, which uses only ranks, so the different score scales need no normalisation.",
+      "blanks": {
+        "1": "BM25",
+        "2": "reciprocal rank fusion"
+      },
+      "bank": [
+        "BM25",
+        "reciprocal rank fusion",
+        "softmax",
+        "HNSW"
+      ],
+      "explanation": "BM25 is strong on exact tokens such as IDs and error codes; vectors are strong on paraphrase. RRF is the common, tuning-free merge."
+    },
+    {
+      "id": "bm25-ids",
+      "concept": "Hybrid search",
+      "type": "assertion",
+      "difficulty": 2,
+      "prompt": "Read the assertion (A) and the reason (R), then choose the correct option.",
+      "assertion": "A query for the exact error code \"ERR-40417\" is usually served better by BM25 than by a dense embedding alone.",
+      "reason": "BM25 scores documents by meaning, so synonyms of the query score highly.",
+      "correct": [
+        "c"
+      ],
+      "whys": {
+        "a": "R is false, so it cannot explain A.",
+        "b": "R is false, not merely unrelated.",
+        "c": "Correct: A is true because rare exact tokens are strong lexical signals, but BM25 is lexical (term frequency and rarity), not semantic.",
+        "d": "A is true, so this option is wrong."
+      },
+      "explanation": "Dense models can blur rare identifiers. Hybrid search covers both failure modes."
+    },
+    {
+      "id": "rrf-score",
+      "concept": "Hybrid search",
+      "type": "integer",
+      "difficulty": 3,
+      "prompt": "With reciprocal rank fusion, score = sum over lists of 1/(k + rank) and k = 60. A document is rank 1 in the BM25 list and rank 2 in the vector list. Give its fused score multiplied by 10000, rounded to the nearest integer.",
+      "answer": 325,
+      "tolerance": 1,
+      "explanation": "1/61 + 1/62 = 0.016393 + 0.016129 = 0.032522, times 10000 is about 325.2. The constant k damps the advantage of being first."
+    },
+    {
+      "id": "rrf-fn",
+      "concept": "Hybrid search",
+      "type": "code",
+      "difficulty": 3,
+      "prompt": "Write a Python function rrf(rankings, k=60) where rankings is a list of ranked lists of document ids (best first). Return the document ids sorted by fused RRF score, highest first.",
+      "language": "python",
+      "starter": "def rrf(rankings, k=60):\n    ",
+      "checks": [
+        {
+          "label": "defines rrf",
+          "pattern": "def\\s+rrf\\s*\\("
+        },
+        {
+          "label": "adds 1/(k + rank) per list",
+          "pattern": "1(\\.0)?\\s*/\\s*\\(\\s*k\\s*\\+"
+        },
+        {
+          "label": "iterates with enumerate",
+          "pattern": "enumerate\\s*\\("
+        },
+        {
+          "label": "accumulates scores per document",
+          "pattern": "(scores|score|fused|total)\\w*\\s*\\["
+        },
+        {
+          "label": "sorts descending",
+          "pattern": "reverse\\s*=\\s*True|-\\s*\\w+(\\[|\\.get)|most_common"
+        }
+      ],
+      "model": "def rrf(rankings, k=60):\n    scores = {}\n    for ranking in rankings:\n        for rank, doc in enumerate(ranking, start=1):\n            scores[doc] = scores.get(doc, 0) + 1 / (k + rank)\n    return sorted(scores, key=scores.get, reverse=True)",
+      "explanation": "Other solutions pass (defaultdict, 0-based enumerate with k + rank + 1). Ties are broken arbitrarily unless you add a secondary key."
+    },
+    {
+      "id": "rerank-fill",
+      "concept": "Reranking",
+      "type": "fill",
+      "difficulty": 2,
+      "prompt": "Complete the reranking sentence.",
+      "text": "A {1} reads the query and document together in one forward pass, which is more accurate but too slow for the whole corpus, so it reorders only the top-k candidates from the fast {2} first stage.",
+      "blanks": {
+        "1": "cross-encoder",
+        "2": "bi-encoder"
+      },
+      "bank": [
+        "cross-encoder",
+        "bi-encoder",
+        "tokenizer",
+        "autoencoder"
+      ],
+      "explanation": "Bi-encoders embed query and documents separately, so document vectors are precomputed. Cross-encoders cannot be precomputed per document."
+    },
+    {
+      "id": "rerank-fix",
+      "concept": "Reranking",
+      "type": "single",
+      "difficulty": 2,
+      "prompt": "Your retriever returns the correct chunk, but at rank 18 of the top 20, so the LLM context (top 4) misses it. What is the cheapest targeted fix?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Rerank the top 20 candidates with a cross-encoder and keep the best 4.",
+          "why": "Right: the recall is fine, the ordering is the problem, and a reranker fixes ordering."
+        },
+        {
+          "id": "b",
+          "text": "Re-embed the whole corpus with a model that has more dimensions, accepting a full reindex.",
+          "why": "Recall is already fine; this is expensive and may not change ordering."
+        },
+        {
+          "id": "c",
+          "text": "Raise the LLM temperature so it explores other chunks in the prompt more freely.",
+          "why": "Temperature does not change which chunks are retrieved."
+        },
+        {
+          "id": "d",
+          "text": "Increase the chunk size to 4000 tokens so that fewer chunks compete for the top positions.",
+          "why": "Bigger chunks dilute embeddings and can make precision worse."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Diagnose first: recall@20 high but recall@4 low means a ranking problem, so rerank. Low recall@20 would mean fixing chunking or adding hybrid search."
+    },
+    {
+      "id": "embed-pitfalls",
+      "concept": "Embeddings and similarity",
+      "type": "multi",
+      "difficulty": 3,
+      "prompt": "Which statements about operating an embedding index are correct? Select all that apply.",
+      "options": [
+        {
+          "id": "a",
+          "text": "Queries and documents must be embedded with the same model (or a model trained for the pair).",
+          "why": "Right: vectors from different models live in different spaces."
+        },
+        {
+          "id": "b",
+          "text": "Changing the embedding model means re-embedding the whole corpus.",
+          "why": "Right: old vectors are not comparable with new ones."
+        },
+        {
+          "id": "c",
+          "text": "Vectors from two different models can be stored in one index and compared.",
+          "why": "Their dimensions and geometry differ; similarities are meaningless."
+        },
+        {
+          "id": "d",
+          "text": "Cosine similarity of 0.8 means 80% of the words match.",
+          "why": "Similarity is geometric, not a word-overlap percentage."
+        }
+      ],
+      "correct": [
+        "a",
+        "b"
+      ],
+      "explanation": "Version the embedding model name in index metadata so a migration is a planned reindex, not a surprise."
+    }
+  ]
+}

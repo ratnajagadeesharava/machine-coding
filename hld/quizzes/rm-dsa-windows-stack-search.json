@@ -1,0 +1,425 @@
+{
+  "topic": "Interview roadmap",
+  "series": "interview-roadmap",
+  "seriesTitle": "Interview roadmap: topic quizzes",
+  "seriesDescription": "Topic-by-topic JEE-style quizzes for the backend and AI-engineering interview roadmap: integer, assertion-reason, matrix match, fill-in-the-blanks, short code writing, plus multi-correct questions. Language core, concurrency, DSA, web frameworks, data access, databases, messaging, resilience, security, testing, system design, LLM and agent engineering.",
+  "id": "rm-dsa-windows-stack-search",
+  "title": "DSA: two pointers, sliding window, stack, binary search",
+  "seriesOrder": 31,
+  "description": "Two pointers and sliding windows, monotonic stacks, and binary search including search on the answer, with the off-by-one and invariant traps interviewers probe.",
+  "source": "LeetCode problem set and discuss; NeetCode roadmap; Cracking the Coding Interview; Oracle Java docs (ArrayDeque, Deque); Python docs (bisect)",
+  "estimatedMinutes": 15,
+  "questions": [
+    {
+      "id": "pattern-match",
+      "concept": "Pattern recognition",
+      "type": "matrix",
+      "difficulty": 1,
+      "prompt": "Match each problem with the technique that solves it best.",
+      "left": [
+        {
+          "id": "a",
+          "text": "Longest substring without repeating characters"
+        },
+        {
+          "id": "b",
+          "text": "3Sum"
+        },
+        {
+          "id": "c",
+          "text": "Valid parentheses"
+        },
+        {
+          "id": "d",
+          "text": "Next greater element"
+        },
+        {
+          "id": "e",
+          "text": "Koko eating bananas (minimum speed)"
+        }
+      ],
+      "right": [
+        {
+          "id": "p",
+          "text": "Sliding window with a last-seen map"
+        },
+        {
+          "id": "q",
+          "text": "Sort, then fix one element and run two pointers"
+        },
+        {
+          "id": "r",
+          "text": "Stack of open brackets"
+        },
+        {
+          "id": "s",
+          "text": "Monotonic stack of indices"
+        },
+        {
+          "id": "t",
+          "text": "Binary search on the answer"
+        },
+        {
+          "id": "u",
+          "text": "Union-find"
+        }
+      ],
+      "pairs": {
+        "a": "p",
+        "b": "q",
+        "c": "r",
+        "d": "s",
+        "e": "t"
+      },
+      "explanation": "Recognising the pattern from the statement is half the interview: \"contiguous + constraint\" suggests a window, \"pairs in sorted data\" suggests two pointers, \"matching nested structure\" a stack, \"minimum value that is feasible\" a binary search."
+    },
+    {
+      "id": "abba-bug",
+      "concept": "Sliding window",
+      "type": "integer",
+      "difficulty": 2,
+      "prompt": "This longest-substring-without-repeats loop sets left = last[c] + 1 whenever c was seen before (it forgets max(left, ...)). What does it return for \"abba\", whose correct answer is 2?",
+      "answer": 3,
+      "tolerance": 0,
+      "unit": "",
+      "explanation": "On the second b, left moves to 2. On the final a, last[a] = 0 so left = 1: it moved BACK, the window \"bba\" has length 3. The fix is left = max(left, last[c] + 1), so left never decreases."
+    },
+    {
+      "id": "container",
+      "concept": "Two pointers",
+      "type": "code",
+      "difficulty": 2,
+      "prompt": "Write a Java method int maxArea(int[] h) for \"container with most water\": the bars at indices l and r hold min(h[l], h[r]) * (r - l) water. Use two pointers starting at both ends.",
+      "language": "java",
+      "starter": "static int maxArea(int[] h) {\n  \n}",
+      "checks": [
+        {
+          "label": "starts two pointers at the two ends and loops while l < r",
+          "pattern": "while\\s*\\(\\s*\\w+\\s*<\\s*\\w+\\s*\\)"
+        },
+        {
+          "label": "computes the area with Math.min of the two heights",
+          "pattern": "Math\\.min"
+        },
+        {
+          "label": "tracks the best with Math.max",
+          "pattern": "Math\\.max|if\\s*\\([^)]*>\\s*(best|max|ans|res)"
+        },
+        {
+          "label": "moves a pointer inward each step",
+          "pattern": "\\+\\+|\\+=\\s*1|--|-=\\s*1"
+        },
+        {
+          "label": "returns the best area",
+          "pattern": "return"
+        }
+      ],
+      "model": "static int maxArea(int[] h) {\n  int l = 0, r = h.length - 1, best = 0;\n  while (l < r) {\n    best = Math.max(best, Math.min(h[l], h[r]) * (r - l));\n    if (h[l] < h[r]) l++; else r--;\n  }\n  return best;\n}",
+      "explanation": "Always move the pointer at the shorter bar: the width only shrinks, so only a taller bar can improve the area. O(n) time, O(1) space."
+    },
+    {
+      "id": "window-linear",
+      "concept": "Sliding window",
+      "type": "assertion",
+      "difficulty": 2,
+      "prompt": "Evaluate the assertion and the reason.",
+      "assertion": "A sliding window loop with an inner while that moves the left pointer is still O(n) overall.",
+      "reason": "Each of the two pointers only moves forward and travels at most n positions in total.",
+      "correct": [
+        "a"
+      ],
+      "whys": {
+        "a": "Correct: total pointer moves are at most 2n, so the nested loop is amortised linear.",
+        "b": "R is the actual reason, so \"does not explain\" is wrong.",
+        "c": "R is true, so c cannot be right.",
+        "d": "A is true, so d cannot be right."
+      },
+      "explanation": "Count total pointer movement, not loop nesting. The same amortised argument makes the monotonic stack O(n)."
+    },
+    {
+      "id": "stack-fill",
+      "concept": "Monotonic stack",
+      "type": "fill",
+      "difficulty": 2,
+      "prompt": "Complete the description of next greater element.",
+      "text": "Scan left to right keeping a monotonic {1} stack of {2}; while the new value is bigger than the one on top, {3} the stack and record the answer for it.",
+      "blanks": {
+        "1": "decreasing",
+        "2": "indices",
+        "3": "pop"
+      },
+      "bank": [
+        "decreasing",
+        "increasing",
+        "indices",
+        "sums",
+        "pop",
+        "push"
+      ],
+      "explanation": "Each index is pushed once and popped once, so the whole pass is O(n). Daily temperatures uses the same loop and stores i - popped index instead of the value."
+    },
+    {
+      "id": "stack-class",
+      "concept": "Stack and deque",
+      "type": "truefalse",
+      "difficulty": 1,
+      "prompt": "In modern Java code, java.util.Stack is the recommended class for a stack; ArrayDeque is only for queues.",
+      "options": [
+        {
+          "id": "a",
+          "text": "True",
+          "why": "ArrayDeque supports push, pop and peek as a stack and is also a queue, so the claim is false."
+        },
+        {
+          "id": "b",
+          "text": "False",
+          "why": "Right: Stack is a legacy synchronized Vector subclass, and the Deque Javadoc says to prefer Deque implementations for LIFO use."
+        }
+      ],
+      "correct": [
+        "b"
+      ],
+      "explanation": "Use Deque<Integer> st = new ArrayDeque<>(); with push, pop and peek. ArrayDeque rejects null elements, which Stack allows."
+    },
+    {
+      "id": "valid-parens",
+      "concept": "Stack",
+      "type": "code",
+      "difficulty": 1,
+      "prompt": "Write a Python function is_valid(s) that returns True when every bracket in s made of ()[]{} is closed by the right type in the right order.",
+      "language": "python",
+      "starter": "def is_valid(s):\n    ",
+      "checks": [
+        {
+          "label": "uses a list (or deque) as a stack",
+          "pattern": "\\[\\s*\\]|deque|stack"
+        },
+        {
+          "label": "pushes opening brackets",
+          "pattern": "\\.append\\(|appendleft|\\.push"
+        },
+        {
+          "label": "pops and compares on a closing bracket",
+          "pattern": "\\.pop\\("
+        },
+        {
+          "label": "maps bracket types to each other",
+          "pattern": "[\"'][)\\]}]['\"]\\s*:|[\"'][(\\[{][\"']\\s*:|zip\\(|\\.index\\(|find\\("
+        },
+        {
+          "label": "returns whether the stack is empty at the end",
+          "pattern": "return\\s+(not\\s+\\w+|len\\(\\w+\\)\\s*==\\s*0|\\w+\\s*==\\s*\\[\\s*\\])"
+        }
+      ],
+      "model": "def is_valid(s):\n    pairs = {\")\": \"(\", \"]\": \"[\", \"}\": \"{\"}\n    st = []\n    for ch in s:\n        if ch in pairs:\n            if not st or st.pop() != pairs[ch]:\n                return False\n        else:\n            st.append(ch)\n    return not st",
+      "explanation": "Two traps: popping from an empty stack on input like \")\" and forgetting the final emptiness check on \"((\". An opening-map variant that pushes the expected closer also passes."
+    },
+    {
+      "id": "histogram",
+      "concept": "Monotonic stack",
+      "type": "integer",
+      "difficulty": 3,
+      "prompt": "What is the area of the largest rectangle in the histogram with bar heights [2, 1, 5, 6, 2, 3]?",
+      "answer": 10,
+      "tolerance": 0,
+      "unit": "",
+      "explanation": "Bars 5 and 6 form a rectangle of height 5 and width 2, area 10. Compare: bars 5,6,2,3 limited by height 2 give 8, and the whole histogram limited by height 1 gives 6. A monotonic increasing stack finds the best in O(n). A monotonic increasing stack finds it in O(n)."
+    },
+    {
+      "id": "bs-bug",
+      "concept": "Binary search",
+      "type": "single",
+      "difficulty": 2,
+      "prompt": "A loop uses while (lo <= hi) { int mid = (lo + hi) / 2; if (a[mid] < target) lo = mid; else hi = mid - 1; }. Which input shape makes it loop forever?",
+      "options": [
+        {
+          "id": "a",
+          "text": "When a[mid] < target and mid == lo, e.g. lo = 0, hi = 1",
+          "why": "Right: lo = mid never advances once mid == lo, so the interval stops shrinking; it must be lo = mid + 1."
+        },
+        {
+          "id": "b",
+          "text": "When the array contains many repeated duplicate values",
+          "why": "Duplicates only change which index is found, not termination."
+        },
+        {
+          "id": "c",
+          "text": "When target is smaller than every element in the array",
+          "why": "That path takes hi = mid - 1 each time and ends when hi < lo."
+        },
+        {
+          "id": "d",
+          "text": "When the array length happens to be an odd number",
+          "why": "Parity does not matter; the update lo = mid is the defect."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Whenever you move a bound, move it past mid (mid + 1 or mid - 1) unless you deliberately use the half-open lo < hi template with hi = mid."
+    },
+    {
+      "id": "lower-bound",
+      "concept": "Binary search",
+      "type": "code",
+      "difficulty": 2,
+      "prompt": "Write a Java method int lowerBound(int[] a, int x) returning the first index i with a[i] >= x in a sorted array (a.length if none). Use a half-open range [lo, hi).",
+      "language": "java",
+      "starter": "static int lowerBound(int[] a, int x) {\n  \n}",
+      "checks": [
+        {
+          "label": "uses a loop condition lo < hi",
+          "pattern": "while\\s*\\(\\s*\\w+\\s*<\\s*\\w+\\s*\\)"
+        },
+        {
+          "label": "computes mid without overflow",
+          "pattern": "\\w+\\s*\\+\\s*\\(\\s*\\w+\\s*-\\s*\\w+\\s*\\)\\s*/\\s*2|\\(\\s*\\w+\\s*\\+\\s*\\w+\\s*\\)\\s*>>>\\s*1|\\(\\s*\\w+\\s*\\+\\s*\\w+\\s*\\)\\s*/\\s*2"
+        },
+        {
+          "label": "moves lo to mid + 1 when a[mid] < x",
+          "pattern": "=\\s*\\w+\\s*\\+\\s*1"
+        },
+        {
+          "label": "sets hi = mid otherwise",
+          "pattern": "\\w+\\s*=\\s*m\\w*\\s*;"
+        },
+        {
+          "label": "returns lo",
+          "pattern": "return\\s+\\w+"
+        }
+      ],
+      "model": "static int lowerBound(int[] a, int x) {\n  int lo = 0, hi = a.length;\n  while (lo < hi) {\n    int mid = lo + (hi - lo) / 2;\n    if (a[mid] < x) lo = mid + 1; else hi = mid;\n  }\n  return lo;\n}",
+      "explanation": "One template covers \"first position >= x\", insertion point and first-true predicates. The closed [lo, hi] version with lo <= hi is equally valid if used consistently."
+    },
+    {
+      "id": "probes",
+      "concept": "Binary search",
+      "type": "integer",
+      "difficulty": 2,
+      "prompt": "In the worst case, how many midpoints are examined to find or rule out a value in a sorted array of 1,000,000 elements, with standard binary search making one probe per iteration?",
+      "answer": 20,
+      "tolerance": 0,
+      "unit": "probes",
+      "explanation": "Each probe halves the range: 2^19 = 524,288 < 10^6 < 2^20 = 1,048,576, so floor(log2 n) + 1 = 20 probes."
+    },
+    {
+      "id": "koko",
+      "concept": "Binary search on the answer",
+      "type": "single",
+      "difficulty": 3,
+      "prompt": "Koko must eat all piles within h hours at speed k bananas per hour (each hour she eats from one pile). Why can you binary search k?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Feasibility is monotonic in k: a faster speed never hurts.",
+          "why": "Right: that monotonic yes/no predicate is the only requirement, so you search k in [1, max(piles)] for the first feasible value."
+        },
+        {
+          "id": "b",
+          "text": "The piles array can be sorted first, which enables the search.",
+          "why": "Sorting piles is irrelevant; the search runs on the speed range, not on the array."
+        },
+        {
+          "id": "c",
+          "text": "The total number of bananas is always an exact power of two.",
+          "why": "Nothing about the input needs to be a power of two."
+        },
+        {
+          "id": "d",
+          "text": "The hours needed is a convex function of the eating speed.",
+          "why": "Hours is non-increasing in speed, which is monotonic; convexity is not required for binary search."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "For piles [3,6,7,11] and h = 8 the answer is 4. The same pattern solves \"capacity to ship packages within D days\" and \"split array largest sum\": O(n log(max)) time."
+    },
+    {
+      "id": "rotated",
+      "concept": "Binary search",
+      "type": "single",
+      "difficulty": 3,
+      "prompt": "When searching a rotated sorted array without duplicates, such as [4,5,6,7,0,1,2], how do you decide which half is sorted at each step?",
+      "options": [
+        {
+          "id": "a",
+          "text": "If a[lo] <= a[mid] the left half is sorted, else the right.",
+          "why": "Right: the sorted half is the one that does not contain the rotation point; then test whether the target lies in its range."
+        },
+        {
+          "id": "b",
+          "text": "Compare a[mid] with the target only, ignoring a[lo] and a[hi].",
+          "why": "The target comparison alone cannot tell which side to discard because the array is not globally sorted."
+        },
+        {
+          "id": "c",
+          "text": "Find the maximum first with a linear scan, then split there.",
+          "why": "A linear scan makes it O(n); the whole point is O(log n)."
+        },
+        {
+          "id": "d",
+          "text": "Always search the left half first, then fall back to the right.",
+          "why": "That is not a rule and loses the logarithmic bound."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "With duplicates (e.g. [1,1,1,0,1]) a[lo] == a[mid] == a[hi] cannot decide the sorted side, so the worst case degrades to O(n): a favourite follow-up."
+    },
+    {
+      "id": "answer-search",
+      "concept": "Binary search on the answer",
+      "type": "assertion",
+      "difficulty": 3,
+      "prompt": "Evaluate the assertion and the reason.",
+      "assertion": "Binary search on the answer for Koko runs in O(n log M), where M is the largest pile.",
+      "reason": "Binary search needs the input array to be sorted.",
+      "correct": [
+        "b"
+      ],
+      "whys": {
+        "a": "The first part is true but R is not why: the search is over the speed range, with a feasibility check.",
+        "b": "Correct: both statements are true, but the answer-space search needs monotonic feasibility, not a sorted array.",
+        "c": "A is true, so this is wrong.",
+        "d": "A is true, so this is wrong."
+      },
+      "explanation": "Each of log M iterations does an O(n) feasibility scan. The \"sorted\" requirement generalises to \"predicate flips only once\"."
+    },
+    {
+      "id": "bisect-facts",
+      "concept": "Binary search",
+      "type": "multi",
+      "difficulty": 2,
+      "prompt": "Which statements about Python's bisect module are true? Select all that apply.",
+      "options": [
+        {
+          "id": "a",
+          "text": "bisect_left(a, x) returns the index of the leftmost position where x could be inserted keeping order.",
+          "why": "Right: for [1,2,2,2,3] and x = 2 it returns 1."
+        },
+        {
+          "id": "b",
+          "text": "bisect_right(a, x) returns an insertion point after any existing entries equal to x.",
+          "why": "Right: it returns 4 for the same list."
+        },
+        {
+          "id": "c",
+          "text": "bisect works on an unsorted list as long as the values are comparable.",
+          "why": "The list must already be sorted or the result is meaningless."
+        },
+        {
+          "id": "d",
+          "text": "insort(a, x) inserts in O(log n) total time.",
+          "why": "Finding the spot is O(log n) but shifting the list elements is O(n)."
+        }
+      ],
+      "correct": [
+        "a",
+        "b"
+      ],
+      "explanation": "Use bisect_left for lower bound and bisect_right for upper bound; `bisect_left(a, x)` equals count of elements < x."
+    }
+  ]
+}

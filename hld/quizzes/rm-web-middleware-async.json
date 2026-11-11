@@ -1,0 +1,377 @@
+{
+  "id": "rm-web-middleware-async",
+  "title": "Web framework: middleware, AOP and async",
+  "topic": "Interview roadmap",
+  "description": "Servlet filters, interceptors, AOP and FastAPI middleware/dependencies, plus async endpoints, streaming and server-sent events in both stacks.",
+  "source": "Spring Framework AOP and MVC docs; Servlet specification; Starlette middleware docs; FastAPI docs (middleware, async, custom response); Project Reactor docs; Baeldung",
+  "series": "interview-roadmap",
+  "seriesTitle": "Interview roadmap: topic quizzes",
+  "seriesDescription": "Topic-by-topic JEE-style quizzes for the backend and AI-engineering interview roadmap: integer, assertion-reason, matrix match, fill-in-the-blanks, short code writing, plus multi-correct questions. Language core, concurrency, DSA, web frameworks, data access, databases, messaging, resilience, security, testing, system design, LLM and agent engineering.",
+  "seriesOrder": 52,
+  "estimatedMinutes": 14,
+  "questions": [
+    {
+      "id": "crosscut-matrix",
+      "concept": "Cross-cutting concerns (Spring)",
+      "type": "matrix",
+      "difficulty": 2,
+      "prompt": "Match each Spring mechanism with the job it is best suited for.",
+      "left": [
+        {
+          "id": "l1",
+          "text": "Servlet Filter"
+        },
+        {
+          "id": "l2",
+          "text": "HandlerInterceptor"
+        },
+        {
+          "id": "l3",
+          "text": "@Aspect with @Around advice"
+        },
+        {
+          "id": "l4",
+          "text": "@RestControllerAdvice"
+        }
+      ],
+      "right": [
+        {
+          "id": "r1",
+          "text": "Wrap the raw request/response before DispatcherServlet, e.g. token parsing or request-id logging"
+        },
+        {
+          "id": "r2",
+          "text": "Use the resolved handler method in preHandle/postHandle, e.g. per-controller auth checks"
+        },
+        {
+          "id": "r3",
+          "text": "Time or audit calls to service-bean methods, even outside HTTP"
+        },
+        {
+          "id": "r4",
+          "text": "Translate exceptions from any controller into a uniform error body"
+        },
+        {
+          "id": "r5",
+          "text": "Run once at application startup"
+        }
+      ],
+      "pairs": {
+        "l1": "r1",
+        "l2": "r2",
+        "l3": "r3",
+        "l4": "r4"
+      },
+      "explanation": "Filters are Servlet-container level, interceptors are Spring MVC level (they know the handler), aspects are proxy-based and work on any Spring bean, and advice classes handle exceptions."
+    },
+    {
+      "id": "middleware-order",
+      "concept": "Middleware (FastAPI)",
+      "type": "integer",
+      "difficulty": 3,
+      "prompt": "Three Starlette middleware A, B and C are added to an app in that order with app.add_middleware(A), then B, then C. At which position (1 = first to see an incoming request) does A's pre-request code run?",
+      "answer": 3,
+      "tolerance": 0,
+      "explanation": "Middleware added last is outermost, so a request goes C, B, A. Responses unwind A, B, C. Verified with @app.middleware logging.",
+      "unit": "position"
+    },
+    {
+      "id": "interceptor-callbacks",
+      "concept": "Cross-cutting concerns (Spring)",
+      "type": "fill",
+      "difficulty": 1,
+      "prompt": "Fill in the HandlerInterceptor callbacks.",
+      "text": "{1} runs before the handler and can stop the chain by returning false; {2} runs after the handler but before the view is rendered; {3} runs after the request completes, even when the handler threw.",
+      "blanks": {
+        "1": "preHandle",
+        "2": "postHandle",
+        "3": "afterCompletion"
+      },
+      "bank": [
+        "preHandle",
+        "postHandle",
+        "afterCompletion",
+        "doFilter",
+        "afterReturning"
+      ],
+      "explanation": "doFilter belongs to Servlet filters and afterReturning to AOP advice. postHandle is skipped when the handler throws, afterCompletion is not."
+    },
+    {
+      "id": "aspect-timing",
+      "concept": "AOP (Spring)",
+      "type": "code",
+      "difficulty": 2,
+      "prompt": "Write a Spring aspect class TimingAspect (a bean) with an @Around advice that times every method of classes in package com.acme.service and its sub-packages, then returns the real result.",
+      "language": "java",
+      "starter": "",
+      "checks": [
+        {
+          "label": "declares @Aspect and a Spring bean",
+          "pattern": "@Aspect[\\s\\S]*@Component|@Component[\\s\\S]*@Aspect"
+        },
+        {
+          "label": "uses @Around with an execution pointcut on com.acme.service",
+          "pattern": "@Around\\(\\s*\\\"execution\\([^\\\"]*com\\.acme\\.service"
+        },
+        {
+          "label": "calls proceed() and returns its result",
+          "pattern": "return\\s+\\w+\\.proceed\\(\\)|=\\s*\\w+\\.proceed\\(\\)"
+        },
+        {
+          "label": "measures time with nanoTime or currentTimeMillis",
+          "pattern": "nanoTime|currentTimeMillis|StopWatch"
+        }
+      ],
+      "model": "@Aspect\n@Component\npublic class TimingAspect {\n  @Around(\"execution(* com.acme.service..*.*(..))\")\n  public Object time(ProceedingJoinPoint pjp) throws Throwable {\n    long t = System.nanoTime();\n    try { return pjp.proceed(); }\n    finally { System.out.println(pjp.getSignature() + \" took \" + (System.nanoTime() - t)); }\n  }\n}",
+      "explanation": "Forgetting proceed() silently swallows the call. Also needs spring-boot-starter-aop. Pointcuts using within() or an annotation are valid alternatives."
+    },
+    {
+      "id": "fastapi-http-middleware",
+      "concept": "Middleware (FastAPI)",
+      "type": "code",
+      "difficulty": 2,
+      "prompt": "Write a FastAPI HTTP middleware that measures how long the request took (time.perf_counter) and sets the response header X-Process-Time.",
+      "language": "python",
+      "starter": "import time\n",
+      "checks": [
+        {
+          "label": "registers with @app.middleware(\"http\")",
+          "pattern": "@app\\.middleware\\(\\s*[\\\"']http[\\\"']\\s*\\)"
+        },
+        {
+          "label": "awaits call_next(request)",
+          "pattern": "await\\s+call_next\\(\\s*request\\s*\\)"
+        },
+        {
+          "label": "sets the X-Process-Time header",
+          "pattern": "headers\\[\\s*[\\\"']X-Process-Time[\\\"']\\s*\\]"
+        },
+        {
+          "label": "returns the response",
+          "pattern": "return\\s+response"
+        }
+      ],
+      "model": "@app.middleware(\"http\")\nasync def add_time(request, call_next):\n    start = time.perf_counter()\n    response = await call_next(request)\n    response.headers[\"X-Process-Time\"] = str(time.perf_counter() - start)\n    return response",
+      "explanation": "Pure ASGI middleware or add_middleware(BaseHTTPMiddleware) subclasses are equivalent. Note BaseHTTPMiddleware has caveats with streaming responses and contextvars."
+    },
+    {
+      "id": "api-key-dependency",
+      "concept": "Dependencies as cross-cutting (FastAPI)",
+      "type": "code",
+      "difficulty": 2,
+      "prompt": "Write a FastAPI dependency require_key that reads the X-API-Key header and raises HTTPException 401 unless it equals \"secret\", then attach it to a router so every route needs it.",
+      "language": "python",
+      "starter": "from fastapi import APIRouter, Depends, Header, HTTPException\n",
+      "checks": [
+        {
+          "label": "reads the header with Header(",
+          "pattern": "Header\\("
+        },
+        {
+          "label": "raises HTTPException with status 401",
+          "pattern": "raise\\s+HTTPException\\([^)]*401"
+        },
+        {
+          "label": "attaches with dependencies=[Depends(require_key)]",
+          "pattern": "dependencies\\s*=\\s*\\[\\s*Depends\\(\\s*require_key\\s*\\)"
+        }
+      ],
+      "model": "def require_key(x_api_key: str = Header(...)):\n    if x_api_key != \"secret\":\n        raise HTTPException(status_code=401)\n\nrouter = APIRouter(dependencies=[Depends(require_key)])",
+      "explanation": "Dependencies are the FastAPI answer to per-route auth: they run inside routing, know path params and can use other dependencies. Verified: missing header gives 422, wrong key 401, right key 200."
+    },
+    {
+      "id": "aop-self-invocation",
+      "concept": "AOP (Spring)",
+      "type": "assertion",
+      "difficulty": 2,
+      "prompt": "Judge the assertion and the reason.",
+      "assertion": "Spring AOP advice does not run when a bean calls one of its own advised methods via this.",
+      "reason": "Spring AOP is proxy-based, and an internal call bypasses the proxy.",
+      "correct": [
+        "a"
+      ],
+      "whys": {
+        "a": "Correct: the call never leaves the target object, so the proxy that applies advice is skipped.",
+        "b": "Wrong: R is the mechanism.",
+        "c": "Wrong: R is true.",
+        "d": "Wrong: A is true."
+      },
+      "explanation": "Same root cause as @Transactional self-invocation. Fixes: refactor into another bean, inject the proxy, or use AspectJ weaving."
+    },
+    {
+      "id": "filter-chain",
+      "concept": "Filters",
+      "type": "assertion",
+      "difficulty": 2,
+      "prompt": "Judge the assertion and the reason.",
+      "assertion": "A Servlet filter that never calls chain.doFilter(request, response) stops the request from reaching the controller.",
+      "reason": "Filters can be ordered with @Order or a FilterRegistrationBean.",
+      "correct": [
+        "b"
+      ],
+      "whys": {
+        "a": "Wrong: ordering does not explain why the request stops.",
+        "b": "Correct: both true; the chain simply is not continued, and ordering is an unrelated fact.",
+        "c": "Wrong: R is true.",
+        "d": "Wrong: A is true; a filter can also short-circuit with its own response."
+      },
+      "explanation": "Auth filters use exactly this to return 401 early. Order matters: a security filter must run before a logging filter that reads the principal."
+    },
+    {
+      "id": "dependency-vs-middleware",
+      "concept": "Dependencies as cross-cutting (FastAPI)",
+      "type": "assertion",
+      "difficulty": 3,
+      "prompt": "Judge the assertion and the reason.",
+      "assertion": "A FastAPI dependency can short-circuit a request by raising HTTPException.",
+      "reason": "Dependencies run only after all middleware has already returned a response.",
+      "correct": [
+        "c"
+      ],
+      "whys": {
+        "a": "Wrong: R is false.",
+        "b": "Wrong: R is not true.",
+        "c": "Correct: A is true, but R is false because dependencies run inside route handling, i.e. within the middleware stack.",
+        "d": "Wrong: A is true."
+      },
+      "explanation": "Order: middleware (outer) then routing then dependencies then handler, and back out through middleware again."
+    },
+    {
+      "id": "post-handle-exception",
+      "concept": "Cross-cutting concerns (Spring)",
+      "type": "assertion",
+      "difficulty": 3,
+      "prompt": "Judge the assertion and the reason.",
+      "assertion": "HandlerInterceptor.postHandle is called even when the controller method throws an exception.",
+      "reason": "afterCompletion is called after the handler finishes, including when it threw (provided preHandle returned true).",
+      "correct": [
+        "d"
+      ],
+      "whys": {
+        "a": "Wrong: A is false.",
+        "b": "Wrong: A is false.",
+        "c": "Wrong: A is false.",
+        "d": "Correct: postHandle is skipped on exceptions; afterCompletion is the callback for cleanup."
+      },
+      "explanation": "Put resource cleanup and metrics in afterCompletion, not postHandle."
+    },
+    {
+      "id": "blocking-async",
+      "concept": "Async endpoints (FastAPI)",
+      "type": "integer",
+      "difficulty": 3,
+      "prompt": "An async def FastAPI endpoint calls time.sleep(2) inside its body. A single uvicorn worker receives 3 requests at the same instant. About how many seconds until the last client gets its response?",
+      "answer": 6,
+      "tolerance": 0,
+      "explanation": "time.sleep blocks the event loop, so requests are served one after another: 3 x 2 = 6. With a plain def the work runs in the threadpool, giving roughly 2, and await asyncio.sleep(2) also gives roughly 2.",
+      "unit": "seconds"
+    },
+    {
+      "id": "def-vs-async",
+      "concept": "Async endpoints (FastAPI)",
+      "type": "single",
+      "difficulty": 2,
+      "prompt": "Your FastAPI endpoint calls a synchronous, blocking database driver. Which declaration is the safest choice?",
+      "options": [
+        {
+          "id": "a",
+          "text": "A plain def endpoint, so FastAPI runs it in a threadpool.",
+          "why": "The sync code runs off the event loop, so other requests keep flowing."
+        },
+        {
+          "id": "b",
+          "text": "async def, with the blocking call made directly inside the endpoint body.",
+          "why": "The blocking call freezes the whole event loop while it runs."
+        },
+        {
+          "id": "c",
+          "text": "async def and sprinkle await in front of the driver call.",
+          "why": "Awaiting a non-awaitable fails; it does not make the driver non-blocking."
+        },
+        {
+          "id": "d",
+          "text": "async def plus a global asyncio lock.",
+          "why": "A lock serialises requests and does not stop the loop from blocking."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Use async def only with async libraries (asyncpg, httpx.AsyncClient) or offload with run_in_threadpool."
+    },
+    {
+      "id": "sse-fastapi",
+      "concept": "Streaming / SSE",
+      "type": "code",
+      "difficulty": 3,
+      "prompt": "Write a FastAPI GET /events endpoint that streams server-sent events: an async generator that yields \"data: tick N\" for N = 0, 1, 2 (with the SSE blank-line terminator), wrapped in a streaming response of the right media type.",
+      "language": "python",
+      "starter": "from fastapi.responses import StreamingResponse\n",
+      "checks": [
+        {
+          "label": "returns StreamingResponse",
+          "pattern": "StreamingResponse\\("
+        },
+        {
+          "label": "uses media_type text/event-stream",
+          "pattern": "text/event-stream"
+        },
+        {
+          "label": "yields data: lines",
+          "pattern": "yield\\s+f?[\\\"']data:"
+        },
+        {
+          "label": "terminates events with \\n\\n",
+          "pattern": "\\\\n\\\\n"
+        }
+      ],
+      "model": "@app.get(\"/events\")\nasync def events():\n    async def gen():\n        for n in range(3):\n            yield f\"data: tick {n}\\n\\n\"\n    return StreamingResponse(gen(), media_type=\"text/event-stream\")",
+      "explanation": "Each SSE event ends with a blank line. Verified: output is 'data: 0\\n\\ndata: 1\\n\\n' with content type text/event-stream. In Spring, return an SseEmitter or Flux<ServerSentEvent> with produces=TEXT_EVENT_STREAM_VALUE."
+    },
+    {
+      "id": "async-webflux-facts",
+      "concept": "Async and reactive (Spring)",
+      "type": "multi",
+      "difficulty": 3,
+      "prompt": "Select all that apply: which statements about Spring async and WebFlux are correct?",
+      "options": [
+        {
+          "id": "a",
+          "text": "@Async only takes effect when @EnableAsync is present and the call goes through the proxy.",
+          "why": "Without both, the method runs synchronously on the caller's thread."
+        },
+        {
+          "id": "b",
+          "text": "An @Async method may return void, Future or CompletableFuture.",
+          "why": "Those are the supported return types; callers get the result through the future."
+        },
+        {
+          "id": "c",
+          "text": "Mono<T> represents 0..1 elements and Flux<T> represents 0..N.",
+          "why": "That is the core of Reactor's model."
+        },
+        {
+          "id": "d",
+          "text": "A Mono does the work as soon as the method returns it, without subscription.",
+          "why": "Reactive streams are lazy; nothing happens until subscribed (WebFlux subscribes for you)."
+        },
+        {
+          "id": "e",
+          "text": "An exception thrown in a void @Async method propagates to the caller.",
+          "why": "It does not; it goes to an AsyncUncaughtExceptionHandler."
+        },
+        {
+          "id": "f",
+          "text": "@Async works on private methods.",
+          "why": "Proxy-based advice cannot intercept private methods."
+        }
+      ],
+      "correct": [
+        "a",
+        "b",
+        "c"
+      ],
+      "explanation": "WebFlux needs a non-blocking stack end to end; one blocking JDBC call on an event-loop thread hurts like time.sleep in async def. Virtual threads (Java 21) are the simple alternative."
+    }
+  ]
+}

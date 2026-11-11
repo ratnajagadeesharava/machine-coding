@@ -1,0 +1,402 @@
+{
+  "id": "rm-dsa2-union-find-tries",
+  "title": "DSA: union-find, tries and longest prefix match",
+  "topic": "Interview roadmap",
+  "series": "interview-roadmap",
+  "seriesTitle": "Interview roadmap: topic quizzes",
+  "seriesDescription": "Topic-by-topic JEE-style quizzes for the backend and AI-engineering interview roadmap: integer, assertion-reason, matrix match, fill-in-the-blanks, short code writing, plus multi-correct questions. Language core, concurrency, DSA, web frameworks, data access, databases, messaging, resilience, security, testing, system design, LLM and agent engineering.",
+  "seriesOrder": 41,
+  "description": "Union-find with rank and path compression, counting components, redundant connection, trie insert/search, and IP-style longest prefix matching.",
+  "source": "CLRS; cp-algorithms DSU; LeetCode Redundant Connection, Implement Trie; RFC 4632 (CIDR); Princeton Algorithms (Sedgewick)",
+  "estimatedMinutes": 15,
+  "questions": [
+    {
+      "id": "uf-components",
+      "concept": "Union-find counting",
+      "type": "integer",
+      "difficulty": 1,
+      "prompt": "Start with 8 separate nodes 0..7 and process unions in this order: (0,1), (1,2), (3,4), (5,6), (6,7), (2,0), (4,5). How many connected components remain?",
+      "answer": 2,
+      "unit": "components",
+      "explanation": "Six of the seven calls merge two different sets (8 - 6 = 2); (2,0) is redundant because 0, 1, 2 are already together. Final sets: {0,1,2} and {3,4,5,6,7}."
+    },
+    {
+      "id": "uf-complexity",
+      "concept": "Union-find complexity",
+      "type": "single",
+      "difficulty": 2,
+      "prompt": "With union by rank and path compression, what is the amortised cost of one find or union?",
+      "options": [
+        {
+          "id": "a",
+          "text": "O(alpha(n)), the inverse Ackermann function, effectively constant.",
+          "why": "Correct: this is Tarjan's bound, below 5 for any practical n."
+        },
+        {
+          "id": "b",
+          "text": "O(log n) worst case per find, because rank only bounds the height of each tree.",
+          "why": "That is the bound with union by rank alone; adding path compression gives the amortised alpha(n)."
+        },
+        {
+          "id": "c",
+          "text": "O(1) worst case for every single find.",
+          "why": "A single find can still walk a long path; only the amortised cost is near-constant."
+        },
+        {
+          "id": "d",
+          "text": "O(n) per find, since a chain can still form.",
+          "why": "That is the naive version with neither optimisation."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Interview answer: \"nearly constant amortised, O(alpha(n))\". Either optimisation alone gives O(log n) amortised."
+    },
+    {
+      "id": "uf-java",
+      "concept": "Union-find implementation",
+      "type": "code",
+      "difficulty": 2,
+      "prompt": "Write a Java class UnionFind with int[] parent and int[] rank, a constructor UnionFind(int n), int find(int x) with path compression, and boolean union(int a, int b) that uses union by rank and returns false if a and b are already connected.",
+      "language": "java",
+      "starter": "class UnionFind {\n  \n}",
+      "checks": [
+        {
+          "label": "has an int[] parent array initialised so each node is its own parent",
+          "pattern": "int\\s*\\[\\s*\\]\\s*parent|parent\\s*=\\s*new\\s+int"
+        },
+        {
+          "label": "find compresses the path (parent[x] = find(...) or parent[parent[x]])",
+          "pattern": "parent\\s*\\[\\s*\\w+\\s*\\]\\s*=\\s*(find\\s*\\(|parent\\s*\\[\\s*parent)"
+        },
+        {
+          "label": "union uses rank or size to pick the new root",
+          "pattern": "rank|size"
+        },
+        {
+          "label": "union returns false when the roots are equal",
+          "pattern": "return\\s+false"
+        }
+      ],
+      "model": "int[] parent, rank;\nUnionFind(int n) { parent = new int[n]; rank = new int[n]; for (int i = 0; i < n; i++) parent[i] = i; }\nint find(int x) { return parent[x] == x ? x : (parent[x] = find(parent[x])); }\nboolean union(int a, int b) {\n  int ra = find(a), rb = find(b);\n  if (ra == rb) return false;\n  if (rank[ra] < rank[rb]) { int t = ra; ra = rb; rb = t; }\n  parent[rb] = ra; if (rank[ra] == rank[rb]) rank[ra]++;\n  return true;\n}",
+      "explanation": "The boolean return is what makes Redundant Connection and cycle detection a one-liner. Iterative path halving (parent[x] = parent[parent[x]]) is an equally good find. Recursion depth is fine with union by rank because trees stay O(log n) tall."
+    },
+    {
+      "id": "uf-python",
+      "concept": "Union-find counting",
+      "type": "code",
+      "difficulty": 2,
+      "prompt": "Write a Python function count_components(n, edges) for an undirected graph with nodes 0..n-1, using union-find (a parent list and a find function with path compression or halving). Return the number of connected components.",
+      "language": "python",
+      "starter": "def count_components(n, edges):\n    ",
+      "checks": [
+        {
+          "label": "defines a find function",
+          "pattern": "def\\s+find|def\\s+_find"
+        },
+        {
+          "label": "compresses the path while finding",
+          "pattern": "parent\\s*\\[\\s*\\w+\\s*\\]\\s*=\\s*(parent\\s*\\[\\s*parent|find\\s*\\()|root\\s*="
+        },
+        {
+          "label": "decrements the component count only when two roots differ",
+          "pattern": "-=\\s*1|-\\s*1|components\\s*-|count\\s*-"
+        }
+      ],
+      "model": "parent = list(range(n))\ndef find(x):\n    while parent[x] != x:\n        parent[x] = parent[parent[x]]\n        x = parent[x]\n    return x\nfor a, b in edges:\n    ra, rb = find(a), find(b)\n    if ra != rb:\n        parent[ra] = rb; n -= 1\nreturn n",
+      "explanation": "Counting successful unions and subtracting from n is the trick. Counting distinct roots at the end, or a DFS over adjacency lists, are valid alternatives (the DFS would not satisfy these union-find checks). Time O((n + E) * alpha(n))."
+    },
+    {
+      "id": "uf-fill",
+      "concept": "Union-find complexity",
+      "type": "fill",
+      "difficulty": 1,
+      "prompt": "Complete the two union-find optimisations.",
+      "text": "Union by {1} attaches the shallower tree under the deeper root, keeping height O({2} n); path {3} re-points visited nodes straight at the root.",
+      "blanks": {
+        "1": "rank",
+        "2": "log",
+        "3": "compression"
+      },
+      "bank": [
+        "rank",
+        "log",
+        "compression",
+        "linear",
+        "hashing",
+        "sorting"
+      ],
+      "explanation": "Union by rank alone gives O(log n) trees. Add path compression and the amortised cost drops to O(alpha(n))."
+    },
+    {
+      "id": "uf-cycle",
+      "concept": "Union-find applications",
+      "type": "assertion",
+      "difficulty": 2,
+      "prompt": "You add the edges of an undirected graph one at a time.",
+      "assertion": "Union-find can detect that an added edge closes a cycle.",
+      "reason": "If both endpoints already have the same root, they are already connected, so the new edge forms a cycle.",
+      "correct": [
+        "a"
+      ],
+      "whys": {
+        "a": "Right: R is exactly the test used (union returns false).",
+        "b": "R is the mechanism that makes A true.",
+        "c": "A is true.",
+        "d": "R is true."
+      },
+      "explanation": "This is the core of Redundant Connection and Kruskal's MST. For directed graphs it does not apply directly; use DFS colouring or topological sort."
+    },
+    {
+      "id": "uf-delete",
+      "concept": "Union-find applications",
+      "type": "truefalse",
+      "difficulty": 3,
+      "prompt": "True or false: a standard union-find can efficiently undo a union, so edges can be deleted one at a time.",
+      "options": [
+        {
+          "id": "a",
+          "text": "True",
+          "why": "It has no efficient undo."
+        },
+        {
+          "id": "b",
+          "text": "False",
+          "why": "Correct: path compression destroys the history; supporting deletions needs offline reversal (process edges backwards) or rollback union-find without compression."
+        }
+      ],
+      "correct": [
+        "b"
+      ],
+      "explanation": "Interview trick: if edges are removed, process the operations in reverse and turn deletions into unions."
+    },
+    {
+      "id": "uf-uses",
+      "concept": "Union-find applications",
+      "type": "multi",
+      "difficulty": 2,
+      "prompt": "Select all that apply: which problems are naturally solved with union-find?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Kruskal's minimum spanning tree.",
+          "why": "Correct: it asks whether an edge connects two different components."
+        },
+        {
+          "id": "b",
+          "text": "Merging accounts that share an email address.",
+          "why": "Correct: each shared email unions two accounts."
+        },
+        {
+          "id": "c",
+          "text": "Finding the shortest weighted path from one source.",
+          "why": "Needs Dijkstra or Bellman-Ford; union-find only tracks connectivity, not distance."
+        },
+        {
+          "id": "d",
+          "text": "Producing a topological order of a DAG.",
+          "why": "Needs Kahn's algorithm or DFS; connectivity sets do not encode direction."
+        }
+      ],
+      "correct": [
+        "a",
+        "b"
+      ],
+      "explanation": "Union-find answers \"are these two connected?\" and \"how many groups?\", nothing about distances or order."
+    },
+    {
+      "id": "trie-nodes",
+      "concept": "Trie structure",
+      "type": "integer",
+      "difficulty": 2,
+      "prompt": "Insert car, cart, cat, dog and do into an empty trie. How many nodes exist excluding the root?",
+      "answer": 8,
+      "unit": "nodes",
+      "explanation": "Shared prefixes are stored once: c-a-r (3), t under r for cart (4), t under a for cat (5), d-o-g (8); \"do\" reuses d-o. Including the root that would be 9."
+    },
+    {
+      "id": "lpm-length",
+      "concept": "Longest prefix match",
+      "type": "integer",
+      "difficulty": 2,
+      "prompt": "A router table has 0.0.0.0/0, 10.0.0.0/8, 10.1.0.0/16 and 10.1.2.0/24. A packet arrives for 10.1.3.7. What is the prefix length of the entry chosen by longest-prefix match?",
+      "answer": 16,
+      "unit": "/n",
+      "explanation": "10.1.3.7 is inside /0, /8 and /16, but not 10.1.2.0/24 (third octet is 3, not 2). The longest matching prefix is /16."
+    },
+    {
+      "id": "trie-match",
+      "concept": "Choosing a structure",
+      "type": "matrix",
+      "difficulty": 2,
+      "prompt": "Match each requirement with the data structure that fits best.",
+      "left": [
+        {
+          "id": "a",
+          "text": "Autocomplete: all words with a given prefix"
+        },
+        {
+          "id": "b",
+          "text": "IP routing: longest matching CIDR prefix"
+        },
+        {
+          "id": "c",
+          "text": "Exact key lookup, no ordering needed"
+        },
+        {
+          "id": "d",
+          "text": "Keys in sorted order with floor and ceiling queries"
+        },
+        {
+          "id": "e",
+          "text": "Approximate membership with no false negatives"
+        }
+      ],
+      "right": [
+        {
+          "id": "p",
+          "text": "Trie"
+        },
+        {
+          "id": "q",
+          "text": "Binary trie keyed on address bits"
+        },
+        {
+          "id": "r",
+          "text": "HashMap / dict"
+        },
+        {
+          "id": "s",
+          "text": "TreeMap"
+        },
+        {
+          "id": "t",
+          "text": "Bloom filter"
+        },
+        {
+          "id": "u",
+          "text": "Union-find"
+        }
+      ],
+      "pairs": {
+        "a": "p",
+        "b": "q",
+        "c": "r",
+        "d": "s",
+        "e": "t"
+      },
+      "explanation": "A trie walks the prefix in O(L) and lists the subtree; a binary trie over the 32 address bits finds the deepest route on the path; HashMap gives O(1) exact lookup; TreeMap gives floor/ceiling; a Bloom filter may report false positives but never false negatives."
+    },
+    {
+      "id": "trie-python",
+      "concept": "Trie structure",
+      "type": "code",
+      "difficulty": 2,
+      "prompt": "Write a Python class Trie using nested dicts (dict of dicts), with insert(word) and search(word). search returns True only if the whole word was inserted, not merely a prefix of one.",
+      "language": "python",
+      "starter": "class Trie:\n    def __init__(self):\n        self.root = {}\n    ",
+      "checks": [
+        {
+          "label": "defines insert and search methods",
+          "pattern": "def\\s+insert[\\s\\S]*def\\s+search"
+        },
+        {
+          "label": "walks or creates a child per character",
+          "pattern": "setdefault|not\\s+in|\\.get\\s*\\(|defaultdict"
+        },
+        {
+          "label": "marks the end of a word with a sentinel key or flag",
+          "pattern": "\\$|#|is_end|is_word|terminal|\\bend\\b|isend"
+        },
+        {
+          "label": "search checks the end marker, not just that the path exists",
+          "pattern": "return[^\\n]*(in\\s+node|\\.get|\\[\\s*[\"']\\W?\\w*[\"']\\s*\\]|is_end|is_word|end)"
+        }
+      ],
+      "model": "class Trie:\n    def __init__(self): self.root = {}\n    def insert(self, word):\n        node = self.root\n        for ch in word: node = node.setdefault(ch, {})\n        node[\"$\"] = True\n    def search(self, word):\n        node = self.root\n        for ch in word:\n            if ch not in node: return False\n            node = node[ch]\n        return \"$\" in node",
+      "explanation": "The end-of-word marker separates search(\"car\") from startsWith(\"ca\"). A TrieNode class with a children dict and is_end flag is equivalent. Insert and search are O(L)."
+    },
+    {
+      "id": "lpm-java",
+      "concept": "Longest prefix match",
+      "type": "code",
+      "difficulty": 3,
+      "prompt": "A binary trie node is class Node { Node[] ch = new Node[2]; String hop; } where hop is non-null if a route ends here. Write String lookup(Node root, int ip) that returns the next hop of the longest matching prefix (or null), reading the 32 address bits from the most significant bit.",
+      "language": "java",
+      "starter": "String lookup(Node root, int ip) {\n  \n}",
+      "checks": [
+        {
+          "label": "extracts bits with an unsigned shift and & 1",
+          "pattern": "(>>>|>>)\\s*\\w+\\s*\\)?\\s*&\\s*1"
+        },
+        {
+          "label": "moves to the child for each bit",
+          "pattern": "ch\\s*\\[|child"
+        },
+        {
+          "label": "remembers the last route seen on the way down (best = hop)",
+          "pattern": "best\\w*\\s*=|last\\w*\\s*=|result\\s*="
+        },
+        {
+          "label": "loops over the address bits",
+          "pattern": "for|while"
+        }
+      ],
+      "model": "String best = null; Node cur = root;\nfor (int i = 31; i >= 0 && cur != null; i--) {\n  if (cur.hop != null) best = cur.hop;\n  cur = cur.ch[(ip >>> i) & 1];\n}\nif (cur != null && cur.hop != null) best = cur.hop;\nreturn best;",
+      "explanation": "The trick is to keep walking after the first match and remember the deepest one. Do not stop at the first node with a hop. The last check handles /32 routes. I ran this against /0, /8, /16 and /24 routes: 10.1.3.7 returns the /16 hop."
+    },
+    {
+      "id": "trie-vs-hash",
+      "concept": "Longest prefix match",
+      "type": "assertion",
+      "difficulty": 3,
+      "prompt": "A teammate proposes storing every route in a HashMap<String, Hop> keyed by \"address/length\".",
+      "assertion": "A single hash lookup is enough to find the longest matching prefix for a packet.",
+      "reason": "A trie finds it in one walk over the address bits, remembering the deepest node that holds a route.",
+      "correct": [
+        "d"
+      ],
+      "whys": {
+        "a": "A is false, so R cannot explain it.",
+        "b": "A is false.",
+        "c": "A is false.",
+        "d": "Right: a hash map must be probed once per candidate length (up to 32 times for IPv4); the trie does it in one pass, so R is true while A is false."
+      },
+      "explanation": "Hash-per-length tables are used in software, but real routers use tries or TCAM. Say both and the trade-offs."
+    },
+    {
+      "id": "trie-children",
+      "concept": "Trie structure",
+      "type": "single",
+      "difficulty": 3,
+      "prompt": "You build a trie for autocompleting search terms in many languages (a huge, sparse alphabet). How should each node store its children?",
+      "options": [
+        {
+          "id": "a",
+          "text": "A HashMap<Character, Node> (or dict), since most characters never occur at a node.",
+          "why": "Correct: memory grows with actual children, not with alphabet size."
+        },
+        {
+          "id": "b",
+          "text": "A fixed Node[26] array per node, because arrays always use less memory than maps for any alphabet.",
+          "why": "That is only true for small dense alphabets; 26 slots per node wastes memory when alphabets are huge or sparse."
+        },
+        {
+          "id": "c",
+          "text": "A sorted list scanned linearly at every node.",
+          "why": "Lookup becomes O(L * k) instead of O(L); a map is better."
+        },
+        {
+          "id": "d",
+          "text": "A single global HashMap from full word to Node.",
+          "why": "That is a plain hash map of strings, not a trie, and it loses prefix sharing."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Array children give O(1) indexed access for a small known alphabet (e.g. lowercase letters); maps win for Unicode."
+    }
+  ]
+}
