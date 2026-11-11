@@ -32,7 +32,7 @@
     },
     {
       "id": "pct-result",
-      "concept": "STAR structure",
+      "concept": "Quantifying results",
       "type": "integer",
       "difficulty": 1,
       "prompt": "In your Result you say p95 latency fell from 800 ms to 200 ms. By what percentage did it fall?",
@@ -370,7 +370,7 @@
     },
     {
       "id": "result-line",
-      "concept": "STAR structure",
+      "concept": "Writing results",
       "type": "code",
       "difficulty": 2,
       "prompt": "Write one or two sentences for the Result part of a STAR story about reducing API latency. Include a number with a before-and-after comparison, and say what you changed so it would not regress.",

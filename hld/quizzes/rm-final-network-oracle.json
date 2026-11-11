@@ -19,12 +19,12 @@
       "options": [
         {
           "id": "a",
-          "text": "A computed model of the network built from collected device configuration and state.",
+          "text": "A computed model built from collected device configs and state.",
           "why": "Right: queries run on the model, with no packets sent into production."
         },
         {
           "id": "b",
-          "text": "A second physical network mirroring production hardware port for port in a lab.",
+          "text": "A second physical network mirroring production hardware port for port in a separate lab.",
           "why": "That is a lab or staging network, not a software model."
         },
         {
@@ -342,12 +342,12 @@
       "options": [
         {
           "id": "a",
-          "text": "Enforce tenant scoping below the application, for example row-level security or a tenant-aware data layer.",
+          "text": "Enforce scoping below the app, e.g. row-level security.",
           "why": "Right: make the safe path automatic so one missed WHERE cannot leak."
         },
         {
           "id": "b",
-          "text": "Ask developers to remember the filter and add a reminder to the code review checklist.",
+          "text": "Ask developers to remember the filter and add a reminder to the code review checklist for every pull request.",
           "why": "Relies on human memory, which fails."
         },
         {

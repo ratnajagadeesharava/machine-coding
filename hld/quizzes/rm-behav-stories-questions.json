@@ -58,7 +58,7 @@
       "id": "why-leaving",
       "concept": "Why I left",
       "type": "code",
-      "difficulty": 2,
+      "difficulty": 3,
       "prompt": "Write a two-sentence answer to \"Why are you leaving your current job?\" that is forward-looking and does not criticise your employer. Mention what you are looking for.",
       "language": "text",
       "checks": [
@@ -87,12 +87,12 @@
       "options": [
         {
           "id": "a",
-          "text": "Connect a specific company problem or product to your own experience and what you want to build.",
+          "text": "Link a specific company problem to your own experience.",
           "why": "Right: specific and mutual; it shows research and fit."
         },
         {
           "id": "b",
-          "text": "Say that the compensation and brand name are the main reasons you applied to this role.",
+          "text": "Say that the compensation and the brand name are the main reasons you applied to this particular role.",
           "why": "Honest perhaps, but it says nothing about fit or motivation."
         },
         {
@@ -120,12 +120,12 @@
       "options": [
         {
           "id": "a",
-          "text": "Understood the other engineer's constraint, aligned on measurements, agreed a plan and committed to the outcome.",
+          "text": "Understood their constraint, agreed on data, committed.",
           "why": "Right: empathy, data and commitment show maturity."
         },
         {
           "id": "b",
-          "text": "Escalated to the manager straight away so a decision could be made without wasting my time.",
+          "text": "Escalated to the manager straight away so that a decision could be made without wasting my own time.",
           "why": "Skipping direct conversation signals poor conflict skills."
         },
         {
@@ -153,12 +153,12 @@
       "options": [
         {
           "id": "a",
-          "text": "Specific critical feedback on my reviews, what I changed, and the later result in review quality.",
+          "text": "Specific feedback, my change, and the later measured result.",
           "why": "Right: concrete input, concrete change, measurable effect."
         },
         {
           "id": "b",
-          "text": "Feedback that I was too perfectionist, which I treat as my strength and still do in the same way.",
+          "text": "Feedback that I was too much of a perfectionist, which I treat as a strength and still handle in exactly the same way.",
           "why": "No change and no evidence of learning."
         },
         {

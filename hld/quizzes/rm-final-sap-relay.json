@@ -207,12 +207,12 @@
       "options": [
         {
           "id": "a",
-          "text": "Relationships become queryable, so you can trace impact, for example which open orders break if a material fails to migrate.",
+          "text": "Relationships are queryable, so you can trace which open orders break if a material fails to migrate.",
           "why": "Right: lineage and impact analysis follow edges instead of ad hoc joins."
         },
         {
           "id": "b",
-          "text": "A graph replaces the need for reconciliation because relationships prove the data is right.",
+          "text": "A graph replaces the need for reconciliation because the relationships themselves prove that the data is right.",
           "why": "Relationships help trace issues but do not replace counts, totals and value checks."
         },
         {
@@ -385,7 +385,7 @@
           "pattern": "\\[\\s*[\"']ts[\"']\\s*\\]\\s*(>|<|>=|<=)|max\\s*\\("
         }
       ],
-      "model": "if e[\"id\"] in seen:\n    return\nseen.add(e[\"id\"])\ncur = state.get(e[\"trip_id\"])\nif cur is None or e[\"ts\"] > cur[\"ts\"]:\n    state[e[\"trip_id\"]] = e",
+      "model": "def apply_event(state, seen, e):\n    if e[\"id\"] in seen:\n        return\n    seen.add(e[\"id\"])\n    cur = state.get(e[\"trip_id\"])\n    if cur is None or e[\"ts\"] > cur[\"ts\"]:\n        state[e[\"trip_id\"]] = e",
       "explanation": "Idempotent consumers (dedupe by event id) and event-time ordering (last-writer-wins by timestamp) are the two core tricks for at-least-once, unordered feeds. In production the seen set is bounded or kept in a store with a TTL."
     },
     {

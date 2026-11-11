@@ -99,7 +99,7 @@
           "pattern": "RESULTS\\s*\\[\\s*key\\s*\\]\\s*=|RESULTS\\.setdefault\\s*\\(\\s*key|RESULTS\\.update"
         }
       ],
-      "model": "    if key in RESULTS:\n        return RESULTS[key]\n    result = charge(amount)\n    RESULTS[key] = result\n    return result",
+      "model": "def process_payment(key, amount):\n    if key in RESULTS:\n        return RESULTS[key]\n    result = charge(amount)\n    RESULTS[key] = result\n    return result",
       "explanation": "In production the key and result live in a database with a unique constraint (or Redis SET NX) so two concurrent requests cannot both charge, and the key is bound to the request payload."
     },
     {
