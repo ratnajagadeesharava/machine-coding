@@ -1,0 +1,272 @@
+{
+  "id": "roadmap-04-concurrency-tools",
+  "title": "Roadmap 4: concurrency tools and classic drills",
+  "topic": "Interview roadmap",
+  "series": "interview-roadmap",
+  "seriesTitle": "Interview roadmap: topic quizzes",
+  "seriesOrder": 4,
+  "seriesDescription": "Topic-by-topic quizzes that follow the backend interview roadmap: language core, concurrency, DSA habits, web frameworks, data access, databases, messaging, resilience, security, testing, system design, and LLM/agent engineering.",
+  "description": "Thread pool parameters and sizing, CompletableFuture and asyncio composition, blocking queues, latches, semaphores and barriers, plus rate limiter and LRU drills.",
+  "source": "Interview roadmap study plan (Java/Spring Boot and Python/FastAPI)",
+  "estimatedMinutes": 10,
+  "questions": [
+    {
+      "id": "tpe-third-thread",
+      "concept": "Thread pools",
+      "type": "single",
+      "difficulty": 3,
+      "prompt": "A ThreadPoolExecutor has corePoolSize 2, maximumPoolSize 4 and an ArrayBlockingQueue of capacity 10. Both core threads are busy. When does the pool start a third thread?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Only when the queue is full and another task is submitted.",
+          "why": "Right: tasks queue first once core threads are busy; extra threads up to the maximum start only when the queue rejects the task."
+        },
+        {
+          "id": "b",
+          "text": "As soon as a third task is submitted while both core threads are busy.",
+          "why": "The pool prefers queueing over creating threads beyond the core size."
+        },
+        {
+          "id": "c",
+          "text": "When the queue reaches half capacity, after five waiting tasks.",
+          "why": "There is no half-full trigger; only a full queue matters."
+        },
+        {
+          "id": "d",
+          "text": "Never, because maximumPoolSize applies only to unbounded queues.",
+          "why": "It is the reverse: with an unbounded queue the pool never grows past core."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Order of operations: core threads, then queue, then extra threads up to max, then the rejection policy. This is why an unbounded queue makes maximumPoolSize meaningless."
+    },
+    {
+      "id": "pool-sizing-io",
+      "concept": "Thread pools",
+      "type": "single",
+      "difficulty": 2,
+      "prompt": "A request handler spends about 90% of its time waiting on a database or HTTP call and 10% on CPU, on an 8-core machine. How should you size the worker pool?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Well above the core count, roughly cores x (1 + wait/compute), here about 80.",
+          "why": "Right: threads waiting on I/O free the CPU, so more threads keep the cores busy."
+        },
+        {
+          "id": "b",
+          "text": "Exactly 8 threads, because having more threads than cores only adds scheduling overhead.",
+          "why": "That rule fits CPU-bound work; here most threads are idle waiting."
+        },
+        {
+          "id": "c",
+          "text": "One thread, because a single thread avoids all synchronisation cost.",
+          "why": "One thread would leave the cores idle and serialise all requests."
+        },
+        {
+          "id": "d",
+          "text": "As many threads as there are open requests, with no upper bound.",
+          "why": "Unbounded pools can exhaust memory; pools should be bounded."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "CPU-bound work: about cores or cores + 1. I/O-bound work: more threads, found by measuring. Java 21 virtual threads and Python asyncio make blocking waits cheap, which changes this trade-off."
+    },
+    {
+      "id": "thencompose-vs-thenapply",
+      "concept": "Async composition",
+      "type": "single",
+      "difficulty": 2,
+      "prompt": "CompletableFuture<User> getUser(id) and CompletableFuture<List<Order>> loadOrders(User u) are both asynchronous. How do you chain them into a CompletableFuture<List<Order>> without nesting futures?",
+      "options": [
+        {
+          "id": "a",
+          "text": "getUser(id).thenCompose(u -> loadOrders(u))",
+          "why": "Right: thenCompose flattens a function that returns a CompletableFuture, like flatMap."
+        },
+        {
+          "id": "b",
+          "text": "getUser(id).thenApply(u -> loadOrders(u))",
+          "why": "That yields CompletableFuture<CompletableFuture<List<Order>>>, a nested future."
+        },
+        {
+          "id": "c",
+          "text": "getUser(id).thenAccept(u -> loadOrders(u))",
+          "why": "thenAccept consumes the value and returns CompletableFuture<Void>, so the orders are lost."
+        },
+        {
+          "id": "d",
+          "text": "getUser(id).thenCombine(u -> loadOrders(u), null)",
+          "why": "thenCombine takes another future and a two-argument function, so this does not compile."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "thenApply is map, thenCompose is flatMap, thenCombine joins two independent futures, and allOf waits for many. Use exceptionally or handle for errors, and supply an executor to avoid blocking the common pool."
+    },
+    {
+      "id": "asyncio-blocking-sleep",
+      "concept": "Async composition",
+      "type": "truefalse",
+      "difficulty": 2,
+      "prompt": "Calling time.sleep(1) inside an async def coroutine pauses only that coroutine, while other asyncio tasks keep running.",
+      "options": [
+        {
+          "id": "a",
+          "text": "True",
+          "why": "time.sleep blocks the whole thread, and the single event loop runs on that thread."
+        },
+        {
+          "id": "b",
+          "text": "False",
+          "why": "Right: it blocks the event loop so every task stalls; use await asyncio.sleep(1) instead."
+        }
+      ],
+      "correct": [
+        "b"
+      ],
+      "explanation": "Never call blocking functions in a coroutine. Use async libraries, or offload with asyncio.to_thread or run_in_executor."
+    },
+    {
+      "id": "asyncio-facts",
+      "concept": "Async composition",
+      "type": "multi",
+      "difficulty": 3,
+      "prompt": "Select all that apply. Which statements about asyncio are true?",
+      "options": [
+        {
+          "id": "a",
+          "text": "asyncio.gather runs the awaitables concurrently on the one event loop thread.",
+          "why": "Right: concurrency comes from interleaving at await points, not from extra threads."
+        },
+        {
+          "id": "b",
+          "text": "asyncio.create_task schedules a coroutine to start running soon without being awaited.",
+          "why": "Right: but keep a reference and await it, or errors and cancellation get lost."
+        },
+        {
+          "id": "c",
+          "text": "asyncio.wait_for(coro, 2) cancels the coroutine and raises TimeoutError after two seconds.",
+          "why": "Right: the timeout is enforced by cancelling the inner task."
+        },
+        {
+          "id": "d",
+          "text": "Two consecutive await statements on fetch(1) and fetch(2) run them in parallel.",
+          "why": "Sequential awaits run one after the other; use gather or tasks for concurrency."
+        },
+        {
+          "id": "e",
+          "text": "gather starts one operating system thread per awaitable.",
+          "why": "gather uses coroutines on one thread, not OS threads."
+        }
+      ],
+      "correct": [
+        "a",
+        "b",
+        "c"
+      ],
+      "explanation": "asyncio fits many I/O-bound waits, not CPU work. Structured concurrency via asyncio.TaskGroup (3.11+) is safer than loose create_task calls."
+    },
+    {
+      "id": "blocking-queue-put",
+      "concept": "Concurrent collections",
+      "type": "truefalse",
+      "difficulty": 1,
+      "prompt": "Calling put() on a full bounded BlockingQueue blocks the calling thread until space becomes available.",
+      "options": [
+        {
+          "id": "a",
+          "text": "True",
+          "why": "Right: put waits for space, which gives natural back-pressure from the consumer to the producer."
+        },
+        {
+          "id": "b",
+          "text": "False",
+          "why": "put blocks; it is offer() that returns false immediately when the queue is full."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "queue.Queue(maxsize=n).put() behaves the same in Python. Back-pressure via a bounded queue stops fast producers from exhausting memory."
+    },
+    {
+      "id": "coordination-tools",
+      "concept": "Coordination tools",
+      "type": "multi",
+      "difficulty": 2,
+      "prompt": "Select all that apply. Which statements about coordination tools are correct?",
+      "options": [
+        {
+          "id": "a",
+          "text": "A CountDownLatch is one-shot: threads await until its count reaches zero, and it cannot be reset.",
+          "why": "Right: use it for \"wait for N workers to finish\" or a start signal."
+        },
+        {
+          "id": "b",
+          "text": "new Semaphore(3) lets at most three threads hold a permit at the same time.",
+          "why": "Right: it limits concurrent access to a resource such as a connection."
+        },
+        {
+          "id": "c",
+          "text": "A CyclicBarrier is reusable: threads wait for each other at a point and then continue together.",
+          "why": "Right: it resets automatically after each trip, unlike a latch."
+        },
+        {
+          "id": "d",
+          "text": "Python threading.Event.set() wakes only one thread waiting on wait().",
+          "why": "It wakes all waiting threads and keeps the flag set until clear()."
+        },
+        {
+          "id": "e",
+          "text": "A CountDownLatch can be reset to its starting count by calling countDown() again.",
+          "why": "countDown() only decrements; at zero it stays open permanently."
+        }
+      ],
+      "correct": [
+        "a",
+        "b",
+        "c"
+      ],
+      "explanation": "Latch: wait for events. Barrier: threads wait for each other. Semaphore: limit concurrency. Python equivalents are Event, Barrier and threading.Semaphore."
+    },
+    {
+      "id": "token-bucket-threads",
+      "concept": "Classic drills",
+      "type": "single",
+      "difficulty": 3,
+      "prompt": "You implement a token-bucket rate limiter: on each request compute tokens = min(capacity, tokens + elapsed * rate), then take one token if at least one is available. It runs on many request threads. What is the key correctness requirement?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Make the refill-and-take sequence one atomic step, using a lock or a CAS loop on a single state object.",
+          "why": "Right: otherwise two threads can both see one token and both take it."
+        },
+        {
+          "id": "b",
+          "text": "Declare the tokens field volatile so every thread sees the latest value.",
+          "why": "Visibility alone does not stop two threads from interleaving the read, check and write."
+        },
+        {
+          "id": "c",
+          "text": "Use a ConcurrentHashMap keyed by thread id to store the token count.",
+          "why": "Per-thread counts would give each thread its own bucket and break the global limit."
+        },
+        {
+          "id": "d",
+          "text": "Refresh the tokens in a separate thread and skip locking when consuming.",
+          "why": "Consumption itself still needs an atomic check-and-decrement."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Same pattern in the thread-safe LRU drill (LinkedHashMap with accessOrder, guarded by a lock) and bounded producer-consumer (BlockingQueue). Name the compound action that must be atomic, then pick the lock."
+    }
+  ]
+}

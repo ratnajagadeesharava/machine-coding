@@ -82,7 +82,7 @@
       "concept": "Sliding window",
       "type": "single",
       "difficulty": 2,
-      "prompt": "What is the time complexity of this function, where n = len(s)?\n\ndef longest(s):\n    seen, left, best = {}, 0, 0\n    for r, ch in enumerate(s):\n        if ch in seen and seen[ch] >= left:\n            left = seen[ch] + 1\n        seen[ch] = r\n        best = max(best, r - left + 1)\n    return best",
+      "prompt": "Consider this function, where n = len(s).\n\ndef longest(s):\n    seen, left, best = {}, 0, 0\n    for r, ch in enumerate(s):\n        if ch in seen and seen[ch] >= left:\n            left = seen[ch] + 1\n        seen[ch] = r\n        best = max(best, r - left + 1)\n    return best\n\nWhat is its time complexity?",
       "options": [
         {
           "id": "a",
@@ -138,7 +138,7 @@
       "concept": "Binary search",
       "type": "single",
       "difficulty": 3,
-      "prompt": "This Java binary search returns the wrong result for some inputs. What is the bug?\n\nint lo = 0, hi = a.length - 1;\nwhile (lo < hi) {\n    int mid = lo + (hi - lo) / 2;\n    if (a[mid] == t) return mid;\n    if (a[mid] < t) lo = mid + 1; else hi = mid - 1;\n}\nreturn -1;",
+      "prompt": "This Java binary search returns the wrong result for some inputs.\n\nint lo = 0, hi = a.length - 1;\nwhile (lo < hi) {\n    int mid = lo + (hi - lo) / 2;\n    if (a[mid] == t) return mid;\n    if (a[mid] < t) lo = mid + 1; else hi = mid - 1;\n}\nreturn -1;\n\nWhat is the bug?",
       "options": [
         {
           "id": "a",
@@ -194,7 +194,7 @@
       "concept": "Linked lists",
       "type": "single",
       "difficulty": 3,
-      "prompt": "This Python function is meant to reverse a singly linked list. For the list 1 -> 2 -> 3, what does it return?\n\ndef reverse(head):\n    prev, cur = None, head\n    while cur:\n        cur.next = prev\n        prev = cur\n        cur = cur.next\n    return prev",
+      "prompt": "This Python function is meant to reverse a singly linked list. Consider the list 1 -> 2 -> 3.\n\ndef reverse(head):\n    prev, cur = None, head\n    while cur:\n        cur.next = prev\n        prev = cur\n        cur = cur.next\n    return prev\n\nWhat does it return?",
       "options": [
         {
           "id": "a",
