@@ -1,0 +1,272 @@
+{
+  "id": "roadmap-16-system-design-process",
+  "title": "Roadmap 16: System design process and LLD",
+  "topic": "Interview roadmap",
+  "series": "interview-roadmap",
+  "seriesTitle": "Interview roadmap: topic quizzes",
+  "seriesOrder": 16,
+  "seriesDescription": "Topic-by-topic quizzes that follow the backend interview roadmap: language core, concurrency, DSA habits, web frameworks, data access, databases, messaging, resilience, security, testing, system design, and LLM/agent engineering.",
+  "description": "The interview framework, back-of-envelope estimates, rate limiter and auth service design, multi-tenancy, reconciliation pipelines, and low-level design basics.",
+  "source": "Interview roadmap study plan (Java/Spring Boot and Python/FastAPI)",
+  "estimatedMinutes": 10,
+  "questions": [
+    {
+      "id": "start-with-requirements",
+      "concept": "Design framework",
+      "type": "truefalse",
+      "difficulty": 1,
+      "prompt": "True or false: a strong system design answer starts by drawing the high-level boxes, and clarifying requirements can wait until later.",
+      "options": [
+        {
+          "id": "a",
+          "text": "True",
+          "why": "Boxes drawn first usually solve the wrong problem."
+        },
+        {
+          "id": "b",
+          "text": "False",
+          "why": "Correct: clarify functional and non-functional requirements first, then estimate, define the API and data model, draw the design and deep dive."
+        }
+      ],
+      "correct": [
+        "b"
+      ],
+      "explanation": "A solid order: requirements, estimates, API, data model, high-level design, deep dive, trade-offs and failure modes."
+    },
+    {
+      "id": "qps-estimate",
+      "concept": "Estimation",
+      "type": "single",
+      "difficulty": 2,
+      "prompt": "10 million daily active users each make 20 read requests per day. Roughly what is the average read QPS?",
+      "options": [
+        {
+          "id": "a",
+          "text": "About 2,300 requests per second.",
+          "why": "Right: 200 million per day divided by 86,400 seconds."
+        },
+        {
+          "id": "b",
+          "text": "About 23,000 requests per second.",
+          "why": "Off by a factor of ten."
+        },
+        {
+          "id": "c",
+          "text": "About 230 requests per second.",
+          "why": "Too low by a factor of ten."
+        },
+        {
+          "id": "d",
+          "text": "About 200,000 requests per second.",
+          "why": "That divides by about 1,000 instead of the seconds in a day."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Use 100,000 seconds per day as a shortcut, then state a peak factor (often 2-3x) and size for the peak."
+    },
+    {
+      "id": "distributed-rate-limit",
+      "concept": "Rate limiter design",
+      "type": "single",
+      "difficulty": 3,
+      "prompt": "An API runs on twelve gateway instances and must allow 100 requests per minute per API key overall. Where should the counters live?",
+      "options": [
+        {
+          "id": "a",
+          "text": "In shared Redis, updated atomically with INCR plus expiry.",
+          "why": "Right: all instances see one count and updates cannot race."
+        },
+        {
+          "id": "b",
+          "text": "In each instance's memory, with each instance allowing 100 per minute.",
+          "why": "The real limit becomes up to 1,200 per minute."
+        },
+        {
+          "id": "c",
+          "text": "In a relational row locked with SELECT FOR UPDATE on every request.",
+          "why": "Correct but makes the database a bottleneck on the hot path."
+        },
+        {
+          "id": "d",
+          "text": "In the client, which promises to stay under its limit.",
+          "why": "Clients are untrusted and cannot enforce limits."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Decide the failure mode too: fail open (allow) or fail closed if Redis is down. Return 429 with a Retry-After header."
+    },
+    {
+      "id": "token-bucket-bursts",
+      "concept": "Rate limiter design",
+      "type": "truefalse",
+      "difficulty": 2,
+      "prompt": "True or false: a token bucket allows short bursts up to the bucket size while enforcing the long-run average refill rate.",
+      "options": [
+        {
+          "id": "a",
+          "text": "True",
+          "why": "Correct: spare tokens accumulate up to the capacity and can be spent at once."
+        },
+        {
+          "id": "b",
+          "text": "False",
+          "why": "That describes the bucket; a strict per-second limit does not allow bursts."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Sliding window counters give smoother limits at the cost of more state or an approximation; fixed windows allow double bursts at window edges."
+    },
+    {
+      "id": "jwt-auth-service",
+      "concept": "Auth service design",
+      "type": "multi",
+      "difficulty": 2,
+      "prompt": "Select all that apply. Which choices suit a JWT-based authentication service?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Issue short-lived access tokens and keep refresh tokens revocable and rotated.",
+          "why": "Right: limits the damage of a leaked token."
+        },
+        {
+          "id": "b",
+          "text": "Sign with an asymmetric key and publish public keys via a JWKS endpoint.",
+          "why": "Right: services verify tokens without holding the signing secret."
+        },
+        {
+          "id": "c",
+          "text": "Include a key id (kid) in the header so signing keys can be rotated.",
+          "why": "Right: old and new keys can both verify during rotation."
+        },
+        {
+          "id": "d",
+          "text": "Issue 30 day access tokens so that revocation is never needed.",
+          "why": "A stolen token would stay valid for 30 days."
+        },
+        {
+          "id": "e",
+          "text": "Share the signing secret with every consuming service so each can issue tokens.",
+          "why": "Widens the blast radius of a leaked secret."
+        }
+      ],
+      "correct": [
+        "a",
+        "b",
+        "c"
+      ],
+      "explanation": "Expect follow-ups on logout, password change and revocation: server-side sessions, a denylist, or short expiry."
+    },
+    {
+      "id": "multi-tenant-isolation",
+      "concept": "Multi-tenancy",
+      "type": "single",
+      "difficulty": 2,
+      "prompt": "In a shared-schema multi-tenant SaaS, what best prevents one tenant from reading another's rows?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Take the tenant from the verified token and enforce it with row-level security.",
+          "why": "Right: developers cannot forget a filter."
+        },
+        {
+          "id": "b",
+          "text": "Ask each developer to add WHERE tenant_id = ? to every single query they write.",
+          "why": "One forgotten clause is a data breach."
+        },
+        {
+          "id": "c",
+          "text": "Read the tenant id from a request body field that the client sends.",
+          "why": "Any client can send another tenant's id."
+        },
+        {
+          "id": "d",
+          "text": "Hide the tenant ids by using long random numbers in the URLs.",
+          "why": "Obscurity is not authorisation."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Mention the trade-offs of schema per tenant and database per tenant, and plan to move very large tenants to dedicated resources."
+    },
+    {
+      "id": "sap-reconciliation",
+      "concept": "Reconciliation pipeline",
+      "type": "single",
+      "difficulty": 3,
+      "prompt": "A nightly job reconciles SAP documents with the warehouse. About 0.5% of records mismatch, mostly SAP postings made after the extract cutoff. What is the best fix?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Match on business keys and re-check unmatched records in later runs first.",
+          "why": "Right: late data resolves itself without hiding true gaps."
+        },
+        {
+          "id": "b",
+          "text": "Widen the amount tolerance until the mismatch count looks acceptable to the business.",
+          "why": "Hides real discrepancies and does not fix missing rows."
+        },
+        {
+          "id": "c",
+          "text": "Delete warehouse rows that SAP does not contain at the extract cutoff time.",
+          "why": "Destroys data that arrives correctly one run later."
+        },
+        {
+          "id": "d",
+          "text": "Compare only row counts per table and ignore individual records.",
+          "why": "Equal counts can hide offsetting missing and extra rows."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Reconcile with business keys, small tolerances for rounding, per-status reports and an aging window for late data."
+    },
+    {
+      "id": "lld-lru-parking",
+      "concept": "Low-level design",
+      "type": "multi",
+      "difficulty": 3,
+      "prompt": "Select all that apply. Which statements about low-level design answers are correct?",
+      "options": [
+        {
+          "id": "a",
+          "text": "An LRU cache gets O(1) get and put from a hash map plus a doubly linked list.",
+          "why": "Right: the map finds nodes and the list reorders them in constant time."
+        },
+        {
+          "id": "b",
+          "text": "In a thread-safe LRU cache, get also needs protection because it reorders the list.",
+          "why": "Right: reads mutate recency order."
+        },
+        {
+          "id": "c",
+          "text": "A parking lot should model vehicles, spots and tickets, with pricing as a swappable strategy.",
+          "why": "Right: pricing rules change often."
+        },
+        {
+          "id": "d",
+          "text": "A singly linked list with no map is enough for O(1) LRU lookups.",
+          "why": "Finding a key would require scanning the list."
+        },
+        {
+          "id": "e",
+          "text": "The parking lot should hard-code pricing in its entry method because rates never change.",
+          "why": "Rates do change; hard-coding breaks the open/closed principle."
+        }
+      ],
+      "correct": [
+        "a",
+        "b",
+        "c"
+      ],
+      "explanation": "Clarify requirements, list entities and relationships, then pick patterns only where they remove a real problem."
+    }
+  ]
+}

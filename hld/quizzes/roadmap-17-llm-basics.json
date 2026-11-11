@@ -1,0 +1,265 @@
+{
+  "id": "roadmap-17-llm-basics",
+  "title": "LLM basics for backend engineers",
+  "topic": "Interview roadmap",
+  "series": "interview-roadmap",
+  "seriesTitle": "Interview roadmap: topic quizzes",
+  "seriesOrder": 17,
+  "seriesDescription": "Topic-by-topic quizzes that follow the backend interview roadmap: language core, concurrency, DSA habits, web frameworks, data access, databases, messaging, resilience, security, testing, system design, and LLM/agent engineering.",
+  "description": "Tokens and context windows, sampling, structured output and tool calling, hallucination controls, prompt design, streaming over SSE and caching LLM calls.",
+  "source": "Interview roadmap study plan (Java/Spring Boot and Python/FastAPI)",
+  "estimatedMinutes": 9,
+  "questions": [
+    {
+      "id": "tokens-context-window",
+      "concept": "Tokens and context",
+      "type": "single",
+      "difficulty": 1,
+      "prompt": "Which statement about tokens and the context window is correct?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Input and output tokens share the window, so a long prompt leaves less room for the reply.",
+          "why": "Right: prompt plus completion must fit, and providers bill both (output usually costs more per token)."
+        },
+        {
+          "id": "b",
+          "text": "The window caps only the reply, so any prompt length is fine as long as the answer is short.",
+          "why": "The limit covers the prompt as well as the generated output."
+        },
+        {
+          "id": "c",
+          "text": "One token is always exactly one English word, so word counts give exact billing numbers.",
+          "why": "Tokens are sub-word pieces; words, punctuation and code split differently."
+        },
+        {
+          "id": "d",
+          "text": "The window is shared across all of a user's past chats, which is how the model remembers them.",
+          "why": "Each request starts fresh; any memory is just text you resend."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Cost and latency both grow with tokens, which is why history trimming, summarisation and short prompts matter. Interview takeaway: budget input and output tokens per request."
+    },
+    {
+      "id": "temperature-extraction",
+      "concept": "Sampling",
+      "type": "single",
+      "difficulty": 2,
+      "prompt": "A bot extracts order numbers from customer emails and should behave as repeatably as possible. Which sampling setting fits best?",
+      "options": [
+        {
+          "id": "a",
+          "text": "A low temperature close to 0, so the most probable tokens dominate the output.",
+          "why": "Right: low temperature reduces randomness, which suits extraction and classification."
+        },
+        {
+          "id": "b",
+          "text": "A high temperature around 1.5, so the bot explores alternative readings of each email.",
+          "why": "High temperature adds variety, the opposite of what extraction needs."
+        },
+        {
+          "id": "c",
+          "text": "Temperature 1 with top-p set to 1, since the full distribution is the most faithful one.",
+          "why": "That keeps maximum randomness and makes outputs less repeatable."
+        },
+        {
+          "id": "d",
+          "text": "Any temperature, because it changes only latency and has no effect on which tokens are chosen.",
+          "why": "Temperature rescales token probabilities before sampling; it changes content, not speed."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Low temperature (or a small top-p) suits deterministic tasks; higher values suit brainstorming. Note that even temperature 0 is not a hard guarantee of identical outputs across calls or model updates, so still validate."
+    },
+    {
+      "id": "prompt-versioning-practices",
+      "concept": "Prompt design",
+      "type": "multi",
+      "difficulty": 2,
+      "prompt": "Select all that apply. Which practices keep prompts maintainable in a production LLM service?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Store system prompts in version control or a registry with an id, and log that id with each request.",
+          "why": "Right: you can tie a bad answer to the exact prompt version."
+        },
+        {
+          "id": "b",
+          "text": "Include a few short few-shot examples that cover the tricky edge cases of the task.",
+          "why": "Right: examples show the expected format and edge-case handling better than prose alone."
+        },
+        {
+          "id": "c",
+          "text": "Run the golden-dataset evals before a prompt change is rolled out, like a regression test.",
+          "why": "Right: prompt edits can silently break other cases."
+        },
+        {
+          "id": "d",
+          "text": "Edit the live prompt in a admin console without history, so fixes ship instantly.",
+          "why": "No history means no rollback and no way to explain a regression."
+        },
+        {
+          "id": "e",
+          "text": "Paste user text straight into the instruction block so the model cannot tell them apart.",
+          "why": "Mixing untrusted input into instructions invites prompt injection; delimit and label it."
+        }
+      ],
+      "correct": [
+        "a",
+        "b",
+        "c"
+      ],
+      "explanation": "Treat prompts like code: versioned, reviewed, tested and traceable. Keep user input clearly separated from instructions."
+    },
+    {
+      "id": "structured-output-retry",
+      "concept": "Structured output",
+      "type": "single",
+      "difficulty": 2,
+      "prompt": "A service asks the model for JSON matching a Pydantic model, but occasionally a field is missing or has the wrong type. What is the robust approach?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Validate with Pydantic; on failure retry with the error message, up to a small limit.",
+          "why": "Right: validation catches the fault and feedback usually fixes it; the cap bounds cost."
+        },
+        {
+          "id": "b",
+          "text": "Trust the output, since the prompt already says to reply with valid JSON that follows the schema.",
+          "why": "Prompts reduce but never eliminate malformed output; unvalidated data reaches your logic."
+        },
+        {
+          "id": "c",
+          "text": "Strip the text with a regular expression and fill any missing fields with default values silently.",
+          "why": "Silent defaults hide real extraction failures and corrupt downstream data."
+        },
+        {
+          "id": "d",
+          "text": "Retry indefinitely at a higher temperature until a response happens to pass validation.",
+          "why": "Unbounded retries burn tokens, and extra randomness makes valid output less likely."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Use provider-native structured output or tool schemas where available, then still validate server-side. Bounded validate-and-retry is the standard pattern."
+    },
+    {
+      "id": "tool-calling-executes",
+      "concept": "Tool calling",
+      "type": "truefalse",
+      "difficulty": 1,
+      "prompt": "With function (tool) calling for your own custom functions, the model executes the function itself and returns the function result to your application.",
+      "options": [
+        {
+          "id": "a",
+          "text": "True",
+          "why": "The model only emits a structured request (tool name plus JSON arguments)."
+        },
+        {
+          "id": "b",
+          "text": "False",
+          "why": "Right: your application runs the function and sends the result back as a message."
+        }
+      ],
+      "correct": [
+        "b"
+      ],
+      "explanation": "The model proposes a call; your code validates the arguments, executes, and returns the result. That boundary is where you add authorisation and safety checks."
+    },
+    {
+      "id": "hallucination-controls",
+      "concept": "Hallucinations",
+      "type": "single",
+      "difficulty": 3,
+      "prompt": "A policy Q&A bot invents refund rules that are not in the company documents. Which control best addresses the cause?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Retrieve the policy, answer only from it with citations, and allow \"I do not know\".",
+          "why": "Right: grounding, citations and abstention attack unsupported answers directly."
+        },
+        {
+          "id": "b",
+          "text": "Add the sentence \"never hallucinate\" to the system prompt and rely on it to keep answers accurate.",
+          "why": "An instruction alone does not give the model facts it lacks."
+        },
+        {
+          "id": "c",
+          "text": "Raise the temperature so the model explores more answers and picks the best-sounding of them.",
+          "why": "More randomness tends to increase unsupported content, not reduce it."
+        },
+        {
+          "id": "d",
+          "text": "Switch to a bigger model, because larger models do not produce unsupported statements any more.",
+          "why": "Larger models still hallucinate; they just do it less often on average."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Hallucinations come from gaps in knowledge and training that rewards fluent guesses. Ground the answer in retrieved sources, require citations you can check, and let the system abstain."
+    },
+    {
+      "id": "streaming-sse",
+      "concept": "Streaming",
+      "type": "single",
+      "difficulty": 2,
+      "prompt": "You want tokens to appear progressively in a browser chat UI from a FastAPI backend. Which design fits?",
+      "options": [
+        {
+          "id": "a",
+          "text": "An async generator yielding server-sent events in a streaming response.",
+          "why": "Right: SSE over a long-lived HTTP response suits one-way token streams."
+        },
+        {
+          "id": "b",
+          "text": "Wait for the full completion, return one JSON body, and let the browser fake a typing effect.",
+          "why": "That keeps time to first token high; the user waits for the whole generation."
+        },
+        {
+          "id": "c",
+          "text": "Have the browser poll a status endpoint every second and download the full text each time.",
+          "why": "Polling adds latency and load and resends text that has not changed."
+        },
+        {
+          "id": "d",
+          "text": "Open a raw TCP socket from the browser to the model provider with the API key in the page.",
+          "why": "Browsers cannot do this safely, and it would expose your provider key."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Streaming improves perceived latency (time to first token). Remember to handle client disconnects, cancel the upstream call, and send a final done or error event."
+    },
+    {
+      "id": "semantic-cache-risk",
+      "concept": "Caching",
+      "type": "truefalse",
+      "difficulty": 3,
+      "prompt": "A semantic cache can return a stored answer for a differently worded but similar question, so a threshold that is too loose risks serving a wrong answer.",
+      "options": [
+        {
+          "id": "a",
+          "text": "True",
+          "why": "Right: similarity does not mean same intent, so tune the threshold and scope keys such as tenant and model."
+        },
+        {
+          "id": "b",
+          "text": "False",
+          "why": "Semantic matching is approximate by design, so a loose threshold can match different questions."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Exact caches (hash of model, prompt and parameters) are safe but hit rarely; semantic caches hit more but need thresholds, per-tenant isolation and expiry. Prompt caching at the provider is separate: it discounts a repeated prompt prefix."
+    }
+  ]
+}

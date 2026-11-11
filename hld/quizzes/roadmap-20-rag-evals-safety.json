@@ -1,0 +1,265 @@
+{
+  "id": "roadmap-20-rag-evals-safety",
+  "title": "RAG, evals and agent safety",
+  "topic": "Interview roadmap",
+  "series": "interview-roadmap",
+  "seriesTitle": "Interview roadmap: topic quizzes",
+  "seriesOrder": 20,
+  "seriesDescription": "Topic-by-topic quizzes that follow the backend interview roadmap: language core, concurrency, DSA habits, web frameworks, data access, databases, messaging, resilience, security, testing, system design, and LLM/agent engineering.",
+  "description": "Chunking, hybrid search and reranking, retrieval metrics, text-to-SQL versus RAG, LLM-as-judge and CI evals, and deterministic agent guardrails.",
+  "source": "Interview roadmap study plan (Java/Spring Boot and Python/FastAPI)",
+  "estimatedMinutes": 9,
+  "questions": [
+    {
+      "id": "chunk-overlap-purpose",
+      "concept": "Chunking",
+      "type": "single",
+      "difficulty": 1,
+      "prompt": "Why use some overlap between adjacent chunks?",
+      "options": [
+        {
+          "id": "a",
+          "text": "So an idea cut at a boundary still appears whole in at least one chunk.",
+          "why": "Right: overlap protects against losing context at the split point."
+        },
+        {
+          "id": "b",
+          "text": "Because embedding models refuse inputs that do not repeat part of the previous chunk.",
+          "why": "Embedding models accept any chunk; overlap is a quality choice."
+        },
+        {
+          "id": "c",
+          "text": "To shrink the index, since repeated text is stored only once in the vector database.",
+          "why": "Overlap duplicates content, so the index grows."
+        },
+        {
+          "id": "d",
+          "text": "To guarantee retrieved chunks come back in the original reading order of the document.",
+          "why": "Overlap does not control retrieval order."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Fixed-size splitting is simple but can cut sentences; recursive splitting respects separators like paragraphs; semantic splitting follows meaning shifts at higher cost. Tune with evals."
+    },
+    {
+      "id": "hybrid-search-error-codes",
+      "concept": "Hybrid search",
+      "type": "single",
+      "difficulty": 2,
+      "prompt": "Users search a support index with exact error codes like ERR_4021 and also with paraphrased questions, and pure vector search misses the codes. What is the best fix?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Hybrid retrieval: BM25 plus vector search, fused with reciprocal rank fusion.",
+          "why": "Right: keywords catch exact tokens, vectors catch meaning."
+        },
+        {
+          "id": "b",
+          "text": "Increase the embedding dimension so that exact identifiers are represented more precisely.",
+          "why": "Dense vectors blur rare exact tokens regardless of dimension."
+        },
+        {
+          "id": "c",
+          "text": "Shrink chunks to ten tokens so each error code lands alone in its own chunk.",
+          "why": "Tiny chunks lose context and bloat the index."
+        },
+        {
+          "id": "d",
+          "text": "Raise k to 100 and rely on the language model to spot the right chunk in the pile.",
+          "why": "More noise costs tokens and may still omit the exact match."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Hybrid search is a standard answer for jargon, IDs and names. A reranker (cross-encoder) over the fused candidates then improves ordering."
+    },
+    {
+      "id": "rerank-after-recall",
+      "concept": "Retrieval metrics",
+      "type": "single",
+      "difficulty": 3,
+      "prompt": "Recall@10 is 0.95, yet answers are poor and the right chunk usually ranks 8th to 10th. What is the best first change?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Add a reranker over the candidates and pass only the top few chunks to the model.",
+          "why": "Right: recall is fine; ordering and noise are the problem."
+        },
+        {
+          "id": "b",
+          "text": "Switch to a larger generation model and keep passing all ten chunks as before.",
+          "why": "A bigger model does not fix poor ordering or noisy context."
+        },
+        {
+          "id": "c",
+          "text": "Raise k to 50 so the relevant chunk has more company in the candidate set.",
+          "why": "Recall is already high; more candidates add noise and cost."
+        },
+        {
+          "id": "d",
+          "text": "Remove all overlap from the chunks so duplicates stop crowding the ranking.",
+          "why": "Overlap is not the evident cause of the late ranking."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Recall@k is the share of relevant items found in the top k; MRR averages 1 over the rank of the first relevant hit; nDCG rewards putting relevant items high with graded relevance. Diagnose retrieval separately from generation."
+    },
+    {
+      "id": "text-to-sql-vs-rag",
+      "concept": "Text-to-SQL versus RAG",
+      "type": "single",
+      "difficulty": 2,
+      "prompt": "Which question is better answered with text-to-SQL than with RAG?",
+      "options": [
+        {
+          "id": "a",
+          "text": "What was the total refund amount per region last quarter?",
+          "why": "Right: precise aggregation over structured rows belongs in SQL."
+        },
+        {
+          "id": "b",
+          "text": "What does our policy say about refunds for damaged goods?",
+          "why": "A policy lookup in prose is a retrieval task."
+        },
+        {
+          "id": "c",
+          "text": "Summarise the main complaints in last month's support emails.",
+          "why": "Reading and summarising unstructured text suits RAG."
+        },
+        {
+          "id": "d",
+          "text": "How do I reset my password according to the help centre?",
+          "why": "A help article lookup is document retrieval."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Use SQL for counts, sums and filters over structured data, RAG for answers inside unstructured text. Many copilots route between them."
+    },
+    {
+      "id": "llm-judge-trust",
+      "concept": "Evals",
+      "type": "multi",
+      "difficulty": 2,
+      "prompt": "Select all that apply. Which practices make LLM-as-judge scoring more trustworthy?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Calibrate the judge against human labels on a sample, and track agreement over time.",
+          "why": "Right: this shows whether the judge matches human judgement."
+        },
+        {
+          "id": "b",
+          "text": "Give the judge a specific rubric with separate criteria, instead of one vague quality score.",
+          "why": "Right: explicit criteria reduce variance and make scores explainable."
+        },
+        {
+          "id": "c",
+          "text": "Swap answer order in pairwise comparisons to counter position bias.",
+          "why": "Right: judges can favour whichever answer appears first."
+        },
+        {
+          "id": "d",
+          "text": "Use the same model that produced the answer as the only judge, to keep it consistent.",
+          "why": "Models can favour their own outputs, so independence matters."
+        },
+        {
+          "id": "e",
+          "text": "Ask for a single holistic rating from one to ten with no written reasoning.",
+          "why": "Holistic scores are noisy and hard to audit."
+        }
+      ],
+      "correct": [
+        "a",
+        "b",
+        "c"
+      ],
+      "explanation": "Other known biases include preferring longer answers. Judges complement, not replace, deterministic checks and periodic human review."
+    },
+    {
+      "id": "golden-set-ci",
+      "concept": "Evals",
+      "type": "truefalse",
+      "difficulty": 1,
+      "prompt": "A golden dataset of questions with expected answers or sources can run in CI as a regression suite to catch prompt, model or retrieval changes that lower quality.",
+      "options": [
+        {
+          "id": "a",
+          "text": "True",
+          "why": "Right: run it before merging and compare scores to the previous baseline."
+        },
+        {
+          "id": "b",
+          "text": "False",
+          "why": "Golden sets are exactly how teams gate such changes."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Add failing production traces to the golden set over time, and monitor traces, cost, latency and drift online, since offline sets never cover everything. Red-team suites test adversarial inputs."
+    },
+    {
+      "id": "prompt-not-guardrail",
+      "concept": "Agent safety",
+      "type": "truefalse",
+      "difficulty": 2,
+      "prompt": "Telling the model in its prompt to \"only write SELECT queries\" is a sufficient guardrail against destructive SQL.",
+      "options": [
+        {
+          "id": "a",
+          "text": "True",
+          "why": "Prompts are followed reliably."
+        },
+        {
+          "id": "b",
+          "text": "False",
+          "why": "Right: prompts can be ignored or overridden by injection, so enforce rules in code."
+        }
+      ],
+      "correct": [
+        "b"
+      ],
+      "explanation": "Guardrails that matter are deterministic: validation, allow-lists, least-privilege credentials and human approval, because model behaviour is probabilistic."
+    },
+    {
+      "id": "safe-sql-agent-design",
+      "concept": "Agent safety",
+      "type": "single",
+      "difficulty": 3,
+      "prompt": "An agent generates SQL for analysts against a production reporting database. Which design is the most defensible?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Parse with sqlglot, allow one SELECT on approved tables, run on a read-only role with a timeout, and retry on errors.",
+          "why": "Right: layered, deterministic controls limit damage even if the model errs."
+        },
+        {
+          "id": "b",
+          "text": "Block the words DROP and DELETE with a regular expression, then run the query with the app's admin account.",
+          "why": "Regexes are easy to evade, and admin credentials remove the safety net."
+        },
+        {
+          "id": "c",
+          "text": "Trust the system prompt's instruction to be careful, and review query logs at the end of the week.",
+          "why": "Reviewing after the fact cannot undo a damaging or leaking query."
+        },
+        {
+          "id": "d",
+          "text": "Let the model run any SQL it generates but ask a second model to approve it first.",
+          "why": "A second model is probabilistic too, and does not replace enforced limits."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Also use idempotent actions and human approval for risky steps, keep an audit trail of prompts, queries and approvals, and respect data residency by choosing regions and providers deliberately."
+    }
+  ]
+}

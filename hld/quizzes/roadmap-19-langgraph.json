@@ -1,0 +1,265 @@
+{
+  "id": "roadmap-19-langgraph",
+  "title": "LangGraph essentials",
+  "topic": "Interview roadmap",
+  "series": "interview-roadmap",
+  "seriesTitle": "Interview roadmap: topic quizzes",
+  "seriesOrder": 19,
+  "seriesDescription": "Topic-by-topic quizzes that follow the backend interview roadmap: language core, concurrency, DSA habits, web frameworks, data access, databases, messaging, resilience, security, testing, system design, and LLM/agent engineering.",
+  "description": "StateGraph state and reducers, routing, checkpointers and threads, human-in-the-loop, streaming modes, limits, multi-agent patterns and designing a copilot graph.",
+  "source": "Interview roadmap study plan (Java/Spring Boot and Python/FastAPI)",
+  "estimatedMinutes": 9,
+  "questions": [
+    {
+      "id": "reducer-concurrent-writes",
+      "concept": "State and reducers",
+      "type": "single",
+      "difficulty": 2,
+      "prompt": "In a LangGraph StateGraph, two parallel nodes in the same step both update a state key that has no reducer. What happens?",
+      "options": [
+        {
+          "id": "a",
+          "text": "The graph raises an error, as it cannot merge concurrent updates without a reducer.",
+          "why": "Right: define a reducer, such as list concatenation, for keys written concurrently."
+        },
+        {
+          "id": "b",
+          "text": "The last node to finish silently wins, so the earlier update is overwritten without notice.",
+          "why": "LangGraph refuses rather than guessing a winner for concurrent writes."
+        },
+        {
+          "id": "c",
+          "text": "The values are combined into a list automatically so that nothing is lost.",
+          "why": "Merging happens only where you declare a reducer for the key."
+        },
+        {
+          "id": "d",
+          "text": "The first node to finish wins and the later write is dropped by the checkpointer.",
+          "why": "There is no first-wins rule, and the checkpointer does not arbitrate writes."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "A reducer defines how an update combines with the existing value (for example appending to a message list). Keys written by one node at a time can stay plain overwrite."
+    },
+    {
+      "id": "supervisor-pattern",
+      "concept": "Multi-agent patterns",
+      "type": "single",
+      "difficulty": 2,
+      "prompt": "In the supervisor multi-agent pattern, what is the supervisor's job?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Decide which worker agent or node runs next, and when to finish, based on the shared state.",
+          "why": "Right: it routes work; workers do the specialised tasks and report back."
+        },
+        {
+          "id": "b",
+          "text": "Run every worker's tools itself so that the workers only supply prompts to it.",
+          "why": "Workers own their tools; the supervisor coordinates."
+        },
+        {
+          "id": "c",
+          "text": "Replace the checkpointer by storing the conversation history inside its own prompt.",
+          "why": "Persistence is a separate concern handled by the checkpointer."
+        },
+        {
+          "id": "d",
+          "text": "Merge all worker outputs into one answer without ever choosing among workers.",
+          "why": "Routing is the defining responsibility; summarising is optional."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Subgraphs let each worker be its own graph with private state. Interview point: supervisors add an extra model call per hop, so measure latency and cost."
+    },
+    {
+      "id": "router-sql-vs-tools",
+      "concept": "Routing",
+      "type": "single",
+      "difficulty": 2,
+      "prompt": "A copilot must send some questions to a tool-using retrieval path and others to a text-to-SQL path. What is the sound graph design?",
+      "options": [
+        {
+          "id": "a",
+          "text": "A conditional edge whose router reads state, such as intent, and returns the next node.",
+          "why": "Right: routing is exactly what conditional edges are for."
+        },
+        {
+          "id": "b",
+          "text": "Normal edges to both paths so every question runs both, keeping whichever answer returns first.",
+          "why": "That wastes cost and can return the wrong path's answer."
+        },
+        {
+          "id": "c",
+          "text": "One giant node that contains both paths with if statements, hiding the branch from the graph.",
+          "why": "You lose per-node tracing, retries and checkpoints."
+        },
+        {
+          "id": "d",
+          "text": "A random edge choice with a retry whenever the answer looks poor to the user.",
+          "why": "Random routing is unreliable and slow to correct."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Keep routers cheap and testable: a small classifier or rules with a fallback branch for unclear intent, and eval the router separately."
+    },
+    {
+      "id": "checkpointer-thread-id",
+      "concept": "Persistence",
+      "type": "single",
+      "difficulty": 2,
+      "prompt": "What do you get by compiling a graph with a checkpointer and invoking it with a thread_id?",
+      "options": [
+        {
+          "id": "a",
+          "text": "State is saved per thread after each step, so the same thread_id continues the run.",
+          "why": "Right: this gives conversation memory, resumption and time-travel debugging."
+        },
+        {
+          "id": "b",
+          "text": "Nodes run in parallel across threads, which speeds up each single request noticeably.",
+          "why": "thread_id identifies saved state; it does not parallelise nodes."
+        },
+        {
+          "id": "c",
+          "text": "All users share one long-term memory automatically, because threads are global.",
+          "why": "Threads are isolated; cross-thread memory needs a separate store."
+        },
+        {
+          "id": "d",
+          "text": "LLM responses are cached by thread so repeated prompts skip the model call.",
+          "why": "Checkpoints store graph state, not a response cache."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Use a durable checkpointer (for example backed by Postgres) in production, since in-memory checkpoints vanish on restart."
+    },
+    {
+      "id": "hitl-interrupt-resume",
+      "concept": "Human-in-the-loop",
+      "type": "multi",
+      "difficulty": 3,
+      "prompt": "Select all that apply. A copilot must pause for human approval before a risky tool call and later continue. What does this rely on?",
+      "options": [
+        {
+          "id": "a",
+          "text": "A checkpointer, so the paused state is saved and survives while waiting.",
+          "why": "Right: without persistence there is nothing to resume."
+        },
+        {
+          "id": "b",
+          "text": "A thread_id, which identifies which paused run the decision belongs to.",
+          "why": "Right: the resume call targets the same thread."
+        },
+        {
+          "id": "c",
+          "text": "A resume call that supplies the human's decision, so the graph continues from the interrupt.",
+          "why": "Right: the interrupt returns the value you pass on resume."
+        },
+        {
+          "id": "d",
+          "text": "A worker thread blocked on console input for the whole approval period.",
+          "why": "Blocking holds resources and is lost on restart; use persisted state."
+        },
+        {
+          "id": "e",
+          "text": "Turning checkpointing off so that stale state cannot be reused by the approval step.",
+          "why": "Disabling checkpoints removes the ability to pause and resume."
+        }
+      ],
+      "correct": [
+        "a",
+        "b",
+        "c"
+      ],
+      "explanation": "Interrupt and resume turns approval into an asynchronous workflow, which can span hours. Re-run safe checks on resume because the world may have changed."
+    },
+    {
+      "id": "stream-modes",
+      "concept": "Streaming",
+      "type": "truefalse",
+      "difficulty": 1,
+      "prompt": "In LangGraph, the updates stream mode emits only what each node changed, while values emits the full state after every step.",
+      "options": [
+        {
+          "id": "a",
+          "text": "True",
+          "why": "Right: updates are per-node deltas; values are full snapshots; messages streams LLM tokens."
+        },
+        {
+          "id": "b",
+          "text": "False",
+          "why": "The modes differ in granularity as stated."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Pick by use case: messages for typing effects, updates for progress UI, values for debugging or full-state consumers."
+    },
+    {
+      "id": "recursion-limit",
+      "concept": "Limits and errors",
+      "type": "truefalse",
+      "difficulty": 2,
+      "prompt": "The recursion limit in LangGraph caps how many seconds a single node may run before it is cancelled.",
+      "options": [
+        {
+          "id": "a",
+          "text": "True",
+          "why": "It is a time cap."
+        },
+        {
+          "id": "b",
+          "text": "False",
+          "why": "Right: it limits the number of steps in a run and raises an error when exceeded, guarding against loops."
+        }
+      ],
+      "correct": [
+        "b"
+      ],
+      "explanation": "Time limits are per-node timeouts you add yourself, and retry policies are configured per node. The recursion limit stops runaway agent loops; also bound tool-retry counts in state."
+    },
+    {
+      "id": "sql-validator-node",
+      "concept": "Graph design",
+      "type": "single",
+      "difficulty": 3,
+      "prompt": "In an 11-node text-to-SQL copilot graph, where should SQL safety validation live?",
+      "options": [
+        {
+          "id": "a",
+          "text": "A deterministic node between generation and execution, looping back with the error a few times.",
+          "why": "Right: code checks the query before it can touch the database."
+        },
+        {
+          "id": "b",
+          "text": "Inside the generator's system prompt, asking the model to be careful about dangerous queries.",
+          "why": "A prompt is a request, not an enforced control."
+        },
+        {
+          "id": "c",
+          "text": "After execution, by checking the returned rows for anything that looks wrong or sensitive.",
+          "why": "The query has already run, so any damage or leak has happened."
+        },
+        {
+          "id": "d",
+          "text": "In the final answer formatter, which rewrites unsafe wording before the user sees it.",
+          "why": "Formatting text does not stop an unsafe query from executing."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "A typical graph has nodes like intake, intent router, retrieval, schema fetch, SQL generation, SQL validation, execution, result check, answer synthesis, approval and audit. Give each node one responsibility, per-node retry and timeout policies, and an explicit failure edge."
+    }
+  ]
+}

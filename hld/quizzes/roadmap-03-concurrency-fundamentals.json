@@ -1,0 +1,272 @@
+{
+  "id": "roadmap-03-concurrency-fundamentals",
+  "title": "Roadmap 3: concurrency fundamentals",
+  "topic": "Interview roadmap",
+  "series": "interview-roadmap",
+  "seriesTitle": "Interview roadmap: topic quizzes",
+  "seriesOrder": 3,
+  "seriesDescription": "Topic-by-topic quizzes that follow the backend interview roadmap: language core, concurrency, DSA habits, web frameworks, data access, databases, messaging, resilience, security, testing, system design, and LLM/agent engineering.",
+  "description": "Thread states, the GIL, locks, volatile and atomics, deadlock causes and fixes, and how to read a thread dump in Java and Python.",
+  "source": "Interview roadmap study plan (Java/Spring Boot and Python/FastAPI)",
+  "estimatedMinutes": 9,
+  "questions": [
+    {
+      "id": "blocked-state",
+      "concept": "Thread basics",
+      "type": "single",
+      "difficulty": 1,
+      "prompt": "Which Java Thread.State does a thread have while it waits to enter a synchronized block whose monitor another thread holds?",
+      "options": [
+        {
+          "id": "a",
+          "text": "BLOCKED",
+          "why": "Right: BLOCKED means waiting to acquire a monitor lock."
+        },
+        {
+          "id": "b",
+          "text": "WAITING",
+          "why": "WAITING is for Object.wait(), join() or LockSupport.park() with no timeout."
+        },
+        {
+          "id": "c",
+          "text": "TIMED_WAITING",
+          "why": "That state is for sleep(ms) or waits with a timeout, not monitor contention."
+        },
+        {
+          "id": "d",
+          "text": "RUNNABLE",
+          "why": "RUNNABLE means running or ready to run, not queued behind a monitor."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "BLOCKED points to monitor contention; WAITING usually points to coordination or idle pool workers. This distinction is how you read a thread dump."
+    },
+    {
+      "id": "gil-cpu-bound",
+      "concept": "GIL",
+      "type": "single",
+      "difficulty": 2,
+      "prompt": "A pure-Python function that loops over numbers for several seconds runs in 8 threads on an 8-core machine using the default CPython 3.12 build. What do you expect compared with one thread?",
+      "options": [
+        {
+          "id": "a",
+          "text": "No real speedup, because only one thread executes Python bytecode at a time.",
+          "why": "Right: the GIL serialises bytecode execution; use multiprocessing or ProcessPoolExecutor for CPU-bound work."
+        },
+        {
+          "id": "b",
+          "text": "Close to an 8x speedup, because the OS schedules each thread onto its own free core.",
+          "why": "Threads exist on separate cores, but the GIL lets only one run Python code at once."
+        },
+        {
+          "id": "c",
+          "text": "A speedup of about 2x, because the GIL allows two threads at a time.",
+          "why": "There is one GIL per interpreter, so only one thread runs bytecode at any moment."
+        },
+        {
+          "id": "d",
+          "text": "A crash, because CPython forbids more threads than CPU cores.",
+          "why": "CPython allows many more threads than cores; they simply take turns."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Threads still help I/O-bound Python code, since the GIL is released while waiting on sockets and files. For CPU-bound work use processes, native extensions that release the GIL, or the optional free-threaded build."
+    },
+    {
+      "id": "gil-not-thread-safe",
+      "concept": "Visibility and atomics",
+      "type": "truefalse",
+      "difficulty": 2,
+      "prompt": "Because of the GIL, counter += 1 on a shared Python int from several threads never loses updates, so no lock is needed.",
+      "options": [
+        {
+          "id": "a",
+          "text": "True",
+          "why": "The GIL can switch threads between the load, add and store steps of counter += 1, so updates can be lost."
+        },
+        {
+          "id": "b",
+          "text": "False",
+          "why": "Right: += is a read-modify-write across several bytecodes and not atomic, so guard it with a Lock."
+        }
+      ],
+      "correct": [
+        "b"
+      ],
+      "explanation": "The GIL protects interpreter internals, not your invariants. Compound operations need a threading.Lock or a queue."
+    },
+    {
+      "id": "rlock-reentrancy",
+      "concept": "Locks",
+      "type": "truefalse",
+      "difficulty": 1,
+      "prompt": "Calling acquire() twice on a threading.Lock from the same thread, without releasing, blocks forever, while threading.RLock lets the owning thread acquire it again.",
+      "options": [
+        {
+          "id": "a",
+          "text": "True",
+          "why": "Right: Lock is not reentrant, so the second acquire waits for a release that never comes; RLock counts nested acquires."
+        },
+        {
+          "id": "b",
+          "text": "False",
+          "why": "Lock has no owner concept, so the second acquire from the same thread blocks."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Java synchronized and ReentrantLock are reentrant like RLock. Use RLock when a locked method calls another locked method on the same object."
+    },
+    {
+      "id": "volatile-counter",
+      "concept": "Visibility and atomics",
+      "type": "single",
+      "difficulty": 3,
+      "prompt": "Two threads each call inc() one million times on a shared field declared volatile int count, where inc() does count++. What is the likely final value?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Often below 2,000,000, because count++ is a read-modify-write and volatile does not make it atomic.",
+          "why": "Right: volatile gives visibility and ordering, but two threads can read the same value and both write back value+1."
+        },
+        {
+          "id": "b",
+          "text": "Exactly 2,000,000, because volatile makes every read and every write of count atomic, increments included.",
+          "why": "Individual reads and writes are atomic, but the combined increment is not."
+        },
+        {
+          "id": "c",
+          "text": "Exactly 2,000,000, because volatile forces the two threads to run one after the other.",
+          "why": "volatile does not serialise threads or create a critical section."
+        },
+        {
+          "id": "d",
+          "text": "An exception, because volatile fields cannot be modified by more than one thread.",
+          "why": "Many threads may write a volatile field; nothing throws."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Use AtomicInteger.incrementAndGet() (a CAS loop) or a lock for counters. Use volatile for simple flags where one thread writes and others read, such as a stop flag."
+    },
+    {
+      "id": "reentrantlock-advantages",
+      "concept": "Locks",
+      "type": "multi",
+      "difficulty": 2,
+      "prompt": "Select all that apply. Which are real advantages of ReentrantLock over a synchronized block?",
+      "options": [
+        {
+          "id": "a",
+          "text": "tryLock(timeout) lets a thread give up instead of waiting indefinitely.",
+          "why": "Right: synchronized has no way to time out or back off while waiting for a monitor."
+        },
+        {
+          "id": "b",
+          "text": "lockInterruptibly() allows a waiting thread to be interrupted.",
+          "why": "Right: a thread blocked entering synchronized cannot be interrupted."
+        },
+        {
+          "id": "c",
+          "text": "One lock can create several Condition objects, such as notFull and notEmpty.",
+          "why": "Right: synchronized offers a single wait set per monitor."
+        },
+        {
+          "id": "d",
+          "text": "It releases the lock automatically when an exception leaves the block.",
+          "why": "That is synchronized; with ReentrantLock you must call unlock() in finally."
+        },
+        {
+          "id": "e",
+          "text": "It is always faster than synchronized under any level of contention.",
+          "why": "Modern JVMs optimise synchronized heavily; there is no guarantee either way."
+        }
+      ],
+      "correct": [
+        "a",
+        "b",
+        "c"
+      ],
+      "explanation": "Choose synchronized for simple critical sections and ReentrantLock when you need timeouts, interruptibility, fairness or multiple conditions. ReadWriteLock helps read-heavy data."
+    },
+    {
+      "id": "transfer-deadlock",
+      "concept": "Deadlocks",
+      "type": "single",
+      "difficulty": 3,
+      "prompt": "void transfer(Account from, Account to, int amt) {\n  synchronized (from) { synchronized (to) { /* move money */ } }\n}\nThread 1 calls transfer(A, B) while Thread 2 calls transfer(B, A) and they hang. What is the best fix?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Always lock the two accounts in a fixed global order, such as by account id.",
+          "why": "Right: a consistent lock order removes the circular wait condition."
+        },
+        {
+          "id": "b",
+          "text": "Declare the method synchronized so only one thread enters it at a time.",
+          "why": "That serialises every transfer through one lock and does not address lock ordering for other code paths."
+        },
+        {
+          "id": "c",
+          "text": "Add Thread.sleep(100) between the two lock acquisitions to stagger threads.",
+          "why": "Sleeping only makes the deadlock less likely, not impossible."
+        },
+        {
+          "id": "d",
+          "text": "Declare amt as volatile so both threads see the value consistently.",
+          "why": "amt is not the problem; the circular lock wait is."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Deadlock needs mutual exclusion, hold and wait, no preemption and circular wait. Break one: ordering locks, tryLock with timeouts, or using a single coarser lock."
+    },
+    {
+      "id": "thread-dump-reading",
+      "concept": "Deadlocks",
+      "type": "multi",
+      "difficulty": 2,
+      "prompt": "Select all that apply. Which statements about reading a Java thread dump (jstack) are true?",
+      "options": [
+        {
+          "id": "a",
+          "text": "A BLOCKED thread shows waiting to lock a monitor that another thread holds.",
+          "why": "Right: follow the lock address to find the holder and what it is doing."
+        },
+        {
+          "id": "b",
+          "text": "jstack reports \"Found one Java-level deadlock\" when it detects a cycle of locks.",
+          "why": "Right: it lists each thread and the lock it holds and wants."
+        },
+        {
+          "id": "c",
+          "text": "Idle pool workers parked on a queue show WAITING, which is normal.",
+          "why": "Right: workers waiting in LinkedBlockingQueue.take() are WAITING and not a problem."
+        },
+        {
+          "id": "d",
+          "text": "Many BLOCKED threads always means the garbage collector is failing.",
+          "why": "BLOCKED indicates lock contention; GC problems appear as long pauses."
+        },
+        {
+          "id": "e",
+          "text": "A thread in Object.wait() keeps holding the monitor it is waiting on.",
+          "why": "wait() releases that monitor until the thread is notified and reacquires it."
+        }
+      ],
+      "correct": [
+        "a",
+        "b",
+        "c"
+      ],
+      "explanation": "Take several dumps a few seconds apart: threads stuck on the same stack are the clue. Many BLOCKED threads on one lock point to contention; a cycle points to deadlock."
+    }
+  ]
+}
