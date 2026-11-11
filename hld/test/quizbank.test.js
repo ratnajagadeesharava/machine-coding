@@ -45,7 +45,7 @@ for (const quiz of quizzes) {
   });
 }
 
-for (const quiz of quizzes.filter((q) => q.series === 'interview-roadmap')) {
+for (const quiz of quizzes.filter((q) => q.series?.startsWith('interview-roadmap'))) {
   test(`roadmap quiz "${quiz.id}" mixes the JEE-style question types`, () => {
     const types = new Set(quiz.questions.map((q) => q.type));
     assert.ok(types.size >= 4, `only ${types.size} question types`);
@@ -116,3 +116,27 @@ test('the Kafka series is split into small sub-topic quizzes', () => {
   assert.deepEqual(k.map((q) => q.seriesOrder), [1, 2, 3, 4, 5, 6, 7, 8, 9]);
   for (const q of k) assert.ok(q.questions.length >= 5 && q.questions.length <= 10, `${q.id} should stay small`);
 });
+
+// ---------- Java, Python and language-independent quizzes are never mixed ----------
+// A quiz declares `language`: java, python or neutral. Java quizzes never mention Python things, Python quizzes never mention Java things, and neutral
+// quizzes mention neither (SQL, YAML, JSON, shell, regex, pseudocode and plain explanations are fine everywhere).
+const JAVA_TERMS = /\b(Java|JVM|JDK|JRE|JIT|Spring|Hibernate|JPA|JDBC|JUnit|Mockito|Maven|Gradle|Lombok|Hikari(CP)?|Resilience4j|Micrometer|Logback|SLF4J|javac|Flyway|Liquibase|Tomcat|Jackson|Kotlin|LangChain4j|Quarkus|Micronaut)\b|\bpublic\s+(static\s+)?(class|void|interface)\b|@Override\b/;
+const PY_TERMS = /\b(Python|CPython|FastAPI|Pydantic|SQLAlchemy|Alembic|asyncio|pytest|Django|Flask|Starlette|Uvicorn|Celery|tenacity|pybreaker|aiobreaker|asyncpg|psycopg|httpx|pandas|numpy|py-spy|cProfile|PyJWT|PyMongo|Motor|slowapi|APScheduler|LangChain|LangGraph|Langfuse|Ragas|DeepEval|sqlglot|dataclass(es)?|PEP \d+|GIL|pip|venv|Poetry|mypy|TypeVar|OrderedDict|defaultdict|heapq|bisect|itertools|functools|contextvars?)\b|\bdef\s+\w+\(|\bself\b\s*[,)]|\bTrue\b.*\bNone\b/;
+const SKIP_KEYS = new Set(['source', 'seriesDescription', 'seriesTitle', 'topic']);
+function textOf(node, out = []) {
+  if (typeof node === 'string') out.push(node);
+  else if (Array.isArray(node)) node.forEach((n) => textOf(n, out));
+  else if (node && typeof node === 'object') for (const [k, v] of Object.entries(node)) if (!SKIP_KEYS.has(k)) textOf(v, out);
+  return out;
+}
+const LANGUAGE_REQUIRED = false;
+for (const quiz of quizzes.filter((q) => q.series?.startsWith('interview-roadmap'))) {
+  test(`roadmap quiz "${quiz.id}" keeps its language separate`, () => {
+    if (!quiz.language) { assert.ok(!LANGUAGE_REQUIRED, 'declare "language": java, python or neutral'); return; }
+    assert.ok(quiz.id.endsWith(`-${quiz.language === 'neutral' ? 'core' : quiz.language}`), `id must end with -${quiz.language === 'neutral' ? 'core' : quiz.language}`);
+    assert.equal(quiz.series, `interview-roadmap-${quiz.language === 'neutral' ? 'core' : quiz.language}`, 'series must match the language');
+    const text = textOf(quiz.questions).join('\n');
+    if (quiz.language !== 'java') { const m = JAVA_TERMS.exec(text); assert.ok(!m, `${quiz.language} quiz mentions Java: "${m?.[0]}"`); }
+    if (quiz.language !== 'python') { const m = PY_TERMS.exec(text); assert.ok(!m, `${quiz.language} quiz mentions Python: "${m?.[0]}"`); }
+  });
+}

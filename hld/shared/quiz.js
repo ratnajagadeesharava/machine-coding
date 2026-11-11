@@ -12,6 +12,7 @@
 //   matrix    { left: [{id,text}], right: [{id,text}], pairs: { [leftId]: rightId } }   (right may hold extra distractors)
 //   fill      { text: 'a {1} and a {2}', blanks: { 1: 'word', 2: 'word' }, bank: ['word', ...] }   (bank holds every answer plus distractors)
 //   code      { language: 'java'|'sql'|'python'|..., starter?, checks: [{ label, pattern, flags? }], model }   (regex checks + a model answer)
+export const QUIZ_LANGUAGES = ['java', 'python', 'neutral'];
 export const QUESTION_TYPES = ['single', 'multi', 'truefalse', 'integer', 'assertion', 'matrix', 'fill', 'code'];
 export const OPTION_TYPES = ['single', 'multi', 'truefalse'];
 export const ASSERTION_OPTIONS = [
@@ -129,6 +130,7 @@ export function validateQuiz(quiz) {
   if (!quiz || typeof quiz !== 'object') return ['quiz: not an object'];
   if (!isText(quiz.id, 80) || !/^[a-z0-9-]+$/.test(quiz.id)) errs.push('quiz: id must be lowercase letters, digits or dashes');
   if (!isText(quiz.title, LIMITS.title)) errs.push('quiz: title is required');
+  if (quiz.language != null && !QUIZ_LANGUAGES.includes(quiz.language)) errs.push(`quiz: language must be one of ${QUIZ_LANGUAGES.join(', ')}`);
   if (quiz.description != null && (typeof quiz.description !== 'string' || quiz.description.length > 400)) errs.push('quiz: description must be text of at most 400 characters');
   if (!Array.isArray(quiz.questions) || quiz.questions.length < 1 || quiz.questions.length > LIMITS.questions) {
     errs.push(`quiz: needs 1-${LIMITS.questions} questions`);
