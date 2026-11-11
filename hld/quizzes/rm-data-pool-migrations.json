@@ -272,7 +272,7 @@
       "options": [
         {
           "id": "a",
-          "text": "Validation fails on the checksum mismatch and the application refuses to start until it is repaired or fixed forward.",
+          "text": "Validation fails on a checksum mismatch and the application refuses to start.",
           "why": "Right: Flyway stores a checksum for each applied migration and validates it on migrate."
         },
         {
@@ -282,7 +282,7 @@
         },
         {
           "id": "c",
-          "text": "It computes the difference and applies only the new lines.",
+          "text": "It computes the difference to the stored script and applies only the new lines to the table.",
           "why": "Flyway has no concept of diffing a script."
         },
         {
@@ -292,7 +292,7 @@
         }
       ],
       "correct": [
-        "b"
+        "a"
       ],
       "explanation": "Rule of the trade: applied migrations are immutable; add V4 to correct course. flyway repair realigns checksums only when you know the database really has the intended state."
     },

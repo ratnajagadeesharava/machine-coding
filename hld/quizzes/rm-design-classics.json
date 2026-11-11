@@ -173,12 +173,12 @@
       "options": [
         {
           "id": "a",
-          "text": "Fetch and cache the public keys from the auth service's JWKS endpoint",
+          "text": "Cache public keys from the auth service JWKS endpoint",
           "why": "Right: verification is local, and the auth service is off the hot path."
         },
         {
           "id": "b",
-          "text": "Call the auth service on every request to introspect the token",
+          "text": "Call the auth service on every single request to introspect the token",
           "why": "It works but makes the auth service a bottleneck and a single point of failure."
         },
         {
@@ -245,12 +245,12 @@
       "options": [
         {
           "id": "a",
-          "text": "Hybrid: fan-out on write for normal users, on-read merge for celebrities",
+          "text": "Hybrid: push for normal users, pull and merge for celebrities",
           "why": "Right: it avoids millions of writes per celebrity post while keeping normal feeds fast."
         },
         {
           "id": "b",
-          "text": "Fan-out on write for everyone, including celebrities",
+          "text": "Fan-out on write for every single user, including celebrities with millions",
           "why": "One celebrity post would trigger millions of writes."
         },
         {

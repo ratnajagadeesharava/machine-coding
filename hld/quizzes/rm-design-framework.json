@@ -19,7 +19,7 @@
       "options": [
         {
           "id": "a",
-          "text": "Clarify functional and non-functional requirements and the scale",
+          "text": "Clarify the requirements and expected scale",
           "why": "Right: scope and numbers decide every later choice."
         },
         {
@@ -29,7 +29,7 @@
         },
         {
           "id": "c",
-          "text": "Choose Kafka, Redis and Cassandra to look current",
+          "text": "Choose Kafka, Redis and Cassandra first so the design looks current",
           "why": "Naming technologies before requirements is a classic red flag."
         },
         {
@@ -108,7 +108,7 @@
     },
     {
       "id": "avg-qps",
-      "concept": "Estimation",
+      "concept": "QPS and latency",
       "type": "integer",
       "difficulty": 1,
       "prompt": "A service receives 8.64 million requests per day, evenly spread. What is the average number of requests per second?",
@@ -118,7 +118,7 @@
     },
     {
       "id": "storage-estimate",
-      "concept": "Estimation",
+      "concept": "Storage estimate",
       "type": "integer",
       "difficulty": 2,
       "prompt": "A service stores 100 million new records per day, each 1 KB (1,000 bytes). Data is kept for 365 days and replicated 3 times. How many decimal terabytes of raw storage are needed (one decimal place)?",
@@ -129,7 +129,7 @@
     },
     {
       "id": "bandwidth",
-      "concept": "Estimation",
+      "concept": "Bandwidth and cache sizing",
       "type": "integer",
       "difficulty": 2,
       "prompt": "An API serves 2,000 responses per second, each 50 KB. How many megabits per second of egress bandwidth does it need (1 byte = 8 bits, 1 KB = 1,000 bytes)?",
@@ -139,7 +139,7 @@
     },
     {
       "id": "cache-size",
-      "concept": "Estimation",
+      "concept": "Bandwidth and cache sizing",
       "type": "integer",
       "difficulty": 2,
       "prompt": "A read-heavy service has 50 million reads per day, each returning a 2 KB object, and you decide to cache the hottest 20% of that daily volume. How many decimal gigabytes does the cache need?",
@@ -225,7 +225,7 @@
     },
     {
       "id": "powers-two",
-      "concept": "Estimation",
+      "concept": "Powers of two",
       "type": "fill",
       "difficulty": 1,
       "prompt": "Complete the powers-of-two table.",
@@ -245,7 +245,7 @@
     },
     {
       "id": "latency-ssd",
-      "concept": "Estimation",
+      "concept": "Latency numbers",
       "type": "truefalse",
       "difficulty": 2,
       "prompt": "Reading 1 MB sequentially from main memory is faster than reading 1 MB sequentially from an SSD.",
@@ -275,12 +275,12 @@
       "options": [
         {
           "id": "a",
-          "text": "A relational database such as PostgreSQL",
+          "text": "A relational database",
           "why": "Right: ACID transactions, constraints and SQL cover all three needs."
         },
         {
           "id": "b",
-          "text": "A wide-column store partitioned by event time",
+          "text": "A wide-column store partitioned by event time bucket",
           "why": "It gives write scale but weak cross-row transactions."
         },
         {

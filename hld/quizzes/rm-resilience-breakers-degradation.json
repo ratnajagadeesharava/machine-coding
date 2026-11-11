@@ -1,0 +1,424 @@
+{
+  "id": "rm-resilience-breakers-degradation",
+  "title": "Circuit breakers, bulkheads, rate limiters and graceful degradation",
+  "topic": "Interview roadmap",
+  "series": "interview-roadmap",
+  "seriesTitle": "Interview roadmap: topic quizzes",
+  "seriesDescription": "Topic-by-topic JEE-style quizzes for the backend and AI-engineering interview roadmap: integer, assertion-reason, matrix match, fill-in-the-blanks, short code writing, plus multi-correct questions. Language core, concurrency, DSA, web frameworks, data access, databases, messaging, resilience, security, testing, system design, LLM and agent engineering.",
+  "seriesOrder": 77,
+  "description": "The circuit-breaker state machine, token-bucket arithmetic, bulkhead sizing, Resilience4j / pybreaker / slowapi usage, and designing safe fallbacks.",
+  "source": "Resilience4j documentation; Martin Fowler on circuit breakers; Release It! (Nygard); pybreaker and slowapi docs; Stripe engineering blog on rate limiters; Google SRE book (handling overload)",
+  "estimatedMinutes": 16,
+  "questions": [
+    {
+      "id": "breaker-states",
+      "concept": "Circuit breaker",
+      "type": "matrix",
+      "difficulty": 2,
+      "prompt": "Match each circuit-breaker state with its behaviour.",
+      "left": [
+        {
+          "id": "l1",
+          "text": "CLOSED"
+        },
+        {
+          "id": "l2",
+          "text": "OPEN"
+        },
+        {
+          "id": "l3",
+          "text": "HALF_OPEN"
+        }
+      ],
+      "right": [
+        {
+          "id": "r1",
+          "text": "Calls pass through and failures are counted"
+        },
+        {
+          "id": "r2",
+          "text": "Calls are rejected immediately without contacting the dependency"
+        },
+        {
+          "id": "r3",
+          "text": "A limited number of trial calls decide whether to close or reopen"
+        },
+        {
+          "id": "r4",
+          "text": "Calls are queued until the dependency recovers"
+        }
+      ],
+      "pairs": {
+        "l1": "r1",
+        "l2": "r2",
+        "l3": "r3"
+      },
+      "explanation": "CLOSED to OPEN when the failure (or slow-call) rate crosses the threshold; OPEN to HALF_OPEN after the wait duration; HALF_OPEN to CLOSED if trial calls succeed, else back to OPEN."
+    },
+    {
+      "id": "breaker-failures",
+      "concept": "Circuit breaker",
+      "type": "integer",
+      "difficulty": 2,
+      "prompt": "Resilience4j count-based breaker: slidingWindowSize = 10, minimumNumberOfCalls = 10, failureRateThreshold = 50 (percent). After 10 calls, what is the smallest number of failed calls that opens the circuit?",
+      "answer": 5,
+      "tolerance": 0,
+      "unit": "failures",
+      "explanation": "The breaker opens when the failure rate is greater than or equal to the threshold: 5 of 10 is 50 percent. Fewer than minimumNumberOfCalls never opens it."
+    },
+    {
+      "id": "token-bucket",
+      "concept": "Rate limiting",
+      "type": "integer",
+      "difficulty": 3,
+      "prompt": "A token bucket has capacity 10 and refills 2 tokens per second, and starts full. At t = 0 ten requests arrive and are all served. At t = 4 s, nine requests arrive at once. How many are served?",
+      "answer": 8,
+      "tolerance": 0,
+      "unit": "requests",
+      "explanation": "The bucket was empty at t = 0 and refills 2 x 4 = 8 tokens by t = 4 (below the cap of 10), so 8 of the 9 are served and 1 is rejected."
+    },
+    {
+      "id": "bulkhead-throughput",
+      "concept": "Bulkhead",
+      "type": "integer",
+      "difficulty": 3,
+      "prompt": "A bulkhead allows at most 10 concurrent calls to a dependency and each call takes 200 ms. By Little's law, what is the maximum throughput to that dependency in requests per second?",
+      "answer": 50,
+      "tolerance": 0,
+      "unit": "req/s",
+      "explanation": "Throughput = concurrency / latency = 10 / 0.2 = 50 per second. If latency rises to 1 s, the same bulkhead only allows 10 per second, which is the protective point."
+    },
+    {
+      "id": "limiter-algorithms",
+      "concept": "Rate limiting",
+      "type": "matrix",
+      "difficulty": 2,
+      "prompt": "Match each rate-limiting algorithm with its characteristic.",
+      "left": [
+        {
+          "id": "l1",
+          "text": "Token bucket"
+        },
+        {
+          "id": "l2",
+          "text": "Leaky bucket"
+        },
+        {
+          "id": "l3",
+          "text": "Fixed window counter"
+        },
+        {
+          "id": "l4",
+          "text": "Sliding window log"
+        }
+      ],
+      "right": [
+        {
+          "id": "r1",
+          "text": "Allows bursts up to the bucket size, then a steady refill rate"
+        },
+        {
+          "id": "r2",
+          "text": "Smooths traffic to a constant outflow rate"
+        },
+        {
+          "id": "r3",
+          "text": "Cheap but a client can send double the limit across a window boundary"
+        },
+        {
+          "id": "r4",
+          "text": "Stores a timestamp per request, exact but memory heavy"
+        },
+        {
+          "id": "r5",
+          "text": "Blocks every request after the first failure"
+        }
+      ],
+      "pairs": {
+        "l1": "r1",
+        "l2": "r2",
+        "l3": "r3",
+        "l4": "r4"
+      },
+      "explanation": "Fixed-window boundary burst: with 100 per minute, 100 requests at 0:59 and 100 at 1:01 make 200 in two seconds. Sliding window counters approximate the log cheaply."
+    },
+    {
+      "id": "resilience4j-annotation",
+      "concept": "Resilience4j",
+      "type": "code",
+      "difficulty": 2,
+      "prompt": "Annotate getStock(String sku) so calls go through a Resilience4j circuit breaker named \"inventory\" and fall back to a method named stockFallback when the call fails or the circuit is open.",
+      "language": "java",
+      "starter": "",
+      "checks": [
+        {
+          "label": "uses @CircuitBreaker",
+          "pattern": "@CircuitBreaker\\s*\\("
+        },
+        {
+          "label": "names the breaker inventory",
+          "pattern": "name\\s*=\\s*\"inventory\""
+        },
+        {
+          "label": "sets fallbackMethod stockFallback",
+          "pattern": "fallbackMethod\\s*=\\s*\"stockFallback\""
+        }
+      ],
+      "model": "@CircuitBreaker(name = \"inventory\", fallbackMethod = \"stockFallback\")\npublic Stock getStock(String sku) { return client.fetch(sku); }",
+      "explanation": "The fallback must be in the same class with the same parameters plus an optional exception argument, e.g. stockFallback(String sku, Throwable t). Calls must cross the Spring proxy, so self-invocation does not trigger the breaker."
+    },
+    {
+      "id": "resilience4j-yaml",
+      "concept": "Resilience4j",
+      "type": "code",
+      "difficulty": 3,
+      "prompt": "Write the application.yml for a Resilience4j circuit breaker instance named inventory with a sliding window of 10 calls, a 50 percent failure-rate threshold, and 30 seconds in the open state before half-open.",
+      "language": "yaml",
+      "starter": "resilience4j:\n",
+      "checks": [
+        {
+          "label": "has resilience4j.circuitbreaker.instances.inventory",
+          "pattern": "circuitbreaker:[\\s\\S]*instances:[\\s\\S]*inventory:"
+        },
+        {
+          "label": "window of 10",
+          "pattern": "sliding-?window-?size:\\s*10"
+        },
+        {
+          "label": "50 percent failure rate",
+          "pattern": "failure-?rate-?threshold:\\s*50"
+        },
+        {
+          "label": "30 seconds in open state",
+          "pattern": "wait-?duration-?in-?open-?state:\\s*(30s|pt30s|30000)"
+        }
+      ],
+      "model": "resilience4j:\n  circuitbreaker:\n    instances:\n      inventory:\n        slidingWindowSize: 10\n        failureRateThreshold: 50\n        waitDurationInOpenState: 30s",
+      "explanation": "Spring Boot relaxed binding accepts both camelCase and kebab-case keys. Add permittedNumberOfCallsInHalfOpenState and slowCallDurationThreshold to also trip on latency."
+    },
+    {
+      "id": "pybreaker",
+      "concept": "Circuit breaker",
+      "type": "code",
+      "difficulty": 2,
+      "prompt": "With pybreaker, create a breaker named breaker that opens after 5 consecutive failures and tries again after 30 seconds, then decorate call_api with it.",
+      "language": "python",
+      "starter": "import pybreaker\n",
+      "checks": [
+        {
+          "label": "creates a CircuitBreaker",
+          "pattern": "pybreaker\\.CircuitBreaker\\s*\\("
+        },
+        {
+          "label": "fail_max=5",
+          "pattern": "fail_max\\s*=\\s*5"
+        },
+        {
+          "label": "reset_timeout=30",
+          "pattern": "reset_timeout\\s*=\\s*30"
+        },
+        {
+          "label": "decorates call_api with @breaker",
+          "pattern": "@breaker\\s+(async\\s+)?def\\s+call_api"
+        }
+      ],
+      "model": "breaker = pybreaker.CircuitBreaker(fail_max=5, reset_timeout=30)\n\n@breaker\ndef call_api():\n    ...",
+      "explanation": "When open, pybreaker raises CircuitBreakerError immediately. Catch it to run a fallback. For asyncio code use breaker.call_async or an async-aware library, because the plain decorator is for sync functions."
+    },
+    {
+      "id": "slowapi-limit",
+      "concept": "Rate limiting",
+      "type": "code",
+      "difficulty": 2,
+      "prompt": "In a FastAPI app using slowapi, limiter is already created. Rate limit the route handler search to 5 requests per minute per client, with the handler taking the request argument slowapi requires.",
+      "language": "python",
+      "starter": "from fastapi import Request\n",
+      "checks": [
+        {
+          "label": "decorates with @limiter.limit",
+          "pattern": "@limiter\\.limit\\s*\\("
+        },
+        {
+          "label": "limit string 5/minute",
+          "pattern": "[\"']5\\s*/\\s*minute[\"']"
+        },
+        {
+          "label": "handler takes request: Request",
+          "pattern": "def\\s+search\\s*\\(\\s*request\\s*:\\s*Request"
+        }
+      ],
+      "model": "@app.get(\"/search\")\n@limiter.limit(\"5/minute\")\nasync def search(request: Request):\n    return {\"ok\": True}",
+      "explanation": "slowapi needs the Request parameter to read the client key (for example get_remote_address). Register app.state.limiter and the RateLimitExceeded handler. Behind a proxy use the forwarded address, and use Redis storage when running several workers."
+    },
+    {
+      "id": "breaker-fail-fast",
+      "concept": "Circuit breaker",
+      "type": "assertion",
+      "difficulty": 2,
+      "prompt": "Read the assertion A and the reason R, then choose the correct relationship between them.",
+      "assertion": "A circuit breaker protects both the caller and a struggling dependency.",
+      "reason": "While the circuit is open, calls fail immediately instead of consuming caller threads and adding load to the dependency.",
+      "correct": [
+        "a"
+      ],
+      "whys": {
+        "a": "Correct: fail-fast saves caller resources and gives the dependency room to recover.",
+        "b": "R is the mechanism, so it explains A.",
+        "c": "R is true.",
+        "d": "A is true."
+      },
+      "explanation": "Pair the breaker with timeouts; without timeouts a breaker never sees a failure from a hung call."
+    },
+    {
+      "id": "token-bucket-burst",
+      "concept": "Rate limiting",
+      "type": "assertion",
+      "difficulty": 2,
+      "prompt": "Read the assertion A and the reason R, then choose the correct relationship between them.",
+      "assertion": "A token bucket permits a short burst of requests up to its capacity.",
+      "reason": "A leaky bucket sends requests to the backend at a constant rate.",
+      "correct": [
+        "b"
+      ],
+      "whys": {
+        "a": "Leaky bucket behaviour does not explain the token bucket burst.",
+        "b": "Correct: both are true but describe two different algorithms; the burst comes from stored tokens.",
+        "c": "R is true.",
+        "d": "A is true."
+      },
+      "explanation": "Token bucket: bursty but bounded average. Leaky bucket: smooth output, queued excess. Stripe uses token buckets for request limiting."
+    },
+    {
+      "id": "per-client-limit",
+      "concept": "Rate limiting",
+      "type": "assertion",
+      "difficulty": 3,
+      "prompt": "Read the assertion A and the reason R, then choose the correct relationship between them.",
+      "assertion": "Rate limiting by API key rather than with one global limit stops a single noisy tenant from starving the others.",
+      "reason": "A single global limit treats every client separately, so it protects each of them equally.",
+      "correct": [
+        "c"
+      ],
+      "whys": {
+        "a": "R is false so it cannot explain A.",
+        "b": "R is false.",
+        "c": "Correct: per-key limits isolate tenants (A true); a global limit pools them all (R false).",
+        "d": "A is true."
+      },
+      "explanation": "Use layered limits: per key, per IP, per endpoint, plus a global safety limit and load shedding."
+    },
+    {
+      "id": "half-open",
+      "concept": "Circuit breaker",
+      "type": "assertion",
+      "difficulty": 3,
+      "prompt": "Read the assertion A and the reason R, then choose the correct relationship between them.",
+      "assertion": "In the HALF_OPEN state a circuit breaker lets all traffic through to test whether the dependency has recovered.",
+      "reason": "HALF_OPEN permits only a configured number of trial calls and decides to close or reopen from their results.",
+      "correct": [
+        "d"
+      ],
+      "whys": {
+        "a": "A is false.",
+        "b": "A is false.",
+        "c": "R is true.",
+        "d": "Correct: only a few probe calls are allowed (R true), so A is false."
+      },
+      "explanation": "Letting everyone through at once could knock the recovering service over again."
+    },
+    {
+      "id": "degradation-fill",
+      "concept": "Graceful degradation",
+      "type": "fill",
+      "difficulty": 1,
+      "prompt": "Complete the graceful degradation tactics.",
+      "text": "When a dependency fails, return a {1} such as cached data, hide non-critical {2} behind flags, and use load {3} to drop low-priority requests under overload.",
+      "blanks": {
+        "1": "fallback",
+        "2": "features",
+        "3": "shedding"
+      },
+      "bank": [
+        "fallback",
+        "features",
+        "shedding",
+        "retries",
+        "sharding"
+      ],
+      "explanation": "Degrade in layers from stale data to reduced features to explicit errors, and tell the client when data is stale."
+    },
+    {
+      "id": "safe-fallbacks",
+      "concept": "Graceful degradation",
+      "type": "multi",
+      "difficulty": 3,
+      "prompt": "Which are sound degradation strategies when a dependency is down? Select all that apply.",
+      "options": [
+        {
+          "id": "a",
+          "text": "Serve the last known recommendations from cache and mark them stale.",
+          "why": "Right: a slightly stale list beats an error page for non-critical content."
+        },
+        {
+          "id": "b",
+          "text": "Hide the reviews widget while the reviews service is unavailable.",
+          "why": "Right: the core purchase flow keeps working without it."
+        },
+        {
+          "id": "c",
+          "text": "Queue the confirmation email and send it when the mail service returns.",
+          "why": "Right: deferring non-urgent work avoids failing the whole order."
+        },
+        {
+          "id": "d",
+          "text": "Report a payment as successful when the gateway cannot be reached.",
+          "why": "This invents a financial outcome and creates unrecoverable inconsistency."
+        },
+        {
+          "id": "e",
+          "text": "Return an empty 200 for a failed balance lookup, with no signal.",
+          "why": "Silent wrong data is worse than an honest error for a critical read."
+        }
+      ],
+      "correct": [
+        "a",
+        "b",
+        "c"
+      ],
+      "explanation": "A good fallback is honest, safe for the business, and observable (metric and log every fallback so you notice)."
+    },
+    {
+      "id": "r4j-aspect-order",
+      "concept": "Resilience4j",
+      "type": "single",
+      "difficulty": 3,
+      "prompt": "With the default Resilience4j Spring Boot aspect ordering, which decorator is the outermost one wrapping the others?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Retry",
+          "why": "Right: the order is Retry ( CircuitBreaker ( RateLimiter ( TimeLimiter ( Bulkhead ( function ) ) ) ) )."
+        },
+        {
+          "id": "b",
+          "text": "Bulkhead",
+          "why": "Bulkhead is the innermost, closest to your function."
+        },
+        {
+          "id": "c",
+          "text": "CircuitBreaker",
+          "why": "CircuitBreaker sits inside Retry so each attempt is recorded by the breaker."
+        },
+        {
+          "id": "d",
+          "text": "TimeLimiter",
+          "why": "TimeLimiter is inside RateLimiter and CircuitBreaker, nearer the function."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Retry outside the breaker means each retry attempt is seen (and may be rejected) by the breaker. You can change the order with the aspect-order properties."
+    }
+  ]
+}

@@ -19,12 +19,12 @@
       "options": [
         {
           "id": "a",
-          "text": "Pooled tables with tenant_id, plus dedicated databases for the large tenants",
+          "text": "Pooled tables for the tail, dedicated databases for large tenants",
           "why": "Right: cheap for the long tail, isolation where contracts demand it."
         },
         {
           "id": "b",
-          "text": "A separate database server for each of the 20,000 tenants",
+          "text": "A separate database server provisioned for each of the 20,000 tenants",
           "why": "It is operationally and financially unsustainable at that count."
         },
         {
@@ -298,22 +298,22 @@
       "options": [
         {
           "id": "a",
-          "text": "Pings to a log keyed by trip id; a consumer updates a latest-position key-value store and archives history",
+          "text": "A log keyed by trip id feeding a latest-position store",
           "why": "Right: ordered per trip, fast reads of the latest point and cheap history."
         },
         {
           "id": "b",
-          "text": "Pings straight into one relational row per trip, updated in place",
+          "text": "Pings written straight into a single relational row per trip, updated in place",
           "why": "Hot-row contention and no history."
         },
         {
           "id": "c",
-          "text": "Pings emailed to the dispatcher every minute",
+          "text": "Pings emailed to the dispatcher once every minute",
           "why": "No real-time view and no replay."
         },
         {
           "id": "d",
-          "text": "Only store the final trip route when the trip ends",
+          "text": "Only store the final trip route once the whole trip has ended",
           "why": "Live tracking is impossible and a crash loses the route."
         }
       ],

@@ -45,7 +45,7 @@
     },
     {
       "id": "missing-docs",
-      "concept": "Reconciliation",
+      "concept": "Control totals",
       "type": "integer",
       "difficulty": 3,
       "prompt": "SAP reports 1,000,000 documents for the day. The warehouse holds 998,750 rows for it, of which 1,500 are duplicate loads of documents that are present (every warehouse document exists in SAP). How many distinct SAP documents are missing from the warehouse?",
@@ -55,7 +55,7 @@
     },
     {
       "id": "merkle-levels",
-      "concept": "Reconciliation",
+      "concept": "Hash trees",
       "type": "integer",
       "difficulty": 3,
       "prompt": "You compare hierarchical checksums (day, then half, then half again) to find the one mismatching partition among 1,024 partitions. How many comparison levels, halving each time, are needed to isolate it?",
@@ -65,7 +65,7 @@
     },
     {
       "id": "anti-join",
-      "concept": "Reconciliation",
+      "concept": "Anti-join SQL",
       "type": "code",
       "difficulty": 2,
       "prompt": "Tables sap_invoices(doc_id, amount) and dwh_invoices(doc_id, amount) should match. Write one SQL query that lists doc_id values that are missing from dwh_invoices or have a different amount.",
@@ -93,7 +93,7 @@
     },
     {
       "id": "recon-causes",
-      "concept": "Reconciliation",
+      "concept": "Break classification",
       "type": "matrix",
       "difficulty": 2,
       "prompt": "Match each typical reconciliation mismatch to the fix.",
@@ -156,9 +156,9 @@
     },
     {
       "id": "upsert",
-      "concept": "Reconciliation",
+      "concept": "Idempotent loads",
       "type": "assertion",
-      "difficulty": 2,
+      "difficulty": 1,
       "prompt": "Read the assertion and the reason, then choose the option that describes them correctly.",
       "assertion": "The warehouse loader should upsert by the business key instead of blindly inserting.",
       "reason": "After a failure the same batch is retried, and an upsert does not create duplicates.",
@@ -175,7 +175,7 @@
     },
     {
       "id": "counts-only",
-      "concept": "Reconciliation",
+      "concept": "Control totals",
       "type": "assertion",
       "difficulty": 3,
       "prompt": "Read the assertion and the reason, then choose the option that describes them correctly.",
@@ -222,7 +222,7 @@
     },
     {
       "id": "agent-metrics",
-      "concept": "Agent evals",
+      "concept": "Agent metrics",
       "type": "matrix",
       "difficulty": 2,
       "prompt": "Match each production-agent metric to what it tells you.",
@@ -285,7 +285,7 @@
     },
     {
       "id": "judge-tokens",
-      "concept": "Agent evals",
+      "concept": "Eval cost",
       "type": "integer",
       "difficulty": 2,
       "prompt": "An agent handles 50,000 runs per day. You sample 5% for an LLM judge that reads 4,000 tokens per judged run. How many millions of tokens does the judging consume per day?",
@@ -295,7 +295,7 @@
     },
     {
       "id": "pass-k",
-      "concept": "Agent evals",
+      "concept": "Reliability metrics",
       "type": "integer",
       "difficulty": 3,
       "prompt": "An agent solves a task correctly 90% of the time and attempts are independent. What is the percent chance that three repeated attempts at the same task are all correct (one decimal place)?",
@@ -306,7 +306,7 @@
     },
     {
       "id": "golden-set",
-      "concept": "Agent evals",
+      "concept": "Golden sets",
       "type": "assertion",
       "difficulty": 2,
       "prompt": "Read the assertion and the reason, then choose the option that describes them correctly.",
@@ -325,7 +325,7 @@
     },
     {
       "id": "drift",
-      "concept": "Agent evals",
+      "concept": "Drift monitoring",
       "type": "assertion",
       "difficulty": 3,
       "prompt": "Read the assertion and the reason, then choose the option that describes them correctly.",

@@ -40,7 +40,7 @@
     },
     {
       "id": "mockmvc",
-      "concept": "API tests",
+      "concept": "MockMvc",
       "type": "code",
       "difficulty": 2,
       "prompt": "Write a MockMvc call that GETs /api/orders/42, expects HTTP 200 and expects the JSON field id to equal 42. Assume a MockMvc named mockMvc.",
@@ -64,7 +64,7 @@
     },
     {
       "id": "pytest-client",
-      "concept": "API tests",
+      "concept": "TestClient",
       "type": "code",
       "difficulty": 2,
       "prompt": "Write a pytest function test_get_item using FastAPI's TestClient on app that requests /items/1, asserts a 200 status code and asserts the JSON id is 1.",
@@ -102,7 +102,7 @@
     },
     {
       "id": "boundary",
-      "concept": "Test case design",
+      "concept": "Boundary values",
       "type": "integer",
       "difficulty": 2,
       "prompt": "A form accepts ages from 18 to 65 inclusive. How many test inputs does classic two-value boundary value analysis use (one just outside and one on each boundary)?",
@@ -112,7 +112,7 @@
     },
     {
       "id": "patch-where",
-      "concept": "Unit tests and mocks",
+      "concept": "unittest.mock",
       "type": "single",
       "difficulty": 3,
       "prompt": "app/service.py does \"import requests\" and calls requests.get(...). Which unittest.mock target replaces it for a test of service.py?",
@@ -145,7 +145,7 @@
     },
     {
       "id": "spring-test",
-      "concept": "API tests",
+      "concept": "Spring test slices",
       "type": "matrix",
       "difficulty": 2,
       "prompt": "Match each Spring test annotation or library to what it provides.",
@@ -199,9 +199,9 @@
     },
     {
       "id": "datajpa-rollback",
-      "concept": "API tests",
+      "concept": "DataJpaTest",
       "type": "assertion",
-      "difficulty": 2,
+      "difficulty": 1,
       "prompt": "Read the assertion and the reason, then choose the option that describes them correctly.",
       "assertion": "@DataJpaTest tests roll back their changes by default.",
       "reason": "Each @DataJpaTest test runs inside a transaction that Spring rolls back when the test ends.",
@@ -218,7 +218,7 @@
     },
     {
       "id": "mockito-inline",
-      "concept": "Unit tests and mocks",
+      "concept": "Mockito",
       "type": "assertion",
       "difficulty": 3,
       "prompt": "Read the assertion and the reason, then choose the option that describes them correctly.",
@@ -237,7 +237,7 @@
     },
     {
       "id": "springboottest-port",
-      "concept": "API tests",
+      "concept": "SpringBootTest",
       "type": "assertion",
       "difficulty": 3,
       "prompt": "Read the assertion and the reason, then choose the option that describes them correctly.",
@@ -256,7 +256,7 @@
     },
     {
       "id": "mock-sut",
-      "concept": "Unit tests and mocks",
+      "concept": "Mockito",
       "type": "assertion",
       "difficulty": 2,
       "prompt": "Read the assertion and the reason, then choose the option that describes them correctly.",
@@ -297,7 +297,7 @@
     },
     {
       "id": "edge-cases",
-      "concept": "Test case design",
+      "concept": "Edge cases",
       "type": "multi",
       "difficulty": 2,
       "prompt": "A function parseDate(\"dd/mm/yyyy\") returns a LocalDate. Which inputs are worthwhile edge cases? Select all that apply.",
@@ -332,7 +332,7 @@
     },
     {
       "id": "flaky",
-      "concept": "Test case design",
+      "concept": "Flaky tests",
       "type": "single",
       "difficulty": 3,
       "prompt": "A test passes alone but fails in the full suite, and also fails near midnight. What is the most reliable cure for the time-related failure?",
@@ -365,7 +365,7 @@
     },
     {
       "id": "context-cache",
-      "concept": "API tests",
+      "concept": "Context caching",
       "type": "truefalse",
       "difficulty": 3,
       "prompt": "Using different @MockBean (or @MockitoBean) sets in different test classes can force Spring to build additional application contexts.",

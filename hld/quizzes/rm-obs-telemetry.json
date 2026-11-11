@@ -19,7 +19,7 @@
       "options": [
         {
           "id": "a",
-          "text": "A distributed trace showing the spans of that request",
+          "text": "A trace of that request",
           "why": "Right: spans give a timed tree of the calls made for one request."
         },
         {
@@ -372,7 +372,7 @@
       "options": [
         {
           "id": "a",
-          "text": "Add micrometer-registry-prometheus and expose /actuator/prometheus",
+          "text": "Add the Prometheus registry and expose /actuator/prometheus",
           "why": "Right: Micrometer is the facade and this registry renders the Prometheus text format."
         },
         {

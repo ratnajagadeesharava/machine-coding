@@ -124,7 +124,7 @@
     },
     {
       "id": "lru-trace",
-      "concept": "LRU cache",
+      "concept": "LRU trace",
       "type": "integer",
       "difficulty": 2,
       "prompt": "An LRU cache has capacity 3. Operations: put(1), put(2), put(3), get(1), put(4), get(3), put(5). What is the sum of the keys left in the cache?",
@@ -133,7 +133,7 @@
     },
     {
       "id": "bucket-trace",
-      "concept": "Rate limiter LLD",
+      "concept": "Token bucket",
       "type": "integer",
       "difficulty": 3,
       "prompt": "A token bucket has capacity 5 and refills 2 tokens per second. It starts full, 5 requests are accepted at t = 0, then 10 requests arrive at t = 1.5 s (all at the same instant). How many of those 10 are accepted?",
@@ -225,7 +225,7 @@
     },
     {
       "id": "abc-strategy",
-      "concept": "Design patterns",
+      "concept": "Interfaces and ABCs",
       "type": "assertion",
       "difficulty": 2,
       "prompt": "Read the assertion and the reason, then choose the option that describes them correctly.",
@@ -244,7 +244,7 @@
     },
     {
       "id": "lhm-thread",
-      "concept": "LRU cache",
+      "concept": "Thread safety",
       "type": "assertion",
       "difficulty": 3,
       "prompt": "Read the assertion and the reason, then choose the option that describes them correctly.",
@@ -282,7 +282,7 @@
     },
     {
       "id": "lru-parts",
-      "concept": "LRU cache",
+      "concept": "LinkedHashMap and OrderedDict",
       "type": "fill",
       "difficulty": 1,
       "prompt": "Complete the LRU facts.",
@@ -304,14 +304,14 @@
     },
     {
       "id": "lru-thread",
-      "concept": "LRU cache",
+      "concept": "Thread safety",
       "type": "single",
       "difficulty": 3,
       "prompt": "Why is a plain LinkedHashMap LRU unsafe for concurrent readers even if the threads only call get?",
       "options": [
         {
           "id": "a",
-          "text": "get() reorders the entries, so each read mutates the structure",
+          "text": "get() reorders entries, so each read mutates it",
           "why": "Right: concurrent reorders can corrupt the links or lose entries."
         },
         {
@@ -321,7 +321,7 @@
         },
         {
           "id": "c",
-          "text": "LinkedHashMap forbids more than one reader thread",
+          "text": "LinkedHashMap forbids more than one reader thread at any time",
           "why": "No such restriction exists in the class."
         },
         {
@@ -337,7 +337,7 @@
     },
     {
       "id": "lld-practice",
-      "concept": "Design patterns",
+      "concept": "LLD practice",
       "type": "multi",
       "difficulty": 2,
       "prompt": "Which are sound LLD practices for the parking lot? Select all that apply.",
@@ -372,7 +372,7 @@
     },
     {
       "id": "abc-needed",
-      "concept": "Parking lot LLD",
+      "concept": "Interfaces and ABCs",
       "type": "truefalse",
       "difficulty": 2,
       "prompt": "In Python, a class with an @abstractmethod that does not inherit from ABC (or use ABCMeta) still cannot be instantiated.",
@@ -391,7 +391,7 @@
       "correct": [
         "b"
       ],
-      "explanation": "I ran class A with @abstractmethod and no ABC base: A() succeeded."
+      "explanation": "Running a class with @abstractmethod but no ABC base shows A() still instantiates fine."
     }
   ]
 }
