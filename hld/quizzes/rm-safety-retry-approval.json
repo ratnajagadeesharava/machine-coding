@@ -408,6 +408,39 @@
         "b"
       ],
       "explanation": "Make side effects idempotent or check status before retrying."
+    },
+    {
+      "id": "capped-backoff",
+      "concept": "Retries",
+      "type": "integer",
+      "difficulty": 2,
+      "prompt": "A client retries with exponential backoff, delay = min(30, 2^attempt) seconds for attempt = 0, 1, 2, 3, 4, 5 (no jitter). What is the total waiting time in seconds?",
+      "answer": 61,
+      "unit": "s",
+      "explanation": "Delays are 1, 2, 4, 8, 16 and min(30, 32) = 30, which sum to 61 s. The cap stops waits growing without bound; add jitter so many clients do not retry in lockstep."
+    },
+    {
+      "id": "retry-400",
+      "concept": "Retries",
+      "type": "truefalse",
+      "difficulty": 2,
+      "prompt": "True or false: a 400 Bad Request caused by a malformed payload is a good candidate for automatic retry with the same payload.",
+      "options": [
+        {
+          "id": "a",
+          "text": "True",
+          "why": "Incorrect: the same invalid payload will fail the same way, so retrying just wastes calls."
+        },
+        {
+          "id": "b",
+          "text": "False",
+          "why": "Right: retry only transient failures (timeouts, 429, 503) with backoff; fix or reject client errors instead."
+        }
+      ],
+      "correct": [
+        "b"
+      ],
+      "explanation": "For LLM output validation the 'retry' is different: you change the input by feeding the validation error back, and still cap attempts."
     }
   ]
 }

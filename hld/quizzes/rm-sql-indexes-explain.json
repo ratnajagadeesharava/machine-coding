@@ -7,7 +7,7 @@
   "seriesDescription": "Topic-by-topic JEE-style quizzes for the backend and AI-engineering interview roadmap: integer, assertion-reason, matrix match, fill-in-the-blanks, short code writing, plus multi-correct questions. Language core, concurrency, DSA, web frameworks, data access, databases, messaging, resilience, security, testing, system design, LLM and agent engineering.",
   "seriesOrder": 65,
   "description": "B-tree, composite (leftmost prefix), covering, partial and GIN/JSONB indexes, expression indexes, selectivity, and how to read EXPLAIN / EXPLAIN ANALYZE: seq vs index scan, costs, estimates vs actuals. Plans checked on PostgreSQL 16.",
-  "source": "PostgreSQL 16 documentation (indexes, EXPLAIN, planner cost constants); Use The Index, Luke; Citus and Crunchy Data blogs on EXPLAIN",
+  "source": "PostgreSQL 16 documentation (indexes, operator classes, pg_trgm, EXPLAIN, planner cost constants); Use The Index, Luke; Citus and Crunchy Data blogs on EXPLAIN",
   "estimatedMinutes": 15,
   "questions": [
     {
@@ -370,6 +370,45 @@
         "a"
       ],
       "explanation": "Oracle differs: a single-column B-tree does not index rows whose key is entirely NULL, so IS NULL cannot use it there (a composite index with a non-null column, or a function-based index, works around it). Checked on PostgreSQL: a Bitmap Index Scan was used for IS NULL."
+    },
+    {
+      "id": "like-prefix-index",
+      "concept": "Index usage",
+      "type": "assertion",
+      "difficulty": 3,
+      "prompt": "Read the assertion (A) and the reason (R), then choose the option that fits.",
+      "assertion": "In a database whose default collation is not C, a plain B-tree index on a text column cannot serve WHERE col LIKE 'abc%'.",
+      "reason": "An index created with the text_pattern_ops operator class compares strings character by character and can serve left-anchored LIKE patterns.",
+      "correct": [
+        "b"
+      ],
+      "whys": {
+        "a": "R does not explain A: A is about the default operator class following locale sort rules, while R merely names the fix.",
+        "b": "Correct: both are true, but R is the remedy, not the reason. Locale-aware ordering is why the default index cannot turn a prefix match into a range.",
+        "c": "R is true (text_pattern_ops exists for exactly this), so calling it false is wrong.",
+        "d": "A is true on locale collations (verified: Seq Scan on 100,000 rows, Index Only Scan after text_pattern_ops), so calling it false is wrong."
+      },
+      "explanation": "Checked on PostgreSQL 16: with an en_US-style collation, LIKE 'abc%' did a Seq Scan on a plain index; after CREATE INDEX ... (x text_pattern_ops) the planner used Index Cond x ~>=~ 'abc' AND x ~<~ 'abd'. A database created with the C collation, or a trigram GIN index (pg_trgm), are alternatives; %abc% still needs trigrams."
+    },
+    {
+      "id": "code-btree-vs-trgm",
+      "concept": "Index types",
+      "type": "code",
+      "difficulty": 3,
+      "prompt": "Table products(id, name text). Write the statements that let WHERE name ILIKE '%shoe%' use an index in PostgreSQL (assume you may install extensions).",
+      "language": "sql",
+      "checks": [
+        {
+          "label": "enables pg_trgm",
+          "pattern": "create\\s+extension\\s+(if\\s+not\\s+exists\\s+)?pg_trgm"
+        },
+        {
+          "label": "creates a GIN (or GiST) index on name",
+          "pattern": "create\\s+index[\\s\\S]*using\\s+(gin|gist)\\s*\\(\\s*name\\s+(public\\.)?gin_trgm_ops|create\\s+index[\\s\\S]*using\\s+gist\\s*\\(\\s*name\\s+(public\\.)?gist_trgm_ops"
+        }
+      ],
+      "model": "CREATE EXTENSION IF NOT EXISTS pg_trgm;\nCREATE INDEX products_name_trgm ON products USING gin (name gin_trgm_ops);",
+      "explanation": "A B-tree cannot help with a leading wildcard because the match is not a prefix. pg_trgm splits strings into three-character grams; the GIN index supports LIKE, ILIKE and regex searches. GiST with gist_trgm_ops also works and additionally supports nearest-neighbour similarity ordering."
     }
   ]
 }

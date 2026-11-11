@@ -361,6 +361,80 @@
       ],
       "model": "CREATE TABLE urls (\n  short_code VARCHAR(8) PRIMARY KEY,\n  long_url   TEXT NOT NULL,\n  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP\n);",
       "explanation": "The primary key on short_code gives the index for redirects. Other column orders and types (TIMESTAMPTZ) are fine in practice; the checks here accept TIMESTAMP spelled directly."
+    },
+    {
+      "id": "latency-matrix",
+      "concept": "Latency numbers",
+      "type": "matrix",
+      "difficulty": 2,
+      "prompt": "Match each operation to its order-of-magnitude latency from the widely quoted latency table.",
+      "left": [
+        {
+          "id": "a",
+          "text": "Main memory reference"
+        },
+        {
+          "id": "b",
+          "text": "Random 4 KB read from an SSD"
+        },
+        {
+          "id": "c",
+          "text": "Round trip within one datacenter"
+        },
+        {
+          "id": "d",
+          "text": "Packet round trip California to Netherlands and back"
+        },
+        {
+          "id": "e",
+          "text": "Spinning-disk seek"
+        }
+      ],
+      "right": [
+        {
+          "id": "p",
+          "text": "About 100 nanoseconds"
+        },
+        {
+          "id": "q",
+          "text": "About 150 microseconds"
+        },
+        {
+          "id": "r",
+          "text": "About 500 microseconds"
+        },
+        {
+          "id": "s",
+          "text": "About 150 milliseconds"
+        },
+        {
+          "id": "t",
+          "text": "About 10 milliseconds"
+        },
+        {
+          "id": "u",
+          "text": "About 1 nanosecond"
+        }
+      ],
+      "pairs": {
+        "a": "p",
+        "b": "q",
+        "c": "r",
+        "d": "s",
+        "e": "t"
+      },
+      "explanation": "These are the 2012-era figures attributed to Jeff Dean and Peter Norvig; hardware has moved (NVMe is faster, cross-region RTT is bounded by the speed of light) but the ratios still guide design: memory is thousands of times faster than a network hop, and a cross-continent call costs about 100 ms."
+    },
+    {
+      "id": "downtime-month",
+      "concept": "Availability",
+      "type": "integer",
+      "difficulty": 2,
+      "prompt": "A service promises 99.9% availability measured over a 30-day month. How many minutes of downtime per month does the target allow, rounded to the nearest minute?",
+      "answer": 43,
+      "unit": "minutes",
+      "tolerance": 0.5,
+      "explanation": "30 days x 24 h x 60 min = 43,200 minutes; 0.1% of that is 43.2 minutes. Each extra nine divides the budget by ten (99.99% is about 4.3 minutes), which is why the SRE book treats the remaining budget as an error budget."
     }
   ]
 }

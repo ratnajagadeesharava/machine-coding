@@ -7,7 +7,7 @@
   "seriesOrder": 103,
   "seriesDescription": "Topic-by-topic JEE-style quizzes for the backend and AI-engineering interview roadmap: integer, assertion-reason, matrix match, fill-in-the-blanks, short code writing, plus multi-correct questions. Language core, concurrency, DSA, web frameworks, data access, databases, messaging, resilience, security, testing, system design, LLM and agent engineering.",
   "description": "Traces, cost and latency arithmetic, percentiles, sampled online judging, drift types, canary and shadow releases, and red-team regression suites for LLM applications.",
-  "source": "OpenTelemetry docs; Langfuse docs; OWASP Top 10 for LLM Applications; Google SRE book (monitoring); NVIDIA garak and Microsoft PyRIT project docs; promptfoo docs",
+  "source": "OpenTelemetry GenAI semantic conventions; Google SRE book (error budgets); OWASP Top 10 for LLM Applications; Langfuse docs; garak, PyRIT, promptfoo docs",
   "estimatedMinutes": 14,
   "questions": [
     {
@@ -210,7 +210,7 @@
         }
       ],
       "model": "def call_llm(prompt):\n    with tracer.start_as_current_span(\"llm.call\") as span:\n        span.set_attribute(\"llm.model\", MODEL)\n        return client.generate(prompt)",
-      "explanation": "start_as_current_span ends the span and records exceptions for you. A decorator or start_span with try/finally also works but is more verbose; this check expects the context-manager form."
+      "explanation": "start_as_current_span ends the span and records exceptions for you. A decorator or start_span with try/finally also works but is more verbose; this check expects the context-manager form. The OpenTelemetry GenAI semantic conventions standardise attribute names such as gen_ai.request.model (still in development), so prefer those over invented keys like llm.model in real code."
     },
     {
       "id": "redteam-pytest",
@@ -351,6 +351,16 @@
         "b"
       ],
       "explanation": "Consider sampling full payloads and keeping only metadata for the rest."
+    },
+    {
+      "id": "error-budget",
+      "concept": "SLOs",
+      "type": "integer",
+      "difficulty": 2,
+      "prompt": "Your LLM endpoint has a 99.5% success-rate SLO and serves 200,000 requests a day. How many failed requests per day exhaust the error budget?",
+      "answer": 1000,
+      "unit": "requests",
+      "explanation": "The budget is 0.5% of 200,000 = 1,000 failures. Treat provider timeouts, refusals you count as failures and guardrail blocks consistently when defining a 'success'."
     }
   ]
 }

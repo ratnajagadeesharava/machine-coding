@@ -7,7 +7,7 @@
   "title": "DSA: two pointers, sliding window, stack, binary search",
   "seriesOrder": 31,
   "description": "Two pointers and sliding windows, monotonic stacks, and binary search including search on the answer, with the off-by-one and invariant traps interviewers probe.",
-  "source": "LeetCode problem set and discuss; NeetCode roadmap; Cracking the Coding Interview; Oracle Java docs (ArrayDeque, Deque); Python docs (bisect)",
+  "source": "LeetCode problem set and discuss; NeetCode roadmap; Cracking the Coding Interview; Oracle Java docs (ArrayDeque, Deque); Python docs (bisect), CPython bisect source",
   "estimatedMinutes": 15,
   "questions": [
     {
@@ -223,7 +223,7 @@
       "answer": 10,
       "tolerance": 0,
       "unit": "",
-      "explanation": "Bars 5 and 6 form a rectangle of height 5 and width 2, area 10. Compare: bars 5,6,2,3 limited by height 2 give 8, and the whole histogram limited by height 1 gives 6. A monotonic increasing stack finds the best in O(n). A monotonic increasing stack finds it in O(n)."
+      "explanation": "Bars 5 and 6 form a rectangle of height 5 and width 2, area 10. Compare: bars 5,6,2,3 limited by height 2 give 8, and the whole histogram limited by height 1 gives 6. A monotonic increasing stack of indices finds the best rectangle in O(n)."
     },
     {
       "id": "bs-bug",
@@ -375,17 +375,17 @@
       "difficulty": 3,
       "prompt": "Evaluate the assertion and the reason.",
       "assertion": "Binary search on the answer for Koko runs in O(n log M), where M is the largest pile.",
-      "reason": "Binary search needs the input array to be sorted.",
+      "reason": "The piles array must be sorted before the search can run.",
       "correct": [
-        "b"
+        "c"
       ],
       "whys": {
-        "a": "The first part is true but R is not why: the search is over the speed range, with a feasibility check.",
-        "b": "Correct: both statements are true, but the answer-space search needs monotonic feasibility, not a sorted array.",
-        "c": "A is true, so this is wrong.",
-        "d": "A is true, so this is wrong."
+        "a": "A is true but R is false, so R cannot explain it.",
+        "b": "R is false: the piles can stay in any order; only the feasibility check is monotonic.",
+        "c": "Correct: the O(n log M) bound holds, but the search is over speeds 1..M and needs a monotonic feasible(k) predicate, not a sorted piles array.",
+        "d": "A is true (log M iterations, each an O(n) feasibility scan), so this is wrong."
       },
-      "explanation": "Each of log M iterations does an O(n) feasibility scan. The \"sorted\" requirement generalises to \"predicate flips only once\"."
+      "explanation": "Each of log M iterations does an O(n) feasibility scan. The array need not be sorted: the requirement is that the predicate flips only once as k grows."
     },
     {
       "id": "bisect-facts",

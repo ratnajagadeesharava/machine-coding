@@ -36,8 +36,8 @@
           "pattern": "(isinstance\\s*\\([^)]*exp\\.Select|\\.key\\s*==\\s*[\"']select[\"']|exp\\.Select)"
         }
       ],
-      "model": "def is_select_only(sql: str) -> bool:\n    try:\n        trees = sqlglot.parse(sql, read=\"postgres\")\n    except sqlglot.errors.ParseError:\n        return False\n    return len(trees) == 1 and isinstance(trees[0], exp.Select)",
-      "explanation": "Other solutions pass (parse_one plus a check that no extra statement exists, or walking the tree for Insert/Delete/Drop nodes). Real systems add more: UNION and INTERSECT parse as set operations, and in PostgreSQL SELECT ... INTO can create a table, so also use a read-only database role, a statement timeout and a LIMIT."
+      "model": "def is_select_only(sql: str) -> bool:\n    try:\n        trees = sqlglot.parse(sql, read=\"postgres\")\n    except sqlglot.errors.SqlglotError:\n        return False\n    return len(trees) == 1 and isinstance(trees[0], exp.Select)",
+      "explanation": "Catch SqlglotError (the base class): unterminated strings raise TokenError, which is not a ParseError, so catching only ParseError would let it escape. Verified with sqlglot: 'SELECT 1; DROP TABLE t' parses to [Select, Drop], a WITH query parses to one Select, UNION parses to Union, and an empty string gives [None]. Other solutions pass (parse_one plus a check for extra statements, or walking the tree for Insert/Delete/Drop nodes). Real systems add more: in PostgreSQL SELECT ... INTO still parses as a Select but creates a table, so also use a read-only database role, a statement timeout and a LIMIT."
     },
     {
       "id": "guard-count",
@@ -342,6 +342,102 @@
         "b"
       ],
       "explanation": "Layer them: code checks first, model judges second, human review for high risk."
+    },
+    {
+      "id": "owasp-matrix",
+      "concept": "OWASP LLM Top 10",
+      "type": "matrix",
+      "difficulty": 2,
+      "prompt": "Match each scenario to the OWASP Top 10 for LLM Applications (2025) category it illustrates.",
+      "left": [
+        {
+          "id": "a",
+          "text": "A web page the assistant summarises hides instructions that make it email the chat history"
+        },
+        {
+          "id": "b",
+          "text": "The bot repeats another customer's phone number from its training or context data"
+        },
+        {
+          "id": "c",
+          "text": "An agent holding delete rights on every table drops one after a bad plan"
+        },
+        {
+          "id": "d",
+          "text": "A user floods the endpoint with huge prompts and the monthly bill explodes"
+        },
+        {
+          "id": "e",
+          "text": "Users coax the bot into printing its hidden system prompt and embedded keys"
+        }
+      ],
+      "right": [
+        {
+          "id": "p",
+          "text": "LLM01 Prompt Injection"
+        },
+        {
+          "id": "q",
+          "text": "LLM02 Sensitive Information Disclosure"
+        },
+        {
+          "id": "r",
+          "text": "LLM06 Excessive Agency"
+        },
+        {
+          "id": "s",
+          "text": "LLM10 Unbounded Consumption"
+        },
+        {
+          "id": "t",
+          "text": "LLM07 System Prompt Leakage"
+        },
+        {
+          "id": "u",
+          "text": "LLM03 Supply Chain"
+        }
+      ],
+      "pairs": {
+        "a": "p",
+        "b": "q",
+        "c": "r",
+        "d": "s",
+        "e": "t"
+      },
+      "explanation": "In the 2025 list Sensitive Information Disclosure rose to LLM02, Excessive Agency is LLM06, and System Prompt Leakage (LLM07) and Vector and Embedding Weaknesses (LLM08) are new. Categories overlap in real incidents, so name the primary control for each."
+    },
+    {
+      "id": "indirect-injection",
+      "concept": "Prompt injection",
+      "type": "single",
+      "difficulty": 3,
+      "prompt": "An email-triage agent can read mail and send replies. An attacker's email contains hidden instructions to forward the inbox. Which control best limits the damage?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Least-privilege tools plus a human approval step for sending.",
+          "why": "Right: you cannot reliably stop injected text, so limit what the agent may do and gate irreversible actions."
+        },
+        {
+          "id": "b",
+          "text": "A stronger system prompt that says to ignore instructions in emails.",
+          "why": "The model cannot reliably tell data from instructions; prompt wording is advisory and can be bypassed."
+        },
+        {
+          "id": "c",
+          "text": "Asking the user to avoid opening suspicious emails in the app.",
+          "why": "Users cannot see hidden text, and the agent reads mail without them opening anything."
+        },
+        {
+          "id": "d",
+          "text": "Lowering the temperature so the agent follows instructions exactly.",
+          "why": "Temperature affects randomness, not whether untrusted text is treated as a command."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "OWASP LLM01 advice: constrain privileges, require human approval for privileged operations, segregate untrusted content and validate outputs in code. No filter is complete, so design for a successful injection."
     }
   ]
 }

@@ -7,7 +7,7 @@
   "seriesDescription": "Topic-by-topic JEE-style quizzes for the backend and AI-engineering interview roadmap: integer, assertion-reason, matrix match, fill-in-the-blanks, short code writing, plus multi-correct questions. Language core, concurrency, DSA, web frameworks, data access, databases, messaging, resilience, security, testing, system design, LLM and agent engineering.",
   "seriesOrder": 41,
   "description": "Union-find with rank and path compression, counting components, redundant connection, trie insert/search, and IP-style longest prefix matching.",
-  "source": "CLRS; cp-algorithms DSU; LeetCode Redundant Connection, Implement Trie; RFC 4632 (CIDR); Princeton Algorithms (Sedgewick)",
+  "source": "CLRS ch. 19-21; cp-algorithms DSU; LeetCode Redundant Connection, Implement Trie, Word Search II, Design Add and Search Words; RFC 4632 (CIDR); Princeton Algorithms (Sedgewick)",
   "estimatedMinutes": 15,
   "questions": [
     {
@@ -79,7 +79,7 @@
           "pattern": "return\\s+false"
         }
       ],
-      "model": "int[] parent, rank;\nUnionFind(int n) { parent = new int[n]; rank = new int[n]; for (int i = 0; i < n; i++) parent[i] = i; }\nint find(int x) { return parent[x] == x ? x : (parent[x] = find(parent[x])); }\nboolean union(int a, int b) {\n  int ra = find(a), rb = find(b);\n  if (ra == rb) return false;\n  if (rank[ra] < rank[rb]) { int t = ra; ra = rb; rb = t; }\n  parent[rb] = ra; if (rank[ra] == rank[rb]) rank[ra]++;\n  return true;\n}",
+      "model": "class UnionFind {\n  int[] parent, rank;\n  UnionFind(int n) { parent = new int[n]; rank = new int[n]; for (int i = 0; i < n; i++) parent[i] = i; }\n  int find(int x) { return parent[x] == x ? x : (parent[x] = find(parent[x])); }\n  boolean union(int a, int b) {\n    int ra = find(a), rb = find(b);\n    if (ra == rb) return false;\n    if (rank[ra] < rank[rb]) { int t = ra; ra = rb; rb = t; }\n    parent[rb] = ra; if (rank[ra] == rank[rb]) rank[ra]++;\n    return true;\n  }\n}",
       "explanation": "The boolean return is what makes Redundant Connection and cycle detection a one-liner. Iterative path halving (parent[x] = parent[parent[x]]) is an equally good find. Recursion depth is fine with union by rank because trees stay O(log n) tall."
     },
     {
@@ -104,7 +104,7 @@
           "pattern": "-=\\s*1|-\\s*1|components\\s*-|count\\s*-"
         }
       ],
-      "model": "parent = list(range(n))\ndef find(x):\n    while parent[x] != x:\n        parent[x] = parent[parent[x]]\n        x = parent[x]\n    return x\nfor a, b in edges:\n    ra, rb = find(a), find(b)\n    if ra != rb:\n        parent[ra] = rb; n -= 1\nreturn n",
+      "model": "def count_components(n, edges):\n    parent = list(range(n))\n    def find(x):\n        while parent[x] != x:\n            parent[x] = parent[parent[x]]\n            x = parent[x]\n        return x\n    for a, b in edges:\n        ra, rb = find(a), find(b)\n        if ra != rb:\n            parent[ra] = rb; n -= 1\n    return n",
       "explanation": "Counting successful unions and subtracting from n is the trick. Counting distinct roots at the end, or a DFS over adjacency lists, are valid alternatives (the DFS would not satisfy these union-find checks). Time O((n + E) * alpha(n))."
     },
     {
@@ -169,7 +169,7 @@
       "correct": [
         "b"
       ],
-      "explanation": "Interview trick: if edges are removed, process the operations in reverse and turn deletions into unions."
+      "explanation": "Interview trick: if edges are removed, process the operations in reverse and turn deletions into unions. A rollback union-find (union by size, no path compression, with an undo stack) can undo the most recent unions in LIFO order, but arbitrary deletion is not supported."
     },
     {
       "id": "uf-uses",
@@ -324,7 +324,7 @@
       "difficulty": 3,
       "prompt": "A binary trie node is class Node { Node[] ch = new Node[2]; String hop; } where hop is non-null if a route ends here. Write String lookup(Node root, int ip) that returns the next hop of the longest matching prefix (or null), reading the 32 address bits from the most significant bit.",
       "language": "java",
-      "starter": "String lookup(Node root, int ip) {\n  \n}",
+      "starter": "static String lookup(Node root, int ip) {\n  \n}",
       "checks": [
         {
           "label": "extracts bits with an unsigned shift and & 1",
@@ -343,8 +343,8 @@
           "pattern": "for|while"
         }
       ],
-      "model": "String best = null; Node cur = root;\nfor (int i = 31; i >= 0 && cur != null; i--) {\n  if (cur.hop != null) best = cur.hop;\n  cur = cur.ch[(ip >>> i) & 1];\n}\nif (cur != null && cur.hop != null) best = cur.hop;\nreturn best;",
-      "explanation": "The trick is to keep walking after the first match and remember the deepest one. Do not stop at the first node with a hop. The last check handles /32 routes. I ran this against /0, /8, /16 and /24 routes: 10.1.3.7 returns the /16 hop."
+      "model": "static String lookup(Node root, int ip) {\n  String best = null; Node cur = root;\n  for (int i = 31; i >= 0 && cur != null; i--) {\n    if (cur.hop != null) best = cur.hop;\n    cur = cur.ch[(ip >>> i) & 1];\n  }\n  if (cur != null && cur.hop != null) best = cur.hop;\n  return best;\n}",
+      "explanation": "The trick is to keep walking after the first match and remember the deepest one. Do not stop at the first node with a hop. The last check handles /32 routes. With /0, /8, /16 and /24 routes, 10.1.3.7 returns the /16 hop."
     },
     {
       "id": "trie-vs-hash",

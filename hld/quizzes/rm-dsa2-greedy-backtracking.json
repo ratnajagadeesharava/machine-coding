@@ -7,7 +7,7 @@
   "seriesDescription": "Topic-by-topic JEE-style quizzes for the backend and AI-engineering interview roadmap: integer, assertion-reason, matrix match, fill-in-the-blanks, short code writing, plus multi-correct questions. Language core, concurrency, DSA, web frameworks, data access, databases, messaging, resilience, security, testing, system design, LLM and agent engineering.",
   "seriesOrder": 44,
   "description": "When greedy works and how to prove it, activity selection, jump game, gas station, then subsets, permutations, combination sum with pruning and duplicate handling.",
-  "source": "CLRS ch. 16; LeetCode Jump Game, Gas Station, Subsets I/II, Permutations II, Combination Sum; MIT 6.046 greedy notes",
+  "source": "CLRS ch. 16; LeetCode Jump Game, Gas Station, Subsets I/II, Permutations II, Combination Sum; MIT 6.046 greedy notes; NeetCode backtracking roadmap",
   "estimatedMinutes": 14,
   "questions": [
     {
@@ -131,7 +131,7 @@
       "difficulty": 2,
       "prompt": "Write a Java method boolean canJump(int[] nums). You start at index 0 and nums[i] is the maximum jump length from index i. Return true if the last index is reachable, in O(n) time using a greedy farthest-reach variable.",
       "language": "java",
-      "starter": "boolean canJump(int[] nums) {\n  \n}",
+      "starter": "static boolean canJump(int[] nums) {\n  \n}",
       "checks": [
         {
           "label": "tracks the farthest reachable index with Math.max",
@@ -150,8 +150,8 @@
           "pattern": "for|while"
         }
       ],
-      "model": "int reach = 0;\nfor (int i = 0; i < nums.length; i++) {\n  if (i > reach) return false;\n  reach = Math.max(reach, i + nums[i]);\n}\nreturn true;",
-      "explanation": "Greedy works because reachable indices form a prefix: if you can reach index r, you can reach everything before it. A backwards \"goal post\" loop is an equally valid O(n) solution (it would need these checks adapted). I ran the model on [2,3,1,1,4] (true) and [3,2,1,0,4] (false)."
+      "model": "static boolean canJump(int[] nums) {\n  int reach = 0;\n  for (int i = 0; i < nums.length; i++) {\n    if (i > reach) return false;\n    reach = Math.max(reach, i + nums[i]);\n  }\n  return true;\n}",
+      "explanation": "Greedy works because reachable indices form a prefix: if you can reach index r, you can reach everything before it. A backwards \"goal post\" loop is an equally valid O(n) solution (it would need these checks adapted). For [2,3,1,1,4] the result is true and for [3,2,1,0,4] it is false."
     },
     {
       "id": "perm-count",
@@ -180,7 +180,7 @@
       "difficulty": 2,
       "prompt": "Write a Java method List<List<Integer>> subsets(int[] nums) that returns all subsets (the power set) of an array of distinct integers using backtracking. You may add a private helper method.",
       "language": "java",
-      "starter": "List<List<Integer>> subsets(int[] nums) {\n  \n}",
+      "starter": "static List<List<Integer>> subsets(int[] nums) {\n  \n}",
       "checks": [
         {
           "label": "adds a copy of the current path to the result",
@@ -199,7 +199,7 @@
           "pattern": "for\\s*\\(\\s*int\\s+i\\s*=\\s*start|for\\s*\\(\\s*int\\s+\\w+\\s*=\\s*\\w+"
         }
       ],
-      "model": "List<List<Integer>> res = new ArrayList<>();\nvoid go(int[] nums, int start, List<Integer> cur) {\n  res.add(new ArrayList<>(cur));\n  for (int i = start; i < nums.length; i++) {\n    cur.add(nums[i]); go(nums, i + 1, cur); cur.remove(cur.size() - 1);\n  }\n}\n// subsets(nums): go(nums, 0, new ArrayList<>()); return res;",
+      "model": "static List<List<Integer>> subsets(int[] nums) {\n  List<List<Integer>> res = new ArrayList<>();\n  go(nums, 0, new ArrayList<>(), res);\n  return res;\n}\nstatic void go(int[] nums, int start, List<Integer> cur, List<List<Integer>> res) {\n  res.add(new ArrayList<>(cur));\n  for (int i = start; i < nums.length; i++) {\n    cur.add(nums[i]); go(nums, i + 1, cur, res); cur.remove(cur.size() - 1);\n  }\n}",
       "explanation": "The copy is essential: adding cur itself would leave every entry pointing at the same, finally empty list. There are 2^n results, each copied in O(n), so O(n * 2^n) time. An include/exclude binary recursion or a bitmask loop over 0..2^n-1 are also valid."
     },
     {
@@ -228,7 +228,7 @@
           "pattern": "\\[\\s*:\\s*\\]|list\\s*\\(|copy|\\+\\s*\\["
         }
       ],
-      "model": "cands.sort()\nres = []\ndef go(start, remaining, cur):\n    if remaining == 0:\n        res.append(cur[:]); return\n    for i in range(start, len(cands)):\n        if cands[i] > remaining: break\n        cur.append(cands[i]); go(i, remaining - cands[i], cur); cur.pop()\ngo(0, target, [])\nreturn res",
+      "model": "def combination_sum(cands, target):\n    cands = sorted(cands)\n    res = []\n    def go(start, remaining, cur):\n        if remaining == 0:\n            res.append(cur[:]); return\n        for i in range(start, len(cands)):\n            if cands[i] > remaining: break\n            cur.append(cands[i]); go(i, remaining - cands[i], cur); cur.pop()\n    go(0, target, [])\n    return res",
       "explanation": "Starting each loop at start (not 0) prevents [2,3] and [3,2] both appearing. Passing i (not i + 1) is what allows reuse. The break is valid only because the list is sorted. Immutable alternatives (cur + [x]) avoid the pop."
     },
     {

@@ -7,7 +7,7 @@
   "seriesDescription": "Topic-by-topic JEE-style quizzes for the backend and AI-engineering interview roadmap: integer, assertion-reason, matrix match, fill-in-the-blanks, short code writing, plus multi-correct questions. Language core, concurrency, DSA, web frameworks, data access, databases, messaging, resilience, security, testing, system design, LLM and agent engineering.",
   "seriesOrder": 73,
   "description": "CAP and PACELC, consistency models, OLTP vs OLAP and columnar storage, Snowflake/Databricks basics, and vector search with pgvector (HNSW vs IVF, distance metrics) and Spring AI.",
-  "source": "Brewer/Gilbert-Lynch CAP; Abadi PACELC; Jepsen consistency map; Snowflake and Databricks docs; pgvector README; Spring AI reference; Chroma and Qdrant docs",
+  "source": "Brewer/Gilbert-Lynch CAP; Abadi PACELC (2012); Jepsen consistency map; Snowflake and Databricks docs; pgvector README; Spring AI reference; Chroma and Qdrant docs",
   "estimatedMinutes": 16,
   "questions": [
     {
@@ -123,7 +123,7 @@
         "c": "R is true.",
         "d": "A is true."
       },
-      "explanation": "PACELC: if Partition choose A or C, Else choose Latency or Consistency. It describes the normal-case cost that CAP ignores. DynamoDB-style stores are PA/EL, many relational clusters PC/EC."
+      "explanation": "PACELC: if Partition choose A or C, Else choose Latency or Consistency. It describes the normal-case cost that CAP ignores. Abadi classifies Dynamo-style stores (Cassandra, Riak) as PA/EL and H-Store/VoltDB as PC/EC, and PNUTS as PC/EL."
     },
     {
       "id": "sync-commit-latency",
@@ -457,6 +457,36 @@
         "d": "A is true."
       },
       "explanation": "Similar adjacent values enable run-length, dictionary and delta encoding. Fewer columns read gives I/O savings: a separate benefit."
+    },
+    {
+      "id": "code-hnsw-index",
+      "concept": "Vector search",
+      "type": "code",
+      "difficulty": 2,
+      "prompt": "Table items(id, embedding vector(3)) is searched by cosine distance. Write the pgvector statement that creates an HNSW index for that query.",
+      "language": "sql",
+      "checks": [
+        {
+          "label": "creates an index using hnsw",
+          "pattern": "create\\s+index[\\s\\S]*\\bon\\s+items\\s+using\\s+hnsw"
+        },
+        {
+          "label": "uses the cosine operator class",
+          "pattern": "embedding\\s+vector_cosine_ops"
+        }
+      ],
+      "model": "CREATE INDEX ON items USING hnsw (embedding vector_cosine_ops);",
+      "explanation": "The operator class must match the operator used in ORDER BY: vector_l2_ops for <->, vector_ip_ops for <#>, vector_cosine_ops for <=>; a mismatch means the index is not used. Optional WITH (m = 16, ef_construction = 64) are the documented defaults; at query time raise hnsw.ef_search (default 40) for better recall."
+    },
+    {
+      "id": "hnsw-defaults",
+      "concept": "Vector search",
+      "type": "integer",
+      "difficulty": 3,
+      "prompt": "In pgvector, an HNSW index returns at most hnsw.ef_search candidates per scan. With the default setting and a query ORDER BY embedding <-> q LIMIT 100 (no filtering), how many rows can the index scan return at most?",
+      "answer": 40,
+      "unit": "rows",
+      "explanation": "hnsw.ef_search defaults to 40, which caps the candidate list, so LIMIT 100 yields at most 40 rows unless you raise ef_search (up to 1000). Interviewers like this trap: increasing LIMIT without raising ef_search silently returns fewer rows than requested. Newer pgvector versions add iterative scans for filtered queries."
     }
   ]
 }

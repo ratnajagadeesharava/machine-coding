@@ -7,7 +7,7 @@
   "seriesDescription": "Topic-by-topic JEE-style quizzes for the backend and AI-engineering interview roadmap: integer, assertion-reason, matrix match, fill-in-the-blanks, short code writing, plus multi-correct questions. Language core, concurrency, DSA, web frameworks, data access, databases, messaging, resilience, security, testing, system design, LLM and agent engineering.",
   "seriesOrder": 40,
   "description": "Dijkstra with a heap, why negative edges break it, 0-1 BFS, and Bellman-Ford for at most K stops, with traces, integer answers and code.",
-  "source": "CLRS; cp-algorithms; Python heapq docs; Oracle Java PriorityQueue docs; LeetCode Cheapest Flights Within K Stops discussions",
+  "source": "CLRS ch. 22-24; cp-algorithms; Python heapq docs; Oracle Java PriorityQueue docs; LeetCode Cheapest Flights Within K Stops, Network Delay Time, Path With Minimum Effort",
   "estimatedMinutes": 15,
   "questions": [
     {
@@ -131,7 +131,7 @@
       "difficulty": 2,
       "prompt": "Write a Java method int[] dijkstra(List<int[]>[] g, int n, int src) where g[u] holds {v, weight} pairs with non-negative weights. Return the distance array (Integer.MAX_VALUE for unreachable nodes) using a PriorityQueue<int[]>.",
       "language": "java",
-      "starter": "int[] dijkstra(List<int[]>[] g, int n, int src) {\n  \n}",
+      "starter": "static int[] dijkstra(List<int[]>[] g, int n, int src) {\n  \n}",
       "checks": [
         {
           "label": "creates a PriorityQueue ordered by distance",
@@ -150,8 +150,8 @@
           "pattern": "\\+\\s*[\\w\\[\\]]+\\s*<\\s*dist\\s*\\[|dist\\s*\\[\\s*\\w+\\s*\\]\\s*\\+\\s*[\\w\\[\\]]+\\s*<\\s*dist"
         }
       ],
-      "model": "int[] dist = new int[n];\nArrays.fill(dist, Integer.MAX_VALUE); dist[src] = 0;\nPriorityQueue<int[]> pq = new PriorityQueue<>((a, b) -> Integer.compare(a[0], b[0]));\npq.add(new int[]{0, src});\nwhile (!pq.isEmpty()) {\n  int[] top = pq.poll(); int d = top[0], u = top[1];\n  if (d > dist[u]) continue;\n  for (int[] e : g[u]) if (d + e[1] < dist[e[0]]) { dist[e[0]] = d + e[1]; pq.add(new int[]{dist[e[0]], e[0]}); }\n}\nreturn dist;",
-      "explanation": "This is the lazy-deletion version: Java PriorityQueue has no decrease-key, so duplicates are pushed and stale ones skipped. Other correct variants (a visited[] array, a Node record) pass the intent. Time O(E log V). I ran the model on a small graph to confirm."
+      "model": "static int[] dijkstra(List<int[]>[] g, int n, int src) {\n  int[] dist = new int[n];\n  Arrays.fill(dist, Integer.MAX_VALUE); dist[src] = 0;\n  PriorityQueue<int[]> pq = new PriorityQueue<>((a, b) -> Integer.compare(a[0], b[0]));\n  pq.add(new int[]{0, src});\n  while (!pq.isEmpty()) {\n    int[] top = pq.poll(); int d = top[0], u = top[1];\n    if (d > dist[u]) continue;\n    for (int[] e : g[u]) if (d + e[1] < dist[e[0]]) { dist[e[0]] = d + e[1]; pq.add(new int[]{dist[e[0]], e[0]}); }\n  }\n  return dist;\n}",
+      "explanation": "This is the lazy-deletion version: Java PriorityQueue has no decrease-key, so duplicates are pushed and stale ones skipped. Other correct variants (a visited[] array, a Node record) pass the intent. Time O(E log V)."
     },
     {
       "id": "bf-python",
@@ -179,7 +179,7 @@
           "pattern": "-\\s*1"
         }
       ],
-      "model": "INF = float(\"inf\")\ndist = [INF] * n; dist[src] = 0\nfor _ in range(k + 1):\n    nxt = dist[:]\n    for u, v, w in flights:\n        if dist[u] + w < nxt[v]: nxt[v] = dist[u] + w\n    dist = nxt\nreturn -1 if dist[dst] == INF else dist[dst]",
+      "model": "def cheapest(n, flights, src, dst, k):\n    INF = float(\"inf\")\n    dist = [INF] * n; dist[src] = 0\n    for _ in range(k + 1):\n        nxt = dist[:]\n        for u, v, w in flights:\n            if dist[u] + w < nxt[v]: nxt[v] = dist[u] + w\n        dist = nxt\n    return -1 if dist[dst] == INF else dist[dst]",
       "explanation": "The copy matters: relaxing in place could chain several edges in one round and exceed the K-stop limit. Time O(K * E). A BFS/heap solution tracking (cost, node, stops) is another valid approach, but it would not satisfy these Bellman-Ford checks."
     },
     {

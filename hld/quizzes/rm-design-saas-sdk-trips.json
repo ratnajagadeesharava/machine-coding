@@ -390,6 +390,52 @@
         "d": "The assertion is the true statement."
       },
       "explanation": "Use a time-series or object store for history and a KV store like Redis for the current point."
+    },
+    {
+      "id": "rls-owner",
+      "concept": "Row level security",
+      "type": "truefalse",
+      "difficulty": 3,
+      "prompt": "True or false: in PostgreSQL the owner of a table is always subject to its row level security policies once ENABLE ROW LEVEL SECURITY has been run.",
+      "options": [
+        {
+          "id": "a",
+          "text": "True",
+          "why": "Incorrect: by default the table owner bypasses RLS."
+        },
+        {
+          "id": "b",
+          "text": "False",
+          "why": "Right: owners (and superusers or roles with BYPASSRLS) skip policies unless the owner opts in with ALTER TABLE ... FORCE ROW LEVEL SECURITY."
+        }
+      ],
+      "correct": [
+        "b"
+      ],
+      "explanation": "Use a separate non-owner application role without BYPASSRLS, and consider FORCE ROW LEVEL SECURITY. With RLS enabled and no policy, non-owner roles see no rows (default deny)."
+    },
+    {
+      "id": "semver-zero",
+      "concept": "Semantic versioning",
+      "type": "truefalse",
+      "difficulty": 2,
+      "prompt": "True or false: under Semantic Versioning 2.0.0, versions 0.y.z are for initial development and anything may change at any time.",
+      "options": [
+        {
+          "id": "a",
+          "text": "True",
+          "why": "Right: spec item 4 says the public API should not be considered stable while the major version is zero."
+        },
+        {
+          "id": "b",
+          "text": "False",
+          "why": "Incorrect: stability promises only begin at 1.0.0; 0.y.z carries no compatibility guarantee."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Release 1.0.0 when users depend on the API; from then on, breaking changes need a new major version."
     }
   ]
 }

@@ -7,7 +7,7 @@
   "seriesDescription": "Topic-by-topic JEE-style quizzes for the backend and AI-engineering interview roadmap: integer, assertion-reason, matrix match, fill-in-the-blanks, short code writing, plus multi-correct questions. Language core, concurrency, DSA, web frameworks, data access, databases, messaging, resilience, security, testing, system design, LLM and agent engineering.",
   "seriesOrder": 42,
   "description": "Merge intervals, meeting rooms, insert interval, subnet masks and host counts, popcount, n & (n-1) and XOR tricks.",
-  "source": "LeetCode Merge Intervals, Meeting Rooms I/II, Insert Interval, Single Number; Oracle Java Tutorials (bitwise operators); Python docs (int.bit_count); RFC 4632",
+  "source": "LeetCode Merge Intervals, Meeting Rooms I/II, Insert Interval, Single Number, Counting Bits, Missing Number, Non-overlapping Intervals; Oracle Java Tutorials (bitwise operators); JLS 15.19 shift operators; Python docs (int.bit_count); RFC 4632, RFC 3021",
   "estimatedMinutes": 15,
   "questions": [
     {
@@ -123,7 +123,7 @@
       "difficulty": 2,
       "prompt": "Write a Java method int[][] merge(int[][] iv) that merges all overlapping closed intervals (touching intervals like [1,2] and [2,3] also merge) and returns the result in sorted order.",
       "language": "java",
-      "starter": "int[][] merge(int[][] iv) {\n  \n}",
+      "starter": "static int[][] merge(int[][] iv) {\n  \n}",
       "checks": [
         {
           "label": "sorts by the start value",
@@ -142,7 +142,7 @@
           "pattern": "<=|>\\s*[\\w.()\\s\\[\\]-]*\\[\\s*1\\s*\\]"
         }
       ],
-      "model": "Arrays.sort(iv, (a, b) -> Integer.compare(a[0], b[0]));\nList<int[]> out = new ArrayList<>();\nfor (int[] x : iv) {\n  if (out.isEmpty() || x[0] > out.get(out.size() - 1)[1]) out.add(new int[]{x[0], x[1]});\n  else out.get(out.size() - 1)[1] = Math.max(out.get(out.size() - 1)[1], x[1]);\n}\nreturn out.toArray(new int[0][]);",
+      "model": "static int[][] merge(int[][] iv) {\n  Arrays.sort(iv, (a, b) -> Integer.compare(a[0], b[0]));\n  List<int[]> out = new ArrayList<>();\n  for (int[] x : iv) {\n    if (out.isEmpty() || x[0] > out.get(out.size() - 1)[1]) out.add(new int[]{x[0], x[1]});\n    else out.get(out.size() - 1)[1] = Math.max(out.get(out.size() - 1)[1], x[1]);\n  }\n  return out.toArray(new int[0][]);\n}",
       "explanation": "Copy x into a new array before adding so you do not mutate the caller's input. Prefer Integer.compare over a[0] - b[0], which can overflow with extreme values. Time O(n log n). Other valid approaches exist, e.g. keeping start and end in local variables."
     },
     {
@@ -171,7 +171,7 @@
           "pattern": "len\\s*\\("
         }
       ],
-      "model": "meetings.sort(key=lambda m: m[0])\nends = []\nfor s, e in meetings:\n    if ends and ends[0] <= s:\n        heapq.heappop(ends)\n    heapq.heappush(ends, e)\nreturn len(ends)",
+      "model": "import heapq\n\ndef min_rooms(meetings):\n    meetings = sorted(meetings, key=lambda m: m[0])\n    ends = []\n    for s, e in meetings:\n        if ends and ends[0] <= s:\n            heapq.heappop(ends)\n        heapq.heappush(ends, e)\n    return len(ends)",
       "explanation": "The heap size at the end equals the peak number of rooms, since a room is only added when none is free. A sweep line over sorted starts and ends is an equally good O(n log n) solution. For [[0,5],[5,10]] the answer is 1 because of the <= test."
     },
     {
@@ -181,7 +181,7 @@
       "difficulty": 3,
       "prompt": "Write a Java method boolean inSubnet(int ip, int network, int prefixLen) that returns true if the 32-bit IPv4 address ip belongs to the CIDR block network/prefixLen, using bit operations. Handle prefixLen == 0.",
       "language": "java",
-      "starter": "boolean inSubnet(int ip, int network, int prefixLen) {\n  \n}",
+      "starter": "static boolean inSubnet(int ip, int network, int prefixLen) {\n  \n}",
       "checks": [
         {
           "label": "builds or applies a mask from 32 - prefixLen",
@@ -200,8 +200,8 @@
           "pattern": "==\\s*0|!=\\s*0|>\\s*0|<=\\s*0|prefixLen\\s*==\\s*0"
         }
       ],
-      "model": "int mask = prefixLen == 0 ? 0 : -1 << (32 - prefixLen);\nreturn (ip & mask) == (network & mask);",
-      "explanation": "The guard matters: in Java, x << 32 shifts by 32 mod 32 = 0 for int, so -1 << 32 is still -1 and a /0 would wrongly demand an exact match (I ran this to confirm). An alternative is (ip ^ network) >>> (32 - p) == 0 with the same guard."
+      "model": "static boolean inSubnet(int ip, int network, int prefixLen) {\n  int mask = prefixLen == 0 ? 0 : -1 << (32 - prefixLen);\n  return (ip & mask) == (network & mask);\n}",
+      "explanation": "The guard matters: in Java the shift distance of an int shift is taken mod 32 (JLS 15.19), so -1 << 32 is still -1 and a /0 would wrongly demand an exact match. An alternative is (ip ^ network) >>> (32 - p) == 0 with the same guard."
     },
     {
       "id": "kernighan-python",
@@ -225,7 +225,7 @@
           "pattern": "\\+=\\s*1|count\\s*\\+|c\\s*\\+"
         }
       ],
-      "model": "count = 0\nwhile n:\n    n &= n - 1\n    count += 1\nreturn count",
+      "model": "def popcount(n):\n    count = 0\n    while n:\n        n &= n - 1\n        count += 1\n    return count",
       "explanation": "Runs in O(number of set bits). In real code use n.bit_count() (Python 3.10+) or Integer.bitCount(n) in Java, which map to a hardware instruction. For negative Python ints bit tricks need a mask because ints are unbounded."
     },
     {

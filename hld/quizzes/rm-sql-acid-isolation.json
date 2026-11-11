@@ -7,7 +7,7 @@
   "seriesDescription": "Topic-by-topic JEE-style quizzes for the backend and AI-engineering interview roadmap: integer, assertion-reason, matrix match, fill-in-the-blanks, short code writing, plus multi-correct questions. Language core, concurrency, DSA, web frameworks, data access, databases, messaging, resilience, security, testing, system design, LLM and agent engineering.",
   "seriesOrder": 66,
   "description": "ACID, savepoints, the isolation levels and anomalies (dirty read, non-repeatable read, phantom, lost update, write skew) in the SQL standard and in PostgreSQL MVCC, with retry on serialization failures.",
-  "source": "PostgreSQL 16 documentation (transaction isolation, MVCC, explicit locking); Designing Data-Intensive Applications ch. 7; Jepsen/Hermitage isolation tables; Use The Index, Luke",
+  "source": "PostgreSQL 16 documentation (transaction isolation, MVCC, explicit locking, asynchronous commit); Designing Data-Intensive Applications ch. 7; Jepsen/Hermitage isolation tables; Use The Index, Luke",
   "estimatedMinutes": 16,
   "questions": [
     {
@@ -122,14 +122,10 @@
         },
         {
           "id": "b",
-          "text": "Lost update from the single statement UPDATE t SET x = x + 1"
+          "text": "Overwriting a concurrently committed change after reading the old value in application code (read, then UPDATE)"
         },
         {
           "id": "c",
-          "text": "Phantom read"
-        },
-        {
-          "id": "d",
           "text": "Write skew"
         }
       ],
@@ -153,11 +149,10 @@
       ],
       "pairs": {
         "a": "p",
-        "b": "q",
-        "c": "r",
-        "d": "s"
+        "b": "r",
+        "c": "s"
       },
-      "explanation": "PostgreSQL treats READ UNCOMMITTED as READ COMMITTED, so dirty reads never occur. At READ COMMITTED a concurrent x = x + 1 waits and re-evaluates on the new row version. REPEATABLE READ is snapshot isolation (no phantoms) but allows write skew; only SERIALIZABLE (SSI) stops it."
+      "explanation": "PostgreSQL treats READ UNCOMMITTED as READ COMMITTED, so dirty reads never occur at any level. At READ COMMITTED the read-then-UPDATE cycle can still lose an update; at REPEATABLE READ the second writer fails with 40001 (could not serialize access due to concurrent update). Write skew is only stopped by SERIALIZABLE (SSI). The single statement UPDATE t SET x = x + 1 is safe even at READ COMMITTED because the update waits and re-evaluates on the new row version."
     },
     {
       "id": "durability-fill",
@@ -450,6 +445,49 @@
         "b"
       ],
       "explanation": "Atomicity, isolation and durability are engine properties; consistency is a joint contract between the schema and the application."
+    },
+    {
+      "id": "sync-commit-off",
+      "concept": "Durability",
+      "type": "truefalse",
+      "difficulty": 2,
+      "prompt": "Setting synchronous_commit = off in PostgreSQL can lose the most recently committed transactions after an operating-system or server crash, but it does not corrupt the database.",
+      "options": [
+        {
+          "id": "a",
+          "text": "True",
+          "why": "Correct: the commit returns before the WAL is flushed, so the last few transactions (up to about three times wal_writer_delay) may vanish, yet the database stays consistent."
+        },
+        {
+          "id": "b",
+          "text": "False",
+          "why": "Not so: PostgreSQL documents this setting as a durability-for-latency trade that risks losing recent commits, not corrupting data."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Unlike fsync = off, which can corrupt the cluster, synchronous_commit = off only risks the tail of committed work. It can be set per transaction, so non-critical writes (events, logs) can skip the flush wait."
+    },
+    {
+      "id": "code-select-for-update-rr",
+      "concept": "Isolation levels",
+      "type": "code",
+      "difficulty": 2,
+      "prompt": "Write the SQL that starts a transaction at REPEATABLE READ isolation, in PostgreSQL, and reads the balance of account 1 from accounts.",
+      "language": "sql",
+      "checks": [
+        {
+          "label": "starts a transaction at REPEATABLE READ",
+          "pattern": "(begin|start\\s+transaction)\\s+isolation\\s+level\\s+repeatable\\s+read|set\\s+transaction\\s+isolation\\s+level\\s+repeatable\\s+read"
+        },
+        {
+          "label": "reads balance of account 1",
+          "pattern": "select\\s+balance\\s+from\\s+accounts\\s+where\\s+id\\s*=\\s*1\\b"
+        }
+      ],
+      "model": "BEGIN ISOLATION LEVEL REPEATABLE READ;\nSELECT balance FROM accounts WHERE id = 1;\nCOMMIT;",
+      "explanation": "SET TRANSACTION ISOLATION LEVEL must come before the first query of the transaction, so BEGIN ISOLATION LEVEL ... is the usual spelling. The snapshot is fixed at the first query, and the application must retry on SQLSTATE 40001."
     }
   ]
 }

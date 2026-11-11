@@ -7,7 +7,7 @@
   "seriesDescription": "Topic-by-topic JEE-style quizzes for the backend and AI-engineering interview roadmap: integer, assertion-reason, matrix match, fill-in-the-blanks, short code writing, plus multi-correct questions. Language core, concurrency, DSA, web frameworks, data access, databases, messaging, resilience, security, testing, system design, LLM and agent engineering.",
   "seriesOrder": 70,
   "description": "Normal forms vs denormalisation, JSONB and GIN, CREATE INDEX CONCURRENTLY, replica lag, and the expand-and-contract recipe for changing a live schema.",
-  "source": "PostgreSQL docs (JSONB, CREATE INDEX, ALTER TABLE); Use The Index, Luke; Designing Data-Intensive Applications; Stripe and GitHub engineering blogs on online migrations",
+  "source": "PostgreSQL 16 documentation (JSONB, CREATE INDEX, ALTER TABLE, partial indexes, partitioning); Use The Index, Luke; Designing Data-Intensive Applications; Stripe and GitHub engineering blogs on online migrations",
   "estimatedMinutes": 15,
   "questions": [
     {
@@ -410,6 +410,50 @@
         "d": "A is true for PostgreSQL 11+ with a non-volatile default."
       },
       "explanation": "Volatile defaults such as random() or clock_timestamp() still force a rewrite. Before version 11 any default rewrote the whole table under ACCESS EXCLUSIVE."
+    },
+    {
+      "id": "code-soft-delete-unique",
+      "concept": "Constraints",
+      "type": "code",
+      "difficulty": 3,
+      "prompt": "Table users(id, email, deleted_at) uses soft deletes. Write the statement that keeps email unique among live users only, so a deleted user's email can be reused.",
+      "language": "sql",
+      "checks": [
+        {
+          "label": "creates a UNIQUE index on users(email)",
+          "pattern": "create\\s+unique\\s+index[\\s\\S]*\\bon\\s+users\\s*(using\\s+btree\\s*)?\\(\\s*email\\s*\\)"
+        },
+        {
+          "label": "restricts it to deleted_at IS NULL",
+          "pattern": "where\\s+\\(?\\s*deleted_at\\s+is\\s+null"
+        }
+      ],
+      "model": "CREATE UNIQUE INDEX users_email_live ON users (email) WHERE deleted_at IS NULL;",
+      "explanation": "A partial unique index only indexes (and checks) rows matching its predicate; deleted rows are ignored. A plain UNIQUE constraint cannot carry a WHERE clause in PostgreSQL, so the index form is the answer. Verified on PostgreSQL 16."
+    },
+    {
+      "id": "code-range-partition",
+      "concept": "Partitioning",
+      "type": "code",
+      "difficulty": 3,
+      "prompt": "Write the PostgreSQL statements that create a table events(id bigint, created_at timestamptz) partitioned by range of created_at, and one partition events_2025 holding all of 2025.",
+      "language": "sql",
+      "checks": [
+        {
+          "label": "declares PARTITION BY RANGE (created_at)",
+          "pattern": "partition\\s+by\\s+range\\s*\\(\\s*created_at\\s*\\)"
+        },
+        {
+          "label": "creates the partition with PARTITION OF",
+          "pattern": "create\\s+table\\s+events_2025\\s+partition\\s+of\\s+events"
+        },
+        {
+          "label": "bounds FROM/TO covering 2025",
+          "pattern": "for\\s+values\\s+from\\s*\\(\\s*'2025-01-01[^']*'\\s*\\)\\s*to\\s*\\(\\s*'2026-01-01[^']*'\\s*\\)"
+        }
+      ],
+      "model": "CREATE TABLE events (id bigint, created_at timestamptz) PARTITION BY RANGE (created_at);\nCREATE TABLE events_2025 PARTITION OF events\n  FOR VALUES FROM ('2025-01-01') TO ('2026-01-01');",
+      "explanation": "Range bounds are inclusive at FROM and exclusive at TO, so consecutive partitions tile without overlap. Verified on PostgreSQL 16. Dropping or detaching an old partition is a cheap way to expire data; a primary key on a partitioned table must include the partition key."
     }
   ]
 }

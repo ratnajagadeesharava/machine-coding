@@ -7,7 +7,7 @@
   "title": "DSA: linked lists, trees and heaps",
   "seriesOrder": 32,
   "description": "Linked-list pointer surgery (reverse, cycle, nth from end, merge), binary tree traversals, LCA, BST validation, serialization, and heap patterns: top K, merge K lists, running median.",
-  "source": "LeetCode problem set and discuss; NeetCode roadmap; Cracking the Coding Interview; Oracle Java docs (PriorityQueue, ArrayDeque, Comparator); Python docs (heapq, collections.deque)",
+  "source": "LeetCode problem set and discuss; NeetCode roadmap; Cracking the Coding Interview; Oracle Java docs (PriorityQueue, ArrayDeque, Comparator); Python docs (heapq, collections.deque), CPython Counter.most_common source",
   "estimatedMinutes": 16,
   "questions": [
     {

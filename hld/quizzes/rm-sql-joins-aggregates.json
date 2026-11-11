@@ -7,7 +7,7 @@
   "seriesDescription": "Topic-by-topic JEE-style quizzes for the backend and AI-engineering interview roadmap: integer, assertion-reason, matrix match, fill-in-the-blanks, short code writing, plus multi-correct questions. Language core, concurrency, DSA, web frameworks, data access, databases, messaging, resilience, security, testing, system design, LLM and agent engineering.",
   "seriesOrder": 63,
   "description": "Join types, GROUP BY and HAVING, NULL three-valued logic, NOT IN vs NOT EXISTS, and the classic questions: second highest salary, duplicates, self-join for managers, anti-join. Queries verified on PostgreSQL 16.",
-  "source": "PostgreSQL 16 documentation (queries, functions); Use The Index, Luke; LeetCode SQL discussions; Mode and SQLZoo tutorials; Joe Celko on NULL logic",
+  "source": "PostgreSQL 16 documentation (queries, functions, UNION); Use The Index, Luke; LeetCode SQL discussions (Second Highest Salary, Employees Earning More Than Their Managers); Mode and SQLZoo tutorials; Joe Celko on NULL logic",
   "estimatedMinutes": 15,
   "questions": [
     {
@@ -373,6 +373,60 @@
         "c"
       ],
       "explanation": "Logical order: FROM/JOIN, WHERE, GROUP BY, HAVING, window functions, SELECT, DISTINCT, ORDER BY, LIMIT. The optimiser may execute differently but must return the same result."
+    },
+    {
+      "id": "union-vs-union-all",
+      "concept": "Set operations",
+      "type": "integer",
+      "difficulty": 2,
+      "prompt": "Table a holds the ids 1, 2, 2, 3 and table b holds the ids 2, 3, 4. How many rows does SELECT id FROM a UNION SELECT id FROM b return?",
+      "answer": 4,
+      "unit": "rows",
+      "explanation": "UNION removes duplicates across the whole result: the distinct ids are 1, 2, 3 and 4, so 4 rows. UNION ALL would return 7 rows (4 + 3) and skips the sort or hash step, so it is cheaper when duplicates are impossible or acceptable. INTERSECT would give 2 and 3; EXCEPT (a minus b) would give 1."
+    },
+    {
+      "id": "code-earns-more-than-manager",
+      "concept": "Self joins",
+      "type": "code",
+      "difficulty": 2,
+      "prompt": "Table employees(id, name, salary, manager_id) where manager_id refers to employees.id. Return the names of employees who earn more than their own manager.",
+      "language": "sql",
+      "checks": [
+        {
+          "label": "joins employees to itself on manager_id",
+          "pattern": "join\\s+employees\\s+\\w+\\s+on[\\s\\S]*manager_id|from\\s+employees\\s+\\w+\\s*,\\s*employees\\s+\\w+"
+        },
+        {
+          "label": "compares the two salaries",
+          "pattern": "\\w+\\.salary\\s*>\\s*\\w+\\.salary"
+        }
+      ],
+      "model": "SELECT e.name\nFROM employees e\nJOIN employees m ON e.manager_id = m.id\nWHERE e.salary > m.salary;",
+      "explanation": "A self join with two aliases; an INNER JOIN is right because employees without a manager cannot satisfy the comparison anyway. Verified on PostgreSQL with 5 sample rows. Another classic variant: compare an employee with the average of their department using a correlated subquery or AVG() OVER (PARTITION BY dept_id)."
+    },
+    {
+      "id": "code-nth-highest",
+      "concept": "Ranking queries",
+      "type": "code",
+      "difficulty": 3,
+      "prompt": "Table employees(id, name, salary). Write a query that returns the third highest distinct salary using DENSE_RANK, and returns no row when fewer than three distinct salaries exist.",
+      "language": "sql",
+      "checks": [
+        {
+          "label": "uses DENSE_RANK() OVER",
+          "pattern": "dense_rank\\s*\\(\\s*\\)\\s*over\\s*\\("
+        },
+        {
+          "label": "orders by salary descending",
+          "pattern": "order\\s+by\\s+(\\w+\\.)?salary\\s+desc"
+        },
+        {
+          "label": "keeps rank 3",
+          "pattern": "=\\s*3\\b"
+        }
+      ],
+      "model": "SELECT DISTINCT salary\nFROM (SELECT salary, DENSE_RANK() OVER (ORDER BY salary DESC) AS rnk\n      FROM employees) t\nWHERE rnk = 3;",
+      "explanation": "DENSE_RANK numbers distinct values without gaps, so rnk = 3 is the third highest distinct salary and an empty result appears naturally when it does not exist. The scalar-subquery form (SELECT MAX(salary) ... WHERE salary < (SELECT MAX ...)) does not generalise to N, and LIMIT 1 OFFSET 2 on DISTINCT salary also works."
     }
   ]
 }

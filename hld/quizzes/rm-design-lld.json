@@ -392,6 +392,29 @@
         "b"
       ],
       "explanation": "Running a class with @abstractmethod but no ABC base shows A() still instantiates fine."
+    },
+    {
+      "id": "dcl-volatile",
+      "concept": "Thread safety",
+      "type": "truefalse",
+      "difficulty": 3,
+      "prompt": "True or false: a double-checked locking Singleton in Java needs its instance field declared volatile so another thread cannot see a partially constructed object.",
+      "options": [
+        {
+          "id": "a",
+          "text": "True",
+          "why": "Right: without volatile the write of the reference can be reordered before the constructor's writes, so a second thread may see a half-built object (fixed by the Java 5 memory model with volatile)."
+        },
+        {
+          "id": "b",
+          "text": "False",
+          "why": "Incorrect: the synchronized block only protects the second check; the unsynchronised first read can still observe a reference to an unfinished object without volatile."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Cleaner alternatives are the initialisation-on-demand holder idiom or a single-element enum Singleton (Effective Java, Item 3), neither of which needs volatile."
     }
   ]
 }

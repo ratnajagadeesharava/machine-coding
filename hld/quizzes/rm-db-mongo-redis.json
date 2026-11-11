@@ -7,7 +7,7 @@
   "seriesDescription": "Topic-by-topic JEE-style quizzes for the backend and AI-engineering interview roadmap: integer, assertion-reason, matrix match, fill-in-the-blanks, short code writing, plus multi-correct questions. Language core, concurrency, DSA, web frameworks, data access, databases, messaging, resilience, security, testing, system design, LLM and agent engineering.",
   "seriesOrder": 72,
   "description": "Document modelling, indexes and aggregation pipelines in MongoDB (PyMongo, Spring Data), then Redis data types, TTL, eviction, caching patterns, stampedes and the limits of distributed locks.",
-  "source": "MongoDB manual (aggregation, indexes, transactions); Spring Data MongoDB reference; Redis docs (data types, eviction, distributed locks); Spring Framework cache abstraction; Kleppmann on Redlock",
+  "source": "MongoDB manual (aggregation, indexes, TTL, transactions); Spring Data MongoDB reference; Redis docs (data types, eviction, persistence, distributed locks, ZRANGE/ZREVRANGE); Spring Framework cache abstraction; Kleppmann on Redlock",
   "estimatedMinutes": 16,
   "questions": [
     {
@@ -120,7 +120,7 @@
         },
         {
           "label": "sorts descending by the total",
-          "pattern": "\\$sort[\"']?\\s*:\\s*\\{\\s*[\"']?total[\"']?\\s*:\\s*-1"
+          "pattern": "\\$sort[\"']?\\s*:\\s*\\{\\s*[\"']?total[\"']?\\s*:\\s*(-1|pymongo\\.DESCENDING)|\\$sort[\"']?\\s*:\\s*SON"
         },
         {
           "label": "limits to 3",
@@ -246,7 +246,7 @@
         "l4": "r4",
         "l5": "r5"
       },
-      "explanation": "The last item is a HyperLogLog (PFADD, PFCOUNT), about 12 KB per key with roughly 0.81 percent standard error. A Redis list is fine for a queue but has no acknowledgement; streams add consumer groups and XACK."
+      "explanation": "The last item is a HyperLogLog (PFADD, PFCOUNT), about 12 KB per key with roughly 0.81 percent standard error. A Redis list is fine for a queue but has no acknowledgement; streams add consumer groups and XACK. ZREVRANGE has been deprecated since Redis 6.2 in favour of ZRANGE key 0 -1 REV, but still works."
     },
     {
       "id": "redis-set-nx",
@@ -456,6 +456,81 @@
         "b"
       ],
       "explanation": "Single-document atomicity is still the preferred design because it avoids transaction overhead, but transactions exist when you need them."
+    },
+    {
+      "id": "mongo-esr-order",
+      "concept": "MongoDB indexes",
+      "type": "fill",
+      "difficulty": 3,
+      "prompt": "Complete the compound-index rule of thumb.",
+      "text": "Order the fields of a compound index as {1} first, then {2}, then {3} (the ESR guideline).",
+      "blanks": {
+        "1": "equality",
+        "2": "sort",
+        "3": "range"
+      },
+      "bank": [
+        "equality",
+        "sort",
+        "range",
+        "text",
+        "geo"
+      ],
+      "explanation": "Equality fields narrow to an exact key prefix, sort fields then deliver ordered output without an in-memory sort, and range fields come last because a range on an earlier field breaks the ordering of later ones. So find({status:'paid', amount:{$gt:10}}).sort({createdAt:-1}) is served best by {status:1, createdAt:-1, amount:1}."
+    },
+    {
+      "id": "redis-persistence",
+      "concept": "Redis persistence",
+      "type": "matrix",
+      "difficulty": 2,
+      "prompt": "Match each Redis persistence option with its trait.",
+      "left": [
+        {
+          "id": "a",
+          "text": "RDB snapshot"
+        },
+        {
+          "id": "b",
+          "text": "AOF with appendfsync everysec"
+        },
+        {
+          "id": "c",
+          "text": "AOF with appendfsync always"
+        },
+        {
+          "id": "d",
+          "text": "No persistence"
+        }
+      ],
+      "right": [
+        {
+          "id": "p",
+          "text": "Compact point-in-time file; a crash loses writes since the last snapshot"
+        },
+        {
+          "id": "q",
+          "text": "Command log fsynced each second; at most about one second of writes can be lost"
+        },
+        {
+          "id": "r",
+          "text": "Command log fsynced on every write; safest and slowest"
+        },
+        {
+          "id": "s",
+          "text": "Pure in-memory cache; a restart starts empty"
+        },
+        {
+          "id": "t",
+          "text": "Synchronous replication to every replica before replying"
+        }
+      ],
+      "pairs": {
+        "a": "p",
+        "b": "q",
+        "c": "r",
+        "d": "s"
+      },
+      "explanation": "RDB is good for backups and fast restarts; AOF trades speed for durability, and everysec is the default fsync policy. Redis replication is asynchronous by default, so neither option makes Redis a strongly consistent store (WAIT narrows but does not close that gap)."
     }
   ]
 }

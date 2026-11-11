@@ -7,7 +7,7 @@
   "seriesDescription": "Topic-by-topic JEE-style quizzes for the backend and AI-engineering interview roadmap: integer, assertion-reason, matrix match, fill-in-the-blanks, short code writing, plus multi-correct questions. Language core, concurrency, DSA, web frameworks, data access, databases, messaging, resilience, security, testing, system design, LLM and agent engineering.",
   "seriesOrder": 43,
   "description": "State, transition and base case; coin change, counting ways, knapsack, edit distance, space optimisation, and when DP beats greedy.",
-  "source": "CLRS ch. 14-15; Python functools docs; LeetCode Coin Change, Edit Distance, House Robber; MIT 6.006 DP lectures",
+  "source": "CLRS ch. 14-15; Python functools docs; LeetCode Coin Change, Edit Distance, House Robber; MIT 6.006 DP lectures; GeeksforGeeks knapsack/LCS/LIS articles",
   "estimatedMinutes": 15,
   "questions": [
     {
@@ -197,7 +197,7 @@
       "difficulty": 2,
       "prompt": "Write a Java method int coinChange(int[] coins, int amount) that returns the minimum number of coins for the amount, or -1 if impossible. Use an int[] dp table.",
       "language": "java",
-      "starter": "int coinChange(int[] coins, int amount) {\n  \n}",
+      "starter": "static int coinChange(int[] coins, int amount) {\n  \n}",
       "checks": [
         {
           "label": "uses an int[] dp of size amount + 1",
@@ -216,8 +216,8 @@
           "pattern": "Math\\.min[\\s\\S]*dp\\s*\\[\\s*\\w+\\s*-\\s*\\w+\\s*\\]\\s*\\+\\s*1"
         }
       ],
-      "model": "int[] dp = new int[amount + 1];\nArrays.fill(dp, amount + 1); dp[0] = 0;\nfor (int a = 1; a <= amount; a++)\n  for (int c : coins) if (c <= a) dp[a] = Math.min(dp[a], dp[a - c] + 1);\nreturn dp[amount] > amount ? -1 : dp[amount];",
-      "explanation": "amount + 1 works as infinity because no valid answer exceeds amount coins; avoid Integer.MAX_VALUE + 1 overflow. Time O(amount * coins), space O(amount). A BFS over amounts is another valid solution. I ran the model: {1,5,6,9}, 11 gives 2 and {2}, 3 gives -1."
+      "model": "static int coinChange(int[] coins, int amount) {\n  int[] dp = new int[amount + 1];\n  Arrays.fill(dp, amount + 1); dp[0] = 0;\n  for (int a = 1; a <= amount; a++)\n    for (int c : coins) if (c <= a) dp[a] = Math.min(dp[a], dp[a - c] + 1);\n  return dp[amount] > amount ? -1 : dp[amount];\n}",
+      "explanation": "amount + 1 works as infinity because no valid answer exceeds amount coins; avoid Integer.MAX_VALUE + 1 overflow. Time O(amount * coins), space O(amount). A BFS over amounts is another valid solution. For {1,5,6,9} and 11 it gives 2, for {2} and 3 it gives -1."
     },
     {
       "id": "edit-python",
@@ -245,7 +245,7 @@
           "pattern": "\\[\\s*i\\s*-\\s*1\\s*\\]\\s*==\\s*\\w+\\s*\\[\\s*j\\s*-\\s*1\\s*\\]|go\\s*\\(\\s*i\\s*-\\s*1\\s*,\\s*j\\s*-\\s*1\\s*\\)"
         }
       ],
-      "model": "@cache\ndef go(i, j):\n    if i == 0: return j\n    if j == 0: return i\n    if a[i-1] == b[j-1]: return go(i-1, j-1)\n    return 1 + min(go(i-1, j), go(i, j-1), go(i-1, j-1))\nreturn go(len(a), len(b))",
+      "model": "from functools import cache\n\ndef edit_distance(a, b):\n    @cache\n    def go(i, j):\n        if i == 0: return j\n        if j == 0: return i\n        if a[i-1] == b[j-1]: return go(i-1, j-1)\n        return 1 + min(go(i-1, j), go(i, j-1), go(i-1, j-1))\n    return go(len(a), len(b))",
       "explanation": "State: go(i, j) = distance between the first i chars of a and the first j of b. Delete, insert and substitute are the three neighbours. Time and space O(m * n). Note the recursion depth is m + n, so very long strings need the bottom-up table. A bottom-up solution passes only if it names dp."
     },
     {

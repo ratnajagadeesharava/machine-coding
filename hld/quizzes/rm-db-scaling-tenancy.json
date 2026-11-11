@@ -7,7 +7,7 @@
   "seriesDescription": "Topic-by-topic JEE-style quizzes for the backend and AI-engineering interview roadmap: integer, assertion-reason, matrix match, fill-in-the-blanks, short code writing, plus multi-correct questions. Language core, concurrency, DSA, web frameworks, data access, databases, messaging, resilience, security, testing, system design, LLM and agent engineering.",
   "seriesOrder": 71,
   "description": "Replication, partitioning, sharding, consistent hashing and quorum arithmetic, then the three multi-tenancy models and PostgreSQL row-level security.",
-  "source": "Designing Data-Intensive Applications; PostgreSQL docs (partitioning, row security); Dynamo paper; Karger et al. consistent hashing; AWS SaaS tenant isolation whitepaper",
+  "source": "Designing Data-Intensive Applications; PostgreSQL 16 documentation (partitioning, row security); Dynamo paper; Karger et al. consistent hashing; AWS SaaS tenant isolation whitepaper; PgBouncer docs",
   "estimatedMinutes": 16,
   "questions": [
     {

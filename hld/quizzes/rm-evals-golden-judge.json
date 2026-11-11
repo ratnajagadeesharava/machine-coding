@@ -7,7 +7,7 @@
   "seriesOrder": 102,
   "seriesDescription": "Topic-by-topic JEE-style quizzes for the backend and AI-engineering interview roadmap: integer, assertion-reason, matrix match, fill-in-the-blanks, short code writing, plus multi-correct questions. Language core, concurrency, DSA, web frameworks, data access, databases, messaging, resilience, security, testing, system design, LLM and agent engineering.",
   "description": "Golden datasets, regression suites with pytest, CI thresholds, LLM-as-judge rubrics and biases, calibration against human labels, and the Ragas, DeepEval and Langfuse tooling.",
-  "source": "Zheng et al., Judging LLM-as-a-Judge with MT-Bench (2023); Ragas docs; DeepEval docs; Langfuse docs; pytest docs; Hamel Husain on evals",
+  "source": "Zheng et al. MT-Bench and Chatbot Arena (NeurIPS 2023); Ragas, DeepEval and Langfuse docs; tau-bench (Yao et al.); Codex paper (Chen et al.) for pass@k; pytest docs",
   "estimatedMinutes": 14,
   "questions": [
     {
@@ -160,7 +160,7 @@
         "c": "R is true, so this option is wrong.",
         "d": "Correct: A is false because of self-preference bias, and R is true. Prefer a different or stronger judge model family and verify with humans."
       },
-      "explanation": "Use a judge from a different family than the generator where possible, and spot-check with human labels."
+      "explanation": "Zheng et al. (MT-Bench) call this self-enhancement bias; later work calls it self-preference. Use a judge from a different family than the generator where possible, and spot-check with human labels."
     },
     {
       "id": "kappa",
@@ -358,6 +358,70 @@
         "a"
       ],
       "explanation": "Reference-free metrics are useful for online monitoring on unlabeled traffic, but still need calibration."
+    },
+    {
+      "id": "pass-at-k",
+      "concept": "Reliability metrics",
+      "type": "integer",
+      "difficulty": 3,
+      "prompt": "A code agent is sampled n = 10 times on a task and c = 3 samples pass. Using the unbiased pass@k estimator 1 - C(n-c, k) / C(n, k) from the Codex paper, compute pass@2 multiplied by 100, rounded to the nearest integer.",
+      "answer": 53,
+      "tolerance": 0.5,
+      "explanation": "C(7,2) = 21 and C(10,2) = 45, so pass@2 = 1 - 21/45 = 0.533, i.e. 53. pass@k asks whether at least one of k tries succeeds, whereas pass^k (tau-bench) asks whether all k succeed."
+    },
+    {
+      "id": "judge-bias-fix",
+      "concept": "LLM judges",
+      "type": "matrix",
+      "difficulty": 2,
+      "prompt": "Match each LLM-as-judge weakness reported by Zheng et al. to a standard mitigation.",
+      "left": [
+        {
+          "id": "a",
+          "text": "Position bias"
+        },
+        {
+          "id": "b",
+          "text": "Verbosity bias"
+        },
+        {
+          "id": "c",
+          "text": "Self-enhancement bias"
+        },
+        {
+          "id": "d",
+          "text": "Weak grading of maths and reasoning answers"
+        }
+      ],
+      "right": [
+        {
+          "id": "p",
+          "text": "Judge both orders and treat a flip as a tie"
+        },
+        {
+          "id": "q",
+          "text": "Rubric that penalises padding, and check score against length"
+        },
+        {
+          "id": "r",
+          "text": "Use a judge from a different model family than the generator"
+        },
+        {
+          "id": "s",
+          "text": "Give the judge a reference answer or ask it to solve the task first"
+        },
+        {
+          "id": "t",
+          "text": "Raise the judge temperature to 1.5"
+        }
+      ],
+      "pairs": {
+        "a": "p",
+        "b": "q",
+        "c": "r",
+        "d": "s"
+      },
+      "explanation": "The MT-Bench paper proposes swapping positions, few-shot examples, chain-of-thought and reference-guided judging; the rest are practitioner extensions."
     }
   ]
 }
