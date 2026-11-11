@@ -7,7 +7,7 @@
   "seriesDescription": "Topic-by-topic JEE-style quizzes for the backend and AI-engineering interview roadmap: integer, assertion-reason, matrix match, fill-in-the-blanks, short code writing, plus multi-correct questions. Language core, concurrency, DSA, web frameworks, data access, databases, messaging, resilience, security, testing, system design, LLM and agent engineering.",
   "seriesOrder": 87,
   "description": "Multi-tenant isolation models and row level security, versioning and deprecating a platform SDK, and designing a trip management and tracking service with ingestion estimates and state correctness.",
-  "source": "AWS SaaS Lens and tenant isolation whitepapers; PostgreSQL docs (row security policies); Semantic Versioning 2.0.0; Oracle Java docs (@Deprecated); Designing Data-Intensive Applications",
+  "source": "AWS SaaS Lens; PostgreSQL docs (row security policies, ddl-rowsecurity); Semantic Versioning 2.0.0; Oracle Java docs (@Deprecated); Designing Data-Intensive Applications",
   "estimatedMinutes": 16,
   "questions": [
     {

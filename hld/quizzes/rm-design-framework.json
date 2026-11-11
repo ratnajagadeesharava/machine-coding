@@ -7,7 +7,7 @@
   "seriesDescription": "Topic-by-topic JEE-style quizzes for the backend and AI-engineering interview roadmap: integer, assertion-reason, matrix match, fill-in-the-blanks, short code writing, plus multi-correct questions. Language core, concurrency, DSA, web frameworks, data access, databases, messaging, resilience, security, testing, system design, LLM and agent engineering.",
   "seriesOrder": 85,
   "description": "The system design interview framework: requirements, estimates, API, data model, high-level design, deep dive and trade-offs, with back-of-envelope QPS, storage, bandwidth, cache sizing, powers of two and latency numbers.",
-  "source": "Jeff Dean latency numbers (Designs, Lessons and Advice); Hello Interview and ByteByteGo style frameworks; Google SRE book; Designing Data-Intensive Applications; university system-design course notes",
+  "source": "Jeff Dean latency numbers (Designs, Lessons and Advice; Colin Scott interactive version); Hello Interview and ByteByteGo frameworks; Google SRE book; Designing Data-Intensive Applications",
   "estimatedMinutes": 15,
   "questions": [
     {

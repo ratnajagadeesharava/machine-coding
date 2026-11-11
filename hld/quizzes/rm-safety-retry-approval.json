@@ -7,7 +7,7 @@
   "seriesOrder": 105,
   "seriesDescription": "Topic-by-topic JEE-style quizzes for the backend and AI-engineering interview roadmap: integer, assertion-reason, matrix match, fill-in-the-blanks, short code writing, plus multi-correct questions. Language core, concurrency, DSA, web frameworks, data access, databases, messaging, resilience, security, testing, system design, LLM and agent engineering.",
   "description": "Validate-and-retry loops, bounded retries and backoff, constrained tool sets, idempotent actions, human approval for risky steps, append-only audit trails and data residency.",
-  "source": "Stripe API docs on idempotent requests; AWS Builders Library on retries and backoff; OWASP Top 10 for LLM Applications (excessive agency); Pydantic docs; GDPR overview (EU cross-border transfers)",
+  "source": "Stripe idempotent requests docs; OWASP Top 10 for LLM Applications 2025; Pydantic v2 docs; Google SRE book (retries and backoff)",
   "estimatedMinutes": 16,
   "questions": [
     {

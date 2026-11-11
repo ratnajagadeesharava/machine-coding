@@ -7,7 +7,7 @@
   "seriesOrder": 104,
   "seriesDescription": "Topic-by-topic JEE-style quizzes for the backend and AI-engineering interview roadmap: integer, assertion-reason, matrix match, fill-in-the-blanks, short code writing, plus multi-correct questions. Language core, concurrency, DSA, web frameworks, data access, databases, messaging, resilience, security, testing, system design, LLM and agent engineering.",
   "description": "Why safety belongs in code rather than prompts: schema validation, allow-lists, a sqlglot SELECT-only guard, read-only roles, verifiers and defence in depth for LLM agents.",
-  "source": "sqlglot docs; Pydantic v2 docs; OWASP Top 10 for LLM Applications; Anthropic and OpenAI agent-safety guidance; Simon Willison on prompt injection",
+  "source": "sqlglot docs (run locally, v30); Pydantic v2 docs (run locally); OWASP Top 10 for LLM Applications 2025",
   "estimatedMinutes": 13,
   "questions": [
     {
