@@ -504,7 +504,7 @@
       "concept": "Thread basics",
       "type": "single",
       "difficulty": 3,
-      "prompt": "What does this Java code print when run on the main thread?\n\nThread t = Thread.currentThread();\nt.interrupt();\ntry { Thread.sleep(10); }\ncatch (InterruptedException e) { System.out.print(Thread.currentThread().isInterrupted()); }\nSystem.out.print(\" \" + Thread.interrupted());",
+      "prompt": "What does this Java code print when run on the main thread?\n\nThread t = Thread.currentThread();\nt.interrupt();\ntry { Thread.sleep(10); }\ncatch (InterruptedException e) { System.out.print(Thread.currentThread().isInterrupted()); }\nSystem.out.print(\" \" + Thread.interrupted());\n\nWhat is printed?",
       "options": [
         {
           "id": "a",
