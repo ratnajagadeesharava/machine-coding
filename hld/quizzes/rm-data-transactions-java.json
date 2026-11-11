@@ -1,14 +1,14 @@
 {
   "id": "rm-data-transactions-java",
   "title": "Spring: @Transactional, rollback rules and JdbcTemplate",
-  "topic": "Interview roadmap",
+  "topic": "Java",
   "language": "java",
   "description": "Spring @Transactional propagation, rollback rules and the self-invocation trap; readOnly, isolation defaults, JdbcTemplate and parameter binding.",
   "source": "Spring Framework documentation (transaction management, declarative rollback, JdbcTemplate and NamedParameterJdbcTemplate); Hibernate ORM user guide (flush modes); PostgreSQL documentation (transaction isolation); Baeldung",
-  "series": "interview-roadmap-java",
-  "seriesTitle": "Interview roadmap: Java and Spring Boot",
-  "seriesDescription": "Java and Spring Boot interview topics in JEE-Advanced style: integer, assertion-reason, matrix match, fill-in-the-blanks, short Java/SQL code and multi-correct questions. Java only: nothing here mixes in Python.",
-  "seriesOrder": 61,
+  "series": "java-data-access",
+  "seriesTitle": "Java: data access (JPA, Hibernate, JDBC)",
+  "seriesDescription": "ORM, lazy loading and N+1, transactions, JdbcTemplate, HikariCP and migrations. JEE-Advanced style: integer, assertion-reason, matrix match, fill-in-the-blanks, short code and multi-correct questions.",
+  "seriesOrder": 2,
   "estimatedMinutes": 16,
   "questions": [
     {

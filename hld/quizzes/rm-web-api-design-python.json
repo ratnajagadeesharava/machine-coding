@@ -1,14 +1,14 @@
 {
   "id": "rm-web-api-design-python",
   "title": "FastAPI: pagination, idempotency, versioning and GraphQL",
-  "topic": "Interview roadmap",
+  "topic": "Python",
   "language": "python",
   "description": "Query-validated pagination, keyset queries in SQLAlchemy, idempotency keys, deprecation headers, router versioning and Strawberry GraphQL with DataLoader.",
   "source": "FastAPI documentation (query parameter validation, response headers, APIRouter, deprecated routes); SQLAlchemy 2.0 documentation (tuple_, select); RFC 9745 and RFC 8594; Strawberry documentation (types, DataLoader, FastAPI integration); Stripe idempotency documentation",
-  "series": "interview-roadmap-python",
-  "seriesTitle": "Interview roadmap: Python and FastAPI",
-  "seriesDescription": "Python and FastAPI interview topics in JEE-Advanced style: integer, assertion-reason, matrix match, fill-in-the-blanks, short Python/SQL code and multi-correct questions. Python only: nothing here mixes in Java.",
-  "seriesOrder": 53,
+  "series": "python-fastapi",
+  "seriesTitle": "Python: FastAPI web",
+  "seriesDescription": "FastAPI structure and Depends, routing and Pydantic validation, error handling, middleware, async, API design, jobs and health. JEE-Advanced style: integer, assertion-reason, matrix match, fill-in-the-blanks, short code and multi-correct questions.",
+  "seriesOrder": 4,
   "estimatedMinutes": 16,
   "questions": [
     {

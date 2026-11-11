@@ -1,14 +1,14 @@
 {
   "id": "rm-data-pool-migrations-python",
   "title": "SQLAlchemy, asyncpg and Alembic: pools and schema migrations",
-  "topic": "Interview roadmap",
+  "topic": "Python",
   "language": "python",
   "description": "SQLAlchemy QueuePool and asyncpg pool settings, connection arithmetic across workers, pre-ping, and Alembic migrations including zero-downtime practices.",
   "source": "SQLAlchemy 2.0 documentation (connection pooling, pool_pre_ping); asyncpg documentation (create_pool); Alembic documentation (autogenerate, operations, autocommit_block); PostgreSQL documentation (max_connections, CREATE INDEX CONCURRENTLY)",
-  "series": "interview-roadmap-python",
-  "seriesTitle": "Interview roadmap: Python and FastAPI",
-  "seriesDescription": "Python and FastAPI interview topics in JEE-Advanced style: integer, assertion-reason, matrix match, fill-in-the-blanks, short Python/SQL code and multi-correct questions. Python only: nothing here mixes in Java.",
-  "seriesOrder": 62,
+  "series": "python-data-access",
+  "seriesTitle": "Python: data access (SQLAlchemy, asyncpg)",
+  "seriesDescription": "ORM, loading strategies and N+1, transactions, raw SQL, pools and Alembic. JEE-Advanced style: integer, assertion-reason, matrix match, fill-in-the-blanks, short code and multi-correct questions.",
+  "seriesOrder": 3,
   "estimatedMinutes": 16,
   "questions": [
     {

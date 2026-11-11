@@ -45,7 +45,7 @@ for (const quiz of quizzes) {
   });
 }
 
-for (const quiz of quizzes.filter((q) => q.series?.startsWith('interview-roadmap'))) {
+for (const quiz of quizzes.filter((q) => q.id.startsWith('rm-'))) {
   test(`roadmap quiz "${quiz.id}" mixes the JEE-style question types`, () => {
     const types = new Set(quiz.questions.map((q) => q.type));
     assert.ok(types.size >= 4, `only ${types.size} question types`);
@@ -129,12 +129,12 @@ function textOf(node, out = []) {
   else if (node && typeof node === 'object') for (const [k, v] of Object.entries(node)) if (!SKIP_KEYS.has(k)) textOf(v, out);
   return out;
 }
-const LANGUAGE_REQUIRED = false;
-for (const quiz of quizzes.filter((q) => q.series?.startsWith('interview-roadmap'))) {
+const LANGUAGE_REQUIRED = true;
+for (const quiz of quizzes.filter((q) => q.id.startsWith('rm-'))) {
   test(`roadmap quiz "${quiz.id}" keeps its language separate`, () => {
     if (!quiz.language) { assert.ok(!LANGUAGE_REQUIRED, 'declare "language": java, python or neutral'); return; }
     assert.ok(quiz.id.endsWith(`-${quiz.language === 'neutral' ? 'core' : quiz.language}`), `id must end with -${quiz.language === 'neutral' ? 'core' : quiz.language}`);
-    assert.equal(quiz.series, `interview-roadmap-${quiz.language === 'neutral' ? 'core' : quiz.language}`, 'series must match the language');
+    assert.ok(quiz.series?.startsWith(`${quiz.language === 'neutral' ? 'core' : quiz.language}-`), `series "${quiz.series}" must start with ${quiz.language === 'neutral' ? 'core' : quiz.language}- so a series never mixes languages`);
     const text = textOf(quiz.questions).join('\n');
     if (quiz.language !== 'java') { const m = JAVA_TERMS.exec(text); assert.ok(!m, `${quiz.language} quiz mentions Java: "${m?.[0]}"`); }
     if (quiz.language !== 'python') { const m = PY_TERMS.exec(text); assert.ok(!m, `${quiz.language} quiz mentions Python: "${m?.[0]}"`); }

@@ -1,14 +1,14 @@
 {
   "id": "rm-web-middleware-async-java",
   "title": "Spring: filters, interceptors, AOP and async",
-  "topic": "Interview roadmap",
+  "topic": "Java",
   "language": "java",
   "description": "Servlet filters, HandlerInterceptor callbacks, Spring AOP and its proxy limits, thread-per-request capacity, SseEmitter, @Async and WebFlux basics.",
   "source": "Spring Framework AOP and MVC documentation; Servlet specification; Spring Boot reference (embedded Tomcat defaults); Project Reactor documentation; Baeldung",
-  "series": "interview-roadmap-java",
-  "seriesTitle": "Interview roadmap: Java and Spring Boot",
-  "seriesDescription": "Java and Spring Boot interview topics in JEE-Advanced style: integer, assertion-reason, matrix match, fill-in-the-blanks, short Java/SQL code and multi-correct questions. Java only: nothing here mixes in Python.",
-  "seriesOrder": 52,
+  "series": "java-spring-boot",
+  "seriesTitle": "Java: Spring Boot web",
+  "seriesDescription": "Spring Boot structure and DI, REST and validation, error handling, filters, async, API design, jobs and health. JEE-Advanced style: integer, assertion-reason, matrix match, fill-in-the-blanks, short code and multi-correct questions.",
+  "seriesOrder": 3,
   "estimatedMinutes": 16,
   "questions": [
     {

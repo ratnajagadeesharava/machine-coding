@@ -1,14 +1,14 @@
 {
   "id": "rm-web-app-di-config-python",
   "title": "FastAPI: dependency injection, lifespan and settings",
-  "topic": "Interview roadmap",
+  "topic": "Python",
   "language": "python",
   "description": "FastAPI dependencies and their per-request caching, overrides in tests, lifespan startup and shutdown per worker, and typed configuration with pydantic-settings.",
   "source": "FastAPI documentation (dependencies with yield, lifespan events, testing dependency overrides); pydantic-settings documentation; Python functools documentation (lru_cache); Uvicorn deployment documentation",
-  "series": "interview-roadmap-python",
-  "seriesTitle": "Interview roadmap: Python and FastAPI",
-  "seriesDescription": "Python and FastAPI interview topics in JEE-Advanced style: integer, assertion-reason, matrix match, fill-in-the-blanks, short Python/SQL code and multi-correct questions. Python only: nothing here mixes in Java.",
-  "seriesOrder": 50,
+  "series": "python-fastapi",
+  "seriesTitle": "Python: FastAPI web",
+  "seriesDescription": "FastAPI structure and Depends, routing and Pydantic validation, error handling, middleware, async, API design, jobs and health. JEE-Advanced style: integer, assertion-reason, matrix match, fill-in-the-blanks, short code and multi-correct questions.",
+  "seriesOrder": 1,
   "estimatedMinutes": 16,
   "questions": [
     {

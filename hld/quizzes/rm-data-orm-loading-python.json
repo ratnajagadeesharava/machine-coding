@@ -1,14 +1,14 @@
 {
   "id": "rm-data-orm-loading-python",
   "title": "SQLAlchemy 2.0: mapping, loading strategies and optimistic locking",
-  "topic": "Interview roadmap",
+  "topic": "Python",
   "language": "python",
   "description": "SQLAlchemy 2.0 declarative mapping and SQLModel basics, lazy versus eager loading, N+1 statement counting, the identity map, async pitfalls and version_id_col locking.",
   "source": "SQLAlchemy 2.0 documentation (relationship loading techniques, version_id_col, asyncio extension, identity map); SQLModel documentation; FastAPI documentation (handling errors)",
-  "series": "interview-roadmap-python",
-  "seriesTitle": "Interview roadmap: Python and FastAPI",
-  "seriesDescription": "Python and FastAPI interview topics in JEE-Advanced style: integer, assertion-reason, matrix match, fill-in-the-blanks, short Python/SQL code and multi-correct questions. Python only: nothing here mixes in Java.",
-  "seriesOrder": 60,
+  "series": "python-data-access",
+  "seriesTitle": "Python: data access (SQLAlchemy, asyncpg)",
+  "seriesDescription": "ORM, loading strategies and N+1, transactions, raw SQL, pools and Alembic. JEE-Advanced style: integer, assertion-reason, matrix match, fill-in-the-blanks, short code and multi-correct questions.",
+  "seriesOrder": 1,
   "estimatedMinutes": 17,
   "questions": [
     {

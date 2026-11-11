@@ -1,14 +1,14 @@
 {
   "id": "rm-web-http-api-core",
   "title": "Web APIs: status codes, pagination, idempotency and versioning",
-  "topic": "Interview roadmap",
+  "topic": "Language-independent",
   "language": "neutral",
   "description": "HTTP status-code choice, offset versus cursor pagination, idempotency keys, conditional requests, API versioning with deprecation headers, and GraphQL execution rules.",
   "source": "RFC 9110 (HTTP semantics, conditional requests); RFC 9745 (Deprecation header) and RFC 8594 (Sunset); GraphQL specification (execution); Stripe idempotency documentation; Use The Index, Luke (keyset pagination); PostgreSQL documentation (INSERT ... ON CONFLICT)",
-  "series": "interview-roadmap-core",
-  "seriesTitle": "Interview roadmap: language-independent topics",
-  "seriesDescription": "Language-independent interview topics (concepts, SQL, design, AI engineering): no Java and no Python code or library names.",
-  "seriesOrder": 51,
+  "series": "core-web-and-data-concepts",
+  "seriesTitle": "Core: HTTP, API and data-access concepts",
+  "seriesDescription": "Status codes, pagination, idempotency, probes, secrets, pool arithmetic, isolation and N+1 as SQL. JEE-Advanced style: integer, assertion-reason, matrix match, fill-in-the-blanks, short code and multi-correct questions.",
+  "seriesOrder": 1,
   "estimatedMinutes": 16,
   "questions": [
     {

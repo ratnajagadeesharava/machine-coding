@@ -1,14 +1,14 @@
 {
   "id": "rm-web-jobs-health-python",
   "title": "FastAPI: background jobs, Celery, health checks and secrets",
-  "topic": "Interview roadmap",
+  "topic": "Python",
   "language": "python",
   "description": "FastAPI BackgroundTasks, Celery retries and beat schedules, duplicate runs across workers, Redis locks, health probes and secrets handling with pydantic.",
   "source": "FastAPI documentation (BackgroundTasks); Celery documentation (tasks, retrying, beat, acks_late); APScheduler documentation; redis-py documentation; Kubernetes probe documentation; pydantic-settings documentation",
-  "series": "interview-roadmap-python",
-  "seriesTitle": "Interview roadmap: Python and FastAPI",
-  "seriesDescription": "Python and FastAPI interview topics in JEE-Advanced style: integer, assertion-reason, matrix match, fill-in-the-blanks, short Python/SQL code and multi-correct questions. Python only: nothing here mixes in Java.",
-  "seriesOrder": 54,
+  "series": "python-fastapi",
+  "seriesTitle": "Python: FastAPI web",
+  "seriesDescription": "FastAPI structure and Depends, routing and Pydantic validation, error handling, middleware, async, API design, jobs and health. JEE-Advanced style: integer, assertion-reason, matrix match, fill-in-the-blanks, short code and multi-correct questions.",
+  "seriesOrder": 5,
   "estimatedMinutes": 16,
   "questions": [
     {

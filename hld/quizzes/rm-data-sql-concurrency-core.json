@@ -1,14 +1,14 @@
 {
   "id": "rm-data-sql-concurrency-core",
   "title": "Databases: N+1, isolation, pools and migrations",
-  "topic": "Interview roadmap",
+  "topic": "Language-independent",
   "language": "neutral",
   "description": "Language-independent database access: N+1 queries in SQL, isolation levels and anomalies, optimistic locking, connection pool arithmetic, expand/contract migrations and parameter binding.",
   "source": "PostgreSQL documentation (transaction isolation, CREATE INDEX CONCURRENTLY, INSERT ... ON CONFLICT); the PostgreSQL community note on pool sizing; Little's law; Use The Index, Luke; Martin Fowler on parallel change (expand and contract)",
-  "series": "interview-roadmap-core",
-  "seriesTitle": "Interview roadmap: language-independent topics",
-  "seriesDescription": "Language-independent interview topics (concepts, SQL, design, AI engineering): no Java and no Python code or library names.",
-  "seriesOrder": 60,
+  "series": "core-web-and-data-concepts",
+  "seriesTitle": "Core: HTTP, API and data-access concepts",
+  "seriesDescription": "Status codes, pagination, idempotency, probes, secrets, pool arithmetic, isolation and N+1 as SQL. JEE-Advanced style: integer, assertion-reason, matrix match, fill-in-the-blanks, short code and multi-correct questions.",
+  "seriesOrder": 3,
   "estimatedMinutes": 16,
   "questions": [
     {

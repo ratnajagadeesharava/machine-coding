@@ -1,14 +1,14 @@
 {
   "id": "rm-data-transactions-python",
   "title": "SQLAlchemy and asyncpg: sessions, transactions and parameter binding",
-  "topic": "Interview roadmap",
+  "topic": "Python",
   "language": "python",
   "description": "SQLAlchemy 2.0 Session lifecycle, async sessions, savepoints, isolation levels, psycopg and asyncpg transactions and safe parameter binding.",
   "source": "SQLAlchemy 2.0 documentation (Session basics, transactions and savepoints, asyncio extension, isolation level); psycopg 3 documentation (transactions); asyncpg documentation (transactions); PostgreSQL documentation (transaction isolation)",
-  "series": "interview-roadmap-python",
-  "seriesTitle": "Interview roadmap: Python and FastAPI",
-  "seriesDescription": "Python and FastAPI interview topics in JEE-Advanced style: integer, assertion-reason, matrix match, fill-in-the-blanks, short Python/SQL code and multi-correct questions. Python only: nothing here mixes in Java.",
-  "seriesOrder": 61,
+  "series": "python-data-access",
+  "seriesTitle": "Python: data access (SQLAlchemy, asyncpg)",
+  "seriesDescription": "ORM, loading strategies and N+1, transactions, raw SQL, pools and Alembic. JEE-Advanced style: integer, assertion-reason, matrix match, fill-in-the-blanks, short code and multi-correct questions.",
+  "seriesOrder": 2,
   "estimatedMinutes": 16,
   "questions": [
     {

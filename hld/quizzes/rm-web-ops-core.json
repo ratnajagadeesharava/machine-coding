@@ -1,14 +1,14 @@
 {
   "id": "rm-web-ops-core",
   "title": "Web services: probes, jobs, config and request pipeline",
-  "topic": "Interview roadmap",
+  "topic": "Language-independent",
   "language": "neutral",
   "description": "Liveness versus readiness, scheduled and background jobs on several instances, retries and backoff arithmetic, secrets and layered config, middleware ordering and blocking versus non-blocking I/O.",
   "source": "Kubernetes probe documentation; the twelve-factor app (config); Redis SET documentation; cron(5) manual; Google SRE book (retries and backoff); server-sent events section of the HTML Living Standard",
-  "series": "interview-roadmap-core",
-  "seriesTitle": "Interview roadmap: language-independent topics",
-  "seriesDescription": "Language-independent interview topics (concepts, SQL, design, AI engineering): no Java and no Python code or library names.",
-  "seriesOrder": 54,
+  "series": "core-web-and-data-concepts",
+  "seriesTitle": "Core: HTTP, API and data-access concepts",
+  "seriesDescription": "Status codes, pagination, idempotency, probes, secrets, pool arithmetic, isolation and N+1 as SQL. JEE-Advanced style: integer, assertion-reason, matrix match, fill-in-the-blanks, short code and multi-correct questions.",
+  "seriesOrder": 2,
   "estimatedMinutes": 16,
   "questions": [
     {

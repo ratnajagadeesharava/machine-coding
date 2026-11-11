@@ -1,14 +1,14 @@
 {
   "id": "rm-data-pool-migrations-java",
   "title": "HikariCP, Flyway and Liquibase: pools and schema migrations",
-  "topic": "Interview roadmap",
+  "topic": "Java",
   "language": "java",
   "description": "HikariCP settings and pool-sizing arithmetic, PostgreSQL connection limits, Flyway and Liquibase migrations, ddl-auto, and zero-downtime schema changes.",
   "source": "HikariCP documentation (\"About Pool Sizing\", configuration); Flyway documentation (migrations, validate, repair); Liquibase documentation (changelogs, changesets); PostgreSQL documentation (max_connections, CREATE INDEX CONCURRENTLY); Spring Boot reference (database initialization)",
-  "series": "interview-roadmap-java",
-  "seriesTitle": "Interview roadmap: Java and Spring Boot",
-  "seriesDescription": "Java and Spring Boot interview topics in JEE-Advanced style: integer, assertion-reason, matrix match, fill-in-the-blanks, short Java/SQL code and multi-correct questions. Java only: nothing here mixes in Python.",
-  "seriesOrder": 62,
+  "series": "java-data-access",
+  "seriesTitle": "Java: data access (JPA, Hibernate, JDBC)",
+  "seriesDescription": "ORM, lazy loading and N+1, transactions, JdbcTemplate, HikariCP and migrations. JEE-Advanced style: integer, assertion-reason, matrix match, fill-in-the-blanks, short code and multi-correct questions.",
+  "seriesOrder": 3,
   "estimatedMinutes": 16,
   "questions": [
     {
