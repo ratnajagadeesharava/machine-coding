@@ -62,7 +62,7 @@
     },
     {
       "id": "httpx-timeout-kinds",
-      "concept": "Timeouts",
+      "concept": "Timeout kinds",
       "type": "matrix",
       "difficulty": 2,
       "prompt": "Match each httpx timeout with the phase it limits.",
@@ -154,7 +154,7 @@
     },
     {
       "id": "worst-case-wait",
-      "concept": "Retries",
+      "concept": "Worst-case latency",
       "type": "integer",
       "difficulty": 2,
       "prompt": "A call has a 2 second timeout, 3 attempts in total (1 original + 2 retries), and waits 1 s then 2 s between attempts. If every attempt times out, how many seconds pass before the caller gets the final error?",
@@ -199,17 +199,17 @@
         },
         {
           "id": "b",
-          "text": "Fixed delay of one second for every client.",
+          "text": "A fixed delay of one second for every client, so all clients retry at exactly the same instants.",
           "why": "All clients retry at the same instants, forming waves."
         },
         {
           "id": "c",
-          "text": "Exponential backoff with no randomness.",
+          "text": "Exponential backoff with no randomness, so every client still doubles its wait in lockstep with the others.",
           "why": "Clients that failed together retry together at 1, 2, 4 seconds."
         },
         {
           "id": "d",
-          "text": "Retrying immediately in a tight loop until success.",
+          "text": "Retrying immediately in a tight loop until the dependency answers, with no pause between attempts at all.",
           "why": "This maximises load on a recovering dependency and prevents recovery."
         }
       ],
@@ -260,7 +260,7 @@
     },
     {
       "id": "tenacity-retry",
-      "concept": "Retries",
+      "concept": "Retry libraries",
       "type": "code",
       "difficulty": 2,
       "prompt": "Decorate fetch_price so it is retried up to 5 attempts in total, using exponential wait with jitter, only when httpx.TransportError is raised, and re-raises the last exception at the end. Use tenacity.",
@@ -293,7 +293,7 @@
     },
     {
       "id": "spring-retryable",
-      "concept": "Retries",
+      "concept": "Retry libraries",
       "type": "code",
       "difficulty": 2,
       "prompt": "Annotate a method fetchStock with Spring Retry so it runs at most 4 attempts in total on IOException, starting with a 200 ms delay that doubles each time.",
@@ -381,7 +381,7 @@
     },
     {
       "id": "retry-400",
-      "concept": "Retries",
+      "concept": "What is retryable",
       "type": "truefalse",
       "difficulty": 1,
       "prompt": "True or false: an HTTP 400 Bad Request response is a good candidate for retry with exponential backoff.",

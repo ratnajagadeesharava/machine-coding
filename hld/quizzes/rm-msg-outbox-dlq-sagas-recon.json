@@ -14,7 +14,7 @@
       "id": "dual-write",
       "concept": "Outbox pattern",
       "type": "single",
-      "difficulty": 2,
+      "difficulty": 1,
       "prompt": "A service saves an order to PostgreSQL and then publishes OrderCreated to Kafka. The process crashes between the two steps. What is the root problem the outbox pattern solves?",
       "options": [
         {
@@ -24,12 +24,12 @@
         },
         {
           "id": "b",
-          "text": "Kafka cannot store messages larger than the order row.",
+          "text": "Kafka cannot store messages larger than the single order row that was saved in the database.",
           "why": "Message size is unrelated to the crash between two systems."
         },
         {
           "id": "c",
-          "text": "PostgreSQL transactions cannot contain more than one insert.",
+          "text": "PostgreSQL transactions cannot contain more than one insert statement before they must commit.",
           "why": "Multi-statement transactions are fine; the issue is spanning two systems."
         },
         {
@@ -164,7 +164,7 @@
       "id": "cdc-fill",
       "concept": "Change data capture",
       "type": "fill",
-      "difficulty": 2,
+      "difficulty": 1,
       "prompt": "Complete the CDC description.",
       "text": "Debezium streams row changes by reading the database {1}; for PostgreSQL this uses a logical replication {2}, and a stalled one makes the server keep {3} on disk.",
       "blanks": {
@@ -206,17 +206,17 @@
         },
         {
           "id": "b",
-          "text": "Retry forever until it succeeds.",
+          "text": "Retry the same record forever with a fixed pause, so the partition stays blocked until it succeeds.",
           "why": "A permanently bad record never succeeds and the partition stays blocked."
         },
         {
           "id": "c",
-          "text": "Skip the record silently by committing past it.",
+          "text": "Skip the record silently by committing past it, without logging or storing the failed payload anywhere. That also hides the data-quality problem from the team that owns the producer.",
           "why": "Silent loss hides data problems; park it somewhere inspectable instead."
         },
         {
           "id": "d",
-          "text": "Delete the whole partition and recreate the topic.",
+          "text": "Delete the whole partition and recreate the topic, accepting that every other record on it is lost.",
           "why": "That destroys healthy data to remove one bad record."
         }
       ],
@@ -273,7 +273,7 @@
       "id": "saga-terms",
       "concept": "Sagas",
       "type": "matrix",
-      "difficulty": 2,
+      "difficulty": 1,
       "prompt": "Match each saga term with its meaning.",
       "left": [
         {
