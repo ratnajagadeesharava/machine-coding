@@ -360,6 +360,25 @@
       "explanation": "Defences are specific: encoding fits XSS, parameters fit SQLi, tokens fit CSRF."
     },
     {
+      "id": "output-encoding",
+      "concept": "OWASP basics",
+      "type": "assertion",
+      "difficulty": 2,
+      "prompt": "Read the assertion A and the reason R, then choose the correct relationship between them.",
+      "assertion": "Context-aware output encoding is the primary defence against reflected cross-site scripting.",
+      "reason": "Encoding turns characters such as < and & into harmless text, so the browser does not parse user input as markup or script.",
+      "correct": [
+        "a"
+      ],
+      "whys": {
+        "a": "Correct: Encoding neutralises the characters that would let input become code in the page.",
+        "b": "Not this one: Both are true but R is not the reason A holds does not describe this pair; R is actually the reason or is false.",
+        "c": "Not this one: A is true while R is false does not describe this pair; check the truth of R again.",
+        "d": "Not this one: A is false while R is true does not describe this pair; check the truth of A again."
+      },
+      "explanation": "Choose the encoder for the context (HTML body, attribute, JavaScript, URL), and add a Content-Security-Policy as a second layer."
+    },
+    {
       "id": "injection-filter",
       "concept": "LLM risks",
       "type": "assertion",

@@ -1,0 +1,412 @@
+{
+  "id": "rm-test-unit-integration-java",
+  "title": "Testing in Spring: JUnit 5, Mockito, MockMvc, test slices and Testcontainers",
+  "topic": "Interview roadmap",
+  "series": "interview-roadmap-java",
+  "seriesTitle": "Interview roadmap: Java and Spring Boot",
+  "seriesDescription": "Java and Spring Boot interview topics in JEE-Advanced style: integer, assertion-reason, matrix match, fill-in-the-blanks, short Java/SQL code and multi-correct questions. Java only: nothing here mixes in Python.",
+  "seriesOrder": 84,
+  "language": "java",
+  "description": "JUnit 5 lifecycle and parameterised tests, Mockito stubbing and strictness, MockMvc, Spring Boot test slices and context caching, @DataJpaTest rollback and Testcontainers with @ServiceConnection.",
+  "source": "JUnit 5 User Guide; Mockito documentation (MockitoExtension, strict stubs); Spring Boot reference (Testing: slices, MockMvc, @MockitoBean, Testcontainers); Spring Framework testing reference; Testcontainers for Java documentation",
+  "estimatedMinutes": 24,
+  "questions": [
+    {
+      "id": "junit-mockito",
+      "concept": "Unit tests and mocks",
+      "type": "code",
+      "difficulty": 2,
+      "prompt": "Write a JUnit 5 test method for PriceService (it has a PriceRepo repo field) that stubs repo.find(\"A\") to return 10, calls svc.price(\"A\"), asserts the result is 10 and verifies that repo.find(\"A\") was called once. Assume repo is a Mockito mock and svc is already built.",
+      "language": "java",
+      "checks": [
+        {
+          "label": "is a @Test method",
+          "pattern": "@test"
+        },
+        {
+          "label": "stubs repo.find(\"A\") to return 10",
+          "pattern": "(when\\(\\s*repo\\.find\\(\\s*\"a\"\\s*\\)\\s*\\)\\s*\\.thenreturn|given\\(\\s*repo\\.find\\(\\s*\"a\"\\s*\\)\\s*\\)\\s*\\.willreturn)\\(\\s*10"
+        },
+        {
+          "label": "asserts the result",
+          "pattern": "assert(equals|that)\\("
+        },
+        {
+          "label": "verifies the call",
+          "pattern": "(verify\\(\\s*repo(\\s*,\\s*times\\(1\\))?\\s*\\)\\.find\\(\\s*\"a\"|then\\(\\s*repo\\s*\\)\\.should(\\([^)]*\\))?\\(\\)\\.find\\(\\s*\"a\")"
+        }
+      ],
+      "model": "@Test\nvoid returnsPrice() {\n    when(repo.find(\"A\")).thenReturn(10);\n    assertEquals(10, svc.price(\"A\"));\n    verify(repo).find(\"A\");\n}",
+      "explanation": "Annotate the class with @ExtendWith(MockitoExtension.class) and use @Mock / @InjectMocks. BDDMockito given(...).willReturn(...) and AssertJ assertThat are equally valid."
+    },
+    {
+      "id": "assert-throws",
+      "concept": "Unit tests and mocks",
+      "type": "code",
+      "difficulty": 2,
+      "prompt": "Write a JUnit 5 test method priceRejectsNull that asserts svc.price(null) throws IllegalArgumentException, using assertThrows.",
+      "language": "java",
+      "checks": [
+        {
+          "label": "is a @Test method",
+          "pattern": "@test"
+        },
+        {
+          "label": "uses assertThrows with the exception class",
+          "pattern": "assertthrows\\(\\s*illegalargumentexception\\.class"
+        },
+        {
+          "label": "calls svc.price(null) in a lambda",
+          "pattern": "\\(\\)\\s*->\\s*svc\\.price\\(\\s*null\\s*\\)"
+        }
+      ],
+      "model": "@Test\nvoid priceRejectsNull() {\n    assertThrows(IllegalArgumentException.class, () -> svc.price(null));\n}",
+      "explanation": "assertThrows returns the exception, so you can assert on its message too. It replaces the JUnit 4 @Test(expected = ...) attribute, which has no equivalent in JUnit 5."
+    },
+    {
+      "id": "parameterized",
+      "concept": "Unit tests and mocks",
+      "type": "code",
+      "difficulty": 2,
+      "prompt": "Write a JUnit 5 parameterised test add(int a, int b, int expected) that runs for the rows (1, 2, 3) and (0, 0, 0) from inline CSV values and asserts a + b equals expected.",
+      "language": "java",
+      "checks": [
+        {
+          "label": "is a @ParameterizedTest",
+          "pattern": "@parameterizedtest"
+        },
+        {
+          "label": "supplies rows with @CsvSource",
+          "pattern": "@csvsource\\s*\\(\\s*\\{[^}]*\"1\\s*,\\s*2\\s*,\\s*3\"[^}]*\"0\\s*,\\s*0\\s*,\\s*0\""
+        },
+        {
+          "label": "has the three int parameters",
+          "pattern": "void\\s+add\\s*\\(\\s*int\\s+a\\s*,\\s*int\\s+b\\s*,\\s*int\\s+expected\\s*\\)"
+        },
+        {
+          "label": "asserts the sum",
+          "pattern": "assertequals\\(\\s*expected\\s*,\\s*a\\s*\\+\\s*b"
+        }
+      ],
+      "model": "@ParameterizedTest\n@CsvSource({\"1, 2, 3\", \"0, 0, 0\"})\nvoid add(int a, int b, int expected) {\n    assertEquals(expected, a + b);\n}",
+      "explanation": "Each row runs as its own test in the report. @ValueSource covers a single argument, @MethodSource supplies complex objects. The junit-jupiter-params module is needed."
+    },
+    {
+      "id": "mockmvc",
+      "concept": "MockMvc",
+      "type": "code",
+      "difficulty": 2,
+      "prompt": "Write a MockMvc call that GETs /api/orders/42, expects HTTP 200 and expects the JSON field id to equal 42. Assume a MockMvc named mockMvc.",
+      "language": "java",
+      "checks": [
+        {
+          "label": "performs GET /api/orders/42",
+          "pattern": "mockmvc\\.perform\\(\\s*get\\(\\s*\"/api/orders/42\""
+        },
+        {
+          "label": "expects status 200",
+          "pattern": "status\\(\\)\\.(isok\\(\\)|is\\(\\s*200\\s*\\))"
+        },
+        {
+          "label": "checks the id field",
+          "pattern": "jsonpath\\(\\s*\"\\$\\.id\"\\s*\\)\\.value\\(\\s*42"
+        }
+      ],
+      "model": "mockMvc.perform(get(\"/api/orders/42\"))\n    .andExpect(status().isOk())\n    .andExpect(jsonPath(\"$.id\").value(42));",
+      "explanation": "@WebMvcTest(OrderController.class) with a @MockBean/@MockitoBean service gives a fast web-layer test. perform throws Exception, so the test method declares throws Exception."
+    },
+    {
+      "id": "spring-test",
+      "concept": "Spring test slices",
+      "type": "matrix",
+      "difficulty": 2,
+      "prompt": "Match each Spring test annotation or library to what it provides.",
+      "left": [
+        {
+          "id": "l1",
+          "text": "@SpringBootTest"
+        },
+        {
+          "id": "l2",
+          "text": "@WebMvcTest"
+        },
+        {
+          "id": "l3",
+          "text": "@DataJpaTest"
+        },
+        {
+          "id": "l4",
+          "text": "Testcontainers (@Container)"
+        }
+      ],
+      "right": [
+        {
+          "id": "r1",
+          "text": "The full application context"
+        },
+        {
+          "id": "r2",
+          "text": "Controller slice with MockMvc and no service beans"
+        },
+        {
+          "id": "r3",
+          "text": "JPA slice with an embedded database and rollback after each test"
+        },
+        {
+          "id": "r4",
+          "text": "A real database in Docker started for the test"
+        },
+        {
+          "id": "r5",
+          "text": "A mock web server for outgoing HTTP"
+        }
+      ],
+      "pairs": {
+        "l1": "r1",
+        "l2": "r2",
+        "l3": "r3",
+        "l4": "r4"
+      },
+      "explanation": "Slices load only part of the context for speed. Use Testcontainers when H2 differs from production (jsonb, partial indexes, locking behaviour)."
+    },
+    {
+      "id": "mockitobean",
+      "concept": "Spring test slices",
+      "type": "single",
+      "difficulty": 2,
+      "prompt": "In a Spring Boot 3.4+ test, which annotation replaces a bean in the application context with a Mockito mock?",
+      "options": [
+        {
+          "id": "a",
+          "text": "@Mock",
+          "why": "This creates a mock outside the Spring context; the real bean stays wired."
+        },
+        {
+          "id": "b",
+          "text": "@ExtendWith(MockitoExtension.class)",
+          "why": "It enables Mockito annotations in plain unit tests and leaves the Spring context alone."
+        },
+        {
+          "id": "c",
+          "text": "@Autowired",
+          "why": "It injects whatever the context holds, with no mocking."
+        },
+        {
+          "id": "d",
+          "text": "@MockitoBean",
+          "why": "Correct: it registers a Mockito mock in the Spring context (it supersedes @MockBean)."
+        }
+      ],
+      "correct": [
+        "d"
+      ],
+      "explanation": "@MockBean is the older, deprecated spelling. Each distinct set of mocked beans yields a different context key, which affects caching speed."
+    },
+    {
+      "id": "datajpa-rollback",
+      "concept": "DataJpaTest",
+      "type": "assertion",
+      "difficulty": 1,
+      "prompt": "Read the assertion A and the reason R, then choose the correct relationship between them.",
+      "assertion": "@DataJpaTest tests roll back their changes by default.",
+      "reason": "Each @DataJpaTest test runs inside a transaction that Spring rolls back when the test ends.",
+      "correct": [
+        "a"
+      ],
+      "whys": {
+        "a": "Correct: The rollback of the test-managed transaction is exactly why the data disappears.",
+        "b": "Not this one: Both are true but R is not the reason A holds does not describe this pair; R is actually the reason or is false.",
+        "c": "Not this one: A is true while R is false does not describe this pair; check the truth of R again.",
+        "d": "Not this one: A is false while R is true does not describe this pair; check the truth of A again."
+      },
+      "explanation": "Remember that rollback also hides flush-time constraint errors; call flush() or entityManager.flush() when you want them to surface."
+    },
+    {
+      "id": "mockito-inline",
+      "concept": "Mockito",
+      "type": "assertion",
+      "difficulty": 3,
+      "prompt": "Read the assertion A and the reason R, then choose the correct relationship between them.",
+      "assertion": "Mocking collaborators makes a unit test fast and isolated.",
+      "reason": "Since Mockito 5 the inline mock maker is the default, so final classes can be mocked.",
+      "correct": [
+        "b"
+      ],
+      "whys": {
+        "a": "Not this one: Both A and R are true and R explains A does not describe this pair; R does not explain A.",
+        "b": "Correct: Both are true, but being able to mock final classes is not what makes tests fast and isolated.",
+        "c": "Not this one: A is true while R is false does not describe this pair; check the truth of R again.",
+        "d": "Not this one: A is false while R is true does not describe this pair; check the truth of A again."
+      },
+      "explanation": "Do not mock types you do not own or simple value objects; wrap them in an adapter you control instead."
+    },
+    {
+      "id": "springboottest-port",
+      "concept": "SpringBootTest",
+      "type": "assertion",
+      "difficulty": 3,
+      "prompt": "Read the assertion A and the reason R, then choose the correct relationship between them.",
+      "assertion": "@SpringBootTest starts the complete application context.",
+      "reason": "@SpringBootTest always opens a real HTTP server on port 8080.",
+      "correct": [
+        "c"
+      ],
+      "whys": {
+        "a": "Not this one: Both A and R are true and R explains A does not describe this pair; R does not explain A.",
+        "b": "Not this one: Both are true but R is not the reason A holds does not describe this pair; R is actually the reason or is false.",
+        "c": "Correct: A is true. R is false: the default web environment is a mock servlet environment with no listening port.",
+        "d": "Not this one: A is false while R is true does not describe this pair; check the truth of A again."
+      },
+      "explanation": "Use webEnvironment = RANDOM_PORT with TestRestTemplate or WebTestClient when you need a real server."
+    },
+    {
+      "id": "mock-sut",
+      "concept": "Mockito",
+      "type": "assertion",
+      "difficulty": 2,
+      "prompt": "Read the assertion A and the reason R, then choose the correct relationship between them.",
+      "assertion": "To isolate a class in a unit test you should mock the class under test itself.",
+      "reason": "Mocks replace collaborators with controllable stand-ins.",
+      "correct": [
+        "d"
+      ],
+      "whys": {
+        "a": "Not this one: Both A and R are true and R explains A does not describe this pair; R does not explain A.",
+        "b": "Not this one: Both are true but R is not the reason A holds does not describe this pair; R is actually the reason or is false.",
+        "c": "Not this one: A is true while R is false does not describe this pair; check the truth of R again.",
+        "d": "Correct: A is false: mocking the class under test means you are no longer testing it. R is true, but it concerns collaborators."
+      },
+      "explanation": "Mock the dependencies of the class under test. Use a spy only when you must partially stub a real object."
+    },
+    {
+      "id": "strict-stubs",
+      "concept": "Mockito",
+      "type": "assertion",
+      "difficulty": 3,
+      "prompt": "Read the assertion A and the reason R, then choose the correct relationship between them.",
+      "assertion": "With @ExtendWith(MockitoExtension.class), a test that stubs a method it never calls fails.",
+      "reason": "MockitoExtension uses strict stubs by default, so an unused stubbing is reported as UnnecessaryStubbingException.",
+      "correct": [
+        "a"
+      ],
+      "whys": {
+        "a": "Correct: Strict stubs turn dead stubbings into failures.",
+        "b": "Not this one: Both are true but R is not the reason A holds does not describe this pair; R is actually the reason or is false.",
+        "c": "Not this one: A is true while R is false does not describe this pair; check the truth of R again.",
+        "d": "Not this one: A is false while R is true does not describe this pair; check the truth of A again."
+      },
+      "explanation": "Remove the dead stub, or mark a shared setup stub with lenient().when(...) or @MockitoSettings(strictness = LENIENT). Strictness catches stale tests."
+    },
+    {
+      "id": "context-cache",
+      "concept": "Context caching",
+      "type": "truefalse",
+      "difficulty": 3,
+      "prompt": "True or false: using different @MockBean (or @MockitoBean) sets in different test classes can force Spring to build additional application contexts.",
+      "options": [
+        {
+          "id": "a",
+          "text": "True",
+          "why": "Correct: the mock set is part of the context cache key."
+        },
+        {
+          "id": "b",
+          "text": "False",
+          "why": "Contexts are cached by configuration, and each distinct mock set is a different configuration."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "To keep builds fast, share a base test configuration and avoid scattering @MockBean over many classes."
+    },
+    {
+      "id": "test-transaction-http",
+      "concept": "SpringBootTest",
+      "type": "truefalse",
+      "difficulty": 3,
+      "prompt": "True or false: with @SpringBootTest(webEnvironment = RANDOM_PORT) and a test-level @Transactional, data written by requests sent through a real HTTP client is rolled back when the test ends.",
+      "options": [
+        {
+          "id": "a",
+          "text": "True",
+          "why": "The server handles the request on its own thread, outside the test-managed transaction."
+        },
+        {
+          "id": "b",
+          "text": "False",
+          "why": "Correct: the rollback only covers work done on the test thread."
+        }
+      ],
+      "correct": [
+        "b"
+      ],
+      "explanation": "Clean up explicitly (delete by id, truncate in @AfterEach) or use MockMvc, which runs on the test thread."
+    },
+    {
+      "id": "testcontainers-fill",
+      "concept": "Integration tests",
+      "type": "fill",
+      "difficulty": 2,
+      "prompt": "Complete the Testcontainers setup for Spring Boot 3.1 or later.",
+      "text": "Put {1} on the test class so containers are started and stopped, mark a static PostgreSQLContainer field with {2}, and add {3} to it so Spring Boot wires the datasource without a @DynamicPropertySource method.",
+      "blanks": {
+        "1": "@Testcontainers",
+        "2": "@Container",
+        "3": "@ServiceConnection"
+      },
+      "bank": [
+        "@Testcontainers",
+        "@Container",
+        "@ServiceConnection",
+        "@MockBean",
+        "@Transactional"
+      ],
+      "explanation": "A static container is shared by all tests in the class (faster); a non-static one restarts per test. @ServiceConnection needs the spring-boot-testcontainers dependency. Without Boot 3.1, @DynamicPropertySource with the container's getJdbcUrl() is the classic route."
+    },
+    {
+      "id": "junit-instances",
+      "concept": "Unit tests and mocks",
+      "type": "integer",
+      "difficulty": 2,
+      "prompt": "A JUnit 5 test class has 3 @Test methods and uses the default lifecycle. How many instances of the test class does JUnit create to run it?",
+      "answer": 3,
+      "unit": "instances",
+      "explanation": "The default is Lifecycle.PER_METHOD, a new instance for every test method, which isolates field state. @TestInstance(PER_CLASS) would create just 1 and allow non-static @BeforeAll."
+    },
+    {
+      "id": "junit-executions",
+      "concept": "Unit tests and mocks",
+      "type": "integer",
+      "difficulty": 2,
+      "prompt": "A class has 2 plain @Test methods, one @RepeatedTest(3) method and one @ParameterizedTest with a @CsvSource of 4 rows. How many test executions does JUnit report?",
+      "answer": 9,
+      "unit": "executions",
+      "explanation": "2 + 3 + 4 = 9. Repeated and parameterised tests report each repetition or row as its own invocation under the parent method."
+    },
+    {
+      "id": "fixed-clock",
+      "concept": "Flaky tests",
+      "type": "code",
+      "difficulty": 2,
+      "prompt": "Create a java.time.Clock named clock fixed at the instant 2024-02-29T00:00:00Z in UTC, so a test can control the current time.",
+      "language": "java",
+      "checks": [
+        {
+          "label": "uses Clock.fixed",
+          "pattern": "clock\\s+clock\\s*=\\s*clock\\.fixed\\s*\\("
+        },
+        {
+          "label": "the leap-day instant",
+          "pattern": "instant\\.parse\\s*\\(\\s*\"2024-02-29t00:00:00z\"\\s*\\)"
+        },
+        {
+          "label": "UTC zone",
+          "pattern": "zoneoffset\\.utc|zoneid\\.of\\(\\s*\"utc\"\\s*\\)"
+        }
+      ],
+      "model": "Clock clock = Clock.fixed(Instant.parse(\"2024-02-29T00:00:00Z\"), ZoneOffset.UTC);",
+      "explanation": "Inject the Clock into the class under test and call LocalDate.now(clock) or Instant.now(clock) instead of the no-argument versions. The production bean is Clock.systemUTC()."
+    }
+  ]
+}

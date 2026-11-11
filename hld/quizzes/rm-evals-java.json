@@ -239,7 +239,7 @@
         },
         {
           "id": "b",
-          "text": "Average the three p95 values, because the mean of percentiles is the percentile of the union.",
+          "text": "Average the three p95 values, because the mean of the percentiles equals the percentile of the union of all requests.",
           "why": "Averaging percentiles gives a number that is not the p95 of any real data set."
         },
         {

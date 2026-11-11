@@ -312,6 +312,27 @@
         "a"
       ],
       "explanation": "I ran sqlglot.parse(\"SELECT 'abc\", read='postgres') and it raised TokenError, whose parents are SqlglotError and Exception. Catching the base class turns every tokenising or parsing failure into a clean rejection."
+    },
+    {
+      "id": "pydantic-vocab",
+      "concept": "Schema validation",
+      "type": "fill",
+      "difficulty": 1,
+      "prompt": "Complete the Pydantic v2 sentence.",
+      "text": "Parse a JSON string into a model with {1}; when a field breaks a rule it raises {2}, whose error_count() tells you how many {3} failed.",
+      "blanks": {
+        "1": "model_validate_json",
+        "2": "ValidationError",
+        "3": "fields"
+      },
+      "bank": [
+        "model_validate_json",
+        "ValidationError",
+        "fields",
+        "parse_obj",
+        "ValueError"
+      ],
+      "explanation": "Pydantic v2 reports every failing field in one ValidationError, so feed all of them back to the model in a single retry."
     }
   ]
 }

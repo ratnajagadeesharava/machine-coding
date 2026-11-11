@@ -343,6 +343,27 @@
         "d": "s"
       },
       "explanation": "I printed the class names from parseStatements. A guard that checks only for PlainSelect rejects the union by accident; list the types you accept."
+    },
+    {
+      "id": "validation-vocab",
+      "concept": "Schema validation",
+      "type": "fill",
+      "difficulty": 1,
+      "prompt": "Complete the Bean Validation sentence.",
+      "text": "Constraint annotations such as {1} only describe the rules; calling {2} on a Validator returns a Set of {3}, which is empty when the object is valid.",
+      "blanks": {
+        "1": "@Pattern",
+        "2": "validate",
+        "3": "ConstraintViolation"
+      },
+      "bank": [
+        "@Pattern",
+        "validate",
+        "ConstraintViolation",
+        "@Transactional",
+        "Exception"
+      ],
+      "explanation": "Reject the call when the set is not empty, and return the violation messages to the model so that it can correct its next attempt."
     }
   ]
 }

@@ -424,13 +424,13 @@
         },
         {
           "id": "c",
-          "text": "client.prompt().user(text).stream().content()",
-          "why": "stream().content() returns a reactive stream of text chunks."
+          "text": "client.prompt().user(text).stream().chatResponse()",
+          "why": "stream().chatResponse() returns a reactive stream of ChatResponse objects, not a Person."
         },
         {
           "id": "d",
-          "text": "client.prompt().user(text).call().chatResponse()",
-          "why": "chatResponse() returns the full ChatResponse object with metadata, not a Person."
+          "text": "client.prompt().user(text).call().chatResponse().getResult()",
+          "why": "getResult() returns the first Generation of the response, not a Person."
         }
       ],
       "correct": [

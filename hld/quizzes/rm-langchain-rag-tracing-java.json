@@ -346,12 +346,12 @@
       "options": [
         {
           "id": "a",
-          "text": "Set a similarityThreshold on the SearchRequest and answer \"I don't know\" when nothing is returned.",
+          "text": "Set a similarityThreshold and answer \"I don't know\" when nothing comes back.",
           "why": "Right: weak matches are dropped before they reach the prompt."
         },
         {
           "id": "b",
-          "text": "Raise topK to 50 so that the right document is likelier to be among the results.",
+          "text": "Raise topK to 50 so that the right document is likelier to be among the many results.",
           "why": "More results add noise and cost; they do not remove irrelevant ones."
         },
         {
@@ -369,6 +369,39 @@
         "a"
       ],
       "explanation": "Combine a threshold with an instruction to answer only from the context, and test with an off-topic question set."
+    },
+    {
+      "id": "hybrid-fix-java",
+      "concept": "Retrievers",
+      "type": "single",
+      "difficulty": 2,
+      "prompt": "Users search a support index for exact strings such as the error code E-4012, and the embedding-only retriever keeps missing them. What is the most targeted fix in a LangChain4j or Spring AI application?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Add a keyword retriever next to the embedding one and fuse the two rankings by rank.",
+          "why": "Right: lexical matching catches rare exact tokens that embeddings blur, and rank fusion needs no score normalisation."
+        },
+        {
+          "id": "b",
+          "text": "Increase the segment overlap to 80 percent so that every error code appears in many more of the stored segments.",
+          "why": "Overlap duplicates text but does nothing for how embeddings treat rare tokens."
+        },
+        {
+          "id": "c",
+          "text": "Raise the model temperature so that the generator can guess the missing error code on its own when it is absent.",
+          "why": "Sampling noise cannot restore a segment the retriever never returned."
+        },
+        {
+          "id": "d",
+          "text": "Replace the embedding model with one that has a smaller vector dimension to speed up every lookup.",
+          "why": "A smaller dimension is cheaper but usually blurs rare tokens even more."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "LangChain4j's DefaultContentAggregator fuses the result lists of several ContentRetrievers by reciprocal rank (I found ReciprocalRankFuser in its bytecode). Hybrid search is the standard answer for IDs, SKUs and error codes."
     },
     {
       "id": "vector-facts",
