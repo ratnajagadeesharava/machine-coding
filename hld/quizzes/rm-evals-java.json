@@ -1,0 +1,337 @@
+{
+  "id": "rm-evals-java",
+  "title": "Evals in Java: JUnit gates, judge maths and metrics",
+  "topic": "Interview roadmap",
+  "language": "java",
+  "series": "interview-roadmap-java",
+  "seriesTitle": "Interview roadmap: Java and Spring Boot",
+  "seriesDescription": "Java and Spring Boot interview topics in JEE-Advanced style: integer, assertion-reason, matrix match, fill-in-the-blanks, short Java/SQL code and multi-correct questions. Java only: nothing here mixes in Python.",
+  "seriesOrder": 102,
+  "description": "Java tooling for LLM evaluation: JUnit 5 regression gates and red-team tests, pass@k and Cohen kappa methods, Micrometer latency percentiles, request hooks and CI exit status.",
+  "source": "JUnit 5 user guide (parameterized tests), run with the console launcher; Micrometer docs (timers, percentile histograms); Zheng et al. MT-Bench (NeurIPS 2023); Codex paper (Chen et al.)",
+  "estimatedMinutes": 18,
+  "questions": [
+    {
+      "id": "junit-gate",
+      "concept": "Regression suites in CI",
+      "type": "code",
+      "difficulty": 2,
+      "prompt": "Write a JUnit 5 test method goldenPassRate that calls runEval() (it returns a List<Map<String, Object>> where each map has a Boolean under the key \"passed\") and fails the build when fewer than 90 percent of the cases passed.",
+      "language": "java",
+      "checks": [
+        {
+          "label": "is a test with the right name",
+          "pattern": "void\\s+goldenPassRate\\s*\\("
+        },
+        {
+          "label": "calls runEval",
+          "pattern": "runEval\\s*\\(\\s*\\)"
+        },
+        {
+          "label": "reads the passed flag",
+          "pattern": "\"passed\""
+        },
+        {
+          "label": "divides by the number of results",
+          "pattern": "/\\s*(\\(\\s*double\\s*\\)\\s*)?\\w+\\.size\\s*\\(\\s*\\)|\\.size\\s*\\(\\s*\\)\\s*;|\\.average\\s*\\("
+        },
+        {
+          "label": "asserts the 0.9 threshold",
+          "pattern": "assert\\w*\\s*\\([^;]*0?\\.9"
+        }
+      ],
+      "model": "@Test\nvoid goldenPassRate() {\n    List<Map<String, Object>> results = runEval();\n    double rate = results.stream()\n        .filter(r -> (Boolean) r.get(\"passed\"))\n        .count() / (double) results.size();\n    assertTrue(rate >= 0.9, () -> \"pass rate \" + rate);\n}",
+      "explanation": "Casting the divisor to double avoids integer division. The lambda message is built only on failure, and it names the rate in the CI log. Other correct forms (mapToInt, an average of 1/0 values) pass.",
+      "starter": "@Test\nvoid goldenPassRate() {\n    "
+    },
+    {
+      "id": "junit-parameterized",
+      "concept": "Regression suites in CI",
+      "type": "code",
+      "difficulty": 2,
+      "prompt": "Write a parameterized JUnit 5 test golden(Case c) whose cases come from a static factory method cases() (a Stream<Case>). Case is a record with question and expectedContains. Assert that answer(c.question()) contains c.expectedContains() ignoring case.",
+      "language": "java",
+      "checks": [
+        {
+          "label": "is a parameterized test",
+          "pattern": "@ParameterizedTest"
+        },
+        {
+          "label": "takes arguments from cases()",
+          "pattern": "@MethodSource\\s*\\(\\s*\"cases\"\\s*\\)"
+        },
+        {
+          "label": "declares golden(Case)",
+          "pattern": "void\\s+golden\\s*\\(\\s*Case\\s+\\w+\\s*\\)"
+        },
+        {
+          "label": "compares ignoring case",
+          "pattern": "toLowerCase\\s*\\(|equalsIgnoreCase|CASE_INSENSITIVE|toUpperCase"
+        },
+        {
+          "label": "asserts containment",
+          "pattern": "assert\\w*\\s*\\([^;]*contains\\s*\\("
+        }
+      ],
+      "model": "@ParameterizedTest(name = \"{0}\")\n@MethodSource(\"cases\")\nvoid golden(Case c) {\n    assertTrue(answer(c.question()).toLowerCase()\n        .contains(c.expectedContains().toLowerCase()));\n}",
+      "explanation": "Each case becomes its own test, so the report names the failing case (give the record a toString that returns its id, as I did when running it). Load the cases from a versioned JSON file in a real suite."
+    },
+    {
+      "id": "junit-redteam",
+      "concept": "Red-team suites",
+      "type": "code",
+      "difficulty": 3,
+      "prompt": "ATTACKS is provided as a static method attacks() returning Stream<String> of prompt-injection strings, and SECRET is a String constant. Write a parameterized JUnit 5 test noLeak(String prompt) that calls chatbot(prompt) and asserts that SECRET never appears in the reply.",
+      "language": "java",
+      "checks": [
+        {
+          "label": "is a parameterized test fed by attacks()",
+          "pattern": "@ParameterizedTest[\\s\\S]*@MethodSource\\s*\\(\\s*\"attacks\"\\s*\\)"
+        },
+        {
+          "label": "declares noLeak",
+          "pattern": "void\\s+noLeak\\s*\\(\\s*String\\s+\\w+\\s*\\)"
+        },
+        {
+          "label": "calls the chatbot",
+          "pattern": "chatbot\\s*\\(\\s*prompt\\s*\\)"
+        },
+        {
+          "label": "asserts the secret is absent",
+          "pattern": "assertFalse\\s*\\([^;]*contains\\s*\\(\\s*SECRET|assertTrue\\s*\\(\\s*!\\s*[^;]*contains\\s*\\(\\s*SECRET|doesNotContain"
+        }
+      ],
+      "model": "@ParameterizedTest\n@MethodSource(\"attacks\")\nvoid noLeak(String prompt) {\n    assertFalse(chatbot(prompt).contains(SECRET));\n}",
+      "explanation": "Every new jailbreak you find is appended to the attack list so it can never regress. Also test paraphrased or encoded leaks, since an exact-string check misses base64 or translated output."
+    },
+    {
+      "id": "pass-at-k-fn",
+      "concept": "Reliability metrics",
+      "type": "code",
+      "difficulty": 3,
+      "prompt": "Write static double passAtK(int n, int c, int k) for n sampled runs of which c passed, using the numerically stable product 1 - the product over i = n-c+1 .. n of (1 - k / i), and returning 1.0 when fewer than k runs failed.",
+      "language": "java",
+      "checks": [
+        {
+          "label": "defines passAtK",
+          "pattern": "double\\s+passAtK\\s*\\("
+        },
+        {
+          "label": "handles n - c < k",
+          "pattern": "n\\s*-\\s*c\\s*<\\s*k"
+        },
+        {
+          "label": "multiplies (1 - k / i) with floating point",
+          "pattern": "1(\\.0)?\\s*-\\s*(\\(\\s*double\\s*\\)\\s*)?k\\s*/\\s*(\\(\\s*double\\s*\\)\\s*)?i"
+        },
+        {
+          "label": "loops from n - c + 1 to n",
+          "pattern": "i\\s*=\\s*n\\s*-\\s*c\\s*\\+\\s*1[\\s\\S]*i\\s*<=\\s*n"
+        },
+        {
+          "label": "returns 1 minus the product",
+          "pattern": "return\\s+1(\\.0)?\\s*-"
+        }
+      ],
+      "model": "static double passAtK(int n, int c, int k) {\n    if (n - c < k) {\n        return 1.0;\n    }\n    double allFail = 1.0;\n    for (int i = n - c + 1; i <= n; i++) {\n        allFail *= 1.0 - (double) k / i;\n    }\n    return 1.0 - allFail;\n}",
+      "explanation": "This is the estimator 1 - C(n-c, k) / C(n, k) written as a product so no factorial overflows. I ran passAtK(10, 3, 2) and got 0.5333, matching the integer question in the language-independent evals quiz."
+    },
+    {
+      "id": "kappa-fn",
+      "concept": "Calibrating the judge",
+      "type": "code",
+      "difficulty": 3,
+      "prompt": "Write static double cohenKappa(List<String> human, List<String> judge) for two equal-length lists of labels: observed agreement po, chance agreement pe (the sum over labels of the share each rater gave that label, multiplied), and return (po - pe) / (1 - pe).",
+      "language": "java",
+      "checks": [
+        {
+          "label": "defines cohenKappa",
+          "pattern": "double\\s+cohenKappa\\s*\\("
+        },
+        {
+          "label": "counts agreements",
+          "pattern": "\\.equals\\s*\\(|Objects\\.equals|==\\s*\\w+\\.get"
+        },
+        {
+          "label": "counts label frequencies",
+          "pattern": "Collections\\.frequency|merge\\s*\\(|getOrDefault|groupingBy|counting"
+        },
+        {
+          "label": "applies the kappa formula",
+          "pattern": "\\(\\s*po\\s*-\\s*pe\\s*\\)\\s*/\\s*\\(\\s*1(\\.0)?\\s*-\\s*pe\\s*\\)|\\(\\s*\\w+\\s*-\\s*\\w+\\s*\\)\\s*/\\s*\\(\\s*1(\\.0)?\\s*-"
+        }
+      ],
+      "model": "static double cohenKappa(List<String> human, List<String> judge) {\n    int n = human.size();\n    int agree = 0;\n    for (int i = 0; i < n; i++) {\n        if (human.get(i).equals(judge.get(i))) agree++;\n    }\n    double po = (double) agree / n;\n    double pe = 0.0;\n    for (String label : new HashSet<>(human)) {\n        pe += ((double) Collections.frequency(human, label) / n)\n            * ((double) Collections.frequency(judge, label) / n);\n    }\n    return (po - pe) / (1 - pe);\n}",
+      "explanation": "Iterating over the human labels is enough when the judge uses no label the human never used; a label only the judge uses adds 0 to pe anyway. With 100 answers, 50 pass and 50 fail by the human and 90 agreements, I ran it and got 0.8, as in the earlier integer question."
+    },
+    {
+      "id": "micrometer-timer",
+      "concept": "Latency percentiles",
+      "type": "code",
+      "difficulty": 3,
+      "prompt": "With a Micrometer MeterRegistry variable registry, register a Timer named \"llm.call\" tagged model=MODEL that publishes the 0.95 percentile, then time the call client.generate(prompt) with it and return its String result.",
+      "language": "java",
+      "checks": [
+        {
+          "label": "builds a Timer named llm.call",
+          "pattern": "Timer\\s*\\.\\s*builder\\s*\\(\\s*\"llm\\.call\"\\s*\\)"
+        },
+        {
+          "label": "tags it with the model",
+          "pattern": "\\.tag\\s*\\(\\s*\"model\"\\s*,\\s*MODEL\\s*\\)|\\.tags\\s*\\("
+        },
+        {
+          "label": "publishes the 95th percentile",
+          "pattern": "\\.publishPercentiles\\s*\\(\\s*0?\\.95"
+        },
+        {
+          "label": "registers it on the registry",
+          "pattern": "\\.register\\s*\\(\\s*registry\\s*\\)"
+        },
+        {
+          "label": "times the call and returns the result",
+          "pattern": "return\\s+\\w+\\.record\\s*\\(\\s*\\(\\s*\\)\\s*->\\s*client\\.generate\\s*\\(\\s*prompt\\s*\\)\\s*\\)|\\w+\\.record\\s*\\(\\s*\\(\\s*\\)\\s*->\\s*client\\.generate"
+        }
+      ],
+      "model": "Timer timer = Timer.builder(\"llm.call\")\n    .tag(\"model\", MODEL)\n    .publishPercentiles(0.95)\n    .register(registry);\nreturn timer.record(() -> client.generate(prompt));",
+      "explanation": "record(Supplier) times the call and returns its value, and the timer is also updated when the call throws. I compiled and ran it with a SimpleMeterRegistry. Prefer publishPercentileHistogram() when you must aggregate across instances."
+    },
+    {
+      "id": "combined-sources",
+      "concept": "Regression suites in CI",
+      "type": "integer",
+      "difficulty": 2,
+      "prompt": "A JUnit 5 test method combines @MethodSource (a factory that returns 3 strings) and @ValueSource(strings = {\"x\", \"y\"}) on the same @ParameterizedTest. How many invocations does it have?",
+      "answer": 5,
+      "explanation": "Several argument sources on one parameterized test add up: 3 + 2 = 5 invocations (I ran it with the console launcher and saw s=a, b, c, x, y). Unlike a cross product, they do not multiply, so build a combined stream yourself when you want every prompt against every model.",
+      "unit": "invocations"
+    },
+    {
+      "id": "surefire-exit",
+      "concept": "Regression suites in CI",
+      "type": "assertion",
+      "difficulty": 1,
+      "prompt": "Assertion and reason: read both statements and choose the right option.",
+      "assertion": "A CI job running mvn test fails the build when a golden-case test fails.",
+      "reason": "Surefire ends the run with a non-zero exit status when any test fails, and CI treats a non-zero exit status as a failed step.",
+      "correct": [
+        "a"
+      ],
+      "whys": {
+        "a": "Both true, and R explains A: the exit status is the signal the CI system reads.",
+        "b": "Not chosen: the exit status is exactly how the failure reaches CI.",
+        "c": "Not chosen: R is true; Maven reports BUILD FAILURE with a non-zero status.",
+        "d": "Not chosen: A is true, a failing test fails the job."
+      },
+      "explanation": "That is why an eval gate can be an ordinary test: assert on the pass rate and let the exit status carry the verdict."
+    },
+    {
+      "id": "percentile-aggregation",
+      "concept": "Latency percentiles",
+      "type": "single",
+      "difficulty": 3,
+      "prompt": "Three application instances each publish a client-side 0.95 percentile gauge for the same Timer. How should you get the p95 for the whole service?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Publish a percentile histogram, then compute the quantile from the summed buckets on the server.",
+          "why": "Right: buckets can be added across instances, percentiles cannot."
+        },
+        {
+          "id": "b",
+          "text": "Average the three p95 values, because the mean of percentiles is the percentile of the union.",
+          "why": "Averaging percentiles gives a number that is not the p95 of any real data set."
+        },
+        {
+          "id": "c",
+          "text": "Take the maximum of the three p95 values, because that is always the true service p95.",
+          "why": "The maximum overstates the percentile when instances have different traffic."
+        },
+        {
+          "id": "d",
+          "text": "Sum the three p95 values, since each instance carries a third of the traffic.",
+          "why": "Summing latencies has no statistical meaning."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Micrometer documents publishPercentileHistogram() for aggregable percentiles; publishPercentiles(...) values are computed per instance and cannot be combined."
+    },
+    {
+      "id": "java-eval-tools",
+      "concept": "Eval tooling",
+      "type": "matrix",
+      "difficulty": 2,
+      "prompt": "Match each Java tool or technique with its role in LLM evaluation and monitoring.",
+      "left": [
+        {
+          "id": "a",
+          "text": "JUnit 5 @ParameterizedTest"
+        },
+        {
+          "id": "b",
+          "text": "Micrometer Timer"
+        },
+        {
+          "id": "c",
+          "text": "ChatModelListener"
+        },
+        {
+          "id": "d",
+          "text": "Maven Surefire exit status"
+        }
+      ],
+      "right": [
+        {
+          "id": "p",
+          "text": "Runs one test per golden case"
+        },
+        {
+          "id": "q",
+          "text": "Records latency with percentile support"
+        },
+        {
+          "id": "r",
+          "text": "Hooks every model request, response and error"
+        },
+        {
+          "id": "s",
+          "text": "Fails the CI pipeline when a test fails"
+        },
+        {
+          "id": "t",
+          "text": "Approximate nearest neighbour index"
+        }
+      ],
+      "pairs": {
+        "a": "p",
+        "b": "q",
+        "c": "r",
+        "d": "s"
+      },
+      "explanation": "Tools overlap, so describe the role you need (test harness, metrics, request hooks, gate) and pick accordingly. An index is not an evaluation tool."
+    },
+    {
+      "id": "junit-vocab",
+      "concept": "Regression suites in CI",
+      "type": "fill",
+      "difficulty": 1,
+      "prompt": "Complete the JUnit vocabulary for an eval suite.",
+      "text": "Mark a test that runs once per golden case with {1}, feed it from a static factory through {2}, and put the failure text in the message argument of {3}.",
+      "blanks": {
+        "1": "@ParameterizedTest",
+        "2": "@MethodSource",
+        "3": "assertTrue"
+      },
+      "bank": [
+        "@ParameterizedTest",
+        "@MethodSource",
+        "assertTrue",
+        "@BeforeEach",
+        "@Mock"
+      ],
+      "explanation": "A message supplier (a lambda) is built only when the assertion fails, which keeps passing runs cheap."
+    }
+  ]
+}

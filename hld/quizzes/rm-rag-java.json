@@ -1,0 +1,316 @@
+{
+  "id": "rm-rag-java",
+  "title": "RAG in Java: splitters, fusion and retrieval metrics",
+  "topic": "Interview roadmap",
+  "language": "java",
+  "series": "interview-roadmap-java",
+  "seriesTitle": "Interview roadmap: Java and Spring Boot",
+  "seriesDescription": "Java and Spring Boot interview topics in JEE-Advanced style: integer, assertion-reason, matrix match, fill-in-the-blanks, short Java/SQL code and multi-correct questions. Java only: nothing here mixes in Python.",
+  "seriesOrder": 100,
+  "description": "Java code for RAG: LangChain4j splitters, reciprocal rank fusion, recall@k, MRR and nDCG methods, cosine similarity and the arithmetic of chunks and vectors.",
+  "source": "LangChain4j 1.23 compiled and run locally; Cormack et al. RRF paper (SIGIR 2009); Manning, Raghavan, Schutze: Introduction to Information Retrieval",
+  "estimatedMinutes": 18,
+  "questions": [
+    {
+      "id": "rrf-fn",
+      "concept": "Hybrid search",
+      "type": "code",
+      "difficulty": 3,
+      "prompt": "Write a Java method static List<String> rrf(List<List<String>> rankings, int k) where each inner list holds document ids, best first. Return the ids sorted by fused reciprocal rank fusion score (sum of 1 / (k + rank) with ranks starting at 1), highest score first.",
+      "language": "java",
+      "checks": [
+        {
+          "label": "defines rrf",
+          "pattern": "List\\s*<\\s*String\\s*>\\s+rrf\\s*\\("
+        },
+        {
+          "label": "adds 1 / (k + rank) per list",
+          "pattern": "1(\\.0)?\\s*/\\s*\\(\\s*k\\s*\\+\\s*(i|rank|r|idx|pos)\\w*\\s*(\\+\\s*1)?\\s*\\)"
+        },
+        {
+          "label": "accumulates per document",
+          "pattern": "\\.merge\\s*\\(|\\.put\\s*\\(|\\.compute\\w*\\s*\\(|getOrDefault"
+        },
+        {
+          "label": "sorts highest first",
+          "pattern": "reversed\\s*\\(|reverseOrder|Comparator[\\s\\S]*\\.compare\\s*\\(\\s*\\w+\\s*\\.\\s*getValue\\s*\\(\\s*\\)\\s*,\\s*\\w+\\.getValue|\\(\\s*\\w+\\s*,\\s*\\w+\\s*\\)\\s*->\\s*\\w+\\.getValue\\(\\)\\.compareTo\\(\\s*\\w+\\.getValue"
+        }
+      ],
+      "model": "static List<String> rrf(List<List<String>> rankings, int k) {\n    Map<String, Double> scores = new HashMap<>();\n    for (List<String> ranking : rankings) {\n        for (int i = 0; i < ranking.size(); i++) {\n            scores.merge(ranking.get(i), 1.0 / (k + i + 1), Double::sum);\n        }\n    }\n    return scores.entrySet().stream()\n        .sorted(Map.Entry.<String, Double>comparingByValue().reversed())\n        .map(Map.Entry::getKey)\n        .toList();\n}",
+      "explanation": "The loop index is 0-based, so rank = i + 1. I compiled and ran it with two rankings. Other solutions pass: a TreeMap, an explicit comparator, or a stream collector. Ties are broken arbitrarily unless you add a secondary key. LangChain4j ships ReciprocalRankFuser for Content lists.",
+      "starter": "static List<String> rrf(List<List<String>> rankings, int k) {\n    "
+    },
+    {
+      "id": "recall-mrr-fn",
+      "concept": "Metric implementation",
+      "type": "code",
+      "difficulty": 2,
+      "prompt": "Write two Java methods: static double recallAtK(List<String> retrieved, Set<String> relevant, int k) returning the fraction of the relevant ids found in the first k retrieved ids, and static double mrr(List<List<String>> retrieved, List<Set<String>> relevant) returning the mean reciprocal rank of the first relevant hit per query (0 for a miss).",
+      "language": "java",
+      "checks": [
+        {
+          "label": "defines recallAtK",
+          "pattern": "double\\s+recallAtK\\s*\\("
+        },
+        {
+          "label": "looks only at the first k",
+          "pattern": "subList\\s*\\(\\s*0\\s*,\\s*Math\\.min\\s*\\(|i\\s*<\\s*Math\\.min\\s*\\(\\s*k|\\.limit\\s*\\(\\s*k\\s*\\)"
+        },
+        {
+          "label": "divides by the relevant count without integer division",
+          "pattern": "\\(\\s*double\\s*\\)|\\*\\s*1\\.0|/\\s*\\(\\s*double\\s*\\)|1\\.0\\s*\\*|double\\s+hits|/\\s*\\(?\\s*double"
+        },
+        {
+          "label": "defines mrr",
+          "pattern": "double\\s+mrr\\s*\\("
+        },
+        {
+          "label": "adds 1 / rank of the first hit",
+          "pattern": "1(\\.0)?\\s*/\\s*\\(?\\s*(i|rank|r|j)\\w*\\s*(\\+\\s*1)?\\s*\\)?"
+        }
+      ],
+      "model": "static double recallAtK(List<String> retrieved, Set<String> relevant, int k) {\n    long hits = retrieved.subList(0, Math.min(k, retrieved.size())).stream()\n        .filter(relevant::contains).distinct().count();\n    return (double) hits / relevant.size();\n}\n\nstatic double mrr(List<List<String>> retrieved, List<Set<String>> relevant) {\n    double total = 0.0;\n    for (int q = 0; q < retrieved.size(); q++) {\n        List<String> docs = retrieved.get(q);\n        for (int i = 0; i < docs.size(); i++) {\n            if (relevant.get(q).contains(docs.get(i))) {\n                total += 1.0 / (i + 1);\n                break;\n            }\n        }\n    }\n    return total / retrieved.size();\n}",
+      "explanation": "Casting before the division matters: hits / relevant.size() with two ints truncates to 0 or 1. On the three-query example from the retrieval-metrics quiz this returns an MRR of 0.5. Guard an empty relevant set in real code."
+    },
+    {
+      "id": "ndcg-fn",
+      "concept": "nDCG",
+      "type": "code",
+      "difficulty": 3,
+      "prompt": "Write static double ndcgAtK(double[] rels, int k) where rels holds the graded relevance of the retrieved documents in rank order. DCG sums rel / log2(position + 1) over the first k results; divide by the DCG of the same scores sorted best first. Return 0 when the ideal DCG is 0.",
+      "language": "java",
+      "checks": [
+        {
+          "label": "defines ndcgAtK",
+          "pattern": "double\\s+ndcgAtK\\s*\\("
+        },
+        {
+          "label": "uses a base-2 logarithm",
+          "pattern": "Math\\.log\\s*\\([^)]*\\)\\s*/\\s*Math\\.log\\s*\\(\\s*2|log2"
+        },
+        {
+          "label": "builds the ideal ordering",
+          "pattern": "Arrays\\.sort|\\.sorted\\s*\\(|Collections\\.sort|reverseOrder"
+        },
+        {
+          "label": "limits to k results",
+          "pattern": "Math\\.min\\s*\\(\\s*k|<\\s*k|\\.limit\\s*\\(\\s*k"
+        },
+        {
+          "label": "guards a zero ideal DCG",
+          "pattern": "==\\s*0|<=\\s*0|>\\s*0"
+        }
+      ],
+      "model": "static double ndcgAtK(double[] rels, int k) {\n    double[] ideal = rels.clone();\n    Arrays.sort(ideal);\n    for (int i = 0; i < ideal.length / 2; i++) {\n        double t = ideal[i];\n        ideal[i] = ideal[ideal.length - 1 - i];\n        ideal[ideal.length - 1 - i] = t;\n    }\n    double idcg = dcg(ideal, k);\n    return idcg == 0 ? 0.0 : dcg(rels, k) / idcg;\n}\n\nstatic double dcg(double[] r, int k) {\n    double sum = 0.0;\n    for (int i = 0; i < Math.min(k, r.length); i++) {\n        sum += r[i] / (Math.log(i + 2) / Math.log(2));\n    }\n    return sum;\n}",
+      "explanation": "Java has no log2, so divide natural logs. The position is i + 1, giving log2(i + 2). I ran ndcgAtK(new double[]{1, 0, 1}, 3) and got 0.9197, the 92 from the metrics integer question. Arrays.sort is ascending, hence the manual reverse."
+    },
+    {
+      "id": "cosine-fn",
+      "concept": "Embeddings and similarity",
+      "type": "code",
+      "difficulty": 2,
+      "prompt": "Write static double cosine(double[] a, double[] b) for two equal-length vectors: the dot product divided by the product of the two Euclidean norms.",
+      "language": "java",
+      "checks": [
+        {
+          "label": "defines cosine",
+          "pattern": "double\\s+cosine\\s*\\("
+        },
+        {
+          "label": "accumulates a dot product",
+          "pattern": "\\+=\\s*a\\s*\\[\\s*\\w+\\s*\\]\\s*\\*\\s*b\\s*\\[\\s*\\w+\\s*\\]|dot\\s*\\+="
+        },
+        {
+          "label": "takes square roots for the norms",
+          "pattern": "Math\\.sqrt"
+        },
+        {
+          "label": "divides",
+          "pattern": "/"
+        }
+      ],
+      "model": "static double cosine(double[] a, double[] b) {\n    double dot = 0, na = 0, nb = 0;\n    for (int i = 0; i < a.length; i++) {\n        dot += a[i] * b[i];\n        na += a[i] * a[i];\n        nb += b[i] * b[i];\n    }\n    return dot / (Math.sqrt(na) * Math.sqrt(nb));\n}",
+      "explanation": "I ran cosine(new double[]{3, 4}, new double[]{4, 3}) and got 0.96. A zero vector divides by zero (NaN), so guard it. For L2-normalised embeddings the norms are 1 and the dot product alone equals the cosine."
+    },
+    {
+      "id": "window-count",
+      "concept": "Chunking",
+      "type": "integer",
+      "difficulty": 2,
+      "prompt": "A String text has 2,100 characters. How many chunks does for (int i = 0; i < text.length(); i += 400) chunks.add(text.substring(i, Math.min(i + 500, text.length()))); add to the list?",
+      "answer": 6,
+      "explanation": "The loop starts are 0, 400, 800, 1200, 1600 and 2000, so there are 6 chunks. The last holds only 100 characters, all of them already inside the previous chunk's overlap. I ran it; with 2,000 characters the same loop gives 5.",
+      "unit": "chunks"
+    },
+    {
+      "id": "array-bytes",
+      "concept": "Embeddings",
+      "type": "integer",
+      "difficulty": 2,
+      "prompt": "A float[1000][1536] array holds 1,000 embeddings of 1,536 dimensions. Ignoring array headers, how many bytes do the float values themselves occupy?",
+      "answer": 6144000,
+      "explanation": "1,000 x 1,536 x 4 bytes (a Java float is 4 bytes) = 6,144,000 bytes, about 6.1 MB. A million vectors is 1,000 times that, roughly 6.1 GB before any index overhead.",
+      "unit": "bytes"
+    },
+    {
+      "id": "rrf-sort-bug",
+      "concept": "Hybrid search",
+      "type": "single",
+      "difficulty": 2,
+      "prompt": "A teammate's RRF ends with scores.entrySet().stream().sorted(Map.Entry.comparingByValue()).map(Map.Entry::getKey).toList() and the worst documents come back first. What is the bug?",
+      "options": [
+        {
+          "id": "a",
+          "text": "comparingByValue() sorts ascending, so the comparator must be reversed.",
+          "why": "Right: .reversed() or a reverse-order comparator puts the highest fused score first."
+        },
+        {
+          "id": "b",
+          "text": "Map.Entry cannot be compared by value, so the entries must be copied into an array first.",
+          "why": "Map.Entry.comparingByValue() works for Comparable values such as Double."
+        },
+        {
+          "id": "c",
+          "text": "The score should be multiplied by the rank, so that higher ranks sort to the end of the list.",
+          "why": "RRF adds 1 / (k + rank) per list; multiplying by the rank would reverse the intent."
+        },
+        {
+          "id": "d",
+          "text": "toList() returns the scores instead of the document ids in this stream pipeline.",
+          "why": "The map step already extracted the keys, so the list holds document ids."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Map.Entry.<String, Double>comparingByValue().reversed() needs the explicit type witness for the call chain to compile, or use Comparator.comparing(Map.Entry<String, Double>::getValue).reversed()."
+    },
+    {
+      "id": "integer-division",
+      "concept": "Metric implementation",
+      "type": "single",
+      "difficulty": 2,
+      "prompt": "A recallAtK method returns 0.0 for a query where 2 of the 3 relevant documents were retrieved. The last line is return hits / relevant.size(); with int hits. What is the bug?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Both operands are int, so integer division gives 0 before the result is widened to double.",
+          "why": "Right: 2 / 3 is 0 in integer arithmetic; cast one operand first, for example (double) hits."
+        },
+        {
+          "id": "b",
+          "text": "relevant.size() returns a long, so the division loses its low-order bits in this expression.",
+          "why": "size() returns an int, so no long arithmetic is involved."
+        },
+        {
+          "id": "c",
+          "text": "A double result cannot be returned from a method that has an int parameter named k.",
+          "why": "A method's parameter types have no effect on its return type."
+        },
+        {
+          "id": "d",
+          "text": "hits was counted before sorting the retrieved list, so the numerator is smaller than expected.",
+          "why": "Recall does not depend on the order of the retrieved ids, only on membership."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "I printed 2 / 3 and got 0. Writing hits / (double) relevant.size() or 1.0 * hits / relevant.size() fixes it. This is a classic Java trap in metric code."
+    },
+    {
+      "id": "norm-dot",
+      "concept": "Embeddings and similarity",
+      "type": "assertion",
+      "difficulty": 2,
+      "prompt": "Assertion and reason: read both statements and choose the right option.",
+      "assertion": "For two L2-normalised float vectors a and b, the dot product of a and b equals their cosine similarity.",
+      "reason": "The norm of a normalised vector is 1, so the denominator of the cosine formula is 1.",
+      "correct": [
+        "a"
+      ],
+      "whys": {
+        "a": "Both true, and R explains A: with both norms equal to 1 the formula reduces to the dot product.",
+        "b": "Not chosen: R is exactly why the formula simplifies.",
+        "c": "Not chosen: R is true, because normalising divides a vector by its length.",
+        "d": "Not chosen: A is true, since the dot product of unit vectors is the cosine."
+      },
+      "explanation": "I checked it: (3, 4)/5 dotted with (4, 3)/5 gives 0.96, the same as the cosine of the raw vectors."
+    },
+    {
+      "id": "splitter-vocab",
+      "concept": "Text splitters",
+      "type": "fill",
+      "difficulty": 1,
+      "prompt": "Complete the sentence about LangChain4j splitters.",
+      "text": "DocumentSplitters.{1}(500, 50) builds a splitter that tries paragraphs, then lines, sentences and words, and finally {2}; its split(Document) method returns a List of {3}.",
+      "blanks": {
+        "1": "recursive",
+        "2": "characters",
+        "3": "TextSegment"
+      },
+      "bank": [
+        "recursive",
+        "characters",
+        "TextSegment",
+        "paragraphs",
+        "Embedding"
+      ],
+      "explanation": "The result objects are TextSegments carrying text and metadata, ready for an EmbeddingModel; I compiled the call against LangChain4j 1.23."
+    },
+    {
+      "id": "splitter-classes",
+      "concept": "Text splitters",
+      "type": "matrix",
+      "difficulty": 2,
+      "prompt": "Match each LangChain4j splitter class with the unit it cuts on.",
+      "left": [
+        {
+          "id": "a",
+          "text": "DocumentByParagraphSplitter"
+        },
+        {
+          "id": "b",
+          "text": "DocumentByLineSplitter"
+        },
+        {
+          "id": "c",
+          "text": "DocumentBySentenceSplitter"
+        },
+        {
+          "id": "d",
+          "text": "DocumentByWordSplitter"
+        }
+      ],
+      "right": [
+        {
+          "id": "p",
+          "text": "Blank-line separated paragraphs"
+        },
+        {
+          "id": "q",
+          "text": "Line breaks"
+        },
+        {
+          "id": "r",
+          "text": "Sentence boundaries"
+        },
+        {
+          "id": "s",
+          "text": "Whitespace between words"
+        },
+        {
+          "id": "t",
+          "text": "Rows of a table"
+        }
+      ],
+      "pairs": {
+        "a": "p",
+        "b": "q",
+        "c": "r",
+        "d": "s"
+      },
+      "explanation": "All four classes exist in LangChain4j 1.23 (I listed them with javap), and DocumentByCharacterSplitter is the last-resort cut. They can be chained with a sub-splitter for pieces that are still too long."
+    }
+  ]
+}
