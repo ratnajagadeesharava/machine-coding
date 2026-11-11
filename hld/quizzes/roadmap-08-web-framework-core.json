@@ -1,0 +1,273 @@
+{
+  "id": "roadmap-08-web-framework-core",
+  "title": "Roadmap 08: Spring Boot and FastAPI core",
+  "topic": "Interview roadmap",
+  "series": "interview-roadmap",
+  "seriesTitle": "Interview roadmap: topic quizzes",
+  "seriesOrder": 8,
+  "seriesDescription": "Topic-by-topic quizzes that follow the backend interview roadmap: language core, concurrency, DSA habits, web frameworks, data access, databases, messaging, resilience, security, testing, system design, and LLM/agent engineering.",
+  "description": "App startup and auto-configuration, dependency injection, REST routing and status codes, validation and DTOs, error handling, and filters, interceptors, AOP and middleware in Spring Boot and FastAPI.",
+  "source": "Interview roadmap study plan (Java/Spring Boot and Python/FastAPI)",
+  "estimatedMinutes": 10,
+  "questions": [
+    {
+      "id": "spring-boot-application",
+      "concept": "App structure and startup",
+      "type": "single",
+      "difficulty": 1,
+      "prompt": "Which annotations does @SpringBootApplication combine?",
+      "options": [
+        {
+          "id": "a",
+          "text": "@Component, @EnableWebMvc, @Transactional and @Autowired together.",
+          "why": "These are not the three that make up the annotation."
+        },
+        {
+          "id": "b",
+          "text": "@Configuration, @EnableAutoConfiguration and @ComponentScan.",
+          "why": "Right: configuration class, auto-configuration and component scanning."
+        },
+        {
+          "id": "c",
+          "text": "@RestController, @Service and @Repository, the stereotype annotations.",
+          "why": "These are stereotypes found by component scanning."
+        },
+        {
+          "id": "d",
+          "text": "@Bean, @Autowired and @Profile, which configure and wire beans.",
+          "why": "These configure or wire beans, not the application class."
+        }
+      ],
+      "correct": [
+        "b"
+      ],
+      "explanation": "Auto-configuration creates beans based on the classpath and your properties (starters bring the dependencies). Profiles select configuration such as application-dev.yml. FastAPI's counterpart is the app object plus APIRouter modules, with startup and shutdown work in a lifespan handler."
+    },
+    {
+      "id": "di-basics",
+      "concept": "Dependency injection",
+      "type": "multi",
+      "difficulty": 2,
+      "prompt": "Select all statements about dependency injection that are true.",
+      "options": [
+        {
+          "id": "a",
+          "text": "Constructor injection allows final fields and lets a unit test build the class with plain mocks, without starting Spring.",
+          "why": "Right: dependencies are explicit and required."
+        },
+        {
+          "id": "b",
+          "text": "A Spring bean without an explicit @Scope is a singleton: one shared instance per application context.",
+          "why": "Right: singleton is the default scope."
+        },
+        {
+          "id": "c",
+          "text": "app.dependency_overrides[get_db] = fake_get_db replaces that dependency in FastAPI tests.",
+          "why": "Right: the override is looked up by the original function."
+        },
+        {
+          "id": "d",
+          "text": "A singleton Spring bean is one instance per JVM, even if several application contexts exist.",
+          "why": "It is one instance per container, not per JVM."
+        },
+        {
+          "id": "e",
+          "text": "FastAPI runs each Depends function once at startup and reuses the result for all requests.",
+          "why": "Dependencies run per request; within one request the result is cached."
+        }
+      ],
+      "correct": [
+        "a",
+        "b",
+        "c"
+      ],
+      "explanation": "IoC means the container creates and wires objects instead of your code calling new. Prefer constructor injection for required dependencies; use overrides and mocks to test in isolation."
+    },
+    {
+      "id": "fastapi-path-param",
+      "concept": "REST endpoints and routing",
+      "type": "single",
+      "difficulty": 2,
+      "prompt": "Consider this FastAPI route.\n\n@app.get(\"/users/{user_id}\")\ndef get_user(user_id: int, verbose: bool = False):\n    return {\"id\": user_id}\n\nWhat does GET /users/abc return?",
+      "options": [
+        {
+          "id": "a",
+          "text": "404, because no user with id abc exists.",
+          "why": "The route matched; the 404 would need your own lookup code."
+        },
+        {
+          "id": "b",
+          "text": "400, because FastAPI maps every bad input to Bad Request.",
+          "why": "FastAPI uses 422 for request validation errors."
+        },
+        {
+          "id": "c",
+          "text": "422, because abc is not a valid int path parameter.",
+          "why": "Right: FastAPI returns a 422 body that names the failing field."
+        },
+        {
+          "id": "d",
+          "text": "500, because the int conversion raises an unhandled error.",
+          "why": "Conversion errors are caught and reported as validation errors."
+        }
+      ],
+      "correct": [
+        "c"
+      ],
+      "explanation": "Type hints drive parsing and validation: path parameters come from the URL, other simple parameters are query parameters (verbose here), and a Pydantic model is read from the body."
+    },
+    {
+      "id": "spring-created-response",
+      "concept": "REST endpoints and routing",
+      "type": "single",
+      "difficulty": 2,
+      "prompt": "A Spring @PostMapping endpoint creates a resource and should answer 201 Created with a Location header. Which return statement does that?",
+      "options": [
+        {
+          "id": "a",
+          "text": "return ResponseEntity.status(HttpStatus.OK).body(dto);",
+          "why": "ok() produces 200 with no Location header."
+        },
+        {
+          "id": "b",
+          "text": "return ResponseEntity.created(uri).body(dto);",
+          "why": "Right: created(URI) sets 201 and the Location header."
+        },
+        {
+          "id": "c",
+          "text": "return ResponseEntity.accepted().body(dto);",
+          "why": "accepted() is 202, meaning work is queued, not created."
+        },
+        {
+          "id": "d",
+          "text": "return ResponseEntity.noContent().build();",
+          "why": "noContent() is 204 and carries no body or Location."
+        }
+      ],
+      "correct": [
+        "b"
+      ],
+      "explanation": "Build the URI from the new id, for example with ServletUriComponentsBuilder. FastAPI equivalents: status_code=201 on the decorator and a Response or header for Location."
+    },
+    {
+      "id": "pydantic-validator-422",
+      "concept": "Validation and DTOs",
+      "type": "truefalse",
+      "difficulty": 2,
+      "prompt": "True or false: in a FastAPI request body model, raising ValueError inside a Pydantic field_validator makes FastAPI answer with a 422 response that names the failing field.",
+      "options": [
+        {
+          "id": "a",
+          "text": "True",
+          "why": "Correct: Pydantic wraps the error and FastAPI turns it into a 422."
+        },
+        {
+          "id": "b",
+          "text": "False",
+          "why": "A validation failure does not become a 500 or a 400 by default."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Pydantic v2 uses @field_validator (with @classmethod). In Spring the equivalent is Bean Validation: @Valid on the @RequestBody parameter plus constraints like @NotNull and @Size, which raise MethodArgumentNotValidException (400 by default)."
+    },
+    {
+      "id": "entity-as-dto",
+      "concept": "Validation and DTOs",
+      "type": "truefalse",
+      "difficulty": 1,
+      "prompt": "True or false: returning JPA entities directly from controllers is the recommended design, because DTOs only add mapping code.",
+      "options": [
+        {
+          "id": "a",
+          "text": "True",
+          "why": "Entities expose your schema and tie the API to it."
+        },
+        {
+          "id": "b",
+          "text": "False",
+          "why": "Correct: DTOs decouple the API from the schema and avoid leaking fields."
+        }
+      ],
+      "correct": [
+        "b"
+      ],
+      "explanation": "Entities can leak internal columns, trigger lazy-loading problems during serialisation, and let clients set fields they should not. The same applies to FastAPI: use response_model with a Pydantic schema, not the ORM object."
+    },
+    {
+      "id": "error-handling",
+      "concept": "Error handling",
+      "type": "multi",
+      "difficulty": 3,
+      "prompt": "Select all statements about centralised error handling that are true.",
+      "options": [
+        {
+          "id": "a",
+          "text": "A @RestControllerAdvice class with @ExceptionHandler methods maps exceptions for every controller.",
+          "why": "Right: advice applies globally by default."
+        },
+        {
+          "id": "b",
+          "text": "Spring Framework 6 and Boot 3 can return a ProblemDetail, the standard problem-details format (RFC 9457, formerly 7807).",
+          "why": "Right: it gives a consistent JSON error shape."
+        },
+        {
+          "id": "c",
+          "text": "In FastAPI, raise HTTPException(status_code=404, detail=\"Not found\") returns that status with a JSON body {\"detail\": ...}.",
+          "why": "Right: this is the built-in way to signal an HTTP error."
+        },
+        {
+          "id": "d",
+          "text": "In FastAPI, @app.exception_handler(MyError) maps a custom exception to a response you build.",
+          "why": "Right: the handler receives the request and the exception."
+        },
+        {
+          "id": "e",
+          "text": "An @ExceptionHandler method declared in one controller also handles exceptions from every other controller.",
+          "why": "It only applies to its own controller unless placed in advice."
+        }
+      ],
+      "correct": [
+        "a",
+        "b",
+        "c",
+        "d"
+      ],
+      "explanation": "Throw domain exceptions from services and translate them in one place. That keeps controllers thin and error responses consistent."
+    },
+    {
+      "id": "cross-cutting-aop",
+      "concept": "Middleware, filters and AOP",
+      "type": "single",
+      "difficulty": 3,
+      "prompt": "You must time every method in the service layer, including calls made by a scheduled job and a message listener that never go through an HTTP request. Which Spring mechanism fits?",
+      "options": [
+        {
+          "id": "a",
+          "text": "A Servlet Filter registered for all URL patterns.",
+          "why": "Filters only see HTTP requests, so jobs and listeners are missed."
+        },
+        {
+          "id": "b",
+          "text": "A HandlerInterceptor with preHandle and afterCompletion.",
+          "why": "Interceptors wrap MVC handler calls only, not service-to-service calls."
+        },
+        {
+          "id": "c",
+          "text": "A @ControllerAdvice class with an @ExceptionHandler method.",
+          "why": "It handles thrown exceptions in controllers, not timing."
+        },
+        {
+          "id": "d",
+          "text": "An @Aspect with @Around advice on the service package.",
+          "why": "Right: AOP wraps bean method calls whatever the caller is."
+        }
+      ],
+      "correct": [
+        "d"
+      ],
+      "explanation": "Filters (and FastAPI middleware) wrap the whole HTTP request; interceptors see the chosen handler; AOP wraps method calls on Spring beans, though self-invocation inside a class bypasses the proxy. In FastAPI, per-route cross-cutting work is usually a dependency."
+    }
+  ]
+}
