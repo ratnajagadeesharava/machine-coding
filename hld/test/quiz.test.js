@@ -118,3 +118,53 @@ test('numberFor labels positions with numbers', () => {
   assert.equal(numberFor(0), '1');
   assert.equal(numberFor(3), '4');
 });
+
+import { validateQuestion as vq, isCorrect as ok, presentQuestion as present, codeChecks } from '../shared/quiz.js';
+
+const base = { id: 'q1', concept: 'C', difficulty: 2, explanation: 'Because of the reasons given here.' };
+
+test('integer questions grade numerically with tolerance', () => {
+  const q = { ...base, type: 'integer', prompt: 'How many replicas make a quorum of five?', answer: 3 };
+  assert.deepEqual(vq(q), []);
+  assert.ok(ok(q, ['3'])); assert.ok(ok(q, [' 3.0 '])); assert.ok(!ok(q, ['4'])); assert.ok(!ok(q, ['three'])); assert.ok(!ok(q, []));
+  assert.ok(ok({ ...q, answer: 0.5, tolerance: 0.01 }, ['0.505']));
+  assert.ok(vq({ ...q, answer: 'x' }).length);
+});
+
+test('assertion-reason questions use the four fixed options', () => {
+  const q = { ...base, type: 'assertion', prompt: 'Choose the correct option for A and R.', assertion: 'Adding an index speeds up reads.', reason: 'Indexes cost nothing to maintain.', correct: ['c'] };
+  assert.deepEqual(vq(q), []);
+  const p = present(q, () => 0.5);
+  assert.deepEqual(p.options.map((o) => o.id), ['a', 'b', 'c', 'd']);
+  assert.ok(ok(p, ['c'])); assert.ok(!ok(p, ['a']));
+  assert.ok(vq({ ...q, correct: ['e'] }).length);
+});
+
+test('matrix questions need every pair right', () => {
+  const q = { ...base, type: 'matrix', prompt: 'Match each structure with its use.', left: [{ id: 'a', text: 'A' }, { id: 'b', text: 'B' }, { id: 'c', text: 'C' }],
+    right: [{ id: 'p', text: 'P' }, { id: 'q', text: 'Q' }, { id: 'r', text: 'R' }, { id: 's', text: 'S' }], pairs: { a: 'p', b: 'q', c: 'r' } };
+  assert.deepEqual(vq(q), []);
+  assert.ok(ok(q, ['a=p', 'b=q', 'c=r'])); assert.ok(!ok(q, ['a=p', 'b=q'])); assert.ok(!ok(q, ['a=q', 'b=p', 'c=r']));
+  assert.ok(vq({ ...q, pairs: { a: 'p', b: 'p', c: 'r' } }).length);
+  const shuffled = present(q, () => 0.1);
+  assert.equal(shuffled.right.length, 4);
+});
+
+test('fill questions need the right word in every blank', () => {
+  const q = { ...base, type: 'fill', prompt: 'Complete the sentence about caching.', text: 'A {1} cache serves {2} reads.', blanks: { 1: 'write-through', 2: 'hot' }, bank: ['write-through', 'hot', 'cold'] };
+  assert.deepEqual(vq(q), []);
+  assert.ok(ok(q, ['1=write-through', '2=hot'])); assert.ok(!ok(q, ['1=hot', '2=write-through']));
+  assert.ok(vq({ ...q, bank: ['hot', 'cold'] }).length);
+  assert.ok(vq({ ...q, blanks: { 1: 'write-through' } }).length);
+});
+
+test('code questions are graded by pattern checks and the model must pass them', () => {
+  const q = { ...base, type: 'code', prompt: 'Write a query counting orders per customer.', language: 'sql', model: 'SELECT customer_id, COUNT(*) FROM orders GROUP BY customer_id;',
+    checks: [{ label: 'groups', pattern: 'group\\s+by\\s+customer_id' }, { label: 'counts', pattern: 'count\\s*\\(' }] };
+  assert.deepEqual(vq(q), []);
+  assert.ok(ok(q, ['select customer_id, count(*) from orders\ngroup  by customer_id']));
+  assert.ok(!ok(q, ['select * from orders']));
+  assert.deepEqual(codeChecks(q, 'select count(*) from t').map((c) => c.ok), [false, true]);
+  assert.ok(vq({ ...q, model: 'SELECT 1' }).some((e) => /fails its own check/.test(e)));
+  assert.ok(vq({ ...q, checks: [{ label: 'bad', pattern: '(' }] }).length);
+});

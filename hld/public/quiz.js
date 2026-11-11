@@ -1,6 +1,7 @@
 // HLD Room quiz page: pick a quiz, answer with instant (or end-of-quiz) feedback, ask Claude to explain, review results,
 // and generate new quizzes with Claude. Progress lives in this browser's localStorage.
 import './apikey.js';
+import { assertionBlock, codeWidget, fillWidget, integerWidget, matrixWidget } from './qtypes.js';
 import {
   isCorrect, numberFor, mulberry32, pickQuestions, presentQuestion, scoreAttempt, shuffle, validateQuiz,
 } from '/shared/quiz.js';
@@ -461,7 +462,7 @@ function persistRun() {
   if (!run || run.result) return;
   store.set('run', {
     quizId: run.quiz.id, mode: run.mode, i: run.i, answers: run.answers, checked: run.checked, flagged: run.flagged, elapsed: Math.round(run.elapsed), at: Date.now(),
-    order: run.questions.map((q) => [q.id, q.options.map((o) => o.id)]), refs: run.mode === 'weak' ? run.questions.map((q) => q.src) : undefined, title: run.quiz.title,
+    order: run.questions.map((q) => [q.id, (q.options || []).map((o) => o.id)]), refs: run.mode === 'weak' ? run.questions.map((q) => q.src) : undefined, title: run.quiz.title,
   });
 }
 const clearRun = () => store.set('run', null);
@@ -475,8 +476,9 @@ async function resumeRun() {
     const presented = r.order.map(([qid, optIds]) => {
       const q = byId.get(qid);
       if (!q) return null;
+      if (!q.options) return presentQuestion(q, mulberry32(Date.now()));
       const opts = optIds.map((id) => q.options.find((o) => o.id === id)).filter(Boolean);
-      return opts.length === q.options.length ? { ...q, options: opts } : q;
+      return opts.length === q.options.length ? { ...q, options: opts } : presentQuestion(q, mulberry32(Date.now()));
     }).filter(Boolean);
     if (!presented.length) throw new Error('empty');
     beginRun(quiz, r.mode, presented, { i: Math.min(r.i, presented.length - 1), answers: r.answers || {}, checked: r.checked || {}, flagged: r.flagged || {}, elapsed: r.elapsed || 0 });
@@ -493,6 +495,20 @@ function flash(message) {
 // ---------- answering ----------
 const cur = () => S.run.questions[S.run.i];
 const selectedIds = () => S.run.answers[cur().id] || [];
+const HINTS = { multi: 'Select all that apply.', truefalse: 'True or false?', integer: 'Integer type: the answer is a number.', assertion: 'Assertion-Reason: choose the best option.', matrix: 'Matrix match.', fill: 'Fill in the blanks.', code: 'Write a short piece of code.' };
+const RICH = { integer: integerWidget, matrix: matrixWidget, fill: fillWidget, code: codeWidget };
+
+// Rich widgets keep their own DOM (so typing keeps its focus); they report the answer here.
+function setAnswer(arr) {
+  const q = cur();
+  if (S.run.checked[q.id]) return;
+  if (arr.length) S.run.answers[q.id] = arr; else delete S.run.answers[q.id];
+  const has = arr.length > 0;
+  els.check.disabled = !has;
+  els.next.disabled = !els.instant.checked && !has;
+  renderMap();
+  persistRun();
+}
 
 function renderQuestion() {
   const run = S.run;
@@ -511,10 +527,12 @@ function renderQuestion() {
   els.diff.replaceChildren(...[1, 2, 3].map((n) => h('i', { class: n <= q.difficulty ? 'on' : '' })));
   els.diff.setAttribute('aria-label', `Difficulty ${q.difficulty} of 3`);
   els.prompt.textContent = q.prompt;
-  els.hint.textContent = q.type === 'multi' ? 'Select all that apply.' : q.type === 'truefalse' ? 'True or false?' : '';
+  els.hint.textContent = HINTS[q.type] || '';
   els.hint.hidden = !els.hint.textContent;
 
-  els.options.replaceChildren(...q.options.map((o, idx) => {
+  const rich = RICH[q.type];
+  const pre = q.type === 'assertion' ? [assertionBlock(h, q)] : [];
+  const buildOptions = () => q.options.map((o, idx) => {
     const isRight = q.correct.includes(o.id);
     const picked = sel.has(o.id);
     let cls = 'opt' + (q.type === 'multi' ? ' multi' : '') + (picked && !checked ? ' on' : '');
@@ -525,7 +543,9 @@ function renderQuestion() {
       onclick: () => choose(o.id),
     }, h('span', { class: 'key', text: label }),
     h('span', { class: 'txt' }, o.text, checked && o.why ? h('span', { class: 'why', text: o.why }) : null));
-  }));
+  });
+  if (rich) els.options.replaceChildren(rich(h, q, [...sel], checked, setAnswer));
+  else els.options.replaceChildren(...pre, ...buildOptions());
 
   els.feedback.hidden = !checked;
   els.check.hidden = checked;
@@ -624,15 +644,15 @@ document.addEventListener('keydown', (e) => {
   if (S.view !== 'run' || e.ctrlKey || e.metaKey || e.altKey) return;
   if (document.querySelector('dialog[open]')) return;
   const t = e.target;
-  if (t && (t.tagName === 'INPUT' && t.type !== 'checkbox' || t.tagName === 'TEXTAREA')) return;
+  if (t && (t.tagName === 'INPUT' && t.type !== 'checkbox' || t.tagName === 'TEXTAREA' || t.tagName === 'SELECT')) return;
   const q = cur();
   if (e.key === 'ArrowLeft') { e.preventDefault(); goto(S.run.i - 1); return; }
   if (e.key === 'ArrowRight') { e.preventDefault(); goto(S.run.i + 1); return; }
   if (e.key.toLowerCase() === 'f') { e.preventDefault(); toggleFlag(); return; }
   const pick = /^[1-6]$/.test(e.key) ? Number(e.key) - 1 : -1;
-  if (pick >= 0 && pick < q.options.length) { e.preventDefault(); choose(q.options[pick].id); return; }
+  if (pick >= 0 && !RICH[q.type] && pick < q.options.length) { e.preventDefault(); choose(q.options[pick].id); return; }
   // Enter on an answer option (focus stays there after choosing) still checks / moves on; on the other buttons it presses them.
-  if (e.key === 'Enter' && (t?.tagName !== 'BUTTON' || t.classList.contains('opt'))) {
+  if (e.key === 'Enter' && !RICH[q.type] && (t?.tagName !== 'BUTTON' || t.classList.contains('opt'))) {
     e.preventDefault();
     if (!S.run.checked[q.id] && els.instant.checked) check(); else if (!els.next.hidden) next();
   }
@@ -643,7 +663,7 @@ function renderTutor() {
   const q = cur();
   const t = S.run.tutor[q.id];
   const aiOff = S.health.ai === 'off';
-  els.tutorBtn.hidden = !!t;
+  els.tutorBtn.hidden = !!t || !!RICH[cur().type];
   els.tutorBtn.disabled = aiOff;
   els.tutorBtn.title = aiOff ? 'Needs the AI connection (add your key with the key button, or run demo mode)' : '';
   els.tutor.hidden = !t;
@@ -800,7 +820,19 @@ function finish() {
   els.sub.textContent = 'Results';
 }
 
+function richText(q, ans) {
+  if (q.type === 'integer') return ans.length ? ans[0] : '(no answer)';
+  if (q.type === 'code') return ans.length ? ans[0] : '(no answer)';
+  const m = new Map(ans.map((a) => [a.slice(0, a.indexOf('=')), a.slice(a.indexOf('=') + 1)]));
+  if (q.type === 'matrix') return q.left.map((l) => `${l.id.toUpperCase()}->${q.right.find((r) => r.id === m.get(l.id))?.text ?? '?'}`).join('  |  ');
+  return Object.keys(q.blanks).map((k) => `(${k}) ${m.get(k) ?? '?'}`).join('  |  ');
+}
+const richCorrect = (q) => (q.type === 'integer' ? String(q.answer) : q.type === 'code' ? q.model
+  : q.type === 'matrix' ? q.left.map((l) => `${l.id.toUpperCase()}->${q.right.find((r) => r.id === q.pairs[l.id]).text}`).join('  |  ')
+    : Object.entries(q.blanks).map(([k, w]) => `(${k}) ${w}`).join('  |  '));
+
 function textFor(q, ids) {
+  if (RICH[q.type]) return richText(q, ids);
   const picked = q.options.map((o, i) => ({ o, i })).filter(({ o }) => ids.includes(o.id));
   return picked.length ? picked.map(({ o, i }) => `${numberFor(i)}. ${o.text}`).join('  |  ') : '(no answer)';
 }
@@ -815,7 +847,7 @@ function renderReview() {
     els.review.append(h('article', { class: `rv${ok ? '' : ' bad'}` },
       h('h4', { text: `${n + 1}. ${q.prompt}` }),
       h('p', { class: 'ans' }, h('b', { text: 'Your answer: ' }), textFor(q, run.answers[q.id] || [])),
-      ok ? null : h('p', { class: 'ans' }, h('b', { text: 'Correct: ' }), textFor(q, q.correct)),
+      ok ? null : h('p', { class: 'ans' }, h('b', { text: 'Correct: ' }), RICH[q.type] ? richCorrect(q) : textFor(q, q.correct)),
       h('p', { class: 'ex', text: q.explanation })));
   }
 }
