@@ -306,17 +306,17 @@
         },
         {
           "id": "b",
-          "text": "[1, 2], the correct pair 2 and 4",
+          "text": "[1, 2], the correct pair of the values 2 and 4",
           "why": "That needs the check to run before the insert; this order never gets there."
         },
         {
           "id": "c",
-          "text": "None, because no pair sums to 6",
+          "text": "None, because no pair of values sums to 6",
           "why": "The pair 2 and 4 exists, and the function returns earlier anyway."
         },
         {
           "id": "d",
-          "text": "A KeyError on the first iteration",
+          "text": "A KeyError raised on the very first iteration",
           "why": "The code tests with in before indexing, so a missing key is never read."
         }
       ],

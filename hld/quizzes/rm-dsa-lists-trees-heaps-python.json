@@ -104,7 +104,7 @@
     },
     {
       "id": "top-k",
-      "concept": "Heaps",
+      "concept": "Top-K selection",
       "type": "code",
       "difficulty": 2,
       "prompt": "Write a Python function top_k_frequent(nums, k) that returns the k most frequent values using collections.Counter and the heapq module.",
@@ -162,7 +162,7 @@
     },
     {
       "id": "heap-peek",
-      "concept": "Heaps",
+      "concept": "Priority queues",
       "type": "integer",
       "difficulty": 2,
       "prompt": "Values 9, 4, 7, 1, 6, 2 are pushed onto an empty list with heapq.heappush in that order, then heappop is called twice. What does h[0] hold?",
@@ -191,7 +191,7 @@
     },
     {
       "id": "heapify-linear",
-      "concept": "Heaps",
+      "concept": "Heap complexity",
       "type": "assertion",
       "difficulty": 3,
       "prompt": "Evaluate the assertion and the reason.",
@@ -318,22 +318,22 @@
       "options": [
         {
           "id": "a",
-          "text": "Python compares the second tuple items, so a TypeError is raised.",
+          "text": "Python compares the nodes, so a TypeError is raised.",
           "why": "Correct: tuple comparison falls through to the nodes, and objects without ordering cannot be compared."
         },
         {
           "id": "b",
-          "text": "The heap silently drops one of the two entries.",
+          "text": "The heap silently drops one of the two equal entries.",
           "why": "Heaps never drop items; equal priorities are both kept."
         },
         {
           "id": "c",
-          "text": "heappush sorts the whole list again, ruining the O(log n) cost.",
+          "text": "heappush sorts the whole list again, ruining the O(log n) cost of a push.",
           "why": "heappush sifts one item only; it never re-sorts the list."
         },
         {
           "id": "d",
-          "text": "The entry with the larger node always pops first.",
+          "text": "The entry with the larger node object always pops first.",
           "why": "Node objects cannot be ordered, so there is no such rule."
         }
       ],

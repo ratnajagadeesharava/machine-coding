@@ -1,0 +1,403 @@
+{
+  "id": "rm-web-ops-core",
+  "title": "Web services: probes, jobs, config and request pipeline",
+  "topic": "Interview roadmap",
+  "language": "neutral",
+  "description": "Liveness versus readiness, scheduled and background jobs on several instances, retries and backoff arithmetic, secrets and layered config, middleware ordering and blocking versus non-blocking I/O.",
+  "source": "Kubernetes probe documentation; the twelve-factor app (config); Redis SET documentation; cron(5) manual; Google SRE book (retries and backoff); server-sent events section of the HTML Living Standard",
+  "series": "interview-roadmap-core",
+  "seriesTitle": "Interview roadmap: language-independent topics",
+  "seriesDescription": "Language-independent interview topics (concepts, SQL, design, AI engineering): no Java and no Python code or library names.",
+  "seriesOrder": 54,
+  "estimatedMinutes": 16,
+  "questions": [
+    {
+      "id": "liveness-db",
+      "concept": "Health checks",
+      "type": "single",
+      "difficulty": 3,
+      "prompt": "A service depends on a database. Where should the database check live to avoid a restart storm during a database outage?",
+      "options": [
+        {
+          "id": "a",
+          "text": "In the liveness check, so pods that cannot reach the database are restarted quickly.",
+          "why": "A database outage would restart every instance and prolong recovery."
+        },
+        {
+          "id": "b",
+          "text": "In both checks with identical timeouts, for symmetry.",
+          "why": "This still restarts healthy processes whenever the dependency blips."
+        },
+        {
+          "id": "c",
+          "text": "In the readiness check only; liveness should reflect only that the process itself is healthy.",
+          "why": "Correct: failing readiness stops traffic without killing healthy processes."
+        },
+        {
+          "id": "d",
+          "text": "In neither; health checks must never touch dependencies.",
+          "why": "Readiness checks on critical dependencies are standard practice."
+        }
+      ],
+      "correct": [
+        "c"
+      ],
+      "explanation": "Liveness answers \"should this process be killed?\"; readiness answers \"should it receive traffic right now?\". Keep both cheap and time-boxed."
+    },
+    {
+      "id": "probe-matrix",
+      "concept": "Health checks",
+      "type": "matrix",
+      "difficulty": 2,
+      "prompt": "Match each Kubernetes probe or component with what it does.",
+      "left": [
+        {
+          "id": "l1",
+          "text": "Liveness probe fails"
+        },
+        {
+          "id": "l2",
+          "text": "Readiness probe fails"
+        },
+        {
+          "id": "l3",
+          "text": "Startup probe"
+        },
+        {
+          "id": "l4",
+          "text": "Horizontal pod autoscaler"
+        }
+      ],
+      "right": [
+        {
+          "id": "r1",
+          "text": "The kubelet restarts the container"
+        },
+        {
+          "id": "r2",
+          "text": "The pod is removed from Service endpoints but is not restarted"
+        },
+        {
+          "id": "r3",
+          "text": "Other probes wait until a slow boot has finished"
+        },
+        {
+          "id": "r4",
+          "text": "Adds or removes replicas based on a metric such as CPU"
+        },
+        {
+          "id": "r5",
+          "text": "Drains a node before maintenance"
+        },
+        {
+          "id": "r6",
+          "text": "Rotates the pod's TLS certificate"
+        }
+      ],
+      "pairs": {
+        "l1": "r1",
+        "l2": "r2",
+        "l3": "r3",
+        "l4": "r4"
+      },
+      "explanation": "Startup probes protect slow-starting containers from being killed by the liveness probe. Autoscaling is a separate control loop and never restarts a container."
+    },
+    {
+      "id": "cron-fires-week",
+      "concept": "Scheduled jobs",
+      "type": "integer",
+      "difficulty": 1,
+      "prompt": "A Unix cron entry reads \"30 2 * * 1-5\" (minute hour day-of-month month day-of-week, with 1-5 meaning Monday to Friday). How many times does it fire in one seven-day week?",
+      "answer": 5,
+      "tolerance": 0,
+      "unit": "runs",
+      "explanation": "It fires at 02:30 on each of the five weekdays: 5 runs. Unix cron has five fields; some schedulers add a leading seconds field, so always check the dialect."
+    },
+    {
+      "id": "fixed-delay-count",
+      "concept": "Scheduled jobs",
+      "type": "integer",
+      "difficulty": 2,
+      "prompt": "A job loop waits 2 seconds after each run finishes before starting the next run (fixed delay). Each run takes 3 seconds and the first run starts at t = 0 s on a single thread. How many runs have started by t = 62 s, counting the one at t = 0?",
+      "answer": 13,
+      "tolerance": 0,
+      "unit": "runs",
+      "explanation": "Each cycle is 3 + 2 = 5 s, so runs start at 0, 5, 10 ... 60: that is 13 starts. A fixed-rate schedule on one thread would instead start the next run as soon as a late one ends, never overlapping."
+    },
+    {
+      "id": "duplicate-runs",
+      "concept": "Multi-instance jobs",
+      "type": "integer",
+      "difficulty": 3,
+      "prompt": "An application has a nightly cleanup job triggered by an in-process scheduler. It is deployed as 3 identical replicas and nothing coordinates them. How many times does the cleanup run each night across the cluster?",
+      "answer": 3,
+      "tolerance": 0,
+      "unit": "runs",
+      "explanation": "Every replica has its own scheduler, so the job runs 3 times. Fixes: a distributed lock, leader election, a dedicated scheduler instance, or a cluster-level cron job that triggers one run."
+    },
+    {
+      "id": "redis-job-lock",
+      "concept": "Multi-instance jobs",
+      "type": "code",
+      "difficulty": 2,
+      "prompt": "Write the single Redis command that sets key lock:nightly to the value 1 only if the key does not exist, expiring after 300 seconds, so that only one instance runs the job.",
+      "language": "bash",
+      "checks": [
+        {
+          "label": "uses SET on lock:nightly",
+          "pattern": "set\\s+lock:nightly"
+        },
+        {
+          "label": "only if absent (NX)",
+          "pattern": "\\bnx\\b"
+        },
+        {
+          "label": "300 second expiry",
+          "pattern": "\\bex\\s+300\\b|\\bpx\\s+300000\\b"
+        }
+      ],
+      "model": "SET lock:nightly 1 NX EX 300",
+      "explanation": "SET with NX and EX is one atomic step, unlike SETNX followed by EXPIRE (a crash between them leaves a lock that never expires). The reply is OK for the winner and nil for everyone else. Choose a TTL longer than the job, or renew it."
+    },
+    {
+      "id": "retry-executions",
+      "concept": "Retries",
+      "type": "integer",
+      "difficulty": 2,
+      "prompt": "A call is wrapped in a retry policy of \"the first attempt plus 3 retries\" and the operation always fails. How many times is it executed in total?",
+      "answer": 4,
+      "tolerance": 0,
+      "unit": "executions",
+      "explanation": "1 first attempt + 3 retries = 4 executions. Always check whether a library counts \"attempts\" (total) or \"retries\" (extra), because the two readings differ by one."
+    },
+    {
+      "id": "backoff-total",
+      "concept": "Retries",
+      "type": "integer",
+      "difficulty": 3,
+      "prompt": "A client retries with exponential backoff: it waits 1 s before the first retry, then doubles the wait each time, and makes 4 retries in total (all fail). How many seconds does it spend waiting overall, ignoring the time the calls themselves take?",
+      "answer": 15,
+      "tolerance": 0,
+      "unit": "seconds",
+      "explanation": "Waits are 1 + 2 + 4 + 8 = 15 s. Add random jitter and a cap in practice so many clients do not retry in lockstep."
+    },
+    {
+      "id": "queue-idempotent",
+      "concept": "Background jobs",
+      "type": "assertion",
+      "difficulty": 3,
+      "prompt": "Judge the assertion and the reason.",
+      "assertion": "Handlers of a job queue should be written to be idempotent.",
+      "reason": "Message queues with acknowledgements guarantee exactly-once execution by default.",
+      "correct": [
+        "c"
+      ],
+      "whys": {
+        "a": "Wrong: R is false.",
+        "b": "Wrong: R is not true.",
+        "c": "Correct: A is true and R is false; delivery is typically at-least-once, so a crash or visibility timeout can run a job twice.",
+        "d": "Wrong: A is true."
+      },
+      "explanation": "Make handlers safe to repeat with idempotency keys, upserts or \"already processed\" markers."
+    },
+    {
+      "id": "in-process-work-lost",
+      "concept": "Background jobs",
+      "type": "assertion",
+      "difficulty": 2,
+      "prompt": "Judge the assertion and the reason.",
+      "assertion": "Work that a web process continues after sending its response can be lost if that process crashes.",
+      "reason": "The pending work is held only in the memory of that process.",
+      "correct": [
+        "a"
+      ],
+      "whys": {
+        "a": "Correct: nothing durable records the unfinished work, so a crash silently drops it.",
+        "b": "Wrong: R is exactly the mechanism.",
+        "c": "Wrong: R is true.",
+        "d": "Wrong: A is true."
+      },
+      "explanation": "Fine for best-effort work such as a welcome e-mail; use a durable queue or an outbox table when the work must happen."
+    },
+    {
+      "id": "secrets-practices",
+      "concept": "Config and secrets",
+      "type": "multi",
+      "difficulty": 2,
+      "prompt": "Select all that apply: which are sound practices for configuration and secrets?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Inject passwords through environment variables or a secrets manager.",
+          "why": "Keeps secrets out of the repository and out of the image."
+        },
+        {
+          "id": "b",
+          "text": "Commit the production configuration file with the real database password.",
+          "why": "Anything in version-control history must be treated as compromised."
+        },
+        {
+          "id": "c",
+          "text": "Validate required configuration at startup so a missing value fails fast.",
+          "why": "A crash at boot is cheaper than a failure on the first request."
+        },
+        {
+          "id": "d",
+          "text": "Log all settings at startup to help debugging.",
+          "why": "That writes secrets into log aggregation."
+        },
+        {
+          "id": "e",
+          "text": "Mask secret values in logs, diagnostics pages and error reports.",
+          "why": "Log aggregation systems are widely readable and long-lived."
+        },
+        {
+          "id": "f",
+          "text": "Bake the API key into the container image.",
+          "why": "Anyone who can pull the image can read the key."
+        }
+      ],
+      "correct": [
+        "a",
+        "c",
+        "e"
+      ],
+      "explanation": "Principle: config in the environment (twelve-factor), secrets from a vault, validate at boot, never log them, rotate them."
+    },
+    {
+      "id": "config-precedence",
+      "concept": "Config and secrets",
+      "type": "single",
+      "difficulty": 2,
+      "prompt": "The same setting appears in a file packaged with the application, in an environment variable, and in a command-line flag. Under the usual layered-configuration convention, which value wins?",
+      "options": [
+        {
+          "id": "a",
+          "text": "The packaged file, because it was reviewed and committed.",
+          "why": "Packaged defaults are the lowest layer so operators can override them without a rebuild."
+        },
+        {
+          "id": "b",
+          "text": "Whichever source was read first, because later ones are ignored.",
+          "why": "Layered configuration merges sources and lets later, higher-priority ones override."
+        },
+        {
+          "id": "c",
+          "text": "The environment variable, but only when the flag is absent and the file is empty.",
+          "why": "The file being empty has no bearing on the order; priority is fixed."
+        },
+        {
+          "id": "d",
+          "text": "The command-line flag, then the environment variable, then the packaged file.",
+          "why": "Correct: more specific and more external sources override more general, packaged ones."
+        }
+      ],
+      "correct": [
+        "d"
+      ],
+      "explanation": "Rule of thumb: external beats packaged, specific beats general. Document the order in your service so operators are not surprised."
+    },
+    {
+      "id": "middleware-onion",
+      "concept": "Request pipeline",
+      "type": "integer",
+      "difficulty": 3,
+      "prompt": "A request pipeline wraps the handler in four layers numbered 1 (outermost) to 4 (innermost). A request passes through layers 1, 2, 3, 4, then the handler, and the response travels back out through the same layers in reverse. At which position (1 = first) does layer 2 see the response?",
+      "answer": 3,
+      "tolerance": 0,
+      "unit": "position",
+      "explanation": "The response unwinds 4, 3, 2, 1, so layer 2 is third. Keep this onion shape in mind when ordering authentication, logging and compression layers."
+    },
+    {
+      "id": "shared-state-thread-safe",
+      "concept": "Request pipeline",
+      "type": "assertion",
+      "difficulty": 2,
+      "prompt": "Judge the assertion and the reason.",
+      "assertion": "An object shared by all request-handling threads is automatically thread-safe.",
+      "reason": "A shared object means every thread can read and write the same fields.",
+      "correct": [
+        "d"
+      ],
+      "whys": {
+        "a": "Wrong: A is false.",
+        "b": "Wrong: A is false.",
+        "c": "Wrong: A is false; R is true.",
+        "d": "Correct: sharing is exactly why unsynchronised mutable state is dangerous. Keep shared objects stateless or guard the state."
+      },
+      "explanation": "Shared means shared, not synchronised: prefer immutable or stateless components, or use locks and atomic types."
+    },
+    {
+      "id": "blocking-event-loop",
+      "concept": "Async I/O",
+      "type": "integer",
+      "difficulty": 3,
+      "prompt": "A server handles requests on a single-threaded event loop. Each handler makes a blocking call that takes 2 seconds without yielding to the loop, and 3 requests arrive at the same instant. About how many seconds until the last response is sent?",
+      "answer": 6,
+      "tolerance": 0,
+      "unit": "seconds",
+      "explanation": "A blocking call freezes the loop, so handlers run one after another: 3 x 2 = 6 s. With a non-blocking wait of 2 s each, the three would overlap and finish in about 2 s."
+    },
+    {
+      "id": "worker-pool-batches",
+      "concept": "Async I/O",
+      "type": "integer",
+      "difficulty": 3,
+      "prompt": "Blocking handlers run on a pool of 40 worker threads. Each handler sleeps for 1 second, and 100 requests arrive at the same instant. About how many seconds until the last response?",
+      "answer": 3,
+      "tolerance": 0,
+      "unit": "seconds",
+      "explanation": "Requests run in batches of 40, 40 and 20, so three rounds of 1 s: about 3 s. Raising the pool size or going non-blocking changes this arithmetic."
+    },
+    {
+      "id": "sse-format",
+      "concept": "Streaming",
+      "type": "fill",
+      "difficulty": 1,
+      "prompt": "Complete the server-sent events (SSE) basics.",
+      "text": "An SSE response uses the media type {1}; each event is one or more lines starting with {2} and is terminated by {3}.",
+      "blanks": {
+        "1": "text/event-stream",
+        "2": "data:",
+        "3": "a blank line"
+      },
+      "bank": [
+        "text/event-stream",
+        "data:",
+        "a blank line",
+        "application/json",
+        "id:",
+        "a NUL byte"
+      ],
+      "explanation": "The browser EventSource reconnects automatically and sends Last-Event-ID if the server set id: lines. Remember that proxies must not buffer the response."
+    },
+    {
+      "id": "k8s-probes-yaml",
+      "concept": "Health checks",
+      "type": "code",
+      "difficulty": 2,
+      "prompt": "Write the container probe section of a Kubernetes pod spec: a livenessProbe doing an HTTP GET on /live and a readinessProbe doing an HTTP GET on /ready, both on port 8080.",
+      "language": "yaml",
+      "checks": [
+        {
+          "label": "livenessProbe with /live",
+          "pattern": "livenessProbe[\\s\\S]*path:\\s*/live"
+        },
+        {
+          "label": "readinessProbe with /ready",
+          "pattern": "readinessProbe[\\s\\S]*path:\\s*/ready"
+        },
+        {
+          "label": "httpGet probes",
+          "pattern": "httpGet"
+        },
+        {
+          "label": "port 8080",
+          "pattern": "port:\\s*8080"
+        }
+      ],
+      "model": "livenessProbe:\n  httpGet:\n    path: /live\n    port: 8080\nreadinessProbe:\n  httpGet:\n    path: /ready\n    port: 8080",
+      "explanation": "Real manifests also set initialDelaySeconds, periodSeconds and failureThreshold; a startupProbe is added for slow boots. The endpoint behind /live must not call the database."
+    }
+  ]
+}

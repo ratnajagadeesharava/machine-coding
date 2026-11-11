@@ -398,22 +398,22 @@
       "options": [
         {
           "id": "a",
-          "text": "a[mid] < target while mid == lo, for example lo = 0 and hi = 1",
+          "text": "a[mid] < target while mid == lo, e.g. lo = 0, hi = 1",
           "why": "Correct: lo = mid leaves lo unchanged, so the range never shrinks."
         },
         {
           "id": "b",
-          "text": "The list contains many repeated duplicate values",
+          "text": "The list contains many repeated duplicate values in a row",
           "why": "Duplicates change which index is found, not whether the loop ends."
         },
         {
           "id": "c",
-          "text": "The target is smaller than every element in the list",
+          "text": "The target is smaller than every element in the whole list",
           "why": "hi keeps decreasing until it drops below lo, so the loop exits."
         },
         {
           "id": "d",
-          "text": "The list length happens to be an odd number",
+          "text": "The list length happens to be an odd number of elements",
           "why": "Parity does not matter; the update rule for lo does."
         }
       ],
