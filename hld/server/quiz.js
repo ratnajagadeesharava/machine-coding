@@ -115,6 +115,7 @@ Quality rules - follow every one:
 - One concept per question. The stem is a complete, unambiguous question or scenario that can be answered without seeing the options.
 - Distractors are plausible: each reflects a real misconception or a technique that fits a different situation. Never use jokes, absurd options, or "all of the above" / "none of the above".
 - Options within a question are similar in length and style so the right one is not obvious from its shape. Do not make the longest option the correct one every time.
+- When a question contains code, put it in a fenced block with a language tag (\`\`\`java ... \`\`\`, one statement per line) and wrap short code in single backticks; never write code as run-on prose. Put the question sentence after the code block.
 - Use "single" (exactly one correct, 4 options), "multi" (2 or 3 correct among 4 or 5 options; the stem must say "select all that apply"), and "truefalse" (exactly two options, "True" then "False") sparingly. Vary which option position is correct.
 - Every option has a one-sentence "why": for the correct option why it is right, for each wrong option the specific reason it fails.
 - The explanation (2-4 sentences) teaches the underlying idea and a trade-off or interview takeaway.
