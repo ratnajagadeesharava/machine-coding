@@ -81,9 +81,10 @@ function mockExplain(params) {
   const answered = /Answered: (\w+)/.exec(first)?.[1] === 'yes';
   const chose = /Learner chose: (.+)/.exec(first)?.[1] || /Learner's answer: (.+)/.exec(first)?.[1] || '(nothing)';
   const ask = /Learner: ([\s\S]*)$/.exec(last)?.[1] || last;
-  if (msgs.length > 1) return `Mock tutor follow-up: ${ask.slice(0, 80)}`;
-  if (!answered) return `Mock tutor: before you answer, here is what the question about ${concept} is asking. Think about the key trade-off, then pick an answer. (Asked: ${ask.slice(0, 60)})`;
-  return `Mock tutor: let us look at ${concept}. You chose ${chose}. The reference explanation is the key idea to remember.`;
+  const tail = `\nSUGGESTIONS: Why does that matter for ${concept}? | Can you give a tiny example? | What would break if I changed it?`;
+  if (msgs.length > 1) return `Mock tutor follow-up: ${ask.slice(0, 80)}${tail}`;
+  if (!answered) return `Mock tutor: before you answer, here is what the question about ${concept} is asking. Think about the key trade-off, then pick an answer. (Asked: ${ask.slice(0, 60)})${tail}`;
+  return `Mock tutor: let us look at ${concept}. You chose ${chose}. The reference explanation is the key idea to remember.${tail}`;
 }
 
 function mockQuiz(params) {

@@ -352,8 +352,8 @@ body[data-level="home"] .toc .toc-mark { font-size: 15px; background: transparen
 
 /* ---- code in questions: snippet cards and inline code ---- */
 :root { --code-bg: #f4f1e6; --code-ink: #1f1d16; --code-line: #e3dcc3; --tok-k: #a0309c; --tok-s: #1d7a3a; --tok-c: #7d7a6b; --tok-n: #b45309; --tok-t: #0b6fa4; --tok-a: #8a5a00; --tok-f: #8a3ffc; }
-@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --code-bg: #0b0f16; --code-ink: #d7deea; --code-line: #262e3d; --tok-k: #c792ea; --tok-s: #9ece6a; --tok-c: #6b7790; --tok-n: #ff9e64; --tok-t: #7dcfff; --tok-a: #e0af68; --tok-f: #bb9af7; } }
-:root[data-theme="dark"] { --code-bg: #0b0f16; --code-ink: #d7deea; --code-line: #262e3d; --tok-k: #c792ea; --tok-s: #9ece6a; --tok-c: #6b7790; --tok-n: #ff9e64; --tok-t: #7dcfff; --tok-a: #e0af68; --tok-f: #bb9af7; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --code-bg: #121316; --code-ink: #dfe2ea; --code-line: #2e3139; --tok-k: #c792ea; --tok-s: #9ece6a; --tok-c: #6b7790; --tok-n: #ff9e64; --tok-t: #7dcfff; --tok-a: #e0af68; --tok-f: #ff9f1c; } }
+:root[data-theme="dark"] { --code-bg: #121316; --code-ink: #dfe2ea; --code-line: #2e3139; --tok-k: #c792ea; --tok-s: #9ece6a; --tok-c: #6b7790; --tok-n: #ff9e64; --tok-t: #7dcfff; --tok-a: #e0af68; --tok-f: #ff9f1c; }
 .q-prompt .rt-p, .rt-p { margin: 0 0 10px; }
 .q-prompt .rt-p:last-child { margin-bottom: 0; }
 .q-prompt { text-wrap: pretty; }
@@ -417,3 +417,14 @@ body[data-level="home"] .toc .toc-mark { font-size: 15px; background: transparen
 
 .msg.bot.explain .bubble { border-color: var(--accent); background: var(--accent-soft); }
 .explain-label { font-size: 11.5px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; color: var(--accent-strong); margin-bottom: 4px; }
+
+/* suggestions header + calmer panel */
+.cp-chips { flex-direction: column; align-items: flex-start; gap: 6px; }
+.cp-chips[hidden] { display: none; }
+.cp-chips-head { display: flex; width: 100%; justify-content: space-between; align-items: center; }
+.cp-chips-label { font-size: 11.5px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+.cp-link { border: 0; background: transparent; color: var(--muted); font: inherit; font-size: 12.5px; cursor: pointer; text-decoration: underline; padding: 2px 4px; }
+.cp-link:hover { color: var(--ink); }
+.cp-log { scroll-behavior: auto; overscroll-behavior: contain; }
+.cpanel { overscroll-behavior: contain; }
+.cp-chip { max-width: 100%; }

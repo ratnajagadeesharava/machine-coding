@@ -13,7 +13,7 @@
 /* Explicit whiteboard theme (set from JS) wins over the OS preference, like chrome.css does. */
 [data-wbm-theme="dark"].wbm-menu-root, [data-wbm-theme="dark"].wbm-popover, [data-wbm-theme="dark"].wbm-dialog, [data-wbm-theme="dark"].wbm-search,
 [data-wbm-theme="dark"].wbm-library, [data-wbm-theme="dark"].wbm-toasts, [data-wbm-theme="dark"].wbm-drop-hint {
-  --wbm-card: #181d27; --wbm-ink: #e6e9f0; --wbm-muted: #9aa3b4; --wbm-line: #2a3140; --wbm-accent: #7aa2f7; --wbm-accent-strong: #9ebcff; --wbm-accent-soft: #1f2a44; --wbm-accent-ink: #0b1020;
+  --wbm-card: #1d1f25; --wbm-ink: #ececf1; --wbm-muted: #a0a4b0; --wbm-line: #2e3139; --wbm-accent: #f2b705; --wbm-accent-strong: #f5c542; --wbm-accent-soft: #2b2d36; --wbm-accent-ink: #1f1d16;
   --wbm-danger: #ff8a80; --wbm-shadow: 0 6px 24px rgba(0, 0, 0, .4); color-scheme: dark;
 }
 [data-wbm-theme="light"].wbm-menu-root, [data-wbm-theme="light"].wbm-popover, [data-wbm-theme="light"].wbm-dialog, [data-wbm-theme="light"].wbm-search,

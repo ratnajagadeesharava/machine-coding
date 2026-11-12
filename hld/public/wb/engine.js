@@ -16,7 +16,7 @@ import { installClipboard } from './engine-clipboard.js';
 let uid = 0;
 const TOOL_IDS = TOOLS.map((t) => t.id);
 const ACCENT = '#b45309';
-const ACCENT_DARK = '#7aa2f7';
+const ACCENT_DARK = '#f2b705';
 
 export class Whiteboard {
   constructor(container, options = {}) {

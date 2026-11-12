@@ -763,30 +763,56 @@ document.addEventListener('keydown', (e) => {
 // One conversation per question. Before the learner answers Claude explains and nudges but does not give the answer away; after answering it can
 // explain why the answer is right or wrong. The server gets the whole conversation, the question and the learner's answer on every message.
 const CHAT_OPEN_KEY = 'chatOpen';
+const CHIPS_HIDDEN_KEY = 'chipsHidden';
 const chatIsOpen = () => { const v = store.get(CHAT_OPEN_KEY, null); return v == null ? window.innerWidth >= 1100 : v === true; };
+const chipsHidden = () => store.get(CHIPS_HIDDEN_KEY, false) === true;
 function setChatOpen(open) {
   store.setLocal(CHAT_OPEN_KEY, open);
   renderPanel();
-  if (open) setTimeout(() => els.cpInput.focus(), 50);
 }
 const AUTO_TEXT = 'Explain this question more clearly.';
-// Quick replies: opening ones while the chat is empty, follow-ups that fit the state once it has started. A reply you already sent is not offered again.
-function chipsFor(q, checked, started, used) {
-  const ok = checked && isCorrect(q, selectedIds());
-  const opening = checked
-    ? ['Explain this more simply.', ok ? 'Go deeper: what is the edge case here?' : 'Where exactly did my answer go wrong?', RICH[q.type] ? 'Show me another way to solve it.' : 'Why are the other options wrong?', 'How would I say this in an interview?', 'Give me a harder follow-up question.']
-    : [AUTO_TEXT, 'Give me a hint without the answer.', 'What concept is this testing?', 'Show a small real-world example.'];
-  const followUps = checked
-    ? ['Say that in simpler words.', 'Show a short code or numeric example.', 'Quiz me with one similar question.', 'What is the most common mistake here?', 'How would I say this in an interview?']
-    : ['Say that in simpler words.', 'Give me one more hint.', 'Show a short code or numeric example.', 'Which part of the question should I focus on?'];
-  return (started ? followUps : opening).filter((c) => !used.has(c)).slice(0, started ? 3 : 4);
+
+// Claude ends each reply with "SUGGESTIONS: a | b | c" (see server/quiz.js). The learner sees the answer without that line, and the three follow-ups
+// become the quick replies. While a reply is still streaming the unfinished tail is hidden too.
+function splitSuggestions(raw) {
+  const m = /(?:^|\n)\s*SUGGESTIONS:\s*([\s\S]*)$/.exec(raw);
+  if (!m) { const partial = /(?:^|\n)\s*S(?:U(?:G(?:G(?:E(?:S(?:T(?:I(?:O(?:N(?:S)?)?)?)?)?)?)?)?)?)?:?\s*$/.exec(raw); return { body: partial ? raw.slice(0, partial.index) : raw, suggestions: [] }; }
+  const suggestions = m[1].split('|').map((x) => x.replace(/^[\s"'-]+|[\s"']+$/g, '').trim()).filter((x) => x && x.length <= 90).slice(0, 3);
+  return { body: raw.slice(0, m.index), suggestions };
+}
+
+// Opening quick replies (nothing said yet) mention the concept of this very question; follow-ups come from Claude's last reply.
+function openingChips(q, checked) {
+  const c = q.concept;
+  return checked
+    ? [`Explain "${c}" in simpler words.`, 'Where could a learner go wrong here?', 'How would I say this in an interview?']
+    : [AUTO_TEXT, `What is "${c}" in simple terms?`, 'Give me a hint without the answer.'];
 }
 
 function bubble(m, last, busy) {
   if (m.role === 'user') return h('div', { class: 'msg user' }, h('div', { class: 'bubble' }, ...richText(h, m.content)));
-  const body = m.content ? richText(h, m.content) : [];
+  const body = m.error ? [m.content] : richText(h, splitSuggestions(m.content || '').body.trim());
   return h('div', { class: 'msg bot' + (m.error ? ' err' : '') }, h('div', { class: 'avatar', 'aria-hidden': 'true', text: '✦' }),
-    h('div', { class: 'bubble' }, ...(body.length ? body : []), busy && last ? h('span', { class: 'typing', 'aria-label': 'Claude is typing' }, h('i'), h('i'), h('i')) : null));
+    h('div', { class: 'bubble' }, ...body, busy && last ? h('span', { class: 'typing', 'aria-label': 'Claude is typing' }, h('i'), h('i'), h('i')) : null));
+}
+
+function renderChips(q, checked, t, aiOff) {
+  els.cpChips.replaceChildren();
+  els.cpChips.hidden = true;
+  if (aiOff || t.busy) return;
+  const lastBot = [...t.log].reverse().find((m) => m.role === 'assistant' && !m.error);
+  const list = (t.log.length ? (lastBot ? splitSuggestions(lastBot.content).suggestions : []) : openingChips(q, checked));
+  const used = new Set(t.log.filter((m) => m.role === 'user').map((m) => m.content));
+  const chips = list.filter((c) => !used.has(c));
+  if (!chips.length) return;
+  els.cpChips.hidden = false;
+  if (chipsHidden()) {
+    els.cpChips.append(h('button', { class: 'cp-link', type: 'button', text: 'Show suggestions', onclick: () => { store.setLocal(CHIPS_HIDDEN_KEY, false); renderPanel(); } }));
+    return;
+  }
+  els.cpChips.append(h('div', { class: 'cp-chips-head' }, h('span', { class: 'cp-chips-label', text: t.log.length ? 'You could ask next' : 'Try asking' }),
+    h('button', { class: 'cp-link', type: 'button', title: 'Hide the suggestions (they stay hidden until you show them again)', text: 'Hide', onclick: () => { store.setLocal(CHIPS_HIDDEN_KEY, true); renderPanel(); } })),
+  ...chips.map((text) => h('button', { class: 'cp-chip', type: 'button', text, onclick: () => sendChat(text, { auto: text === AUTO_TEXT && !t.log.length }) })));
 }
 
 function renderPanel() {
@@ -804,6 +830,7 @@ function renderPanel() {
   const t = run.tutor[q.id] || { log: [], busy: false };
   const aiOff = S.health.ai === 'off';
   els.cpState.textContent = aiOff ? '' : checked ? 'You answered: Claude can discuss the answer freely.' : 'Not answered yet: Claude will help without giving the answer away.';
+  const keepScroll = els.cpLog.scrollTop;
   els.cpLog.replaceChildren();
   if (checked) {
     els.cpLog.append(h('div', { class: 'msg bot explain' }, h('div', { class: 'avatar', 'aria-hidden': 'true', text: '✦' }),
@@ -816,11 +843,18 @@ function renderPanel() {
   } else {
     t.log.forEach((m, i) => els.cpLog.append(bubble(m, i === t.log.length - 1, t.busy)));
   }
-  const used = new Set(t.log.filter((m) => m.role === 'user').map((m) => m.content));
-  els.cpChips.replaceChildren(...(aiOff || t.busy ? [] : chipsFor(q, checked, t.log.length > 0, used).map((text) => h('button', { class: 'cp-chip', type: 'button', text, onclick: () => sendChat(text, { auto: text === AUTO_TEXT && !t.log.length }) }))));
+  els.cpLog.scrollTop = keepScroll; // never jump while the learner is reading
+  renderChips(q, checked, t, aiOff);
   els.cpInput.disabled = aiOff || t.busy;
   els.cpSend.disabled = aiOff || t.busy;
-  els.cpLog.scrollTop = els.cpLog.scrollHeight;
+}
+
+// While a reply streams only that one bubble is rebuilt (the rest of the panel, the scroll position and any text selection stay put).
+function updateStreaming(reply) {
+  const last = els.cpLog.lastElementChild;
+  const bub = last?.classList.contains('bot') ? last.querySelector('.bubble') : null;
+  if (!bub) return renderPanel();
+  bub.replaceChildren(...richText(h, splitSuggestions(reply.content).body.trim()), h('span', { class: 'typing', 'aria-label': 'Claude is typing' }, h('i'), h('i'), h('i')));
 }
 
 function tutorQuestion(q) {
@@ -835,22 +869,31 @@ async function sendChat(text, { auto = false } = {}) {
   const t = run.tutor[q.id] || (run.tutor[q.id] = { log: [], busy: false });
   if (t.busy || !text.trim()) return;
   t.busy = true;
-  t.log.push({ role: 'user', content: text.trim() });
-  const history = t.log.filter((m) => !m.error && m.content).map((m) => ({ role: m.role, content: m.content }));
+  const userMsg = { role: 'user', content: text.trim() };
+  t.log.push(userMsg);
+  const history = t.log.filter((m) => !m.error && m.content).map((m) => ({ role: m.role, content: m.role === 'assistant' ? splitSuggestions(m.content).body.trim() : m.content }));
   const reply = { role: 'assistant', content: '' };
   t.log.push(reply);
   renderPanel();
+  // put the learner's new message at the top of the log so the reply is read from its start, then leave the scroll alone
+  els.cpLog.querySelectorAll('.msg.user').forEach((el, i, all) => { if (i === all.length - 1) els.cpLog.scrollTop = Math.max(0, el.offsetTop - els.cpLog.offsetTop - 8); });
   const answered = !!run.checked[q.id];
   const sel = selectedIds();
   const optionLike = !RICH[q.type];
+  let acc = 0;
   try {
-    await streamSse('/api/quiz/explain', { question: tutorQuestion(q), selected: optionLike ? sel : [], answer: optionLike ? [] : sel, checked: answered, auto, history }, (d) => { reply.content += d; if (S.run === run && cur() === q) renderPanel(); });
-    if (!reply.content.trim()) throw new Error('Claude sent an empty reply. Try again.');
+    await streamSse('/api/quiz/explain', { question: tutorQuestion(q), selected: optionLike ? sel : [], answer: optionLike ? [] : sel, checked: answered, auto, history }, (d) => {
+      reply.content += d;
+      const now = Date.now();
+      if (now - acc > 60 && S.run === run && cur() === q) { acc = now; updateStreaming(reply); }
+    });
+    if (!splitSuggestions(reply.content).body.trim()) throw new Error('Claude sent an empty reply. Try again.');
   } catch (err) {
-    if (reply.content.trim()) { reply.content = reply.content.trim(); t.log.push({ role: 'assistant', content: err.message, error: true }); } else { reply.content = err.message; reply.error = true; }
+    const body = splitSuggestions(reply.content).body.trim();
+    if (body) { reply.content = body; t.log.push({ role: 'assistant', content: err.message, error: true }); } else { reply.content = err.message; reply.error = true; }
   } finally {
     t.busy = false;
-    if (S.run === run && cur() === q) { renderPanel(); if (chatIsOpen()) els.cpInput.focus(); }
+    if (S.run === run && cur() === q) renderPanel();
   }
 }
 
@@ -869,7 +912,8 @@ els.cpInput.addEventListener('keydown', (e) => {
 els.cpClose.addEventListener('click', () => setChatOpen(false));
 els.cpOpen.addEventListener('click', () => setChatOpen(true));
 els.cpClear.addEventListener('click', () => { const t = S.run.tutor[cur().id]; if (t && !t.busy) { t.log = []; renderPanel(); } });
-window.addEventListener('resize', () => { if (S.view === 'run') renderPanel(); });
+let lastW = window.innerWidth;
+window.addEventListener('resize', () => { if (S.view === 'run' && Math.abs(window.innerWidth - lastW) > 40) { lastW = window.innerWidth; renderPanel(); } });
 
 // ---------- results ----------
 function recordAttempt(result) {
