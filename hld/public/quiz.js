@@ -770,10 +770,16 @@ function setChatOpen(open) {
   if (open) setTimeout(() => els.cpInput.focus(), 50);
 }
 const AUTO_TEXT = 'Explain this question more clearly.';
-function chipsFor(q, checked) {
-  if (!checked) return [AUTO_TEXT, 'Give me a hint without the answer.', 'What concept is this testing?', 'Show a small real-world example.'];
-  const ok = isCorrect(q, selectedIds());
-  return ['Explain this more simply.', ok ? 'Go deeper: what is the edge case here?' : 'Where exactly did my answer go wrong?', RICH[q.type] ? 'Show me another way to solve it.' : 'Why are the other options wrong?', 'How would I say this in an interview?', 'Give me a harder follow-up question.'];
+// Quick replies: opening ones while the chat is empty, follow-ups that fit the state once it has started. A reply you already sent is not offered again.
+function chipsFor(q, checked, started, used) {
+  const ok = checked && isCorrect(q, selectedIds());
+  const opening = checked
+    ? ['Explain this more simply.', ok ? 'Go deeper: what is the edge case here?' : 'Where exactly did my answer go wrong?', RICH[q.type] ? 'Show me another way to solve it.' : 'Why are the other options wrong?', 'How would I say this in an interview?', 'Give me a harder follow-up question.']
+    : [AUTO_TEXT, 'Give me a hint without the answer.', 'What concept is this testing?', 'Show a small real-world example.'];
+  const followUps = checked
+    ? ['Say that in simpler words.', 'Show a short code or numeric example.', 'Quiz me with one similar question.', 'What is the most common mistake here?', 'How would I say this in an interview?']
+    : ['Say that in simpler words.', 'Give me one more hint.', 'Show a short code or numeric example.', 'Which part of the question should I focus on?'];
+  return (started ? followUps : opening).filter((c) => !used.has(c)).slice(0, started ? 3 : 4);
 }
 
 function bubble(m, last, busy) {
@@ -810,7 +816,8 @@ function renderPanel() {
   } else {
     t.log.forEach((m, i) => els.cpLog.append(bubble(m, i === t.log.length - 1, t.busy)));
   }
-  els.cpChips.replaceChildren(...(aiOff || t.busy ? [] : (t.log.length ? chipsFor(q, checked).slice(0, 3) : chipsFor(q, checked)).map((text) => h('button', { class: 'cp-chip', type: 'button', text, onclick: () => sendChat(text, { auto: text === AUTO_TEXT && !t.log.length }) }))));
+  const used = new Set(t.log.filter((m) => m.role === 'user').map((m) => m.content));
+  els.cpChips.replaceChildren(...(aiOff || t.busy ? [] : chipsFor(q, checked, t.log.length > 0, used).map((text) => h('button', { class: 'cp-chip', type: 'button', text, onclick: () => sendChat(text, { auto: text === AUTO_TEXT && !t.log.length }) }))));
   els.cpInput.disabled = aiOff || t.busy;
   els.cpSend.disabled = aiOff || t.busy;
   els.cpLog.scrollTop = els.cpLog.scrollHeight;
