@@ -2,16 +2,18 @@ package solution;
 
 import contract.PaymentGateway;
 
-/** Card payment gateway. */
+/**
+ * Card payment gateway.
+ */
 public class CardGateway implements PaymentGateway {
 
     @Override
     public String name() {
-        throw new UnsupportedOperationException("Not implemented yet");
+        return "card";
     }
 
     @Override
     public boolean charge(String customerId, long amountCents) {
-        throw new UnsupportedOperationException("Not implemented yet");
+        return amountCents <= 100000;
     }
 }
