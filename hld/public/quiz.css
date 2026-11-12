@@ -349,3 +349,24 @@ html { scroll-behavior: auto; }
 .subject-card h3 { font-size: 18px; }
 .topic-grid-item { margin-bottom: 14px; }
 body[data-level="home"] .toc .toc-mark { font-size: 15px; background: transparent; }
+
+/* ---- code in questions: snippet cards and inline code ---- */
+:root { --code-bg: #f4f1e6; --code-ink: #1f1d16; --code-line: #e3dcc3; --tok-k: #a0309c; --tok-s: #1d7a3a; --tok-c: #7d7a6b; --tok-n: #b45309; --tok-t: #0b6fa4; --tok-a: #8a5a00; --tok-f: #8a3ffc; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --code-bg: #0b0f16; --code-ink: #d7deea; --code-line: #262e3d; --tok-k: #c792ea; --tok-s: #9ece6a; --tok-c: #6b7790; --tok-n: #ff9e64; --tok-t: #7dcfff; --tok-a: #e0af68; --tok-f: #bb9af7; } }
+:root[data-theme="dark"] { --code-bg: #0b0f16; --code-ink: #d7deea; --code-line: #262e3d; --tok-k: #c792ea; --tok-s: #9ece6a; --tok-c: #6b7790; --tok-n: #ff9e64; --tok-t: #7dcfff; --tok-a: #e0af68; --tok-f: #bb9af7; }
+.q-prompt .rt-p, .rt-p { margin: 0 0 10px; }
+.q-prompt .rt-p:last-child { margin-bottom: 0; }
+.q-prompt { text-wrap: pretty; }
+.ic { font-family: var(--mono); font-size: .88em; font-weight: 500; padding: 1px 6px; border-radius: 6px; background: var(--code-bg); color: var(--code-ink); border: 1px solid var(--code-line); white-space: break-spaces; letter-spacing: 0; }
+.snip { margin: 12px 0; border: 1px solid var(--code-line); border-radius: 12px; overflow: hidden; background: var(--code-bg); font-weight: 400; letter-spacing: 0; }
+.snip figcaption { display: flex; align-items: center; justify-content: space-between; padding: 6px 12px; border-bottom: 1px solid var(--code-line); font-size: 12px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); font-family: var(--sans); font-weight: 650; }
+.snip-copy { border: 1px solid var(--code-line); background: transparent; color: var(--muted); border-radius: 8px; padding: 2px 10px; font: inherit; font-size: 12px; text-transform: none; letter-spacing: 0; cursor: pointer; }
+.snip-copy:hover { color: var(--ink); border-color: var(--accent); }
+.snip pre { margin: 0; padding: 14px 16px; overflow-x: auto; font: 14px/1.6 var(--mono); color: var(--code-ink); tab-size: 4; white-space: pre; text-wrap: nowrap; }
+.snip pre:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+.snip code { font: inherit; }
+.tok-k { color: var(--tok-k); font-weight: 600; } .tok-s { color: var(--tok-s); } .tok-c { color: var(--tok-c); font-style: italic; }
+.tok-n { color: var(--tok-n); } .tok-t { color: var(--tok-t); } .tok-a { color: var(--tok-a); } .tok-f { color: var(--tok-f); }
+.opt .txt .snip { margin: 8px 0 0; } .opt .txt .snip pre { font-size: 13.5px; }
+.ar-row { margin: 6px 0; }
+.ex .snip, #q-explain .snip { margin: 10px 0; }

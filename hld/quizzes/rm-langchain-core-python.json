@@ -16,7 +16,7 @@
       "concept": "Tool-calling loop",
       "type": "integer",
       "difficulty": 2,
-      "prompt": "A user asks for the weather in Paris and Rome in Fahrenheit. Turn 1: the model requests get_weather for both cities in one response. Turn 2: it requests convert_to_f for both in one response. Turn 3: it writes the final answer. How many LLM calls does the loop make in total?",
+      "prompt": "A user asks for the weather in Paris and Rome in Fahrenheit. Turn 1: the model requests `get_weather` for both cities in one response. Turn 2: it requests `convert_to_f` for `both` in one response. Turn 3: it writes the final answer. How many LLM calls does the loop make in total?",
       "answer": 3,
       "explanation": "Each model response is one LLM call: two tool-requesting turns plus the final answer = 3. The 4 tool executions are ordinary function calls and are not LLM calls. Parallel tool calls in a single turn are what keep this at 3 rather than 5.",
       "unit": "LLM calls"
@@ -26,7 +26,7 @@
       "concept": "Runnables and LCEL",
       "type": "integer",
       "difficulty": 2,
-      "prompt": "chain = RunnableParallel(a=prompt1 | model, b=prompt2 | model, c=prompt3 | model) | merge_fn. You call chain.batch(inputs) with 4 inputs. Assuming merge_fn does not call a model, how many model calls are made?",
+      "prompt": "`chain = RunnableParallel(a=prompt1 | model, b=prompt2 | model, c=prompt3 | model) | merge_fn`. You call `chain.batch(inputs)` with 4 inputs. Assuming `merge_fn` does not call a model, how many model calls are made?",
       "answer": 12,
       "explanation": "Each input fans out to 3 branches that each call the model once: 4 x 3 = 12. batch runs inputs concurrently but does not reduce the number of calls. This is the cost arithmetic to do before adding fan-out.",
       "unit": "model calls"
@@ -36,9 +36,9 @@
       "concept": "Errors and retries",
       "type": "integer",
       "difficulty": 2,
-      "prompt": "model.with_retry(stop_after_attempt=3) wraps a model call that always raises a retryable error. How many times is the underlying call attempted before the error propagates?",
+      "prompt": "model.`with_retry`(`stop_after_attempt`=3) wraps a model call that always raises a retryable error. How many times is the underlying call attempted before the error propagates?",
       "answer": 3,
-      "explanation": "stop_after_attempt counts total attempts, not extra retries: 1 initial try plus 2 retries = 3. I confirmed it by running a failing RunnableLambda wrapped with with_retry.",
+      "explanation": "`stop_after_attempt` counts total attempts, not extra retries: 1 initial try plus 2 retries = 3. I confirmed it by running a failing `RunnableLambda` wrapped with `with_retry`.",
       "unit": "attempts"
     },
     {
@@ -47,8 +47,8 @@
       "type": "assertion",
       "difficulty": 2,
       "prompt": "Assertion and reason: read both statements and choose the right option.",
-      "assertion": "Calling model.bind_tools([add]) and invoking it does not run the add function.",
-      "reason": "The returned AIMessage carries tool_calls (name, args, id) that your code or a ToolNode must execute and send back as a ToolMessage.",
+      "assertion": "Calling `model.bind_tools([add])` and invoking it does not run the add function.",
+      "reason": "The returned AIMessage carries `tool_calls` (name, args, id) that your code or a `ToolNode` must execute and send back as a `ToolMessage`.",
       "correct": [
         "a"
       ],
@@ -58,7 +58,7 @@
         "c": "R is true, so c is wrong.",
         "d": "A is true, so d is wrong."
       },
-      "explanation": "bind_tools only attaches the schemas to the request. The execute step is your loop or LangGraph's ToolNode, which also lets you validate and authorise each call."
+      "explanation": "`bind_tools` only attaches the schemas to the request. The execute step is your loop or LangGraph's `ToolNode`, which also lets you validate and authorise each call."
     },
     {
       "id": "batch-vs-parallel",
@@ -66,8 +66,8 @@
       "type": "assertion",
       "difficulty": 2,
       "prompt": "Assertion and reason: read both statements and choose the right option.",
-      "assertion": "chain.batch(inputs) processes the inputs concurrently by default instead of one after another.",
-      "reason": "RunnableParallel runs its branches concurrently on the same input.",
+      "assertion": "`chain.batch`(inputs) processes the inputs concurrently by default instead of one after another.",
+      "reason": "`RunnableParallel` runs its branches concurrently on the same input.",
       "correct": [
         "b"
       ],
@@ -77,7 +77,7 @@
         "c": "R is true, so c is wrong.",
         "d": "A is true, so d is wrong."
       },
-      "explanation": "Control concurrency with config={'max_concurrency': n} to respect provider rate limits. Both batch and RunnableParallel can multiply load on the provider."
+      "explanation": "Control concurrency with `config={'max_concurrency': n}` to respect provider rate limits. Both batch and `RunnableParallel` can multiply load on the provider."
     },
     {
       "id": "tool-docstring",
@@ -85,8 +85,8 @@
       "type": "assertion",
       "difficulty": 2,
       "prompt": "Assertion and reason: read both statements and choose the right option.",
-      "assertion": "A function decorated with @tool exposes its name, type hints and docstring as the tool schema the model sees.",
-      "reason": "The docstring is optional, so a @tool function without one works without any extra arguments.",
+      "assertion": "A function decorated with `@tool` exposes its name, type hints and docstring as the tool schema the model sees.",
+      "reason": "The docstring is optional, so a `@tool` function without one works without any extra arguments.",
       "correct": [
         "c"
       ],
@@ -96,7 +96,7 @@
         "c": "A is true; R is false: I ran it and @tool raises 'Function must have a docstring if description not provided'.",
         "d": "A is true, so d is wrong."
       },
-      "explanation": "The docstring becomes the tool description the model uses to choose between tools, so write it like documentation for a colleague. @tool(description=...) is the alternative. In current langchain-core a @tool function with neither a docstring nor a description raises ValueError at definition time (checked by running it), which is why R is false."
+      "explanation": "The docstring becomes the tool description the model uses to choose between tools, so write it like documentation for a colleague. `@tool`(description=...) is the alternative. In current langchain-core a `@tool` function with neither a docstring nor a description raises `ValueError` at definition time (checked by running it), which is why R is false."
     },
     {
       "id": "invoke-vs-stream",
@@ -104,8 +104,8 @@
       "type": "assertion",
       "difficulty": 1,
       "prompt": "Assertion and reason: read both statements and choose the right option.",
-      "assertion": "chain.invoke(x) returns an iterator that yields output chunks as they arrive.",
-      "reason": "chain.stream(x) yields output chunks incrementally.",
+      "assertion": "`chain.invoke`(x) returns an iterator that yields output chunks as they arrive.",
+      "reason": "`chain.stream`(x) yields output chunks incrementally.",
       "correct": [
         "d"
       ],
@@ -126,23 +126,23 @@
       "left": [
         {
           "id": "a",
-          "text": "ChatPromptTemplate"
+          "text": "`ChatPromptTemplate`"
         },
         {
           "id": "b",
-          "text": "StrOutputParser"
+          "text": "`StrOutputParser`"
         },
         {
           "id": "c",
-          "text": "RunnableParallel"
+          "text": "`RunnableParallel`"
         },
         {
           "id": "d",
-          "text": "RunnableLambda"
+          "text": "`RunnableLambda`"
         },
         {
           "id": "e",
-          "text": "RunnablePassthrough"
+          "text": "`RunnablePassthrough`"
         }
       ],
       "right": [
@@ -200,7 +200,7 @@
         "RunnableGraph",
         "invoke"
       ],
-      "explanation": "prompt | model | parser builds a RunnableSequence. A dict or plain function next to a runnable is coerced, but two bare functions cannot be piped (TypeError)."
+      "explanation": "prompt | model | parser builds a `RunnableSequence`. A dict or plain function next to a runnable is coerced, but two bare functions cannot be piped (`TypeError`)."
     },
     {
       "id": "tool-message-roles",
@@ -229,7 +229,7 @@
       "concept": "Runnables and LCEL",
       "type": "code",
       "difficulty": 1,
-      "prompt": "Given a chat model variable model, build an LCEL chain that formats the template 'Summarise: {text}', calls the model and returns a plain string, then invoke it with the text in the variable doc.",
+      "prompt": "Given a chat model variable `model`, build an LCEL chain that formats the template `'Summarise: {text}'`, calls the model and returns a plain string, then invoke it with the text in the variable `doc`.",
       "language": "python",
       "checks": [
         {
@@ -246,7 +246,7 @@
         }
       ],
       "model": "prompt = ChatPromptTemplate.from_template(\"Summarise: {text}\")\nchain = prompt | model | StrOutputParser()\nresult = chain.invoke({\"text\": doc})",
-      "explanation": "from_messages with a human tuple is equally valid. The input to a prompt is a dict whose keys match the template variables.",
+      "explanation": "`from_messages` with a human tuple is equally valid. The input to a prompt is a dict whose keys match the template variables.",
       "starter": "from langchain_core.prompts import ChatPromptTemplate\nfrom langchain_core.output_parsers import StrOutputParser\n"
     },
     {
@@ -254,7 +254,7 @@
       "concept": "Tools",
       "type": "code",
       "difficulty": 2,
-      "prompt": "Define a LangChain tool get_order_status(order_id: str) -> str with a one-line docstring that returns 'shipped', then attach it to the chat model variable model so the model can request it.",
+      "prompt": "Define a LangChain tool get_order_status(`order_id`: str) -> str with a one-line docstring that returns 'shipped', then attach it to the chat model variable model so the model can request it.",
       "language": "python",
       "checks": [
         {
@@ -275,7 +275,7 @@
         }
       ],
       "model": "@tool\ndef get_order_status(order_id: str) -> str:\n    \"\"\"Look up the shipping status of an order.\"\"\"\n    return \"shipped\"\n\nmodel_with_tools = model.bind_tools([get_order_status])",
-      "explanation": "Type hints and the docstring become the schema. A Pydantic args_schema is the alternative for complex arguments.",
+      "explanation": "Type hints and the docstring become the schema. A Pydantic `args_schema` is the alternative for complex arguments.",
       "starter": "from langchain_core.tools import tool\n"
     },
     {
@@ -283,7 +283,7 @@
       "concept": "Tool-calling loop",
       "type": "code",
       "difficulty": 3,
-      "prompt": "Variables: ai is the AIMessage from the model, messages is the running message list and tools_by_name maps names to tools. Append ai, then for every requested call run the matching tool with the call's args and append a ToolMessage that echoes the call id.",
+      "prompt": "Variables: ai is the AIMessage from the model, messages is the running message list and tools_by_name maps names to tools. Append ai, then for every requested call run the matching tool with the call's args and append a `ToolMessage` that echoes the call id.",
       "language": "python",
       "checks": [
         {
@@ -304,14 +304,14 @@
         }
       ],
       "model": "messages.append(ai)\nfor call in ai.tool_calls:\n    result = tools_by_name[call[\"name\"]].invoke(call[\"args\"])\n    messages.append(ToolMessage(content=str(result), tool_call_id=call[\"id\"]))",
-      "explanation": "Then call the model again with messages. Passing the whole call dict to tool.invoke also works and returns a ToolMessage directly. In LangGraph the ToolNode does this loop for you."
+      "explanation": "Then call the model again with messages. Passing the whole call dict to tool.invoke also works and returns a `ToolMessage` directly. In LangGraph the `ToolNode` does this loop for you."
     },
     {
       "id": "structured-vs-parser",
       "concept": "Structured output and parsers",
       "type": "single",
       "difficulty": 2,
-      "prompt": "What is the main advantage of model.with_structured_output(Schema) over asking for JSON in the prompt and parsing it with a PydanticOutputParser?",
+      "prompt": "What is the main advantage of `model.with_structured_output(Schema)` over asking for `JSON` in the prompt and parsing it with a `PydanticOutputParser`?",
       "options": [
         {
           "id": "a",
@@ -331,7 +331,7 @@
         {
           "id": "d",
           "text": "It removes the need to define any schema, because the model infers the fields from the prompt text alone.",
-          "why": "A schema (a Pydantic class, TypedDict or JSON Schema) is still required: it is what is sent to the provider and used to parse the reply."
+          "why": "A schema (a Pydantic class, `TypedDict` or JSON Schema) is still required: it is what is sent to the provider and used to parse the reply."
         }
       ],
       "correct": [
@@ -353,13 +353,13 @@
         },
         {
           "id": "b",
-          "text": "A RunnableParallel returns a dict keyed by the branch names.",
-          "why": "True: for example {'a': ..., 'b': ...}."
+          "text": "A `RunnableParallel` returns a dict keyed by the branch names.",
+          "why": "True: for example `{'a': ..., 'b': ...}`."
         },
         {
           "id": "c",
           "text": "Piping two plain Python lambdas together with | works out of the box.",
-          "why": "False: it raises TypeError; wrap one in RunnableLambda."
+          "why": "False: it raises `TypeError`; wrap one in `RunnableLambda`."
         },
         {
           "id": "d",
@@ -384,56 +384,56 @@
       "concept": "Agents",
       "type": "single",
       "difficulty": 2,
-      "prompt": "In LangChain 1.x, which constructor is the documented replacement for the older langgraph.prebuilt.create_react_agent when you want a tool-calling agent?",
+      "prompt": "In LangChain 1.x, which constructor is the documented replacement for the older langgraph.prebuilt.`create_react_agent` when you want a tool-calling agent?",
       "options": [
         {
           "id": "a",
-          "text": "langchain.agents.create_agent, which runs on LangGraph.",
-          "why": "Right: the v1 migration guide moves the prebuilt agent here and renames prompt to system_prompt."
+          "text": "`langchain.agents.create_agent`, which runs on LangGraph.",
+          "why": "Right: the v1 migration guide moves the prebuilt agent here and renames prompt to `system_prompt`."
         },
         {
           "id": "b",
-          "text": "langchain_core.agents.create_tool_chain, which builds a fixed sequence of calls and tools.",
+          "text": "`langchain_core.agents.create_tool_chain`, which builds a fixed sequence of calls and tools.",
           "why": "No such constructor: a fixed chain cannot loop between model and tools."
         },
         {
           "id": "c",
-          "text": "langchain.chains.AgentExecutor, which is the only supported agent runtime in 1.x.",
-          "why": "AgentExecutor is the legacy runtime and is not the 1.x recommendation."
+          "text": "`langchain.chains.AgentExecutor`, which is the only supported agent runtime in 1.x.",
+          "why": "`AgentExecutor` is the legacy runtime and is not the 1.x recommendation."
         },
         {
           "id": "d",
-          "text": "langgraph.graph.create_agent_node, which returns one node for a StateGraph.",
+          "text": "`langgraph.graph.create_agent_node`, which returns one node for a `StateGraph`.",
           "why": "Invented name: the prebuilt agent is a whole compiled graph, not a single node."
         }
       ],
       "correct": [
         "a"
       ],
-      "explanation": "create_agent is a compiled LangGraph graph, so checkpointers, streaming and interrupts still work. Older tutorials use create_react_agent; know both names because both appear in interviews and codebases."
+      "explanation": "`create_agent` is a compiled LangGraph graph, so checkpointers, streaming and interrupts still work. Older tutorials use `create_react_agent`; know both names because both appear in interviews and codebases."
     },
     {
       "id": "structured-include-raw",
       "concept": "Structured output and parsers",
       "type": "truefalse",
       "difficulty": 2,
-      "prompt": "True or false: with_structured_output(Schema, include_raw=True) returns a dict with the keys raw, parsed and parsing_error, so a parse failure is reported in the dict instead of being raised.",
+      "prompt": "True or false: with_structured_output(Schema, `include_raw`=True) returns a dict with the keys raw, parsed and `parsing_error`, so a parse failure is reported in the dict instead of being raised.",
       "options": [
         {
           "id": "a",
           "text": "True",
-          "why": "Right: raw holds the AIMessage, parsed is None when parsing failed, and parsing_error holds the exception."
+          "why": "Right: raw holds the AIMessage, parsed is None when parsing failed, and `parsing_error` holds the exception."
         },
         {
           "id": "b",
           "text": "False",
-          "why": "That is the documented shape of the include_raw=True output, so the statement is true."
+          "why": "That is the documented shape of the `include_raw`=True output, so the statement is true."
         }
       ],
       "correct": [
         "a"
       ],
-      "explanation": "Handy when you want to log the raw message, retry on parsing_error, or read usage metadata from the raw AIMessage. Without include_raw the call returns only the parsed object."
+      "explanation": "Handy when you want to log the raw message, retry on `parsing_error`, or read usage metadata from the raw AIMessage. Without `include_raw` the call returns only the parsed object."
     }
   ]
 }

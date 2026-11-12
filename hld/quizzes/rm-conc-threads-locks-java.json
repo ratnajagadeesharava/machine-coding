@@ -16,66 +16,66 @@
       "concept": "Thread basics",
       "type": "single",
       "difficulty": 2,
-      "prompt": "What does this Java snippet print?\n\nnew Thread(() -> System.out.println(Thread.currentThread().getName()), \"worker\").run();\n\nWhat is printed?",
+      "prompt": "What does this Java snippet print?\n\n```java\nnew Thread(() -> System.out.println(Thread.currentThread().getName()), \"worker\").run();\n```\n\nWhat is printed?",
       "options": [
         {
           "id": "a",
-          "text": "main, because run() executes on the calling thread",
-          "why": "Correct: run() is an ordinary method call, so the lambda executes on the calling thread, which is main."
+          "text": "`main`, because `run()` executes on the calling thread",
+          "why": "Correct: `run()` is an ordinary method call, so the lambda executes on the calling thread, which is `main`."
         },
         {
           "id": "b",
-          "text": "worker, the name given to the new thread",
-          "why": "The name \"worker\" belongs to a thread that was never started; run() does not create one."
+          "text": "`worker`, the name given to the new thread",
+          "why": "The name \"`worker`\" belongs to a thread that was never started; `run()` does not create one."
         },
         {
           "id": "c",
-          "text": "Thread-0, the default name of a new thread",
-          "why": "Thread-0 is the default name of the first thread created without a name, and no new thread starts here."
+          "text": "`Thread-0`, the default name of a new thread",
+          "why": "`Thread-0` is the default name of the first thread created without a name, and no new thread starts here."
         },
         {
           "id": "d",
           "text": "Nothing, because the thread is never started",
-          "why": "run() executes the body synchronously, so it prints before the statement finishes."
+          "why": "`run()` executes the body synchronously, so it prints before the statement finishes."
         }
       ],
       "correct": [
         "a"
       ],
-      "explanation": "start() asks the JVM to create a new thread of execution that then calls run(). Calling run() directly is a plain method call. Interviewers love this trap."
+      "explanation": "`start()` asks the JVM to create a new thread of execution that then calls `run()`. Calling `run()` directly is a plain method call. Interviewers love this trap."
     },
     {
       "id": "thread-states",
       "concept": "Thread states",
       "type": "matrix",
       "difficulty": 2,
-      "prompt": "Match each java.lang.Thread.State with the situation that puts a thread in it.",
+      "prompt": "Match each `java.lang.Thread.State` with the situation that puts a thread in it.",
       "left": [
         {
           "id": "l1",
-          "text": "NEW"
+          "text": "`NEW`"
         },
         {
           "id": "l2",
-          "text": "RUNNABLE"
+          "text": "`RUNNABLE`"
         },
         {
           "id": "l3",
-          "text": "BLOCKED"
+          "text": "`BLOCKED`"
         },
         {
           "id": "l4",
-          "text": "WAITING"
+          "text": "`WAITING`"
         },
         {
           "id": "l5",
-          "text": "TIMED_WAITING"
+          "text": "`TIMED_WAITING`"
         }
       ],
       "right": [
         {
           "id": "r1",
-          "text": "Created with new Thread(...) but start() not yet called"
+          "text": "Created with `new Thread(...)` but `start()` not yet called"
         },
         {
           "id": "r2",
@@ -83,19 +83,19 @@
         },
         {
           "id": "r3",
-          "text": "Trying to enter a synchronized block whose monitor another thread holds"
+          "text": "Trying to enter a `synchronized` block whose monitor another thread holds"
         },
         {
           "id": "r4",
-          "text": "Inside Object.wait() or Thread.join() with no timeout"
+          "text": "Inside `Object.wait()` or `Thread.join()` with no timeout"
         },
         {
           "id": "r5",
-          "text": "Inside Thread.sleep(100)"
+          "text": "Inside `Thread.sleep(100)`"
         },
         {
           "id": "r6",
-          "text": "Finished executing run()"
+          "text": "Finished executing `run()`"
         }
       ],
       "pairs": {
@@ -105,24 +105,24 @@
         "l4": "r4",
         "l5": "r5"
       },
-      "explanation": "Thread.State has six values; the sixth (TERMINATED) is the distractor here. A thread contending for a monitor is BLOCKED, while one parked by wait/join/LockSupport.park is WAITING."
+      "explanation": "`Thread.State` has six values; the sixth (`TERMINATED`) is the distractor here. A thread contending for a monitor is `BLOCKED`, while one parked by `wait/join/LockSupport.park` is `WAITING`."
     },
     {
       "id": "lost-update-max",
       "concept": "Visibility and atomics",
       "type": "integer",
       "difficulty": 2,
-      "prompt": "Four threads each execute count++ 250 times on a shared non-volatile int field that starts at 0, with no synchronization. What is the largest final value that is possible?",
+      "prompt": "Four threads each execute `count++` 250 times on a shared non-volatile `int` field that starts at 0, with no synchronization. What is the largest final value that is possible?",
       "answer": 1000,
       "tolerance": 0,
-      "explanation": "Each increment adds at most 1, and there are 4 x 250 = 1000 increments, so 1000 is the upper bound. Lost updates only make the result smaller (and it can be much smaller). The interview point: count++ is read, add, write, not atomic."
+      "explanation": "Each increment adds at most 1, and there are 4 x 250 = 1000 increments, so 1000 is the upper bound. Lost updates only make the result smaller (and it can be much smaller). The interview point: `count++` is read, add, write, not atomic."
     },
     {
       "id": "sync-counter",
       "concept": "synchronized",
       "type": "code",
       "difficulty": 1,
-      "prompt": "Write a Java class Counter with a private int field, a method increment() and a method int get(), made thread-safe using the intrinsic lock (synchronized).",
+      "prompt": "Write a Java class `Counter` with a private `int` field, a method `increment()` and a method `int get()`, made thread-safe using the intrinsic lock (`synchronized`).",
       "language": "java",
       "checks": [
         {
@@ -143,7 +143,7 @@
         }
       ],
       "model": "class Counter {\n  private int count;\n  public synchronized void increment() { count++; }\n  public synchronized int get() { return count; }\n}",
-      "explanation": "Both methods must use the same lock: a synchronized reader gives visibility as well as mutual exclusion. AtomicInteger or ReentrantLock are other valid solutions; the grader accepts an explicit lock too.",
+      "explanation": "Both methods must use the same lock: a synchronized reader gives visibility as well as mutual exclusion. `AtomicInteger` or `ReentrantLock` are other valid solutions; the grader accepts an explicit lock too.",
       "starter": "class Counter {\n  \n}"
     },
     {
@@ -151,7 +151,7 @@
       "concept": "ReentrantLock",
       "type": "code",
       "difficulty": 3,
-      "prompt": "Given a field ReentrantLock lock, write a snippet that tries to acquire the lock for at most 1 second, runs doWork() only if it got the lock, and always releases it.",
+      "prompt": "Given a field `ReentrantLock lock`, write a snippet that tries to acquire the lock for at most 1 second, runs `doWork()` only if it got the lock, and always releases it.",
       "language": "java",
       "checks": [
         {
@@ -172,34 +172,34 @@
         }
       ],
       "model": "if (lock.tryLock(1, TimeUnit.SECONDS)) {\n  try { doWork(); }\n  finally { lock.unlock(); }\n}",
-      "explanation": "The unlock goes in finally, and the try starts only after the lock was acquired, otherwise you would unlock a lock you do not hold (IllegalMonitorStateException). tryLock(timeout) also throws InterruptedException."
+      "explanation": "The unlock goes in `finally`, and the try starts only after the lock was acquired, otherwise you would unlock a lock you do not hold (`IllegalMonitorStateException`). `tryLock(timeout)` also throws `InterruptedException`."
     },
     {
       "id": "reentrant-vs-sync",
       "concept": "ReentrantLock",
       "type": "multi",
       "difficulty": 2,
-      "prompt": "Select all features that ReentrantLock offers and the synchronized keyword does not.",
+      "prompt": "Select all features that `ReentrantLock` offers and the `synchronized` keyword does not.",
       "options": [
         {
           "id": "a",
-          "text": "A tryLock() that returns immediately or after a timeout",
-          "why": "Correct: synchronized has no way to give up waiting for a monitor."
+          "text": "A `tryLock()` that returns immediately or after a timeout",
+          "why": "Correct: `synchronized` has no way to give up waiting for a monitor."
         },
         {
           "id": "b",
-          "text": "lockInterruptibly(), so a waiting thread can be interrupted",
-          "why": "Correct: a thread blocked entering synchronized cannot be interrupted."
+          "text": "`lockInterruptibly()`, so a waiting thread can be interrupted",
+          "why": "Correct: a thread blocked entering `synchronized` cannot be interrupted."
         },
         {
           "id": "c",
-          "text": "An optional fairness policy (new ReentrantLock(true))",
+          "text": "An optional fairness policy (`new ReentrantLock(true)`)",
           "why": "Correct: monitors give no fairness guarantee."
         },
         {
           "id": "d",
           "text": "Automatic release if the guarded code throws an exception",
-          "why": "False: this is a feature of synchronized; with ReentrantLock you must unlock in finally."
+          "why": "False: this is a feature of `synchronized`; with `ReentrantLock` you must unlock in `finally`."
         },
         {
           "id": "e",
@@ -212,40 +212,40 @@
         "b",
         "c"
       ],
-      "explanation": "Choose ReentrantLock for tryLock, interruptible or timed waits, fairness and multiple Conditions. Otherwise synchronized is simpler and cannot leak a lock. Both are reentrant."
+      "explanation": "Choose `ReentrantLock` for `tryLock`, interruptible or timed waits, fairness and multiple Conditions. Otherwise `synchronized` is simpler and cannot leak a lock. Both are reentrant."
     },
     {
       "id": "dcl-volatile",
       "concept": "Visibility and atomics",
       "type": "single",
       "difficulty": 3,
-      "prompt": "What is the bug here?\n\nclass Cfg {\n  private static Cfg inst;\n  static Cfg get() {\n    if (inst == null) {\n      synchronized (Cfg.class) {\n        if (inst == null) inst = new Cfg();\n      }\n    }\n    return inst;\n  }\n}\n\nWhich statement identifies the bug?",
+      "prompt": "What is the bug here?\n\n```java\nclass Cfg {\n    private static Cfg inst;\n\n    static Cfg get() {\n        if (inst == null) {\n            synchronized (Cfg.class) {\n                if (inst == null) inst = new Cfg();\n            }\n        }\n        return inst;\n    }\n}\n```\n\nWhich statement identifies the bug?",
       "options": [
         {
           "id": "a",
-          "text": "inst is not volatile, so a thread may see a non-null reference to a partly constructed Cfg.",
-          "why": "Correct: without volatile the write of the reference can be reordered with the constructor's writes."
+          "text": "`inst is not volatile, so a thread may see a non-null reference to a partly constructed Cfg.`",
+          "why": "Correct: without `volatile` the write of the reference can be reordered with the constructor's writes."
         },
         {
           "id": "b",
-          "text": "Two Cfg objects are always created, because the first null check is outside the synchronized block.",
-          "why": "The second check inside synchronized prevents duplicates; the issue is safe publication."
+          "text": "Two `Cfg` objects are always created, because the first null check is outside the `synchronized` block.",
+          "why": "The second check inside `synchronized` prevents duplicates; the issue is safe publication."
         },
         {
           "id": "c",
-          "text": "It deadlocks because the synchronized block takes the lock on a Class object.",
-          "why": "Locking Cfg.class is legal and cannot deadlock here."
+          "text": "It deadlocks because the `synchronized` block takes the lock on a Class object.",
+          "why": "Locking `Cfg.class` is legal and cannot deadlock here."
         },
         {
           "id": "d",
-          "text": "Static fields cannot be read outside a synchronized block.",
+          "text": "Static fields cannot be read outside a `synchronized` block.",
           "why": "Static fields read fine; the problem is the missing happens-before edge."
         }
       ],
       "correct": [
         "a"
       ],
-      "explanation": "Fix with private static volatile Cfg inst, or use the initialization-on-demand holder idiom or an enum singleton. Since Java 5 volatile forbids that reordering."
+      "explanation": "Fix with `private static volatile Cfg inst`, or use the initialization-on-demand holder idiom or an enum singleton. Since Java 5 `volatile` forbids that reordering."
     },
     {
       "id": "volatile-atomic",
@@ -253,8 +253,8 @@
       "type": "assertion",
       "difficulty": 3,
       "prompt": "Read the assertion (A) and the reason (R), then choose the correct option.",
-      "assertion": "Declaring a counter volatile makes counter++ atomic.",
-      "reason": "A volatile write is visible to subsequent reads of that field by other threads.",
+      "assertion": "Declaring a counter `volatile` makes `counter++` atomic.",
+      "reason": "A `volatile` write is visible to subsequent reads of that field by other threads.",
       "correct": [
         "d"
       ],
@@ -264,7 +264,7 @@
         "c": "A is false, so option c (A true) is wrong.",
         "d": "Correct: volatile gives visibility and ordering, but counter++ is still read, add, write. Two threads can read the same value and both write back value + 1."
       },
-      "explanation": "Use AtomicInteger/LongAdder or a lock for compound actions. volatile is fine for a flag that one thread writes and others read."
+      "explanation": "Use `AtomicInteger/LongAdder` or a lock for compound actions. `volatile` is fine for a flag that one thread writes and others read."
     },
     {
       "id": "happens-before",
@@ -286,40 +286,40 @@
         "join",
         "interrupt"
       ],
-      "explanation": "These edges (plus thread join, final fields and executor submission) are what the JMM guarantees. Without an edge, one thread may never see another's write."
+      "explanation": "These edges (plus thread join, final fields and executor submission) are what the `JMM` guarantees. Without an edge, one thread may never see another's write."
     },
     {
       "id": "cas-print",
       "concept": "Atomics and CAS",
       "type": "single",
       "difficulty": 2,
-      "prompt": "What does this print?\n\nAtomicInteger ai = new AtomicInteger(5);\nSystem.out.println(ai.compareAndSet(5, 8) + \" \" + ai.compareAndSet(5, 9) + \" \" + ai.get() + \" \" + ai.getAndIncrement() + \" \" + ai.incrementAndGet());\n\nWhat is printed?",
+      "prompt": "What does this print?\n\n```java\nAtomicInteger ai = new AtomicInteger(5);\nSystem.out.println(ai.compareAndSet(5, 8) + \" \" + ai.compareAndSet(5, 9) + \" \" + ai.get() + \" \" + ai.getAndIncrement() + \" \" + ai.incrementAndGet());\n```\n\nWhat is printed?",
       "options": [
         {
           "id": "a",
-          "text": "true false 8 8 10",
-          "why": "Correct: first CAS 5 to 8 succeeds, second fails because the value is now 8, getAndIncrement returns 8 (value 9), incrementAndGet returns 10."
+          "text": "`true false 8 8 10`",
+          "why": "Correct: first `CAS` 5 to 8 succeeds, second fails because the value is now 8, `getAndIncrement` returns 8 (value 9), `incrementAndGet` returns 10."
         },
         {
           "id": "b",
-          "text": "true true 9 9 10",
-          "why": "The second CAS expects 5 but the value is 8, so it fails and returns false."
+          "text": "`true true 9 9 10`",
+          "why": "The second `CAS` expects 5 but the value is 8, so it fails and returns false."
         },
         {
           "id": "c",
-          "text": "true false 8 9 10 (getAndIncrement returns the new value)",
-          "why": "getAndIncrement returns the old value (8), not the new one (9)."
+          "text": "`true false 8 9 10 (getAndIncrement returns the new value)`",
+          "why": "`getAndIncrement` returns the old value (8), not the new one (9)."
         },
         {
           "id": "d",
-          "text": "true false 8 8 9",
-          "why": "incrementAndGet increments 9 and returns 10, not 9."
+          "text": "`true false 8 8 9`",
+          "why": "`incrementAndGet` increments 9 and returns 10, not 9."
         }
       ],
       "correct": [
         "a"
       ],
-      "explanation": "compareAndSet(expect, update) succeeds only if the current value equals expect, as one atomic hardware instruction. Retry loops around CAS give lock-free algorithms (and the ABA problem)."
+      "explanation": "`compareAndSet(expect, update)` succeeds only if the current value equals expect, as one atomic hardware instruction. Retry loops around `CAS` give lock-free algorithms (and the ABA problem)."
     },
     {
       "id": "callable-vs-runnable",
@@ -327,8 +327,8 @@
       "type": "assertion",
       "difficulty": 1,
       "prompt": "Read the assertion (A) and the reason (R), then choose the correct option.",
-      "assertion": "A Java Callable<V> can return a result and throw a checked exception, unlike Runnable.",
-      "reason": "Runnable.run() is declared to return Object and to throw Exception.",
+      "assertion": "A Java `Callable<V>` can return a result and throw a checked exception, unlike `Runnable`.",
+      "reason": "`Runnable.run()` is declared to return `Object` and to throw `Exception`.",
       "correct": [
         "c"
       ],
@@ -338,75 +338,75 @@
         "c": "Correct: Callable.call() returns V and may throw Exception. Runnable.run() returns void and declares no checked exceptions, so R is false.",
         "d": "A is true, so option d (A false) is wrong."
       },
-      "explanation": "Executors accept both; submit(Callable) returns a Future<V> whose get() rethrows failures wrapped in ExecutionException."
+      "explanation": "Executors accept both; `submit(Callable)` returns a `Future<V>` whose `get()` rethrows failures wrapped in `ExecutionException`."
     },
     {
       "id": "sleep-keeps-monitor",
       "concept": "Thread basics",
       "type": "truefalse",
       "difficulty": 1,
-      "prompt": "Thread.sleep(), like Object.wait(), releases every monitor the calling thread holds for the duration of the pause.",
+      "prompt": "`Thread.sleep()`, like `Object.wait()`, releases every monitor the calling thread holds for the duration of the pause.",
       "options": [
         {
           "id": "a",
           "text": "True",
-          "why": "Wrong: this is true only for wait(); sleep() never gives up any monitor."
+          "why": "Wrong: this is true only for `wait()`; `sleep()` never gives up any monitor."
         },
         {
           "id": "b",
           "text": "False",
-          "why": "Correct: sleep() holds on to its monitors, while wait() releases the one it was called on and reacquires it before returning."
+          "why": "Correct: `sleep()` holds on to its monitors, while `wait()` releases the one it was called on and reacquires it before returning."
         }
       ],
       "correct": [
         "b"
       ],
-      "explanation": "Only Object.wait() releases the monitor of the object it is called on; Thread.sleep() keeps all locks, so a sleeping thread inside synchronized blocks other threads that need the monitor."
+      "explanation": "Only `Object.wait()` releases the monitor of the object it is called on; `Thread.sleep()` keeps all locks, so a sleeping thread inside `synchronized` blocks other threads that need the monitor."
     },
     {
       "id": "interrupt-flag",
       "concept": "Thread basics",
       "type": "single",
       "difficulty": 3,
-      "prompt": "What does this Java code print when run on the main thread?\n\nThread t = Thread.currentThread();\nt.interrupt();\ntry { Thread.sleep(10); }\ncatch (InterruptedException e) { System.out.print(Thread.currentThread().isInterrupted()); }\nSystem.out.print(\" \" + Thread.interrupted());\n\nWhat is printed?",
+      "prompt": "What does this Java code print when run on the main thread?\n\n```java\nThread t = Thread.currentThread();\nt.interrupt();\ntry {\n    Thread.sleep(10);\n} catch (InterruptedException e) {\n    System.out.print(Thread.currentThread().isInterrupted());\n}\nSystem.out.print(\" \" + Thread.interrupted());\n```\n\nWhat is printed?",
       "options": [
         {
           "id": "a",
-          "text": "false false, flag cleared",
-          "why": "Correct: sleep sees the flag, throws InterruptedException and clears the flag, so both checks report false."
+          "text": "`false false, flag cleared`",
+          "why": "Correct: `sleep` sees the flag, throws `InterruptedException` and clears the flag, so both checks report false."
         },
         {
           "id": "b",
-          "text": "true false, the flag is still set",
-          "why": "Wrong: the flag is cleared when InterruptedException is thrown, so isInterrupted() inside the catch is already false."
+          "text": "`true false, the flag is still set`",
+          "why": "Wrong: the flag is cleared when `InterruptedException` is thrown, so `isInterrupted()` inside the catch is already false."
         },
         {
           "id": "c",
-          "text": "true true, the flag is still set",
-          "why": "Wrong: interrupted() reads and clears the flag, and it was already cleared by the exception."
+          "text": "`true true, the flag is still set`",
+          "why": "Wrong: `interrupted()` reads and clears the flag, and it was already cleared by the exception."
         },
         {
           "id": "d",
-          "text": "false true, the flag is set again",
-          "why": "Wrong: nothing sets the flag again after the exception, so the later interrupted() call returns false."
+          "text": "`false true, the flag is set again`",
+          "why": "Wrong: nothing sets the flag again after the exception, so the later `interrupted()` call returns false."
         }
       ],
       "correct": [
         "a"
       ],
-      "explanation": "After catching InterruptedException, restore the status with Thread.currentThread().interrupt() unless you are really ending the thread. Verified by running it."
+      "explanation": "After catching `InterruptedException`, restore the status with `Thread.currentThread().interrupt()` unless you are really ending the thread. Verified by running it."
     },
     {
       "id": "static-vs-instance-sync",
       "concept": "Locks",
       "type": "single",
       "difficulty": 2,
-      "prompt": "A class has a static synchronized method and an instance synchronized method. Thread 1 is inside the static method; thread 2 calls the instance method on an object. What happens to thread 2?",
+      "prompt": "A class has a `static synchronized` method and an instance `synchronized` method. Thread 1 is inside the static method; thread 2 calls the instance method on an object. What happens to thread 2?",
       "options": [
         {
           "id": "a",
           "text": "It runs at once, since the two methods use different locks",
-          "why": "Correct: static synchronized locks the Class object, instance synchronized locks this, so they do not exclude each other."
+          "why": "Correct: `static synchronized` locks the `Class` object, instance synchronized locks `this`, so they do not exclude each other."
         },
         {
           "id": "b",
@@ -420,8 +420,8 @@
         },
         {
           "id": "d",
-          "text": "It throws IllegalMonitorStateException because the lock kinds are mixed",
-          "why": "Wrong: that exception comes from calling wait or notify without holding the monitor, not from mixing lock kinds."
+          "text": "It throws `IllegalMonitorStateException` because the lock kinds are mixed",
+          "why": "Wrong: that exception comes from calling `wait` or `notify` without holding the monitor, not from mixing lock kinds."
         }
       ],
       "correct": [
@@ -435,8 +435,8 @@
       "type": "assertion",
       "difficulty": 3,
       "prompt": "Read the assertion (A) and the reason (R), then choose the correct option.",
-      "assertion": "Calling unlock() on a ReentrantLock from a thread that does not hold it throws IllegalMonitorStateException.",
-      "reason": "A ReentrantLock records its owning thread and a hold count, and only the owner may release it.",
+      "assertion": "Calling `unlock()` on a `ReentrantLock` from a thread that does not hold it throws `IllegalMonitorStateException`.",
+      "reason": "A `ReentrantLock` records its owning thread and a hold count, and only the owner may release it.",
       "correct": [
         "a"
       ],
@@ -446,7 +446,7 @@
         "c": "R is true: ReentrantLock keeps an owner and a hold count, so option c is wrong.",
         "d": "A is true: the exception is thrown, so option d (A false) is wrong."
       },
-      "explanation": "A Semaphore has no owner, so any thread may release it. For a ReentrantLock, lock and unlock must pair up on the same thread, and unlock belongs in a finally block."
+      "explanation": "A `Semaphore` has no owner, so any thread may release it. For a `ReentrantLock`, lock and unlock must pair up on the same thread, and unlock belongs in a `finally` block."
     }
   ]
 }

@@ -101,10 +101,10 @@
       "concept": "Complexity analysis",
       "type": "integer",
       "difficulty": 1,
-      "prompt": "A brute-force two sum checks every pair i < j in an array of 10 elements. How many pair checks happen in the worst case?",
+      "prompt": "A brute-force two sum checks every pair `i < j` in an array of 10 elements. How many pair checks happen in the worst case?",
       "answer": 45,
       "tolerance": 0,
-      "explanation": "n(n-1)/2 = 10*9/2 = 45. That quadratic growth is why the brute force is too slow for n = 10^5 (about 5 billion pairs) and why you reach for a hash table.",
+      "explanation": "`n(n-1)/2 = 10*9/2 = 45`. That quadratic growth is why the brute force is too slow for n = 10^5 (about 5 billion pairs) and why you reach for a hash table.",
       "unit": "checks"
     },
     {
@@ -143,7 +143,7 @@
         "c": "A is true, so c is wrong.",
         "d": "A is true, so d is wrong."
       },
-      "explanation": "sum(l..r) = prefix[r+1] - prefix[l]. The same idea, with a hash table of earlier prefixes, solves \"subarray sum equals K\"."
+      "explanation": "`sum(l..r) = prefix[r+1] - prefix[l]`. The same idea, with a hash table of earlier prefixes, solves \"subarray sum equals K\"."
     },
     {
       "id": "anagram-key",
@@ -210,10 +210,10 @@
       "concept": "Prefix sums",
       "type": "integer",
       "difficulty": 3,
-      "prompt": "How many contiguous subarrays of [3, 4, -3, 1, 2, -1, 2] sum to K = 3?",
+      "prompt": "How many contiguous subarrays of `[3, 4, -3, 1, 2, -1, 2]` sum to `K = 3`?",
       "answer": 4,
       "tolerance": 0,
-      "explanation": "They are [3], [4,-3,1,2,-1], [1,2] and [2,-1,2]. The prefix-sum table finds them in O(n); because of the negative numbers a sliding window would not work.",
+      "explanation": "They are `[3]`, `[4,-3,1,2,-1]`, `[1,2]` and `[2,-1,2]`. The prefix-sum table finds them in O(n); because of the negative numbers a sliding window would not work.",
       "unit": "subarrays"
     },
     {
@@ -221,17 +221,17 @@
       "concept": "Prefix sums",
       "type": "integer",
       "difficulty": 1,
-      "prompt": "For nums = [2, 3, 4, 5], the product-except-self array has output[i] equal to the product of all other elements. What is output[1]?",
+      "prompt": "For `nums = [2, 3, 4, 5]`, the product-except-self array has `output[i]` equal to the product of all other elements. What is `output[1]`?",
       "answer": 40,
       "tolerance": 0,
-      "explanation": "2 * 4 * 5 = 40. The O(n) solution without division multiplies a running prefix product on the way right and a running suffix product on the way back, using the output array itself, so extra space is O(1) besides the answer."
+      "explanation": "`2 * 4 * 5 = 40`. The O(n) solution without division multiplies a running prefix product on the way right and a running suffix product on the way back, using the output array itself, so extra space is O(1) besides the answer."
     },
     {
       "id": "two-sum-pseudo",
       "concept": "Two sum family",
       "type": "code",
       "difficulty": 2,
-      "prompt": "Write pseudocode for two sum: given a list nums and a number target, return the indices of two different elements that add up to target, in one pass using a lookup table from value to index.",
+      "prompt": "Write pseudocode for two sum: given a list `nums` and a number `target`, return the indices of two different elements that add up to target, in one pass using a lookup table from value to index.",
       "language": "pseudocode",
       "starter": "function twoSum(nums, target):\n    ",
       "checks": [

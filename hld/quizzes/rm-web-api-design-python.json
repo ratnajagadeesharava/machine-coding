@@ -16,7 +16,7 @@
       "concept": "Query validation (FastAPI)",
       "type": "code",
       "difficulty": 2,
-      "prompt": "Write a FastAPI GET /items handler named items that takes the query parameters limit (default 20, between 1 and 100) and offset (default 0, at least 0) validated with Query, and returns a dict containing both values.",
+      "prompt": "Write a FastAPI `GET /items` handler named `items` that takes the query parameters `limit` (default 20, between 1 and 100) and `offset` (default 0, at least 0) validated with `Query`, and returns a dict containing both values.",
       "language": "python",
       "checks": [
         {
@@ -37,7 +37,7 @@
         }
       ],
       "model": "@app.get(\"/items\")\ndef items(limit: int = Query(20, ge=1, le=100), offset: int = Query(0, ge=0)):\n    return {\"limit\": limit, \"offset\": offset}",
-      "explanation": "Verified with TestClient: limit=500 gives 422 with type less_than_equal. Annotated[int, Query(ge=1, le=100)] is the modern spelling. Capping the page size protects the database from ?limit=1000000.",
+      "explanation": "Verified with `TestClient`: `limit=500` gives 422 with type `less_than_equal`. `Annotated[int, Query(ge=1, le=100)]` is the modern spelling. Capping the page size protects the database from `?limit=1000000`.",
       "starter": "from fastapi import FastAPI, Query\napp = FastAPI()\n"
     },
     {
@@ -45,18 +45,18 @@
       "concept": "Offset pagination",
       "type": "integer",
       "difficulty": 1,
-      "prompt": "An endpoint takes one-based page numbers and computes the SQLAlchemy clause .limit(25).offset((page - 1) * 25). For page = 4, what OFFSET value is sent to the database?",
+      "prompt": "An endpoint takes one-based page numbers and computes the SQLAlchemy clause `.limit(25).offset((page - 1) * 25)`. For `page = 4`, what `OFFSET` value is sent to the database?",
       "answer": 75,
       "tolerance": 0,
       "unit": "rows",
-      "explanation": "(4 - 1) x 25 = 75, so rows 76 to 100 are returned. One-based pages need the - 1; zero-based pages use page x size."
+      "explanation": "`(4 - 1) x 25 = 75`, so rows 76 to 100 are returned. One-based pages need the `- 1`; zero-based pages use `page x size`."
     },
     {
       "id": "keyset-sqlalchemy",
       "concept": "Keyset pagination",
       "type": "code",
       "difficulty": 3,
-      "prompt": "Models: Post(id, created_at). Write the SQLAlchemy 2.0 statement stmt that selects Post rows strictly older than the cursor pair (last_created_at, last_id) by comparing the tuple (created_at, id), newest first with id as tiebreaker, limited to 21 rows.",
+      "prompt": "Models: `Post(id, created_at)`. Write the SQLAlchemy 2.0 statement `stmt` that selects Post rows strictly older than the cursor pair `(last_created_at, last_id)` by comparing the tuple `(created_at, id)`, newest first with id as tiebreaker, limited to 21 rows.",
       "language": "python",
       "checks": [
         {
@@ -77,7 +77,7 @@
         }
       ],
       "model": "stmt = (\n    select(Post)\n    .where(tuple_(Post.created_at, Post.id) < (last_created_at, last_id))\n    .order_by(Post.created_at.desc(), Post.id.desc())\n    .limit(21)\n)",
-      "explanation": "Verified against SQLite and the SQL it renders: WHERE (created_at, id) < (?, ?). PostgreSQL uses the same row-value syntax with a composite index on (created_at, id). The expanded OR form is equally valid on databases without row values.",
+      "explanation": "Verified against SQLite and the SQL it renders: `WHERE (created_at, id) < (?, ?)`. PostgreSQL uses the same row-value syntax with a composite index on `(created_at, id)`. The expanded `OR` form is equally valid on databases without row values.",
       "starter": "from sqlalchemy import select, tuple_\n"
     },
     {
@@ -85,7 +85,7 @@
       "concept": "Idempotency",
       "type": "code",
       "difficulty": 3,
-      "prompt": "Write a FastAPI POST /payments handler pay(body: PaymentIn, idempotency_key: str = Header(...)). A module-level dict store maps keys to earlier results: if the key was seen return the stored result, otherwise call charge(body), save it under the key, and return it.",
+      "prompt": "Write a FastAPI `POST /payments` handler `pay(body: PaymentIn, idempotency_key: str = Header(...))`. A module-level dict `store` maps keys to earlier results: if the key was seen return the stored result, otherwise call `charge(body)`, save it under the key, and return it.",
       "language": "python",
       "starter": "store = {}\n",
       "checks": [
@@ -103,7 +103,7 @@
         }
       ],
       "model": "@app.post(\"/payments\")\ndef pay(body: PaymentIn, idempotency_key: str = Header(...)):\n    if idempotency_key in store:\n        return store[idempotency_key]\n    result = charge(body)\n    store[idempotency_key] = result\n    return result",
-      "explanation": "In production the store is Redis or a DB table with a unique constraint on the key, and the check-and-save must be atomic (SET NX or INSERT ... ON CONFLICT), otherwise two concurrent retries both charge. Also store a hash of the body to reject a reused key with a different payload."
+      "explanation": "In production the `store` is Redis or a DB table with a unique constraint on the key, and the check-and-save must be atomic (`SET NX` or `INSERT ... ON CONFLICT`), otherwise two concurrent retries both charge. Also store a hash of the body to reject a reused key with a different payload."
     },
     {
       "id": "idempotency-threads",
@@ -111,8 +111,8 @@
       "type": "assertion",
       "difficulty": 3,
       "prompt": "Judge the assertion and the reason.",
-      "assertion": "Two retries with the same Idempotency-Key can both reach charge() when they are served by a plain def route that checks a module-level dict and then writes to it.",
-      "reason": "FastAPI runs plain def routes in a thread pool, and a check followed by a write on a dict is not atomic.",
+      "assertion": "Two retries with the same `Idempotency-Key` can both reach `charge()` when they are served by a plain `def` route that checks a module-level `dict` and then writes to it.",
+      "reason": "FastAPI runs plain `def` routes in a thread pool, and a check followed by a write on a `dict` is not atomic.",
       "correct": [
         "a"
       ],
@@ -122,14 +122,14 @@
         "c": "Wrong: R is true.",
         "d": "Wrong: A is true."
       },
-      "explanation": "Make the claim atomic: a lock around check-and-store for one process, and for several processes a database unique constraint (INSERT ... ON CONFLICT DO NOTHING) or Redis SET NX."
+      "explanation": "Make the claim atomic: a lock around check-and-store for one process, and for several processes a database unique constraint (`INSERT ... ON CONFLICT DO NOTHING`) or Redis `SET NX`."
     },
     {
       "id": "router-versions",
       "concept": "API versioning",
       "type": "code",
       "difficulty": 2,
-      "prompt": "Using FastAPI APIRouter, create routers with the prefixes /v1 and /v2, add a GET /users route to v1 marked deprecated, and mount both routers on app.",
+      "prompt": "Using FastAPI `APIRouter`, create routers with the prefixes `/v1` and `/v2`, add a `GET /users` route to v1 marked deprecated, and mount both routers on `app`.",
       "language": "python",
       "starter": "from fastapi import FastAPI, APIRouter\napp = FastAPI()\n",
       "checks": [
@@ -151,14 +151,14 @@
         }
       ],
       "model": "v1 = APIRouter(prefix=\"/v1\")\nv2 = APIRouter(prefix=\"/v2\")\n\n@v1.get(\"/users\", deprecated=True)\ndef users_v1():\n    return []\n\napp.include_router(v1)\napp.include_router(v2)",
-      "explanation": "Verified: deprecated=True shows up in the generated OpenAPI. Keep v1 until its Sunset date and log who still calls it before removing it."
+      "explanation": "Verified: `deprecated=True` shows up in the generated OpenAPI. Keep v1 until its Sunset date and log who still calls it before removing it."
     },
     {
       "id": "deprecation-response-headers",
       "concept": "Deprecation headers",
       "type": "code",
       "difficulty": 2,
-      "prompt": "Write a FastAPI GET /v1/users route named users_v1 marked deprecated=True, which takes a response: Response parameter and sets the headers Deprecation and Sunset on it before returning an empty list.",
+      "prompt": "Write a FastAPI `GET /v1/users` route named `users_v1` marked `deprecated=True`, which takes a `response: Response` parameter and sets the headers `Deprecation` and `Sunset` on it before returning an empty list.",
       "language": "python",
       "checks": [
         {
@@ -179,7 +179,7 @@
         }
       ],
       "model": "@app.get(\"/v1/users\", deprecated=True)\ndef users_v1(response: Response):\n    response.headers[\"Deprecation\"] = \"@1767225599\"\n    response.headers[\"Sunset\"] = \"Wed, 01 Jul 2026 00:00:00 GMT\"\n    return []",
-      "explanation": "Verified with TestClient: both headers arrive and the OpenAPI document marks the operation deprecated. RFC 9745 defines the Deprecation date as \"@\" plus a Unix timestamp; RFC 8594 defines Sunset as an HTTP date.",
+      "explanation": "Verified with `TestClient`: both headers arrive and the OpenAPI document marks the operation deprecated. RFC 9745 defines the `Deprecation` date as \"@\" plus a Unix timestamp; RFC 8594 defines `Sunset` as an HTTP date.",
       "starter": "from fastapi import FastAPI, Response\napp = FastAPI()\n"
     },
     {
@@ -188,8 +188,8 @@
       "type": "assertion",
       "difficulty": 2,
       "prompt": "Judge the assertion and the reason.",
-      "assertion": "Setting deprecated=True on a FastAPI route marks the operation as deprecated in the generated OpenAPI document.",
-      "reason": "deprecated=True makes FastAPI answer 410 Gone for that route.",
+      "assertion": "Setting `deprecated=True` on a FastAPI route marks the operation as deprecated in the generated OpenAPI document.",
+      "reason": "`deprecated=True` makes FastAPI answer 410 Gone for that route.",
       "correct": [
         "c"
       ],
@@ -199,7 +199,7 @@
         "c": "Correct: A is true (the docs UI shows it struck through); R is false because the route keeps working normally.",
         "d": "Wrong: A is true."
       },
-      "explanation": "The flag is documentation only. Pair it with Deprecation and Sunset headers and monitoring of remaining callers."
+      "explanation": "The flag is documentation only. Pair it with `Deprecation` and `Sunset` headers and monitoring of remaining callers."
     },
     {
       "id": "backward-compatible",
@@ -215,8 +215,8 @@
         },
         {
           "id": "b",
-          "text": "Renaming the response field fullName to name.",
-          "why": "Clients that read fullName break immediately."
+          "text": "Renaming the response field `fullName` to `name`.",
+          "why": "Clients that read `fullName` break immediately."
         },
         {
           "id": "c",
@@ -225,7 +225,7 @@
         },
         {
           "id": "d",
-          "text": "Changing id from int to str in a response model.",
+          "text": "Changing `id` from `int` to `str` in a response model.",
           "why": "Typed clients fail to parse the new type."
         },
         {
@@ -251,7 +251,7 @@
       "concept": "GraphQL",
       "type": "code",
       "difficulty": 2,
-      "prompt": "Using Strawberry, define a GraphQL type Book with a title: str field, a Query type with a field books returning list[Book], and build a schema.",
+      "prompt": "Using Strawberry, define a GraphQL type `Book` with a `title: str` field, a `Query` type with a field `books` returning `list[Book]`, and build a schema.",
       "language": "python",
       "starter": "import strawberry\n",
       "checks": [
@@ -273,14 +273,14 @@
         }
       ],
       "model": "@strawberry.type\nclass Book:\n    title: str\n\n@strawberry.type\nclass Query:\n    @strawberry.field\n    def books(self) -> list[Book]:\n        return [Book(title=\"Dune\")]\n\nschema = strawberry.Schema(query=Query)",
-      "explanation": "Mount it with strawberry.fastapi.GraphQLRouter(schema) and verify with schema.execute_sync. For N+1 use strawberry.dataloader.DataLoader with a batch load function."
+      "explanation": "Mount it with `strawberry.fastapi.GraphQLRouter(schema)` and verify with `schema.execute_sync`. For N+1 use `strawberry.dataloader.DataLoader` with a batch load function."
     },
     {
       "id": "strawberry-dataloader",
       "concept": "DataLoader batching",
       "type": "code",
       "difficulty": 3,
-      "prompt": "Write the Strawberry pieces that remove the N+1 on Book.author: an async batch function load_authors(keys: list[int]) that returns authors for all keys with one call authors_by_ids(keys) (assume it returns the list in key order), and a DataLoader named author_loader built from it.",
+      "prompt": "Write the Strawberry pieces that remove the N+1 on `Book.author`: an async batch function `load_authors(keys: list[int])` that returns authors for all keys with one call `authors_by_ids(keys)` (assume it returns the list in key order), and a `DataLoader` named `author_loader` built from it.",
       "language": "python",
       "checks": [
         {
@@ -297,7 +297,7 @@
         }
       ],
       "model": "async def load_authors(keys: list[int]) -> list[Author]:\n    return await authors_by_ids(keys)\n\nauthor_loader = DataLoader(load_fn=load_authors)",
-      "explanation": "A resolver then calls await author_loader.load(book.author_id); all load() calls made in the same event-loop tick are batched into one load_authors call. Create the loader per request (for example in the GraphQL context) so its cache does not leak between users.",
+      "explanation": "A resolver then calls `await author_loader.load(book.author_id)`; all `load()` calls made in the same event-loop tick are batched into one `load_authors` call. Create the loader per request (for example in the GraphQL context) so its cache does not leak between users.",
       "starter": "from strawberry.dataloader import DataLoader\n"
     },
     {
@@ -305,7 +305,7 @@
       "concept": "DataLoader batching",
       "type": "integer",
       "difficulty": 3,
-      "prompt": "A Strawberry DataLoader is created with max_batch_size=10. During one request, a resolver calls loader.load(...) for 25 distinct author ids in the same event-loop tick. How many times is the batch function called?",
+      "prompt": "A Strawberry DataLoader is created with `max_batch_size=10`. During one request, a resolver calls `loader.load(...)` for 25 distinct author ids in the same event-loop tick. How many times is the batch function called?",
       "answer": 3,
       "tolerance": 0,
       "unit": "calls",
@@ -320,7 +320,7 @@
       "options": [
         {
           "id": "a",
-          "text": "HTTP 200 with partial data and an errors array.",
+          "text": "HTTP 200 with partial data and an `errors` array.",
           "why": "GraphQL reports field errors in the body; the transport still succeeded."
         },
         {
@@ -342,7 +342,7 @@
       "correct": [
         "a"
       ],
-      "explanation": "Monitoring on status codes alone misses GraphQL failures; inspect the errors array."
+      "explanation": "Monitoring on status codes alone misses GraphQL failures; inspect the `errors` array."
     }
   ]
 }

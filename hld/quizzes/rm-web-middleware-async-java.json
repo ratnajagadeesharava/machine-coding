@@ -20,29 +20,29 @@
       "left": [
         {
           "id": "l1",
-          "text": "Servlet Filter"
+          "text": "Servlet `Filter`"
         },
         {
           "id": "l2",
-          "text": "HandlerInterceptor"
+          "text": "`HandlerInterceptor`"
         },
         {
           "id": "l3",
-          "text": "@Aspect with @Around advice"
+          "text": "`@Aspect` with `@Around` advice"
         },
         {
           "id": "l4",
-          "text": "@RestControllerAdvice"
+          "text": "`@RestControllerAdvice`"
         }
       ],
       "right": [
         {
           "id": "r1",
-          "text": "Wrap the raw request/response before DispatcherServlet, e.g. token parsing or request-id logging"
+          "text": "Wrap the raw request/response before `DispatcherServlet`, e.g. token parsing or request-id logging"
         },
         {
           "id": "r2",
-          "text": "Use the resolved handler method in preHandle/postHandle, e.g. per-controller auth checks"
+          "text": "Use the resolved handler method in `preHandle/postHandle`, e.g. per-controller auth checks"
         },
         {
           "id": "r3",
@@ -70,7 +70,7 @@
       "concept": "Cross-cutting concerns (Spring)",
       "type": "fill",
       "difficulty": 1,
-      "prompt": "Fill in the HandlerInterceptor callbacks.",
+      "prompt": "Fill in the `HandlerInterceptor` callbacks.",
       "text": "{1} runs before the handler and can stop the chain by returning false; {2} runs after the handler but before the view is rendered; {3} runs after the request completes, even when the handler threw.",
       "blanks": {
         "1": "preHandle",
@@ -84,14 +84,14 @@
         "doFilter",
         "afterReturning"
       ],
-      "explanation": "doFilter belongs to Servlet filters and afterReturning to AOP advice. postHandle is skipped when the handler throws, afterCompletion is not."
+      "explanation": "`doFilter` belongs to Servlet filters and `afterReturning` to AOP advice. `postHandle` is skipped when the handler throws, `afterCompletion` is not."
     },
     {
       "id": "aspect-timing",
       "concept": "AOP (Spring)",
       "type": "code",
       "difficulty": 2,
-      "prompt": "Write a Spring aspect class TimingAspect (a bean) with an @Around advice that times every method of classes in package com.acme.service and its sub-packages, then returns the real result.",
+      "prompt": "Write a Spring aspect class `TimingAspect` (a bean) with an `@Around` advice that times every method of classes in package `com.acme.service` and its sub-packages, then returns the real result.",
       "language": "java",
       "starter": "",
       "checks": [
@@ -113,7 +113,7 @@
         }
       ],
       "model": "@Aspect\n@Component\npublic class TimingAspect {\n  @Around(\"execution(* com.acme.service..*.*(..))\")\n  public Object time(ProceedingJoinPoint pjp) throws Throwable {\n    long t = System.nanoTime();\n    try { return pjp.proceed(); }\n    finally { System.out.println(pjp.getSignature() + \" took \" + (System.nanoTime() - t)); }\n  }\n}",
-      "explanation": "Forgetting proceed() silently swallows the call. Needs spring-boot-starter-aop in Boot 3 (renamed spring-boot-starter-aspectj in Boot 4). Pointcuts using within() or an annotation are valid alternatives."
+      "explanation": "Forgetting `proceed()` silently swallows the call. Needs `spring-boot-starter-aop` in Boot 3 (renamed `spring-boot-starter-aspectj` in Boot 4). Pointcuts using `within()` or an annotation are valid alternatives."
     },
     {
       "id": "aop-self-invocation",
@@ -121,7 +121,7 @@
       "type": "assertion",
       "difficulty": 2,
       "prompt": "Judge the assertion and the reason.",
-      "assertion": "Spring AOP advice does not run when a bean calls one of its own advised methods via this.",
+      "assertion": "Spring AOP advice does not run when a bean calls one of its own advised methods via `this`.",
       "reason": "Spring AOP is proxy-based, and an internal call bypasses the proxy.",
       "correct": [
         "a"
@@ -132,7 +132,7 @@
         "c": "Wrong: R is true.",
         "d": "Wrong: A is true."
       },
-      "explanation": "Same root cause as @Transactional self-invocation. Fixes: refactor into another bean, call through the injected proxy of the bean itself, or use AspectJ weaving."
+      "explanation": "Same root cause as `@Transactional` self-invocation. Fixes: refactor into another bean, call through the injected proxy of the bean itself, or use AspectJ weaving."
     },
     {
       "id": "filter-chain",
@@ -140,8 +140,8 @@
       "type": "assertion",
       "difficulty": 2,
       "prompt": "Judge the assertion and the reason.",
-      "assertion": "A Servlet filter that never calls chain.doFilter(request, response) stops the request from reaching the controller.",
-      "reason": "Filters can be ordered with @Order or a FilterRegistrationBean.",
+      "assertion": "A Servlet filter that never calls `chain.doFilter(request, response)` stops the request from reaching the controller.",
+      "reason": "Filters can be ordered with `@Order` or a `FilterRegistrationBean`.",
       "correct": [
         "b"
       ],
@@ -159,8 +159,8 @@
       "type": "assertion",
       "difficulty": 3,
       "prompt": "Judge the assertion and the reason.",
-      "assertion": "HandlerInterceptor.postHandle is called even when the controller method throws an exception.",
-      "reason": "afterCompletion is called after the handler finishes, including when it threw (provided preHandle returned true).",
+      "assertion": "`HandlerInterceptor.postHandle` is called even when the controller method throws an exception.",
+      "reason": "`afterCompletion` is called after the handler finishes, including when it threw (provided `preHandle` returned true).",
       "correct": [
         "d"
       ],
@@ -170,7 +170,7 @@
         "c": "Wrong: A is false.",
         "d": "Correct: postHandle is skipped on exceptions; afterCompletion is the callback for cleanup."
       },
-      "explanation": "Put resource cleanup and metrics in afterCompletion, not postHandle."
+      "explanation": "Put resource cleanup and metrics in `afterCompletion`, not `postHandle`."
     },
     {
       "id": "async-webflux-facts",
@@ -181,32 +181,32 @@
       "options": [
         {
           "id": "a",
-          "text": "@Async only takes effect when @EnableAsync is present and the call goes through the proxy.",
+          "text": "`@Async` only takes effect when `@EnableAsync` is present and the call goes through the proxy.",
           "why": "Without both, the method runs synchronously on the caller's thread."
         },
         {
           "id": "b",
-          "text": "An @Async method may return void, Future or CompletableFuture.",
+          "text": "An `@Async` method may return `void`, `Future` or `CompletableFuture`.",
           "why": "Those are the supported return types; callers get the result through the future."
         },
         {
           "id": "c",
-          "text": "Mono<T> represents 0..1 elements and Flux<T> represents 0..N.",
+          "text": "`Mono<T>` represents 0..1 elements and `Flux<T>` represents 0..N.",
           "why": "That is the core of Reactor's model."
         },
         {
           "id": "d",
-          "text": "A Mono does the work as soon as the method returns it, without subscription.",
+          "text": "A `Mono` does the work as soon as the method returns it, without subscription.",
           "why": "Reactive streams are lazy; nothing happens until subscribed (WebFlux subscribes for you)."
         },
         {
           "id": "e",
-          "text": "An exception thrown in a void @Async method propagates to the caller.",
-          "why": "It does not; it goes to an AsyncUncaughtExceptionHandler."
+          "text": "An exception thrown in a `void` `@Async` method propagates to the caller.",
+          "why": "It does not; it goes to an `AsyncUncaughtExceptionHandler`."
         },
         {
           "id": "f",
-          "text": "@Async works on private methods.",
+          "text": "`@Async` works on private methods.",
           "why": "Proxy-based advice cannot intercept private methods."
         }
       ],
@@ -222,7 +222,7 @@
       "concept": "Filters",
       "type": "code",
       "difficulty": 2,
-      "prompt": "Write a Spring filter class RequestIdFilter that extends OncePerRequestFilter, sets the response header X-Request-Id to a random UUID string, and then continues the filter chain.",
+      "prompt": "Write a Spring filter class `RequestIdFilter` that extends `OncePerRequestFilter`, sets the response header `X-Request-Id` to a random UUID string, and then continues the filter chain.",
       "language": "java",
       "checks": [
         {
@@ -247,14 +247,14 @@
         }
       ],
       "model": "@Component\npublic class RequestIdFilter extends OncePerRequestFilter {\n  @Override\n  protected void doFilterInternal(HttpServletRequest req, HttpServletResponse res, FilterChain chain)\n      throws ServletException, IOException {\n    res.setHeader(\"X-Request-Id\", UUID.randomUUID().toString());\n    chain.doFilter(req, res);\n  }\n}",
-      "explanation": "OncePerRequestFilter guarantees one execution per request even with forwards and error dispatches. Forgetting chain.doFilter silently stops the request. Put the id into the logging MDC as well so every log line carries it."
+      "explanation": "`OncePerRequestFilter` guarantees one execution per request even with forwards and error dispatches. Forgetting `chain.doFilter` silently stops the request. Put the id into the logging `MDC` as well so every log line carries it."
     },
     {
       "id": "sse-emitter",
       "concept": "Streaming / SSE",
       "type": "code",
       "difficulty": 3,
-      "prompt": "Write a Spring MVC GET /events handler named events that returns an SseEmitter, produces text/event-stream, sends the text \"tick\" to the client with send(...) and then completes the emitter.",
+      "prompt": "Write a Spring MVC `GET /events` handler named `events` that returns an `SseEmitter`, produces `text/event-stream`, sends the text `\"tick\"` to the client with `send(...)` and then completes the emitter.",
       "language": "java",
       "checks": [
         {
@@ -275,7 +275,7 @@
         }
       ],
       "model": "@GetMapping(path = \"/events\", produces = MediaType.TEXT_EVENT_STREAM_VALUE)\npublic SseEmitter events() throws IOException {\n  SseEmitter emitter = new SseEmitter();\n  emitter.send(\"tick\");\n  emitter.complete();\n  return emitter;\n}",
-      "explanation": "In real code the emitter is handed to another thread or a registry that keeps sending events; remove it on completion, timeout and error callbacks. A Flux<ServerSentEvent<String>> with WebFlux is the reactive alternative."
+      "explanation": "In real code the emitter is handed to another thread or a registry that keeps sending `events`; remove it on completion, timeout and error callbacks. A `Flux<ServerSentEvent<String>>` with WebFlux is the reactive alternative."
     },
     {
       "id": "servlet-thread-pool",
@@ -293,11 +293,11 @@
       "concept": "Cross-cutting concerns (Spring)",
       "type": "integer",
       "difficulty": 3,
-      "prompt": "Interceptors A, B and C are registered in that order with registry.addInterceptor(...). Every preHandle returns true and the handler succeeds. At which position (1 = first) does A's afterCompletion run?",
+      "prompt": "Interceptors A, B and C are registered in that order with `registry.addInterceptor(...)`. Every `preHandle` returns true and the handler succeeds. At which position (1 = first) does `A's afterCompletion` run?",
       "answer": 3,
       "tolerance": 0,
       "unit": "position",
-      "explanation": "preHandle runs in registration order A, B, C, while postHandle and afterCompletion run in reverse: C, B, A. So A's afterCompletion is third, like the unwinding of nested try/finally blocks."
+      "explanation": "`preHandle` runs in registration order A, B, C, while `postHandle` and `afterCompletion` run in reverse: C, B, A. So `A's afterCompletion` is third, like the unwinding of nested `try/finally` blocks."
     },
     {
       "id": "filter-bean-path",
@@ -306,7 +306,7 @@
       "difficulty": 2,
       "prompt": "Judge the assertion and the reason.",
       "assertion": "A Servlet Filter registered as a Spring bean in Spring Boot applies to every request path by default.",
-      "reason": "Filters run after DispatcherServlet has chosen the controller method.",
+      "reason": "Filters run after `DispatcherServlet` has chosen the controller method.",
       "correct": [
         "c"
       ],
@@ -316,7 +316,7 @@
         "c": "Correct: A is true (the default URL pattern is /*); R is false because filters run before DispatcherServlet and know nothing about the handler.",
         "d": "Wrong: A is true."
       },
-      "explanation": "Restrict a filter with a FilterRegistrationBean URL pattern, or choose a HandlerInterceptor when you need the resolved handler."
+      "explanation": "Restrict a filter with a `FilterRegistrationBean` URL pattern, or choose a `HandlerInterceptor` when you need the resolved handler."
     },
     {
       "id": "who-knows-the-handler",
@@ -332,17 +332,17 @@
         },
         {
           "id": "b",
-          "text": "A @ControllerAdvice class, because it wraps every controller.",
+          "text": "A `@ControllerAdvice` class, because it wraps every controller.",
           "why": "Advice handles exceptions and binding, not pre-handler checks."
         },
         {
           "id": "c",
-          "text": "An @Around aspect on the service layer that sits below the controller.",
+          "text": "An `@Around` aspect on the service layer that sits below the controller.",
           "why": "It runs below the controller, too late to stop the web request early."
         },
         {
           "id": "d",
-          "text": "A HandlerInterceptor, via the HandlerMethod given to preHandle.",
+          "text": "A `HandlerInterceptor`, via the `HandlerMethod` given to `preHandle`.",
           "why": "Correct: interceptors run after handler mapping, so they know the target."
         }
       ],
@@ -356,7 +356,7 @@
       "concept": "Filters",
       "type": "truefalse",
       "difficulty": 3,
-      "prompt": "True or false: a Servlet filter can wrap the request in a caching wrapper (such as ContentCachingRequestWrapper) so the body can be read again later in the chain.",
+      "prompt": "True or false: a Servlet filter can wrap the request in a caching wrapper (such as `ContentCachingRequestWrapper`) so the body can be read again later in the chain.",
       "options": [
         {
           "id": "a",
@@ -366,25 +366,25 @@
         {
           "id": "b",
           "text": "False",
-          "why": "Wrong: the chain accepts any ServletRequest implementation, so wrapping is allowed."
+          "why": "Wrong: the chain accepts any `ServletRequest` implementation, so wrapping is allowed."
         }
       ],
       "correct": [
         "a"
       ],
-      "explanation": "This is how request logging and signature checks read a body twice. A HandlerInterceptor, in contrast, cannot replace the request object."
+      "explanation": "This is how request logging and signature checks read a body twice. A `HandlerInterceptor`, in contrast, cannot replace the request object."
     },
     {
       "id": "interceptor-replace-request",
       "concept": "Filters",
       "type": "truefalse",
       "difficulty": 3,
-      "prompt": "True or false: a HandlerInterceptor can replace the HttpServletRequest object that the controller method will receive.",
+      "prompt": "True or false: a `HandlerInterceptor` can replace the `HttpServletRequest` object that the controller method will receive.",
       "options": [
         {
           "id": "a",
           "text": "True",
-          "why": "Wrong: preHandle only receives the request; it has no way to hand a different one onward."
+          "why": "Wrong: `preHandle` only receives the request; it has no way to hand a different one onward."
         },
         {
           "id": "b",

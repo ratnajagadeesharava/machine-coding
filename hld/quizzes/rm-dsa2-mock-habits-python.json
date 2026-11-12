@@ -16,8 +16,8 @@
       "concept": "Integer arithmetic",
       "type": "integer",
       "difficulty": 2,
-      "prompt": "What does -7 // 2 evaluate to in Python?",
-      "explanation": "// is floor division: -7 / 2 = -3.5 rounds down to -4, not toward zero. The remainder follows: -7 % 2 is 1. Use int(-7 / 2) if you need truncation toward zero (-3).",
+      "prompt": "What does `-7 // 2` evaluate to in Python?",
+      "explanation": "`//` is floor division: `-7 / 2` = -3.5 rounds down to -4, not toward zero. The remainder follows: `-7 % 2` is 1. Use `int(-7 / 2)` if you need truncation toward zero (-3).",
       "answer": -4
     },
     {
@@ -25,7 +25,7 @@
       "concept": "Integer arithmetic",
       "type": "integer",
       "difficulty": 1,
-      "prompt": "In Python, what does 10**5 * 10**5 evaluate to?",
+      "prompt": "In Python, what does `10**5 * 10**5` evaluate to?",
       "explanation": "Python ints are arbitrary precision, so the product is exactly 10,000,000,000 with no overflow. The cost is speed, which is why n * n for n = 10^5 is still too slow as a loop count, even though it is a valid number.",
       "answer": 10000000000
     },
@@ -34,8 +34,8 @@
       "concept": "Binary search",
       "type": "code",
       "difficulty": 2,
-      "prompt": "Write a Python function lower_bound(a, target) that returns the first index i with a[i] >= target in a sorted list (len(a) if none), using a loop and a half-open range, without the bisect module.",
-      "explanation": "Python ints never overflow, so (lo + hi) // 2 is safe, unlike in fixed-width languages. In real code bisect.bisect_left does exactly this. The half-open range makes lo the answer with no fix-ups at the end.",
+      "prompt": "Write a Python function `lower_bound(a, target)` that returns the first index i with `a[i] >= target` in a sorted list (len(a) if none), using a loop and a half-open range, without the bisect module.",
+      "explanation": "Python ints never overflow, so `(lo + hi) // 2` is safe, unlike in fixed-width languages. In real code `bisect.bisect_left` does exactly this. The half-open range makes lo the answer with no fix-ups at the end.",
       "language": "python",
       "starter": "def lower_bound(a, target):\n    ",
       "checks": [
@@ -63,8 +63,8 @@
       "concept": "Test cases",
       "type": "code",
       "difficulty": 2,
-      "prompt": "In Python, write three assert statements for merge(intervals) (which returns a list of [start, end] lists): an empty input, touching intervals [1,2] and [2,3], and a nested pair [1,10] and [2,3].",
-      "explanation": "Pick expected values you can verify by hand. Input order matters in the touching case: [2,3] first would test the sort as well. Frameworks like pytest.mark.parametrize group these, but plain asserts are fine in an interview.",
+      "prompt": "In Python, write three `assert` statements for `merge(intervals)` (which returns a list of `[start, end]` lists): an empty input, touching intervals `[1,2]` and `[2,3]`, and a nested pair `[1,10]` and `[2,3]`.",
+      "explanation": "Pick expected values you can verify by hand. Input order matters in the touching case: [2,3] first would test the sort as well. Frameworks like `pytest.mark.parametrize` group these, but plain `assert`s are fine in an interview.",
       "language": "python",
       "starter": "# merge(intervals) is already written\n",
       "checks": [
@@ -92,7 +92,7 @@
       "concept": "Equality traps",
       "type": "truefalse",
       "difficulty": 2,
-      "prompt": "True or false: using `is` to compare two integers, as in a is b, is a reliable way to test that they are equal.",
+      "prompt": "True or false: using `is` to compare two integers, as in `a is b`, is a reliable way to test that they are equal.",
       "explanation": "Small ints are cached by CPython as an implementation detail, so `is` can appear to work in tests and then fail on bigger values.",
       "options": [
         {
@@ -103,7 +103,7 @@
         {
           "id": "b",
           "text": "False",
-          "why": "Correct: use == for values and reserve is for None and other singletons."
+          "why": "Correct: use `==` for values and reserve `is` for `None` and other singletons."
         }
       ],
       "correct": [
@@ -115,27 +115,27 @@
       "concept": "Collections",
       "type": "single",
       "difficulty": 1,
-      "prompt": "You need a FIFO queue for BFS in a Python interview solution. Which choice is the idiomatic one?",
-      "explanation": "Use deque for BFS and sliding windows; reserve queue.Queue for producer and consumer threads.",
+      "prompt": "You need a FIFO queue for `BFS` in a Python interview solution. Which choice is the idiomatic one?",
+      "explanation": "Use `deque` for BFS and sliding windows; reserve `queue.Queue` for producer and consumer threads.",
       "options": [
         {
           "id": "a",
-          "text": "collections.deque, using append and popleft.",
+          "text": "`collections.deque`, using `append` and `popleft`.",
           "why": "Correct: both ends are O(1) and it needs no lock."
         },
         {
           "id": "b",
-          "text": "A list, using pop(0), because it is the simplest container.",
-          "why": "pop(0) shifts every remaining item, so each dequeue is O(n)."
+          "text": "A list, using `pop(0)`, because it is the simplest container.",
+          "why": "`pop(0)` shifts every remaining item, so each dequeue is O(n)."
         },
         {
           "id": "c",
-          "text": "queue.Queue, because it is the standard queue class.",
+          "text": "`queue.Queue`, because it is the standard queue class.",
           "why": "It is built for thread communication and adds locking overhead."
         },
         {
           "id": "d",
-          "text": "heapq, because a heap always returns the oldest item first.",
+          "text": "`heapq`, because a heap always returns the oldest item first.",
           "why": "A heap returns the smallest item, not the oldest."
         }
       ],
@@ -148,8 +148,8 @@
       "concept": "Recursion limits",
       "type": "single",
       "difficulty": 3,
-      "prompt": "A recursive DFS on a path-shaped graph of 100,000 nodes raises RecursionError. What is the best response in an interview?",
-      "explanation": "Raising sys.setrecursionlimit is a quick patch but can crash the interpreter on very deep recursion; say both and prefer the explicit stack.",
+      "prompt": "A recursive DFS on a path-shaped graph of 100,000 nodes raises `RecursionError`. What is the best response in an interview?",
+      "explanation": "Raising `sys.setrecursionlimit` is a quick patch but can crash the interpreter on very deep recursion; say both and prefer the explicit stack.",
       "options": [
         {
           "id": "a",
@@ -158,7 +158,7 @@
         },
         {
           "id": "b",
-          "text": "Catch RecursionError and return the partial result computed so far.",
+          "text": "Catch `RecursionError` and return the partial result computed so far.",
           "why": "A partial result is a wrong answer for most graph problems."
         },
         {
@@ -168,7 +168,7 @@
         },
         {
           "id": "d",
-          "text": "Add lru_cache so each node is visited only once and the depth shrinks.",
+          "text": "Add `lru_cache` so each node is visited only once and the depth shrinks.",
           "why": "Caching avoids repeated work but does not reduce the depth of a single chain."
         }
       ],
@@ -226,19 +226,19 @@
       "left": [
         {
           "id": "a",
-          "text": "[[0] * n] * m shares one row"
+          "text": "`[[0] * n] * m` shares one row"
         },
         {
           "id": "b",
-          "text": "list.pop(0) used as a queue"
+          "text": "`list.pop(0)` used as a queue"
         },
         {
           "id": "c",
-          "text": "Building a string with += in a loop"
+          "text": "Building a string with `+=` in a loop"
         },
         {
           "id": "d",
-          "text": "A mutable default argument like path=[]"
+          "text": "A mutable default argument like `path=[]`"
         },
         {
           "id": "e",
@@ -248,11 +248,11 @@
       "right": [
         {
           "id": "p",
-          "text": "Collect pieces and use ''.join"
+          "text": "Collect pieces and use `''.join`"
         },
         {
           "id": "q",
-          "text": "Default to None and create the list inside"
+          "text": "Default to `None` and create the list inside"
         },
         {
           "id": "r",
@@ -268,7 +268,7 @@
         },
         {
           "id": "u",
-          "text": "Use collections.deque and popleft"
+          "text": "Use `collections.deque` and `popleft`"
         }
       ],
       "pairs": {
@@ -285,7 +285,7 @@
       "type": "fill",
       "difficulty": 1,
       "prompt": "Complete the Python habits for a timed round.",
-      "explanation": "''.join avoids quadratic copying, deque gives O(1) popleft, and floor division rounds toward negative infinity (-7 // 2 is -4).",
+      "explanation": "`''.join` avoids quadratic copying, `deque` gives O(1) `popleft`, and floor division rounds toward negative infinity (`-7 // 2` is -4).",
       "text": "Use {1} to build a string from pieces, a {2} for a queue, and remember that // rounds toward {3}.",
       "blanks": {
         "1": "''.join",
@@ -306,8 +306,8 @@
       "type": "assertion",
       "difficulty": 2,
       "prompt": "Using a Python list as a BFS queue.",
-      "explanation": "Use collections.deque.popleft() for O(1) dequeues.",
-      "assertion": "list.pop(0) takes O(n) time, so it is a poor queue for large inputs.",
+      "explanation": "Use `collections.deque.popleft()` for O(1) dequeues.",
+      "assertion": "`list.pop(0)` takes O(n) time, so it is a poor queue for large inputs.",
       "reason": "Removing the first item shifts every remaining item one position to the left.",
       "correct": [
         "a"
@@ -326,7 +326,7 @@
       "difficulty": 2,
       "prompt": "Sorting in Python.",
       "explanation": "Stability lets you sort by a secondary key first and a primary key second.",
-      "assertion": "sorted(items, key=f) is a stable sort.",
+      "assertion": "`sorted(items, key=f)` is a stable sort.",
       "reason": "sorted returns a new list and leaves the original unchanged.",
       "correct": [
         "b"
@@ -343,10 +343,10 @@
       "concept": "Collections",
       "type": "assertion",
       "difficulty": 3,
-      "prompt": "Counting characters with collections.Counter.",
-      "explanation": "most_common(k) sorts, so it costs O(n log n) in the worst case, or O(n log k) with a heap.",
-      "assertion": "Counter(s) counts the occurrences of every character of s in O(n) time.",
-      "reason": "Counter always keeps its keys sorted by count.",
+      "prompt": "Counting characters with `collections.Counter`.",
+      "explanation": "`most_common(k)` sorts, so it costs O(n log n) in the worst case, or O(n log k) with a heap.",
+      "assertion": "`Counter(s)` counts the occurrences of every character of s in O(n) time.",
+      "reason": "`Counter` always keeps its keys sorted by count.",
       "correct": [
         "c"
       ],
@@ -363,8 +363,8 @@
       "type": "assertion",
       "difficulty": 3,
       "prompt": "Rounding in Python.",
-      "explanation": "For half-up rounding use int(x + 0.5) for non-negative x, or the decimal module.",
-      "assertion": "round(2.5) returns 3.",
+      "explanation": "For half-up rounding use `int(x + 0.5)` for non-negative x, or the decimal module.",
+      "assertion": "`round(2.5)` returns 3.",
       "reason": "Python rounds halves to the nearest even number.",
       "correct": [
         "d"

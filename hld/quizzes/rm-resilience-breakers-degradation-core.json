@@ -20,15 +20,15 @@
       "left": [
         {
           "id": "l1",
-          "text": "CLOSED"
+          "text": "`CLOSED`"
         },
         {
           "id": "l2",
-          "text": "OPEN"
+          "text": "`OPEN`"
         },
         {
           "id": "l3",
-          "text": "HALF_OPEN"
+          "text": "`HALF_OPEN`"
         }
       ],
       "right": [
@@ -54,7 +54,7 @@
         "l2": "r2",
         "l3": "r3"
       },
-      "explanation": "CLOSED to OPEN when the failure (or slow-call) rate crosses the threshold; OPEN to HALF_OPEN after the wait duration; HALF_OPEN to CLOSED if trial calls succeed, else back to OPEN."
+      "explanation": "`CLOSED` to `OPEN` when the failure (or slow-call) rate crosses the threshold; `OPEN` to `HALF_OPEN` after the wait duration; `HALF_OPEN` to `CLOSED` if trial calls succeed, else back to `OPEN`."
     },
     {
       "id": "breaker-failures",
@@ -71,7 +71,7 @@
       "concept": "Circuit breaker",
       "type": "integer",
       "difficulty": 3,
-      "prompt": "A breaker is HALF_OPEN with 4 permitted trial calls and a failure-rate threshold of 50 percent. After the 4 trial calls, what is the largest number of failed trials for which the breaker still returns to CLOSED?",
+      "prompt": "A breaker is `HALF_OPEN` with 4 permitted trial calls and a failure-rate threshold of 50 percent. After the 4 trial calls, what is the largest number of failed trials for which the breaker still returns to `CLOSED`?",
       "answer": 1,
       "unit": "failures",
       "explanation": "The breaker opens when the failure rate is greater than or equal to the threshold. 1 of 4 is 25 percent (closes), 2 of 4 is 50 percent (reopens), so at most 1."
@@ -155,7 +155,7 @@
       "concept": "Rate limiting",
       "type": "code",
       "difficulty": 2,
-      "prompt": "Write the nginx configuration that defines a 10 MB shared zone named api keyed by client address allowing 5 requests per second, and applies it with a burst of 10 inside location /search.",
+      "prompt": "Write the nginx configuration that defines a 10 MB shared zone named `api` keyed by client address allowing 5 requests per second, and applies it with a burst of 10 inside `location /search`.",
       "language": "nginx",
       "checks": [
         {
@@ -172,7 +172,7 @@
         }
       ],
       "model": "limit_req_zone $binary_remote_addr zone=api:10m rate=5r/s;\n\nlocation /search {\n    limit_req zone=api burst=10 nodelay;\n}",
-      "explanation": "limit_req_zone belongs in the http block. Without nodelay, burst requests are queued and released at the zone rate; with it they pass immediately and later ones are rejected (503 by default, 429 with limit_req_status 429)."
+      "explanation": "`limit_req_zone` belongs in the http block. Without `nodelay`, burst requests are queued and released at the zone rate; with it they pass immediately and later ones are rejected (503 by default, 429 with `limit_req_status 429`)."
     },
     {
       "id": "breaker-fail-fast",
@@ -237,8 +237,8 @@
       "type": "assertion",
       "difficulty": 3,
       "prompt": "Read the assertion A and the reason R, then choose the correct relationship between them.",
-      "assertion": "In the HALF_OPEN state a circuit breaker lets all traffic through to test whether the dependency has recovered.",
-      "reason": "HALF_OPEN permits only a configured number of trial calls and decides to close or reopen from their results.",
+      "assertion": "In the `HALF_OPEN` state a circuit breaker lets all traffic through to test whether the dependency has recovered.",
+      "reason": "`HALF_OPEN` permits only a configured number of trial calls and decides to close or reopen from their results.",
       "correct": [
         "d"
       ],
@@ -325,7 +325,7 @@
         },
         {
           "id": "b",
-          "text": "HTTP 429 Too Many Requests with a Retry-After header.",
+          "text": "HTTP 429 Too Many Requests with a `Retry-After` header.",
           "why": "Correct: 429 is the status defined for rate limiting."
         },
         {
@@ -342,7 +342,7 @@
       "correct": [
         "b"
       ],
-      "explanation": "Use 429 for per-client limits and 503 (also with Retry-After) when the whole service sheds load. Well-behaved clients honour Retry-After and add jitter."
+      "explanation": "Use 429 for per-client limits and 503 (also with `Retry-After`) when the whole service sheds load. Well-behaved clients honour `Retry-After` and add jitter."
     },
     {
       "id": "breaker-needs-timeouts",

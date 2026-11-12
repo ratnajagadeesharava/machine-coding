@@ -16,9 +16,9 @@
       "concept": "Idempotency on resume",
       "type": "integer",
       "difficulty": 3,
-      "prompt": "A node does: charge_card(); ok = interrupt('approve?'); return {'ok': ok}. The graph runs with a checkpointer until the interrupt, then you resume once with Command(resume=True). How many times in total is charge_card() executed?",
+      "prompt": "A node does:\n\n```python\ncharge_card()\nok = interrupt('approve?')\nreturn {'ok': ok}\n```\n\nThe graph runs with a checkpointer until the interrupt, then you resume once with `Command(resume=True)`. How many times in total is `charge_card()` executed?",
       "answer": 2,
-      "explanation": "On resume LangGraph re-runs the interrupted node from its first line; interrupt() then returns the resume value instead of pausing. So the code before interrupt() runs twice (I counted it with a run). Put side effects after interrupt() or make them idempotent.",
+      "explanation": "On resume LangGraph re-runs the interrupted node from its first line; `interrupt()` then returns the resume value instead of pausing. So the code before `interrupt()` runs twice (I counted it with a run). Put side effects after `interrupt()` or make them idempotent.",
       "unit": "calls"
     },
     {
@@ -26,9 +26,9 @@
       "concept": "Recursion limit",
       "type": "integer",
       "difficulty": 2,
-      "prompt": "An agent graph (START -> agent, agent -> tools, tools -> agent) never terminates because the model keeps requesting tools. You invoke it with recursion_limit = 10. How many LLM calls (agent node runs) happen before GraphRecursionError is raised?",
+      "prompt": "An agent graph (START -> agent, agent -> tools, tools -> agent) never terminates because the model keeps requesting tools. You invoke it with `recursion_limit` = 10. How many LLM calls (agent node runs) happen before `GraphRecursionError` is raised?",
       "answer": 5,
-      "explanation": "Each superstep is one node run and the limit caps them at 10: agent, tools, agent, tools ... so 5 agent runs and 5 tool runs. I ran this loop and saw GraphRecursionError after exactly 10 node executions.",
+      "explanation": "Each superstep is one node run and the limit caps them at 10: agent, tools, agent, tools ... so 5 agent runs and 5 tool runs. I ran this loop and saw `GraphRecursionError` after exactly 10 node executions.",
       "unit": "LLM calls"
     },
     {
@@ -36,9 +36,9 @@
       "concept": "Retries and timeouts",
       "type": "integer",
       "difficulty": 2,
-      "prompt": "A node is added with retry_policy=RetryPolicy(max_attempts=4, retry_on=ConnectionError) and it raises ConnectionError on every attempt. How many times is the node function executed?",
+      "prompt": "A node is added with `retry_policy=RetryPolicy(max_attempts=4, retry_on=ConnectionError)` and it raises `ConnectionError` on every attempt. How many times is the node function executed?",
       "answer": 4,
-      "explanation": "max_attempts includes the first attempt, so 1 try + 3 retries = 4 executions, then the error propagates. Back-off between attempts grows by backoff_factor up to max_interval.",
+      "explanation": "`max_attempts` includes the first attempt, so 1 try + 3 retries = 4 executions, then the error propagates. Back-off between attempts grows by `backoff_factor` up to `max_interval`.",
       "unit": "executions"
     },
     {
@@ -47,8 +47,8 @@
       "type": "assertion",
       "difficulty": 1,
       "prompt": "Assertion and reason: read both statements and choose the right option.",
-      "assertion": "A graph compiled with a checkpointer must be invoked with a thread_id in config['configurable'].",
-      "reason": "The checkpointer stores state snapshots per thread, keyed by thread_id.",
+      "assertion": "A graph compiled with a checkpointer must be invoked with a `thread_id` in `config['configurable']`.",
+      "reason": "The checkpointer stores state snapshots per thread, keyed by `thread_id`.",
       "correct": [
         "a"
       ],
@@ -58,7 +58,7 @@
         "c": "R is true, so c is wrong.",
         "d": "A is true, so d is wrong."
       },
-      "explanation": "Use one thread_id per conversation (for example user id + session id). The same id continues the conversation; a new id starts from empty state."
+      "explanation": "Use one `thread_id` per conversation (for example user id + session id). The same id continues the conversation; a new id starts from empty state."
     },
     {
       "id": "interrupt-needs-checkpointer",
@@ -66,8 +66,8 @@
       "type": "assertion",
       "difficulty": 2,
       "prompt": "Assertion and reason: read both statements and choose the right option.",
-      "assertion": "interrupt() only works when the graph was compiled with a checkpointer.",
-      "reason": "A paused run is resumed by invoking the graph again with Command(resume=...) and the same thread_id.",
+      "assertion": "`interrupt()` only works when the graph was compiled with a checkpointer.",
+      "reason": "A paused run is resumed by invoking the graph again with `Command(resume=...)` and the same `thread_id`.",
       "correct": [
         "b"
       ],
@@ -85,8 +85,8 @@
       "type": "assertion",
       "difficulty": 2,
       "prompt": "Assertion and reason: read both statements and choose the right option.",
-      "assertion": "MemorySaver is meant for development and tests rather than production.",
-      "reason": "MemorySaver can store only one thread at a time.",
+      "assertion": "`MemorySaver` is meant for development and tests rather than production.",
+      "reason": "`MemorySaver` can store only one thread at a time.",
       "correct": [
         "c"
       ],
@@ -96,7 +96,7 @@
         "c": "A is true (state lives in process memory and is lost on restart); R is false because it keeps many threads, which I confirmed with two thread ids.",
         "d": "A is true, so d is wrong."
       },
-      "explanation": "For production use a durable saver such as PostgresSaver (call setup() once) or the async variant, so state survives restarts and is shared between workers."
+      "explanation": "For production use a durable saver such as `PostgresSaver` (call `setup()` once) or the async variant, so state survives restarts and is shared between workers."
     },
     {
       "id": "resume-continues-after-interrupt",
@@ -104,8 +104,8 @@
       "type": "assertion",
       "difficulty": 3,
       "prompt": "Assertion and reason: read both statements and choose the right option.",
-      "assertion": "After resuming, the node continues on the line following interrupt() without running its earlier lines again.",
-      "reason": "interrupt() returns the value supplied through Command(resume=...) when the node is re-run.",
+      "assertion": "After resuming, the node continues on the line following `interrupt()` without running its earlier lines again.",
+      "reason": "`interrupt()` returns the value supplied through `Command(resume=...)` when the node is re-run.",
       "correct": [
         "d"
       ],
@@ -115,7 +115,7 @@
         "c": "R is true, so c is wrong.",
         "d": "A is false: the whole node restarts from the top; R is true and is how the answer reaches your code."
       },
-      "explanation": "Rules of thumb: keep nodes small, put interrupt() first, keep earlier code idempotent, and keep the order of multiple interrupts in a node stable."
+      "explanation": "Rules of thumb: keep nodes small, put `interrupt()` first, keep earlier code idempotent, and keep the order of multiple interrupts in a node stable."
     },
     {
       "id": "persistence-terms",
@@ -126,7 +126,7 @@
       "left": [
         {
           "id": "a",
-          "text": "thread_id"
+          "text": "`thread_id`"
         },
         {
           "id": "b",
@@ -134,21 +134,21 @@
         },
         {
           "id": "c",
-          "text": "MemorySaver"
+          "text": "`MemorySaver`"
         },
         {
           "id": "d",
-          "text": "PostgresSaver"
+          "text": "`PostgresSaver`"
         },
         {
           "id": "e",
-          "text": "Store (for example InMemoryStore)"
+          "text": "Store (for example `InMemoryStore`)"
         }
       ],
       "right": [
         {
           "id": "p",
-          "text": "Identifies one conversation in config['configurable']"
+          "text": "Identifies one conversation in `config['configurable']`"
         },
         {
           "id": "q",
@@ -160,7 +160,7 @@
         },
         {
           "id": "s",
-          "text": "Durable saver backed by a database, needs setup() once"
+          "text": "Durable saver backed by a database, needs `setup()` once"
         },
         {
           "id": "t",
@@ -178,7 +178,7 @@
         "d": "s",
         "e": "t"
       },
-      "explanation": "Checkpointers give short-term (per-thread) memory; a Store gives long-term memory such as user preferences across threads. recursion_limit is a run option, not persistence."
+      "explanation": "Checkpointers give short-term (per-thread) memory; a Store gives long-term memory such as user preferences across threads. `recursion_limit` is a run option, not persistence."
     },
     {
       "id": "checkpointer-config",
@@ -198,7 +198,7 @@
         "get_history",
         "run_id"
       ],
-      "explanation": "get_state_history lists all earlier checkpoints, which is how time travel and replay are done."
+      "explanation": "`get_state_history` lists all earlier checkpoints, which is how time travel and replay are done."
     },
     {
       "id": "hitl-vocabulary",
@@ -220,7 +220,7 @@
         "checkpoint",
         "Send"
       ],
-      "explanation": "The pause payload appears under __interrupt__ in the result and in get_state(...).tasks."
+      "explanation": "The pause payload appears under `__interrupt__` in the result and in `get_state`(...).tasks."
     },
     {
       "id": "memorysaver-thread",
@@ -248,7 +248,7 @@
         }
       ],
       "model": "app = builder.compile(checkpointer=MemorySaver())\ncfg = {\"configurable\": {\"thread_id\": \"u1\"}}\napp.invoke(first, cfg)\napp.invoke(second, cfg)",
-      "explanation": "InMemorySaver is the newer alias name of the same class. The second call continues from the state saved by the first because the thread id is the same.",
+      "explanation": "`InMemorySaver` is the newer alias name of the same class. The second call continues from the state saved by the first because the thread id is the same.",
       "starter": "from langgraph.checkpoint.memory import MemorySaver\n"
     },
     {
@@ -256,7 +256,7 @@
       "concept": "Human-in-the-loop",
       "type": "code",
       "difficulty": 3,
-      "prompt": "Write a node approve(state) that pauses with the payload {'action': state['action']} and stores the human's answer in the state key approved, then write the call that resumes the paused run with True using the variables app and cfg.",
+      "prompt": "Write a node `approve(state)` that pauses with the payload `{'action': state['action']}` and stores the human's answer in the state key `approved`, then write the call that resumes the paused run with `True` using the variables `app` and `cfg`.",
       "language": "python",
       "checks": [
         {
@@ -277,7 +277,7 @@
         }
       ],
       "model": "def approve(state):\n    ok = interrupt({\"action\": state[\"action\"]})\n    return {\"approved\": ok}\n\napp.invoke(Command(resume=True), cfg)",
-      "explanation": "Other shapes pass (inline return, a variable for the answer). The resume call must use the same thread_id config, otherwise it starts nothing.",
+      "explanation": "Other shapes pass (inline return, a variable for the answer). The resume call must use the same `thread_id` config, otherwise it starts nothing.",
       "starter": "from langgraph.types import interrupt, Command\n"
     },
     {
@@ -310,7 +310,7 @@
         }
       ],
       "model": "g.add_node(\"call_api\", call_api,\n           retry_policy=RetryPolicy(max_attempts=5, initial_interval=1.0, retry_on=ConnectionError))",
-      "explanation": "The default retry_on does not retry ValueError, TypeError or RuntimeError (I read the installed source), so list the exceptions you want. Also set a client-side timeout inside the node.",
+      "explanation": "The default `retry_on` does not retry `ValueError`, `TypeError` or `RuntimeError` (I read the installed source), so list the exceptions you want. Also set a client-side timeout inside the node.",
       "starter": "from langgraph.types import RetryPolicy\n"
     },
     {
@@ -335,7 +335,7 @@
         }
       ],
       "model": "with PostgresSaver.from_conn_string(DB_URI) as checkpointer:\n    checkpointer.setup()\n    app = builder.compile(checkpointer=checkpointer)",
-      "explanation": "setup() runs the migrations and is needed once. Long-lived servers usually keep the saver open (connection pool) instead of leaving the with block. Async apps use AsyncPostgresSaver.",
+      "explanation": "`setup()` runs the migrations and is needed once. Long-lived servers usually keep the saver open (connection pool) instead of leaving the with block. Async apps use `AsyncPostgresSaver`.",
       "starter": "from langgraph.checkpoint.postgres import PostgresSaver\n"
     },
     {
@@ -343,11 +343,11 @@
       "concept": "Retries and timeouts",
       "type": "single",
       "difficulty": 3,
-      "prompt": "A node raises RuntimeError('rate limited') and was added with retry_policy=RetryPolicy() using all defaults. In current LangGraph, what happens?",
+      "prompt": "A node raises `RuntimeError('rate limited')` and was added with `retry_policy=RetryPolicy()` using all defaults. In current LangGraph, what happens?",
       "options": [
         {
           "id": "a",
-          "text": "It is not retried, because the default retry_on skips ValueError, TypeError and RuntimeError.",
+          "text": "It is not retried, because the default `retry_on` skips `ValueError`, `TypeError` and `RuntimeError`.",
           "why": "Right: the default only retries connection errors, HTTP 5xx and unlisted exception types."
         },
         {
@@ -358,7 +358,7 @@
         {
           "id": "c",
           "text": "It is retried forever, until the recursion limit is hit, since no maximum attempt count is set.",
-          "why": "max_attempts defaults to 3, and retries are separate from the recursion limit."
+          "why": "`max_attempts` defaults to 3, and retries are separate from the recursion limit."
         },
         {
           "id": "d",
@@ -369,7 +369,7 @@
       "correct": [
         "a"
       ],
-      "explanation": "Verified in langgraph source (default_retry_on). Be explicit with retry_on=(...) for rate limit and timeout errors of your SDK, which often subclass other exception types."
+      "explanation": "Verified in langgraph source (`default_retry_on`). Be explicit with `retry_on`=(...) for rate limit and timeout errors of your SDK, which often subclass other exception types."
     },
     {
       "id": "limits-and-timeouts",
@@ -380,7 +380,7 @@
       "options": [
         {
           "id": "a",
-          "text": "Exceeding recursion_limit raises GraphRecursionError.",
+          "text": "Exceeding `recursion_limit` raises `GraphRecursionError`.",
           "why": "True: it is the safety net against endless agent loops."
         },
         {
@@ -390,17 +390,17 @@
         },
         {
           "id": "c",
-          "text": "Recent releases raised the default recursion limit well above 25, so set recursion_limit explicitly.",
+          "text": "Recent releases raised the default recursion limit well above 25, so set `recursion_limit` explicitly.",
           "why": "True: I read 10007 as the default in langgraph 1.2; docs and older versions cite 25."
         },
         {
           "id": "d",
-          "text": "Raising recursion_limit is the correct fix for a loop that never terminates.",
+          "text": "Raising `recursion_limit` is the correct fix for a loop that never terminates.",
           "why": "False: it only delays the failure and burns more tokens."
         },
         {
           "id": "e",
-          "text": "add_node(timeout=...) also cancels blocking synchronous nodes safely.",
+          "text": "`add_node`(timeout=...) also cancels blocking synchronous nodes safely.",
           "why": "False: the docs say timeouts are supported only for async nodes."
         }
       ],
@@ -409,14 +409,14 @@
         "b",
         "c"
       ],
-      "explanation": "Set recursion_limit as a deliberate budget (for example 2 x the max tool rounds + 1), add a loop counter, and put HTTP/model timeouts on the clients themselves. Per-node timeouts exist in current LangGraph but rely on asyncio cancellation, so they only help async nodes."
+      "explanation": "Set `recursion_limit` as a deliberate budget (for example 2 x the max tool rounds + 1), add a loop counter, and put HTTP/model timeouts on the clients themselves. Per-node timeouts exist in current LangGraph but rely on asyncio cancellation, so they only help async nodes."
     },
     {
       "id": "history-length",
       "concept": "Checkpointers and threads",
       "type": "integer",
       "difficulty": 3,
-      "prompt": "A graph START -> a -> b -> c -> END is compiled with MemorySaver and run once on a new thread. One checkpoint is saved for the empty input state, one after the input is written (next node: the entry), and one after each node finishes. How many snapshots does list(app.get_state_history(cfg)) hold?",
+      "prompt": "A graph START -> a -> b -> c -> END is compiled with `MemorySaver` and run once on a new thread. One checkpoint is saved for the empty input state, one after the input is written (next node: the entry), and one after each node finishes. How many snapshots does list(app.`get_state_history`(cfg)) hold?",
       "answer": 5,
       "explanation": "2 + 3 nodes = 5, newest first: after c, after b, after a, the input snapshot, and the empty start snapshot. I printed it from langgraph 1.2. This is how time travel finds a point to replay from.",
       "unit": "snapshots"

@@ -16,43 +16,43 @@
       "concept": "ConcurrentHashMap",
       "type": "single",
       "difficulty": 2,
-      "prompt": "Which line is the bug when many threads run this against a shared ConcurrentHashMap<String, Integer> hits?\n\nInteger n = hits.get(key);\nhits.put(key, n == null ? 1 : n + 1);\n\nPick one.",
+      "prompt": "Which line is the bug when many threads run this against a shared `ConcurrentHashMap<String, Integer> hits`?\n\n```java\nInteger n = hits.get(key);\nhits.put(key, n == null ? 1 : n + 1);\n```\n\nPick one.",
       "options": [
         {
           "id": "a",
-          "text": "get then put is a check-then-act sequence, so two threads can read the same n and lose an increment.",
-          "why": "Correct: each call is thread-safe but the pair is not atomic; use hits.merge(key, 1, Integer::sum)."
+          "text": "`get` then `put` is a check-then-act sequence, so two threads can read the same n and lose an increment.",
+          "why": "Correct: each call is thread-safe but the pair is not atomic; use `hits.merge(key, 1, Integer::sum)`."
         },
         {
           "id": "b",
-          "text": "ConcurrentHashMap.put throws ConcurrentModificationException whenever two writers collide on one bucket.",
+          "text": "`ConcurrentHashMap.put` throws `ConcurrentModificationException` whenever two writers collide on one bucket.",
           "why": "The map never throws it; its iterators are weakly consistent."
         },
         {
           "id": "c",
-          "text": "Autoboxing of n + 1 creates a shared Integer cache entry that two threads corrupt.",
+          "text": "Autoboxing of `n + 1` creates a shared `Integer` cache entry that two threads corrupt.",
           "why": "Boxing a local value is harmless; the race is on the shared map entry."
         },
         {
           "id": "d",
-          "text": "get() may block until another thread finishes its put(), so threads queue up behind each other.",
-          "why": "Reads in ConcurrentHashMap are non-blocking."
+          "text": "`get()` may block until another thread finishes its `put()`, so threads queue up behind each other.",
+          "why": "Reads in `ConcurrentHashMap` are non-blocking."
         }
       ],
       "correct": [
         "a"
       ],
-      "explanation": "Use merge, compute or computeIfAbsent (atomic per key) or a LongAdder as the value. Same bug shape: containsKey then put."
+      "explanation": "Use `merge`, `compute` or `computeIfAbsent` (atomic per key) or a `LongAdder` as the value. Same bug shape: `containsKey` then `put`."
     },
     {
       "id": "barrier-stragglers",
       "concept": "CyclicBarrier",
       "type": "integer",
       "difficulty": 2,
-      "prompt": "Seven threads each call await() once on the same new CyclicBarrier(3). How many of them are still blocked after everything that can happen has happened?",
+      "prompt": "Seven threads each call `await()` once on the same `new CyclicBarrier(3)`. How many of them are still blocked after everything that can happen has happened?",
       "answer": 1,
       "tolerance": 0,
-      "explanation": "The barrier trips for every group of 3: two groups (6 threads) pass, and the seventh waits for two partners that never arrive (verified by running it). The barrier is reusable, which a CountDownLatch is not.",
+      "explanation": "The barrier trips for every group of 3: two groups (6 threads) pass, and the seventh waits for two partners that never arrive (verified by running it). The barrier is reusable, which a `CountDownLatch` is not.",
       "unit": "thread"
     },
     {
@@ -60,10 +60,10 @@
       "concept": "Semaphore",
       "type": "integer",
       "difficulty": 2,
-      "prompt": "A Semaphore is created with new Semaphore(2). A thread calls acquire() once, then release() twice. What does availablePermits() return afterwards?",
+      "prompt": "A `Semaphore` is created with `new Semaphore(2)`. A thread calls `acquire()` once, then `release()` twice. What does `availablePermits()` return afterwards?",
       "answer": 3,
       "tolerance": 0,
-      "explanation": "Start 2, acquire leaves 1, two releases give 3. A semaphore does not remember who acquired; release() can raise the count above the initial value (verified by running it). That is why you release in finally and only after a successful acquire.",
+      "explanation": "Start 2, `acquire` leaves 1, two releases give 3. A semaphore does not remember who acquired; `release()` can raise the count above the initial value (verified by running it). That is why you release in `finally` and only after a successful `acquire`.",
       "unit": "permits"
     },
     {
@@ -71,23 +71,23 @@
       "concept": "ConcurrentHashMap",
       "type": "truefalse",
       "difficulty": 1,
-      "prompt": "ConcurrentHashMap, unlike HashMap, rejects null keys and null values.",
+      "prompt": "`ConcurrentHashMap`, unlike `HashMap`, rejects null keys and null values.",
       "options": [
         {
           "id": "a",
           "text": "True",
-          "why": "Correct: put(\"a\", null) throws NullPointerException, because a null from get() would be ambiguous between absent and mapped to null."
+          "why": "Correct: `put(\"a\", null)` throws `NullPointerException`, because a null from `get()` would be ambiguous between absent and mapped to null."
         },
         {
           "id": "b",
           "text": "False",
-          "why": "HashMap allows one null key and null values, but ConcurrentHashMap throws NullPointerException for both."
+          "why": "`HashMap` allows one null key and null values, but `ConcurrentHashMap` throws `NullPointerException` for both."
         }
       ],
       "correct": [
         "a"
       ],
-      "explanation": "This design avoids ambiguity in concurrent code, where you cannot do containsKey after get atomically."
+      "explanation": "This design avoids ambiguity in concurrent code, where you cannot do `containsKey` after `get` atomically."
     },
     {
       "id": "collections-fit",
@@ -98,23 +98,23 @@
       "left": [
         {
           "id": "l1",
-          "text": "ConcurrentHashMap"
+          "text": "`ConcurrentHashMap`"
         },
         {
           "id": "l2",
-          "text": "CopyOnWriteArrayList"
+          "text": "`CopyOnWriteArrayList`"
         },
         {
           "id": "l3",
-          "text": "ArrayBlockingQueue"
+          "text": "`ArrayBlockingQueue`"
         },
         {
           "id": "l4",
-          "text": "ConcurrentLinkedQueue"
+          "text": "`ConcurrentLinkedQueue`"
         },
         {
           "id": "l5",
-          "text": "PriorityBlockingQueue"
+          "text": "`PriorityBlockingQueue`"
         }
       ],
       "right": [
@@ -132,7 +132,7 @@
         },
         {
           "id": "r4",
-          "text": "Unbounded lock-free queue that never blocks: poll() returns null when empty"
+          "text": "Unbounded lock-free queue that never blocks: `poll()` returns null when empty"
         },
         {
           "id": "r5",
@@ -140,7 +140,7 @@
         },
         {
           "id": "r6",
-          "text": "Collections.synchronizedList(new ArrayList<>())"
+          "text": "`Collections.synchronizedList(new ArrayList<>())`"
         }
       ],
       "pairs": {
@@ -150,28 +150,28 @@
         "l4": "r4",
         "l5": "r5"
       },
-      "explanation": "Note that ConcurrentLinkedQueue has no blocking take(); wrap it or use LinkedBlockingQueue when consumers must wait. The synchronized wrapper is the coarse-lock distractor."
+      "explanation": "Note that `ConcurrentLinkedQueue` has no blocking `take()`; wrap it or use `LinkedBlockingQueue` when consumers must wait. The synchronized wrapper is the coarse-lock distractor."
     },
     {
       "id": "cow-iteration",
       "concept": "CopyOnWriteArrayList",
       "type": "single",
       "difficulty": 2,
-      "prompt": "Consider this code.\n\nList<Integer> list = new CopyOnWriteArrayList<>(List.of(1, 2, 3));\nfor (Integer x : list) { if (x == 1) list.add(99); }\nSystem.out.println(list);\n\nWhat happens when it runs?",
+      "prompt": "Consider this code.\n\n```java\nList<Integer> list = new CopyOnWriteArrayList<>(List.of(1, 2, 3));\nfor (Integer x : list) {\n    if (x == 1) list.add(99);\n}\nSystem.out.println(list);\n```\n\nWhat happens when it runs?",
       "options": [
         {
           "id": "a",
-          "text": "It prints [1, 2, 3, 99] and the loop never sees 99.",
+          "text": "It prints `[1, 2, 3, 99]` and the loop never sees 99.",
           "why": "Correct: the iterator works on a snapshot taken when the loop began, so there is no exception and no 99 in the loop."
         },
         {
           "id": "b",
-          "text": "It throws ConcurrentModificationException on the next iteration.",
-          "why": "That is the ArrayList behaviour (verified); COW iterators never throw it."
+          "text": "It throws `ConcurrentModificationException` on the next iteration.",
+          "why": "That is the `ArrayList` behaviour (verified); `COW` iterators never throw it."
         },
         {
           "id": "c",
-          "text": "It prints [1, 2, 3] because the add is ignored during iteration.",
+          "text": "It prints `[1, 2, 3]` because the add is ignored during iteration.",
           "why": "The add succeeds on a fresh copy of the array; only the running iterator is unaffected."
         },
         {
@@ -190,7 +190,7 @@
       "concept": "Coordination tools",
       "type": "fill",
       "difficulty": 1,
-      "prompt": "Complete the sentences about java.util.concurrent synchronizers.",
+      "prompt": "Complete the sentences about `java.util.concurrent` synchronizers.",
       "text": "A {1} blocks waiters until its count reaches zero and cannot be reset. A {2} makes a fixed number of threads wait for each other and is reusable. A {3} limits how many threads hold permits at once.",
       "blanks": {
         "1": "CountDownLatch",
@@ -204,14 +204,14 @@
         "Phaser",
         "Exchanger"
       ],
-      "explanation": "Phaser is a reusable barrier with a dynamic number of parties, and Exchanger swaps objects between two threads."
+      "explanation": "`Phaser` is a reusable barrier with a dynamic number of parties, and `Exchanger` swaps objects between two threads."
     },
     {
       "id": "latch-workers",
       "concept": "CountDownLatch",
       "type": "code",
       "difficulty": 2,
-      "prompt": "Write Java that starts 3 worker threads (each runs doWork()) and makes the main thread wait until all 3 have finished. Use a CountDownLatch and make sure the count goes down even if doWork() throws.",
+      "prompt": "Write Java that starts 3 worker threads (each runs `doWork()`) and makes the main thread wait until all 3 have finished. Use a `CountDownLatch` and make sure the count goes down even if `doWork()` throws.",
       "language": "java",
       "checks": [
         {
@@ -232,7 +232,7 @@
         }
       ],
       "model": "CountDownLatch done = new CountDownLatch(3);\nfor (int i = 0; i < 3; i++) {\n  new Thread(() -> {\n    try { doWork(); } finally { done.countDown(); }\n  }).start();\n}\ndone.await();",
-      "explanation": "Without finally, one failing worker leaves the latch above zero and main waits forever. Executors or a loop over a list are equally valid; await(timeout, unit) is a safer variant."
+      "explanation": "Without `finally`, one failing worker leaves the latch above zero and main waits forever. `Executors` or a loop over a list are equally valid; `await(timeout, unit)` is a safer variant."
     },
     {
       "id": "synchronized-map-iter",
@@ -240,8 +240,8 @@
       "type": "assertion",
       "difficulty": 3,
       "prompt": "Read the assertion (A) and the reason (R), then choose the correct option.",
-      "assertion": "Iterating over Collections.synchronizedMap(map).entrySet() still needs a manual synchronized(map) block.",
-      "reason": "ConcurrentHashMap iterators are weakly consistent and never throw ConcurrentModificationException.",
+      "assertion": "Iterating over `Collections.synchronizedMap(map).entrySet()` still needs a manual `synchronized(map)` block.",
+      "reason": "`ConcurrentHashMap` iterators are weakly consistent and never throw `ConcurrentModificationException`.",
       "correct": [
         "b"
       ],
@@ -258,40 +258,40 @@
       "concept": "Thread dumps",
       "type": "single",
       "difficulty": 2,
-      "prompt": "A jstack dump shows a thread with:\n\n\"worker-1\" java.lang.Thread.State: BLOCKED (on object monitor)\n    at Inventory.reserve(Inventory.java:42)\n    - waiting to lock <0x000000076ab62208> (a java.lang.Object)\n\nWhat does it mean?",
+      "prompt": "A `jstack` dump shows a thread with:\n\n```text\n\"worker-1\" java.lang.Thread.State: BLOCKED (on object monitor)\n    at Inventory.reserve(Inventory.java:42)\n    - waiting to lock <0x000000076ab62208> (a java.lang.Object)\n```\n\nWhat does it mean?",
       "options": [
         {
           "id": "a",
           "text": "It is trying to enter a synchronized block held by another thread.",
-          "why": "Correct: BLOCKED means waiting to acquire a monitor; search the dump for \"locked <0x000000076ab62208>\" to find the holder."
+          "why": "Correct: `BLOCKED` means waiting to acquire a monitor; search the dump for `\"locked <0x000000076ab62208>\"` to find the holder."
         },
         {
           "id": "b",
-          "text": "It called Object.wait() and is now waiting for another thread to call notify().",
-          "why": "That shows as WAITING (on object monitor) with a \"waiting on\" line."
+          "text": "It called `Object.wait()` and is now waiting for another thread to call `notify()`.",
+          "why": "That shows as `WAITING (on object monitor)` with a `\"waiting on\"` line."
         },
         {
           "id": "c",
-          "text": "It is parked on a ReentrantLock, a Condition or a BlockingQueue.",
-          "why": "That shows as WAITING (parking), with \"parking to wait for\"."
+          "text": "It is parked on a `ReentrantLock`, a `Condition` or a `BlockingQueue`.",
+          "why": "That shows as `WAITING (parking)`, with `\"parking to wait for\"`."
         },
         {
           "id": "d",
-          "text": "It is sleeping inside Thread.sleep() and will wake up by itself.",
-          "why": "That is TIMED_WAITING (sleeping)."
+          "text": "It is sleeping inside `Thread.sleep()` and will wake up by itself.",
+          "why": "That is `TIMED_WAITING (sleeping)`."
         }
       ],
       "correct": [
         "a"
       ],
-      "explanation": "BLOCKED vs WAITING is the thread-dump interview question. For deadlocks, jstack prints a \"Found one Java-level deadlock\" section. Also: jcmd <pid> Thread.print and kill -3."
+      "explanation": "`BLOCKED` vs `WAITING` is the thread-dump interview question. For deadlocks, `jstack` prints a \"Found one Java-level deadlock\" section. Also: `jcmd <pid> Thread.print` and `kill -3`."
     },
     {
       "id": "lock-ordering",
       "concept": "Deadlocks",
       "type": "code",
       "difficulty": 3,
-      "prompt": "Class Account has an int field id and an int field balance. Write transfer(Account from, Account to, int amt) so that two opposite transfers (A to B and B to A) can never deadlock, by always locking the account with the smaller id first.",
+      "prompt": "Class `Account` has an int field `id` and an int field balance. Write `transfer(Account from, Account to, int amt)` so that two opposite transfers (A to B and B to A) can never deadlock, by always locking the account with the smaller `id` first.",
       "language": "java",
       "checks": [
         {
@@ -308,7 +308,7 @@
         }
       ],
       "model": "Account first = from.id < to.id ? from : to;\nAccount second = first == from ? to : from;\nsynchronized (first) {\n  synchronized (second) {\n    from.balance -= amt; to.balance += amt;\n  }\n}",
-      "explanation": "A global lock order removes circular wait. If ids can tie, break ties with a separate tie-lock or identityHashCode. Verified to finish with 2 opposite-direction threads. ReentrantLock.tryLock with back-off is the alternative.",
+      "explanation": "A global lock order removes circular wait. If ids can tie, break ties with a separate tie-lock or `identityHashCode`. Verified to finish with 2 opposite-direction threads. `ReentrantLock.tryLock` with back-off is the alternative.",
       "starter": "void transfer(Account from, Account to, int amt) {\n  \n}"
     },
     {
@@ -316,7 +316,7 @@
       "concept": "ConcurrentHashMap",
       "type": "code",
       "difficulty": 2,
-      "prompt": "Given ConcurrentHashMap<String, Integer> counts and a String word, write one statement that increments the count for word by 1 atomically, starting from 1 when the key is absent.",
+      "prompt": "Given `ConcurrentHashMap<String, Integer> counts` and a `String word`, write one statement that increments the count for `word` by 1 atomically, starting from 1 when the key is absent.",
       "language": "java",
       "checks": [
         {
@@ -329,30 +329,30 @@
         }
       ],
       "model": "counts.merge(word, 1, Integer::sum);",
-      "explanation": "merge is atomic per key. compute((k, v) -> v == null ? 1 : v + 1) is equally valid; get-then-put is the check-then-act bug."
+      "explanation": "`merge` is atomic per key. `compute((k, v) -> v == null ? 1 : v + 1)` is equally valid; `get-then-put` is the check-then-act bug."
     },
     {
       "id": "bq-method-families",
       "concept": "Concurrent collections",
       "type": "matrix",
       "difficulty": 2,
-      "prompt": "A BlockingQueue is full. Match each insertion method with what it does.",
+      "prompt": "A `BlockingQueue` is full. Match each insertion method with what it does.",
       "left": [
         {
           "id": "a",
-          "text": "put(e)"
+          "text": "`put(e)`"
         },
         {
           "id": "b",
-          "text": "offer(e)"
+          "text": "`offer(e)`"
         },
         {
           "id": "c",
-          "text": "offer(e, 1, SECONDS)"
+          "text": "`offer(e, 1, SECONDS)`"
         },
         {
           "id": "d",
-          "text": "add(e)"
+          "text": "`add(e)`"
         }
       ],
       "right": [
@@ -370,7 +370,7 @@
         },
         {
           "id": "s",
-          "text": "Throws IllegalStateException"
+          "text": "Throws `IllegalStateException`"
         },
         {
           "id": "t",
@@ -383,18 +383,18 @@
         "c": "r",
         "d": "s"
       },
-      "explanation": "BlockingQueue methods come in four families: throws (add), special value (offer), blocks (put) and times out (offer with timeout). The overwrite behaviour is not offered by any standard BlockingQueue."
+      "explanation": "`BlockingQueue` methods come in four families: throws (`add`), special value (`offer`), blocks (`put`) and times out (`offer with timeout`). The overwrite behaviour is not offered by any standard `BlockingQueue`."
     },
     {
       "id": "latch-extra-countdowns",
       "concept": "CountDownLatch",
       "type": "integer",
       "difficulty": 1,
-      "prompt": "A CountDownLatch is created with new CountDownLatch(3) and countDown() is called 5 times. What does getCount() return?",
+      "prompt": "A `CountDownLatch` is created with `new CountDownLatch(3)` and `countDown()` is called 5 times. What does `getCount()` return?",
       "answer": 0,
       "tolerance": 0,
       "unit": "count",
-      "explanation": "The count stops at zero and never goes negative, so the extra calls are ignored (verified by running it). Once at zero the latch stays open and cannot be reset, unlike a CyclicBarrier."
+      "explanation": "The count stops at zero and never goes negative, so the extra calls are ignored (verified by running it). Once at zero the latch stays open and cannot be reset, unlike a `CyclicBarrier`."
     },
     {
       "id": "find-deadlock",
@@ -405,29 +405,29 @@
       "options": [
         {
           "id": "a",
-          "text": "Catch the DeadlockException that synchronized throws after a timeout.",
-          "why": "There is no such exception; synchronized waits forever."
+          "text": "Catch the `DeadlockException` that `synchronized` throws after a timeout.",
+          "why": "There is no such exception; `synchronized` waits forever."
         },
         {
           "id": "b",
-          "text": "Loop over all threads and report any whose state is BLOCKED.",
-          "why": "BLOCKED only means contending for a monitor, which is normal; a deadlock needs a cycle."
+          "text": "Loop over all threads and report any whose state is `BLOCKED`.",
+          "why": "`BLOCKED` only means contending for a monitor, which is normal; a deadlock needs a cycle."
         },
         {
           "id": "c",
-          "text": "Call ThreadMXBean.findDeadlockedThreads() from java.lang.management.",
+          "text": "Call `ThreadMXBean.findDeadlockedThreads()` from `java.lang.management`.",
           "why": "Correct: it returns the ids of threads blocked in a lock cycle, or null (verified: it reported 2 threads for a classic A/B deadlock)."
         },
         {
           "id": "d",
-          "text": "Give every Object.wait() a timeout, so a stuck thread is flagged.",
+          "text": "Give every `Object.wait()` a timeout, so a stuck thread is flagged.",
           "why": "A timeout wakes the thread but says nothing about a lock cycle."
         }
       ],
       "correct": [
         "c"
       ],
-      "explanation": "jstack and jcmd <pid> Thread.print also print a \"Found one Java-level deadlock\" section. In production, expose findDeadlockedThreads through a health check or JMX."
+      "explanation": "`jstack` and `jcmd <pid> Thread.print` also print a \"Found one Java-level deadlock\" section. In production, expose `findDeadlockedThreads` through a health check or JMX."
     },
     {
       "id": "chm-size-estimate",
@@ -435,7 +435,7 @@
       "type": "assertion",
       "difficulty": 3,
       "prompt": "Read the assertion (A) and the reason (R), then choose the correct option.",
-      "assertion": "ConcurrentHashMap.size() is always an exact count at every instant, even while other threads add and remove entries.",
+      "assertion": "`ConcurrentHashMap.size()` is always an exact count at every instant, even while other threads add and remove entries.",
       "reason": "ConcurrentHashMap iterators and bulk operations are weakly consistent: they reflect the map at some point during or after their creation.",
       "correct": [
         "d"
@@ -446,14 +446,14 @@
         "c": "R is true, so option c (R false) is wrong.",
         "d": "Correct: under concurrent updates size() is only an estimate, while R states the weakly consistent behaviour of iterators correctly."
       },
-      "explanation": "The Javadoc says size() is an estimate when updates are in flight. Use LongAdder or a separate counter if you need a cheap approximate total, and never base logic on size() == 0 under concurrency."
+      "explanation": "The Javadoc says `size()` is an estimate when updates are in flight. Use `LongAdder` or a separate counter if you need a cheap approximate total, and never base logic on `size() == 0` under concurrency."
     },
     {
       "id": "semaphore-guard",
       "concept": "Semaphore",
       "type": "code",
       "difficulty": 2,
-      "prompt": "Given a field Semaphore sem and a method String fetch(String url), write the body of String limited(String url) throws InterruptedException that waits for a permit, returns fetch(url), and always gives the permit back.",
+      "prompt": "Given a field `Semaphore sem` and a method `String fetch(String url)`, write the body of `String limited(String url) throws InterruptedException` that waits for a permit, returns `fetch(url)`, and always gives the permit back.",
       "language": "java",
       "checks": [
         {
@@ -470,7 +470,7 @@
         }
       ],
       "model": "sem.acquire();\ntry {\n  return fetch(url);\n} finally {\n  sem.release();\n}",
-      "explanation": "Acquire before the try so a failed acquire never releases a permit you do not hold. A try-with-resources wrapper or tryAcquire(timeout) are variations.",
+      "explanation": "Acquire before the try so a failed acquire never releases a permit you do not hold. A try-with-resources wrapper or `tryAcquire(timeout)` are variations.",
       "starter": "String limited(String url) throws InterruptedException {\n  \n}"
     }
   ]

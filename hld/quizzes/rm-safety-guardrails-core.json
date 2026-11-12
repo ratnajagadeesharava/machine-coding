@@ -16,7 +16,7 @@
       "concept": "SQL guard",
       "type": "integer",
       "difficulty": 3,
-      "prompt": "A guard accepts SQL only if it parses into exactly one statement whose root node is a plain SELECT. Of these five inputs, how many pass: (1) SELECT 1; (2) SELECT 1; DROP TABLE t; (3) WITH x AS (SELECT 1) SELECT * FROM x; (4) SELECT 1 UNION SELECT 2; (5) DELETE FROM t?",
+      "prompt": "A guard accepts SQL only if it parses into exactly one statement whose root node is a plain SELECT. Of these five inputs, how many pass: (1) SELECT 1; (2) `SELECT 1; DROP TABLE t;` (3) `WITH x AS (SELECT 1) SELECT * FROM x;` (4) SELECT 1 UNION SELECT 2; (5) `DELETE FROM t`?",
       "answer": 2,
       "unit": "inputs",
       "explanation": "Inputs 1 and 3 pass (a WITH clause hangs off the SELECT node). Input 2 has two statements, input 4 has a Union root rather than a Select, and input 5 is a Delete. Union is a common false rejection, so a production guard usually allows set operations explicitly."
@@ -95,7 +95,7 @@
         "c": "R is true, so this option is wrong.",
         "d": "Correct: A is false, R is true. Parse the SQL into an AST and allow-list node types instead."
       },
-      "explanation": "Also note that DROP is not the only danger: DELETE, UPDATE, COPY, pg_sleep and file functions matter too."
+      "explanation": "Also note that DROP is not the only danger: DELETE, UPDATE, COPY, `pg_sleep` and file functions matter too."
     },
     {
       "id": "controls",
@@ -383,7 +383,7 @@
       "concept": "Schema validation",
       "type": "code",
       "difficulty": 2,
-      "prompt": "Write a JSON Schema for the arguments of a refund tool: order_id is a string matching ORD- followed by exactly six digits, amount is a number greater than 0 and at most 500, both are required, and no other properties are allowed.",
+      "prompt": "Write a JSON Schema for the arguments of a refund tool: `order_id` is a string matching ORD- followed by exactly six digits, amount is a number greater than 0 and at most 500, both are required, and no other properties are allowed.",
       "language": "json",
       "checks": [
         {
@@ -408,7 +408,7 @@
         }
       ],
       "model": "{\n  \"type\": \"object\",\n  \"properties\": {\n    \"order_id\": { \"type\": \"string\", \"pattern\": \"^ORD-[0-9]{6}$\" },\n    \"amount\": { \"type\": \"number\", \"exclusiveMinimum\": 0, \"maximum\": 500 }\n  },\n  \"required\": [\"order_id\", \"amount\"],\n  \"additionalProperties\": false\n}",
-      "explanation": "Validate every tool call against this schema in code before it runs, and reject instead of coercing. In draft-04 style schemas exclusiveMinimum is a boolean beside minimum; the draft 2019-09 and later form shown here takes the number. An anchored pattern matters: without ^ and $ a value such as xORD-123456789 would still match.",
+      "explanation": "Validate every tool call against this schema in code before it runs, and reject instead of coercing. In draft-04 style schemas `exclusiveMinimum` is a boolean beside minimum; the draft 2019-09 and later form shown here takes the number. An anchored pattern matters: without ^ and $ a value such as `xORD-123456789` would still match.",
       "starter": "{\n"
     },
     {

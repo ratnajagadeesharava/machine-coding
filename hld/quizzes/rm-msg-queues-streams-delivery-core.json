@@ -123,17 +123,17 @@
       "concept": "Kafka durability",
       "type": "integer",
       "difficulty": 3,
-      "prompt": "A topic has replication factor 3 and min.insync.replicas = 2, and producers use acks=all. At most how many brokers holding the partition can be down while writes are still accepted?",
+      "prompt": "A topic has replication factor 3 and `min.insync.replicas = 2`, and producers use `acks=all`. At most how many brokers holding the partition can be down while writes are still accepted?",
       "answer": 1,
       "unit": "broker",
-      "explanation": "acks=all needs the in-sync replica count to be at least 2, so with 3 replicas only 1 can be lost. Losing 2 makes the producer get a NotEnoughReplicas error, trading availability for durability."
+      "explanation": "`acks=all` needs the in-sync replica count to be at least 2, so with 3 replicas only 1 can be lost. Losing 2 makes the producer get a `NotEnoughReplicas` error, trading availability for durability."
     },
     {
       "id": "create-topic-cli",
       "concept": "Kafka durability",
       "type": "code",
       "difficulty": 2,
-      "prompt": "Write the kafka-topics.sh command that creates the topic orders on localhost:9092 with 6 partitions, replication factor 3 and the topic config min.insync.replicas=2.",
+      "prompt": "Write the `kafka-topics.sh` command that creates the topic `orders` on `localhost:9092` with 6 partitions, replication factor 3 and the topic config `min.insync.replicas=2`.",
       "language": "shell",
       "checks": [
         {
@@ -154,7 +154,7 @@
         }
       ],
       "model": "kafka-topics.sh --bootstrap-server localhost:9092 --create --topic orders --partitions 6 --replication-factor 3 --config min.insync.replicas=2",
-      "explanation": "Pair this topic config with producer acks=all. Other valid answers reorder the flags or use the .sh-less kafka-topics binary name. Replication factor 3 with min.insync.replicas 2 tolerates one broker failure without losing acknowledged writes."
+      "explanation": "Pair this topic config with producer `acks=all`. Other valid answers reorder the flags or use the .sh-less kafka-topics binary name. Replication factor 3 with `min.insync.replicas` 2 tolerates one broker failure without losing acknowledged writes."
     },
     {
       "id": "delivery-fill",
@@ -287,7 +287,7 @@
       "type": "assertion",
       "difficulty": 2,
       "prompt": "Read the assertion A and the reason R, then choose the correct relationship between them.",
-      "assertion": "In RabbitMQ a message that has been acknowledged with basic.ack is redelivered if the consumer then crashes.",
+      "assertion": "In RabbitMQ a message that has been acknowledged with `basic.ack` is redelivered if the consumer then crashes.",
       "reason": "An ack tells the broker the message may be removed from the queue.",
       "correct": [
         "d"
@@ -344,7 +344,7 @@
       "type": "assertion",
       "difficulty": 3,
       "prompt": "Read the assertion A and the reason R, then choose the correct relationship between them.",
-      "assertion": "A Kafka topic with cleanup.policy=compact keeps at least the latest record for every key.",
+      "assertion": "A Kafka topic with `cleanup.policy=compact` keeps at least the latest record for every key.",
       "reason": "Compaction deletes every record older than the retention period regardless of its key.",
       "correct": [
         "c"
@@ -355,7 +355,7 @@
         "c": "Correct: A is true. R describes cleanup.policy=delete, not compaction.",
         "d": "Not this one: A is false while R is true does not describe this pair; check the truth of A again."
       },
-      "explanation": "Compaction suits changelog or state topics (latest value per entity). Age-based removal is cleanup.policy=delete; both can be combined as compact,delete."
+      "explanation": "Compaction suits changelog or state topics (latest value per entity). Age-based removal is `cleanup.policy=delete`; both can be combined as `compact,delete`."
     },
     {
       "id": "acks-all-durability",
@@ -363,7 +363,7 @@
       "type": "assertion",
       "difficulty": 3,
       "prompt": "Read the assertion A and the reason R, then choose the correct relationship between them.",
-      "assertion": "With replication factor 3, min.insync.replicas=2 and acks=all, an acknowledged write survives the loss of one broker.",
+      "assertion": "With replication factor 3, `min.insync.replicas=2` and `acks=all`, an acknowledged write survives the loss of one broker.",
       "reason": "The partition leader only acknowledges once at least 2 in-sync replicas have the record.",
       "correct": [
         "a"
@@ -374,14 +374,14 @@
         "c": "Not this one: A is true while R is false does not describe this pair; check the truth of R again.",
         "d": "Not this one: A is false while R is true does not describe this pair; check the truth of A again."
       },
-      "explanation": "Unclean leader election (unclean.leader.election.enable=true) would break the guarantee, which is why it stays off for durable topics."
+      "explanation": "Unclean leader election (`unclean.leader.election.enable=true`) would break the guarantee, which is why it stays off for durable topics."
     },
     {
       "id": "dedup-insert",
       "concept": "Idempotent consumers",
       "type": "code",
       "difficulty": 2,
-      "prompt": "Table processed_messages(message_id text primary key). Write a PostgreSQL statement that records message id 'evt-42' and does nothing if it was already recorded.",
+      "prompt": "Table `processed_messages(message_id text primary key)`. Write a PostgreSQL statement that records message id `'evt-42'` and does nothing if it was already recorded.",
       "language": "sql",
       "checks": [
         {
@@ -398,7 +398,7 @@
         }
       ],
       "model": "INSERT INTO processed_messages (message_id) VALUES ('evt-42') ON CONFLICT (message_id) DO NOTHING;",
-      "explanation": "Run it in the same transaction as the business side effect and check the affected row count: 0 rows means a duplicate, so skip the work. Other valid shapes: catch the unique violation, or use INSERT ... WHERE NOT EXISTS."
+      "explanation": "Run it in the same transaction as the business side effect and check the affected row count: 0 rows means a duplicate, so skip the work. Other valid shapes: catch the unique violation, or use `INSERT ... WHERE NOT EXISTS`."
     },
     {
       "id": "dedup-key",
@@ -438,21 +438,21 @@
       "concept": "Kafka consumer groups",
       "type": "single",
       "difficulty": 3,
-      "prompt": "With default settings, a Kafka consumer takes 6 minutes to process each batch returned by poll(). The group keeps rebalancing and its offsets are never committed. What is the most likely cause?",
+      "prompt": "With default settings, a Kafka consumer takes 6 minutes to process each batch returned by `poll()`. The group keeps rebalancing and its offsets are never committed. What is the most likely cause?",
       "options": [
         {
           "id": "a",
-          "text": "Processing exceeds max.poll.interval.ms (default 5 minutes), so the consumer is evicted from the group.",
+          "text": "Processing exceeds `max.poll.interval.ms` (default 5 minutes), so the consumer is evicted from the group.",
           "why": "Correct: no poll within the interval makes the coordinator remove the member."
         },
         {
           "id": "b",
-          "text": "heartbeat.interval.ms of 3 seconds is too short, so heartbeats overload the coordinator.",
+          "text": "`heartbeat.interval.ms` of 3 seconds is too short, so heartbeats overload the coordinator.",
           "why": "Three-second heartbeats are the normal default and cheap."
         },
         {
           "id": "c",
-          "text": "session.timeout.ms of 45 seconds expires because processing blocks the heartbeat thread.",
+          "text": "`session.timeout.ms` of 45 seconds expires because processing blocks the heartbeat thread.",
           "why": "Heartbeats run on a background thread, so slow processing does not stop them."
         },
         {
@@ -464,14 +464,14 @@
       "correct": [
         "a"
       ],
-      "explanation": "Fixes: lower max.poll.records, raise max.poll.interval.ms, or hand slow work to another thread (and pause the partitions). Defaults per the Kafka docs: max.poll.interval.ms 300000, session.timeout.ms 45000 (3.0+), heartbeat.interval.ms 3000."
+      "explanation": "Fixes: lower `max.poll.records`, raise `max.poll.interval.ms`, or hand slow work to another thread (and pause the partitions). Defaults per the Kafka docs: `max.poll.interval.ms` 300000, `session.timeout.ms` 45000 (3.0+), `heartbeat.interval.ms` 3000."
     },
     {
       "id": "offset-reset",
       "concept": "Kafka offsets",
       "type": "single",
       "difficulty": 2,
-      "prompt": "A brand-new consumer group subscribes to an existing topic with no committed offsets and auto.offset.reset left at its default. Where does it start reading?",
+      "prompt": "A brand-new consumer group subscribes to an existing topic with no committed offsets and `auto.offset.reset` left at its default. Where does it start reading?",
       "options": [
         {
           "id": "a",
@@ -481,12 +481,12 @@
         {
           "id": "b",
           "text": "At the first retained record of each partition, replaying all stored history.",
-          "why": "That is auto.offset.reset=earliest, not the default."
+          "why": "That is `auto.offset.reset=earliest`, not the default."
         },
         {
           "id": "c",
           "text": "Nowhere: it raises an error and refuses to start.",
-          "why": "An error only happens with auto.offset.reset=none."
+          "why": "An error only happens with `auto.offset.reset=none`."
         },
         {
           "id": "d",
@@ -508,7 +508,7 @@
       "options": [
         {
           "id": "a",
-          "text": "A consumer rejects it with basic.nack or basic.reject and requeue=false.",
+          "text": "A consumer rejects it with `basic.nack` or `basic.reject` and `requeue=false`.",
           "why": "Correct: a rejected message that is not requeued is dead-lettered."
         },
         {
@@ -523,7 +523,7 @@
         },
         {
           "id": "d",
-          "text": "A consumer acknowledges it with basic.ack after processing.",
+          "text": "A consumer acknowledges it with `basic.ack` after processing.",
           "why": "An ack simply removes the message; nothing is dead-lettered."
         },
         {
@@ -537,7 +537,7 @@
         "b",
         "c"
       ],
-      "explanation": "Quorum queues add a fourth cause: exceeding the delivery limit. The x-death header records the reason, queue and count, which is what a retry-with-delay topology reads."
+      "explanation": "Quorum queues add a fourth cause: exceeding the delivery limit. The `x-death` header records the reason, queue and count, which is what a retry-with-delay topology reads."
     },
     {
       "id": "partition-sizing",

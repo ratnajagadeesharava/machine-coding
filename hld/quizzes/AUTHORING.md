@@ -77,3 +77,18 @@ still end with `?` or `.`.
   the explanation that other correct solutions exist. Keep snippets to about 1-8 lines.
 
 Roadmap quizzes (series `interview-roadmap`) must mix at least four distinct types, including at least one `code` and one `integer` question.
+
+## Code in questions
+
+The quiz page renders text with two bits of Markdown, in the prompt, the options (`text` and `why`), the explanation, assertion/reason and matrix items:
+
+- A fenced block ```` ```java ... ``` ```` becomes a **snippet card** with a language label, syntax colours and a copy button. Tags: `java`, `python`, `sql`, `yaml`, `json`, `bash`, `js`, `http`, and `text` for pseudocode.
+- `` `inline code` `` becomes a monospace chip.
+
+Rules (a test enforces the first two):
+
+1. Code with more than one statement, or any method/class definition, goes in a fenced block, one statement per line, 4-space indent. Never write run-on code like
+   `List<Integer> k = new ArrayList<>(); m.put(k, "v"); k.add(2);` inside a sentence.
+2. The prompt still ends with `?` or `.`: put the question sentence after the closing fence.
+3. Short code in a sentence (identifiers, one expression, SQL keywords) goes in backticks. Plain-English options stay plain.
+4. Separate paragraphs with a blank line (`\n\n`). In JSON the newlines are `\n`.

@@ -16,7 +16,7 @@
       "concept": "AuthN vs AuthZ",
       "type": "single",
       "difficulty": 1,
-      "prompt": "A caller sends a valid token for user Alice and requests DELETE /admin/users/7. Alice is not an admin. Which response is correct?",
+      "prompt": "A caller sends a valid token for user Alice and requests `DELETE /admin/users/7`. Alice is not an admin. Which response is correct?",
       "options": [
         {
           "id": "a",
@@ -53,27 +53,27 @@
       "left": [
         {
           "id": "l1",
-          "text": "iss"
+          "text": "`iss`"
         },
         {
           "id": "l2",
-          "text": "sub"
+          "text": "`sub`"
         },
         {
           "id": "l3",
-          "text": "aud"
+          "text": "`aud`"
         },
         {
           "id": "l4",
-          "text": "exp"
+          "text": "`exp`"
         },
         {
           "id": "l5",
-          "text": "nbf"
+          "text": "`nbf`"
         },
         {
           "id": "l6",
-          "text": "jti"
+          "text": "`jti`"
         }
       ],
       "right": [
@@ -114,14 +114,14 @@
         "l5": "r5",
         "l6": "r6"
       },
-      "explanation": "The signing algorithm lives in the JOSE header (alg), not in the claims. exp, nbf and iat are seconds since the Unix epoch."
+      "explanation": "The signing algorithm lives in the JOSE header (`alg`), not in the claims. `exp`, `nbf` and `iat` are seconds since the Unix epoch."
     },
     {
       "id": "jwt-header-json",
       "concept": "JWT claims",
       "type": "code",
       "difficulty": 1,
-      "prompt": "Write the JSON header of a JWT signed with RS256 whose signing key is identified by the key id \"key-2024\".",
+      "prompt": "Write the JSON header of a JWT signed with `RS256` whose signing key is identified by the key id `\"key-2024\"`.",
       "language": "json",
       "checks": [
         {
@@ -134,7 +134,7 @@
         }
       ],
       "model": "{\"alg\": \"RS256\", \"typ\": \"JWT\", \"kid\": \"key-2024\"}",
-      "explanation": "The kid header lets the verifier pick the right public key from the issuer's JWKS during key rotation. typ is optional. The header is base64url encoded, never encrypted."
+      "explanation": "The `kid` header lets the verifier pick the right public key from the issuer's `JWKS` during key rotation. `typ` is optional. The header is base64url encoded, never encrypted."
     },
     {
       "id": "jwt-parts",
@@ -144,27 +144,27 @@
       "prompt": "A compact signed JWT is written as header, payload and signature joined by a separator character. How many separator characters (dots) does it contain?",
       "answer": 2,
       "unit": "dots",
-      "explanation": "Three parts need two dots: header.payload.signature. A compact encrypted token (JWE) has five parts and therefore four dots."
+      "explanation": "Three parts need two dots: `header.payload.signature`. A compact encrypted token (JWE) has five parts and therefore four dots."
     },
     {
       "id": "token-window",
       "concept": "JWT claims",
       "type": "integer",
       "difficulty": 2,
-      "prompt": "A token payload decodes to {\"sub\":\"u7\",\"iat\":1700000000,\"nbf\":1700000060,\"exp\":1700003600}. For how many seconds is the token valid (from nbf to exp), ignoring clock leeway?",
+      "prompt": "A token payload decodes to `{\"sub\":\"u7\",\"iat\":1700000000,\"nbf\":1700000060,\"exp\":1700003600}`. For how many seconds is the token valid (from `nbf` to `exp`), ignoring clock leeway?",
       "answer": 3540,
       "unit": "seconds",
-      "explanation": "exp minus nbf = 1,700,003,600 - 1,700,000,060 = 3,540. Note that this is less than the 3,600 seconds between iat and exp."
+      "explanation": "`exp` minus `nbf` = `1,700,003,600 - 1,700,000,060 = 3,540`. Note that this is less than the 3,600 seconds between `iat` and `exp`."
     },
     {
       "id": "revocation-gap",
       "concept": "Revocation",
       "type": "integer",
       "difficulty": 2,
-      "prompt": "Access tokens are valid for 15 minutes and resource servers verify only the signature and exp. A user's account is disabled at the worst possible moment. For how many seconds can a stolen token still be accepted?",
+      "prompt": "Access tokens are valid for 15 minutes and resource servers verify only the signature and `exp`. A user's account is disabled at the worst possible moment. For how many seconds can a stolen token still be accepted?",
       "answer": 900,
       "unit": "seconds",
-      "explanation": "Without a denylist or introspection, a stateless token remains valid until exp. Worst case is a token issued just before the disable: 15 x 60 = 900 seconds."
+      "explanation": "Without a denylist or introspection, a stateless token remains valid until `exp`. Worst case is a token issued just before the disable: 15 x 60 = 900 seconds."
     },
     {
       "id": "refresh-token-length",
@@ -239,8 +239,8 @@
       "type": "assertion",
       "difficulty": 3,
       "prompt": "Read the assertion A and the reason R, then choose the correct relationship between them.",
-      "assertion": "A client holding only a public key can verify tokens signed with HS256.",
-      "reason": "RS256 uses an asymmetric key pair, so verifiers need only the public key.",
+      "assertion": "A client holding only a public key can verify tokens signed with `HS256`.",
+      "reason": "`RS256` uses an asymmetric key pair, so verifiers need only the public key.",
       "correct": [
         "d"
       ],
@@ -250,7 +250,7 @@
         "c": "Not this one: A is true while R is false does not describe this pair; check the truth of R again.",
         "d": "Correct: A is false: HS256 uses a shared secret, so verifying requires the secret itself. R is true for RS256."
       },
-      "explanation": "Algorithm confusion attacks exploit servers that accept an RS256 public key as an HS256 secret. Pin the algorithm."
+      "explanation": "Algorithm confusion attacks exploit servers that accept an `RS256` public key as an `HS256` secret. Pin the algorithm."
     },
     {
       "id": "check-aud",
@@ -258,7 +258,7 @@
       "type": "assertion",
       "difficulty": 3,
       "prompt": "Read the assertion A and the reason R, then choose the correct relationship between them.",
-      "assertion": "A resource server must validate the aud claim of a JWT, not only the signature and exp.",
+      "assertion": "A resource server must validate the `aud` claim of a JWT, not only the signature and `exp`.",
       "reason": "Without an audience check, a token issued by the same authorisation server for service A would also be accepted by service B.",
       "correct": [
         "a"
@@ -269,7 +269,7 @@
         "c": "Not this one: A is true while R is false does not describe this pair; check the truth of R again.",
         "d": "Not this one: A is false while R is true does not describe this pair; check the truth of A again."
       },
-      "explanation": "Also pin iss, algorithms and token type. Audience-restricted tokens limit the blast radius of a token leaked from one service."
+      "explanation": "Also pin `iss`, algorithms and token type. Audience-restricted tokens limit the blast radius of a token leaked from one service."
     },
     {
       "id": "verify-rules",
@@ -291,7 +291,7 @@
         "typ",
         "cookies"
       ],
-      "explanation": "kid names which key signed the token, which makes key rotation possible without downtime."
+      "explanation": "`kid` names which key signed the token, which makes key rotation possible without downtime."
     },
     {
       "id": "token-storage",
@@ -302,17 +302,17 @@
       "options": [
         {
           "id": "a",
-          "text": "An HttpOnly, Secure, SameSite cookie scoped to the refresh path.",
-          "why": "Correct: scripts cannot read an HttpOnly cookie."
+          "text": "An `HttpOnly`, Secure, `SameSite` cookie scoped to the refresh path.",
+          "why": "Correct: scripts cannot read an `HttpOnly` cookie."
         },
         {
           "id": "b",
-          "text": "localStorage, so that the token survives browser restarts easily.",
-          "why": "Any injected script can read localStorage."
+          "text": "`localStorage`, so that the token survives browser restarts easily.",
+          "why": "Any injected script can read `localStorage`."
         },
         {
           "id": "c",
-          "text": "A global JavaScript variable named refreshToken on the window object.",
+          "text": "A global JavaScript variable named `refreshToken` on the window object.",
           "why": "A global is reachable by every script on the page, including injected ones."
         },
         {
@@ -324,7 +324,7 @@
       "correct": [
         "a"
       ],
-      "explanation": "Keep access tokens in memory and refresh via the cookie. Cookies bring CSRF considerations, handled by SameSite and a CSRF token on the refresh endpoint."
+      "explanation": "Keep access tokens in memory and refresh via the cookie. Cookies bring CSRF considerations, handled by `SameSite` and a CSRF token on the refresh endpoint."
     },
     {
       "id": "revoke",
@@ -335,7 +335,7 @@
       "options": [
         {
           "id": "a",
-          "text": "Keep a denylist of revoked jti values until their exp.",
+          "text": "Keep a denylist of revoked `jti` values until their `exp`.",
           "why": "Correct: the verifier checks the list on each request."
         },
         {
@@ -355,7 +355,7 @@
         },
         {
           "id": "e",
-          "text": "Edit exp in the token to a past time.",
+          "text": "Edit `exp` in the token to a past time.",
           "why": "Changing the payload breaks the signature and cannot recall issued copies."
         }
       ],
@@ -491,7 +491,7 @@
       "concept": "AuthN vs AuthZ",
       "type": "code",
       "difficulty": 1,
-      "prompt": "Write a curl command that sends a GET request to https://api.example.com/orders with the access token held in the shell variable TOKEN as an OAuth 2.0 bearer credential.",
+      "prompt": "Write a curl command that sends a GET request to `https://api.example.com/orders` with the access token held in the shell variable `TOKEN` as an OAuth 2.0 bearer credential.",
       "language": "shell",
       "checks": [
         {

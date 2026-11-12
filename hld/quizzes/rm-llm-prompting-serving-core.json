@@ -58,7 +58,7 @@
         "c": "R is true, so c is wrong.",
         "d": "A is true, so d is wrong."
       },
-      "explanation": "Both OpenAI (automatic, for long prompts) and Anthropic (explicit cache_control breakpoints) match on prefixes. Putting a timestamp or user id at the top of the system prompt silently kills the cache."
+      "explanation": "Both OpenAI (automatic, for long prompts) and Anthropic (explicit `cache_control` breakpoints) match on prefixes. Putting a timestamp or user id at the top of the system prompt silently kills the cache."
     },
     {
       "id": "semantic-cache-threshold",
@@ -200,7 +200,7 @@
         "cache_id",
         "256"
       ],
-      "explanation": "Anthropic: cache_control {\"type\": \"ephemeral\"} on a content block (up to 4 explicit breakpoints per request). OpenAI: automatic for prompts of 1,024 tokens or more, hits in 128-token steps. Anthropic's minimum cacheable length differs by model (from 512 to 4,096 tokens in the current docs) and shorter prompts are simply not cached, with no error, so check cache_read_input_tokens."
+      "explanation": "Anthropic: `cache_control {\"type\": \"ephemeral\"}` on a content block (up to 4 explicit breakpoints per request). OpenAI: automatic for prompts of 1,024 tokens or more, hits in 128-token steps. Anthropic's minimum cacheable length differs by model (from 512 to 4,096 tokens in the current docs) and shorter prompts are simply not cached, with no error, so check `cache_read_input_tokens`."
     },
     {
       "id": "sse-wire-format",

@@ -115,7 +115,7 @@
         "c": "R is true, so c is wrong.",
         "d": "A is false: the model only proposes the call. R is true and describes the real contract."
       },
-      "explanation": "The loop is: send tool schemas, model replies with tool_calls, your code executes, you send the result back as a tool message, the model writes the final answer. This is why you validate arguments and enforce permissions in your own code."
+      "explanation": "The loop is: send tool schemas, model replies with `tool_calls`, your code executes, you send the result back as a tool message, the model writes the final answer. This is why you validate arguments and enforce permissions in your own code."
     },
     {
       "id": "hallucination-controls",
@@ -164,11 +164,11 @@
         },
         {
           "id": "t",
-          "text": "Lower temperature or top_p"
+          "text": "Lower temperature or `top_p`"
         },
         {
           "id": "u",
-          "text": "Increase max_tokens"
+          "text": "Increase `max_tokens`"
         }
       ],
       "pairs": {
@@ -178,7 +178,7 @@
         "d": "s",
         "e": "t"
       },
-      "explanation": "Match the control to the failure mechanism. max_tokens only caps length, so it fixes none of these."
+      "explanation": "Match the control to the failure mechanism. `max_tokens` only caps length, so it fixes none of these."
     },
     {
       "id": "sdk-names",
@@ -200,7 +200,7 @@
         "characters",
         "schema"
       ],
-      "explanation": "The system role carries standing instructions, user carries the question, assistant carries earlier model replies. Read the usage object for billing rather than estimating, and check the stop reason (such as length or max_tokens) before trusting the output."
+      "explanation": "The system role carries standing instructions, user carries the question, assistant carries earlier model replies. Read the usage object for billing rather than estimating, and check the stop reason (such as `length` or `max_tokens`) before trusting the output."
     },
     {
       "id": "tokens-window",
@@ -260,7 +260,7 @@
       "concept": "Tool and function calling",
       "type": "code",
       "difficulty": 2,
-      "prompt": "Write the JSON tool definition (OpenAI Chat Completions style) for a function get_weather with one required string parameter city.",
+      "prompt": "Write the JSON tool definition (OpenAI Chat Completions style) for a function `get_weather` with one required string parameter `city`.",
       "language": "json",
       "checks": [
         {
@@ -281,14 +281,14 @@
         }
       ],
       "model": "{\"type\": \"function\", \"function\": {\"name\": \"get_weather\", \"description\": \"Current weather for a city\",\n \"parameters\": {\"type\": \"object\", \"properties\": {\"city\": {\"type\": \"string\"}}, \"required\": [\"city\"]}}}",
-      "explanation": "Parameters are a JSON Schema object. The Responses API and Anthropic (input_schema) use slightly different wrappers, but the JSON Schema core is the same. A description helps the model decide when to call."
+      "explanation": "Parameters are a JSON Schema object. The Responses API and Anthropic (`input_schema`) use slightly different wrappers, but the JSON Schema core is the same. A description helps the model decide when to call."
     },
     {
       "id": "token-cost-function",
       "concept": "Token cost arithmetic",
       "type": "code",
       "difficulty": 2,
-      "prompt": "Table requests(id, in_tok, out_tok) holds token counts per call. Write one SQL query returning the total dollar cost, at $3 per million input tokens and $15 per million output tokens.",
+      "prompt": "Table `requests(id, in_tok, out_tok)` holds token counts per call. Write one SQL query returning the total dollar cost, at $3 per million input tokens and $15 per million output tokens.",
       "language": "sql",
       "checks": [
         {
@@ -316,7 +316,7 @@
       "concept": "API vocabulary",
       "type": "code",
       "difficulty": 2,
-      "prompt": "Write the JSON body for POST /v1/messages on the Anthropic Messages API: model 'claude-sonnet-4-5', a cap of 300 output tokens and one user message 'Summarise RAG in one line'.",
+      "prompt": "Write the JSON body for `POST /v1/messages` on the Anthropic Messages API: model `'claude-sonnet-4-5'`, a cap of 300 output tokens and one user message `'Summarise RAG in one line'`.",
       "language": "json",
       "checks": [
         {
@@ -337,7 +337,7 @@
         }
       ],
       "model": "{\"model\": \"claude-sonnet-4-5\", \"max_tokens\": 300,\n \"messages\": [{\"role\": \"user\", \"content\": \"Summarise RAG in one line\"}]}",
-      "explanation": "Unlike OpenAI Chat Completions, Anthropic requires max_tokens. A system prompt goes in the separate top-level system field, not as a message. The model id here is only an example; any valid id passes."
+      "explanation": "Unlike OpenAI Chat Completions, Anthropic requires `max_tokens`. A system prompt goes in the separate top-level `system` field, not as a message. The model id here is only an example; any valid id passes."
     },
     {
       "id": "grounding-control",
@@ -363,7 +363,7 @@
         },
         {
           "id": "d",
-          "text": "Raise max_tokens so the model can explain its reasoning at greater length in every reply.",
+          "text": "Raise `max_tokens` so the model can explain its reasoning at greater length in every reply.",
           "why": "Longer answers give more room to invent, not fewer errors."
         }
       ],
@@ -386,17 +386,17 @@
         },
         {
           "id": "b",
-          "text": "top_p = 0.9 keeps the smallest set of tokens whose cumulative probability reaches 0.9.",
+          "text": "`top_p = 0.9` keeps the smallest set of tokens whose cumulative probability reaches 0.9.",
           "why": "True: this is nucleus sampling."
         },
         {
           "id": "c",
-          "text": "temperature = 0 guarantees identical output on every call.",
+          "text": "`temperature = 0` guarantees identical output on every call.",
           "why": "False: hosted inference can still vary slightly."
         },
         {
           "id": "d",
-          "text": "Provider docs generally advise changing temperature or top_p, not both at once.",
+          "text": "Provider docs generally advise changing temperature or `top_p`, not both at once.",
           "why": "True: the two interact, so tune one at a time."
         },
         {
@@ -417,11 +417,11 @@
       "concept": "Sampling parameters",
       "type": "single",
       "difficulty": 2,
-      "prompt": "A structured-output call returns HTTP 200 but the JSON ends in the middle of an object. The response shows finish_reason length (OpenAI) or stop_reason max_tokens (Anthropic). What is the cause and fix?",
+      "prompt": "A structured-output call returns HTTP 200 but the JSON ends in the middle of an object. The response shows `finish_reason length` (OpenAI) or `stop_reason max_tokens` (Anthropic). What is the cause and fix?",
       "options": [
         {
           "id": "a",
-          "text": "The output hit the max_tokens cap, so raise the cap or shorten the requested output.",
+          "text": "The output hit the `max_tokens` cap, so raise the cap or shorten the requested output.",
           "why": "Right: the model was cut off by your own limit, not by an error, so HTTP 200 is expected."
         },
         {

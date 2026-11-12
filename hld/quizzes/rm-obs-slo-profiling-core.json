@@ -178,7 +178,7 @@
       "concept": "SLIs and SLOs",
       "type": "code",
       "difficulty": 3,
-      "prompt": "Write the PromQL expression for the 1 hour error ratio of an HTTP service: the rate of http_requests_total with a status label matching 5xx, divided by the rate of all http_requests_total, both summed over all series.",
+      "prompt": "Write the PromQL expression for the 1 hour error ratio of an HTTP service: the rate of `http_requests_total` with a `status` label matching `5xx`, divided by the rate of all `http_requests_total`, both summed over all series.",
       "language": "promql",
       "checks": [
         {
@@ -191,7 +191,7 @@
         }
       ],
       "model": "sum(rate(http_requests_total{status=~\"5..\"}[1h])) / sum(rate(http_requests_total[1h]))",
-      "explanation": "Divide the burn alert threshold by the allowed error ratio (for example error_ratio > 14.4 * 0.001). Sum the rates first and divide afterwards so that low-traffic series do not dominate. Other label spellings (code, status_code) work equally well."
+      "explanation": "Divide the burn alert threshold by the allowed error ratio (for example `error_ratio > 14.4 * 0.001`). Sum the rates first and divide afterwards so that low-traffic series do not dominate. Other label spellings (code, status_code) work equally well."
     },
     {
       "id": "littles-law",
@@ -347,7 +347,7 @@
       "concept": "Profiling",
       "type": "single",
       "difficulty": 2,
-      "prompt": "GET /reports is slow only in production. What is the best first step?",
+      "prompt": "`GET /reports` is slow only in production. What is the best first step?",
       "options": [
         {
           "id": "a",
@@ -366,14 +366,14 @@
         },
         {
           "id": "d",
-          "text": "Turn on DEBUG logging for the entire production cluster at once.",
+          "text": "Turn on `DEBUG` logging for the entire production cluster at once.",
           "why": "Mass debug logging adds load and noise without locating the stage."
         }
       ],
       "correct": [
         "a"
       ],
-      "explanation": "Measure, narrow to a stage (DB, remote call, CPU, lock wait), then use the matching tool: EXPLAIN for SQL, a profiler for CPU, stack dumps for waiting."
+      "explanation": "Measure, narrow to a stage (DB, remote call, CPU, lock wait), then use the matching tool: `EXPLAIN` for SQL, a profiler for CPU, stack dumps for waiting."
     },
     {
       "id": "low-cpu-slow",

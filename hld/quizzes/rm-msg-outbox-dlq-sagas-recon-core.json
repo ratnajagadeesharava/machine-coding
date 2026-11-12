@@ -49,7 +49,7 @@
       "concept": "Outbox pattern",
       "type": "code",
       "difficulty": 2,
-      "prompt": "Tables orders(id, customer_id, total) and outbox(id serial, aggregate_id, event_type, payload jsonb, published_at). In ONE transaction insert order 7 for customer 3 with total 99.50 and an outbox row of type OrderCreated for aggregate 7 with payload {\"orderId\": 7}. Write the SQL.",
+      "prompt": "Tables `orders(id, customer_id, total)` and `outbox(id serial, aggregate_id, event_type, payload jsonb, published_at)`. In ONE transaction insert order 7 for customer 3 with total 99.50 and an outbox row of type `OrderCreated` for aggregate 7 with payload `{\"orderId\": 7}`. Write the SQL.",
       "language": "sql",
       "starter": "BEGIN;\n",
       "checks": [
@@ -78,7 +78,7 @@
       "concept": "Outbox pattern",
       "type": "code",
       "difficulty": 3,
-      "prompt": "A relay worker polls the outbox table. Write the query that selects up to 100 unpublished rows (published_at IS NULL) in id order, locking them so several relay instances never pick the same rows and do not block each other.",
+      "prompt": "A relay worker polls the outbox table. Write the query that selects up to 100 unpublished rows (`published_at IS NULL`) in id order, locking them so several relay instances never pick the same rows and do not block each other.",
       "language": "sql",
       "starter": "SELECT ",
       "checks": [
@@ -100,7 +100,7 @@
         }
       ],
       "model": "SELECT * FROM outbox WHERE published_at IS NULL ORDER BY id LIMIT 100 FOR UPDATE SKIP LOCKED;",
-      "explanation": "After publishing, the relay sets published_at (or deletes the row) in the same transaction. A crash after publishing but before that update re-sends the event, which is why the delivery is at-least-once."
+      "explanation": "After publishing, the relay sets `published_at` (or deletes the row) in the same transaction. A crash after publishing but before that update re-sends the event, which is why the delivery is at-least-once."
     },
     {
       "id": "outbox-at-least-once",
@@ -201,7 +201,7 @@
         "payload",
         "ExtractNewRecordState"
       ],
-      "explanation": "The default topic pattern is outbox.event.<aggregatetype>. Keying by aggregateid keeps all events of one aggregate in one partition, hence in order. ExtractNewRecordState is a different Debezium transform that unwraps change events."
+      "explanation": "The default topic pattern is `outbox.event.<aggregatetype>`. Keying by `aggregateid` keeps all events of one aggregate in one partition, hence in order. `ExtractNewRecordState` is a different Debezium transform that unwraps change events."
     },
     {
       "id": "relay-ordering",
@@ -209,8 +209,8 @@
       "type": "assertion",
       "difficulty": 3,
       "prompt": "Read the assertion A and the reason R, then choose the correct relationship between them.",
-      "assertion": "Running several outbox relays, each using FOR UPDATE SKIP LOCKED, can publish events of the same aggregate out of order.",
-      "reason": "SKIP LOCKED lets each relay take a different batch of rows, so a later batch can reach the broker before an earlier batch that another relay is still holding.",
+      "assertion": "Running several outbox relays, each using `FOR UPDATE SKIP LOCKED`, can publish events of the same aggregate out of order.",
+      "reason": "`SKIP LOCKED` lets each relay take a different batch of rows, so a later batch can reach the broker before an earlier batch that another relay is still holding.",
       "correct": [
         "a"
       ],
@@ -392,7 +392,7 @@
       "concept": "Reconciliation",
       "type": "code",
       "difficulty": 3,
-      "prompt": "Tables ledger(txn_id, amount) and bank(txn_id, amount). Write one PostgreSQL query that returns every txn_id that is only in the ledger, only in the bank, or in both with amounts differing by more than 0.01.",
+      "prompt": "Tables `ledger(txn_id, amount)` and `bank(txn_id, amount)`. Write one PostgreSQL query that returns every `txn_id` that is only in the ledger, only in the bank, or in both with amounts differing by more than 0.01.",
       "language": "sql",
       "starter": "SELECT ",
       "checks": [

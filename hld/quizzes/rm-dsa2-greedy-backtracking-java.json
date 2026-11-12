@@ -16,8 +16,8 @@
       "concept": "Greedy implementation",
       "type": "code",
       "difficulty": 2,
-      "prompt": "Write a Java method boolean canJump(int[] nums). You start at index 0 and nums[i] is the maximum jump length from index i. Return true if the last index is reachable, in O(n) time using a greedy farthest-reach variable.",
-      "explanation": "Greedy works because reachable indices form a prefix: if you can reach index r, you can reach everything before it. A backwards \"goal post\" loop is an equally valid O(n) solution (it would need these checks adapted). For [2,3,1,1,4] the result is true and for [3,2,1,0,4] it is false.",
+      "prompt": "Write a Java method `boolean canJump(int[] nums)`. You start at index 0 and `nums[i]` is the maximum jump length from index i. Return true if the last index is reachable, in O(n) time using a greedy farthest-reach variable.",
+      "explanation": "Greedy works because reachable indices form a prefix: if you can reach index r, you can reach everything before it. A backwards \"goal post\" loop is an equally valid O(n) solution (it would need these checks adapted). For `[2,3,1,1,4]` the result is true and for `[3,2,1,0,4]` it is false.",
       "language": "java",
       "starter": "static boolean canJump(int[] nums) {\n  \n}",
       "checks": [
@@ -45,8 +45,8 @@
       "concept": "Subsets backtracking",
       "type": "code",
       "difficulty": 2,
-      "prompt": "Write a Java method List<List<Integer>> subsets(int[] nums) that returns all subsets (the power set) of an array of distinct integers using backtracking. You may add a private helper method.",
-      "explanation": "The copy is essential: adding cur itself would leave every entry pointing at the same, finally empty list. There are 2^n results, each copied in O(n), so O(n * 2^n) time. An include/exclude binary recursion or a bitmask loop over 0..2^n-1 are also valid.",
+      "prompt": "Write a Java method `List<List<Integer>> subsets(int[] nums)` that returns all subsets (the power set) of an array of distinct integers using backtracking. You may add a private helper method.",
+      "explanation": "The copy is essential: adding `cur` itself would leave every entry pointing at the same, finally empty list. There are 2^n results, each copied in O(n), so O(n * 2^n) time. An include/exclude binary recursion or a bitmask loop over 0..2^n-1 are also valid.",
       "language": "java",
       "starter": "static List<List<Integer>> subsets(int[] nums) {\n  \n}",
       "checks": [
@@ -74,8 +74,8 @@
       "concept": "Combination sum",
       "type": "code",
       "difficulty": 3,
-      "prompt": "Write a Java method List<List<Integer>> combinationSum(int[] cands, int target) returning all unique combinations of the positive integers in cands that sum to target, where each number may be reused. Sort first and prune once a candidate exceeds the remaining target. A private helper is allowed.",
-      "explanation": "Starting each loop at start (not 0) prevents [2,3] and [3,2] both appearing. Passing i (not i + 1) is what allows reuse. The break is valid only because the array is sorted.",
+      "prompt": "Write a Java method `List<List<Integer>> combinationSum(int[] cands, int target)` returning all unique combinations of the positive integers in cands that sum to target, where each number may be reused. Sort first and prune once a candidate exceeds the remaining target. A private helper is allowed.",
+      "explanation": "Starting each loop at `start` (not `0`) prevents [2,3] and [3,2] both appearing. Passing `i` (not `i + 1`) is what allows reuse. The break is valid only because the array is sorted.",
       "language": "java",
       "starter": "static List<List<Integer>> combinationSum(int[] cands, int target) {\n  \n}",
       "checks": [
@@ -103,8 +103,8 @@
       "concept": "Backtracking on grids",
       "type": "code",
       "difficulty": 3,
-      "prompt": "Write a Java method boolean exist(char[][] board, String word) that returns true if word can be traced in the grid through horizontally or vertically adjacent cells, using each cell at most once per path.",
-      "explanation": "Restoring the cell after the recursive calls is the backtracking step. Worst case O(R C 4^L) for a word of length L. A boolean[][] visited array that you set and clear is equally valid.",
+      "prompt": "Write a Java method `boolean exist(char[][] board, String word)` that returns true if word can be traced in the grid through horizontally or vertically adjacent cells, using each cell at most once per path.",
+      "explanation": "Restoring the cell after the recursive calls is the backtracking step. Worst case O(R C 4^L) for a word of length L. A `boolean[][] visited` array that you set and clear is equally valid.",
       "language": "java",
       "starter": "static boolean exist(char[][] board, String word) {\n  \n}",
       "checks": [
@@ -132,8 +132,8 @@
       "concept": "Bitmask subsets",
       "type": "integer",
       "difficulty": 1,
-      "prompt": "A Java loop for (int mask = 0; mask < (1 << 5); mask++) enumerates all subsets of 5 items. How many iterations does it run?",
-      "explanation": "1 << 5 = 32 = 2^5, one iteration per subset. Bit j of mask says whether item j is included, so the loop needs no recursion.",
+      "prompt": "A Java loop\n\n```java\nfor (int mask = 0; mask < (1 << 5); mask++)\n```\n\n enumerates all subsets of 5 items. How many iterations does it run?",
+      "explanation": "`1 << 5` = 32 = 2^5, one iteration per subset. Bit j of `mask` says whether item j is included, so the loop needs no recursion.",
       "answer": 32,
       "unit": "iterations"
     },
@@ -142,7 +142,7 @@
       "concept": "Bitmask subsets",
       "type": "integer",
       "difficulty": 2,
-      "prompt": "Among the 16 masks 0..15 that represent subsets of 4 items, how many satisfy Integer.bitCount(mask) == 2?",
+      "prompt": "Among the 16 masks 0..15 that represent subsets of 4 items, how many satisfy `Integer.bitCount(mask) == 2`?",
       "explanation": "These are the subsets of size 2, so C(4, 2) = 6: masks 3, 5, 6, 9, 10 and 12. Filtering masks by bitCount is a compact way to enumerate combinations for small n.",
       "answer": 6,
       "unit": "masks"
@@ -152,27 +152,27 @@
       "concept": "Undo step",
       "type": "single",
       "difficulty": 3,
-      "prompt": "Inside backtracking, cur is a List<Integer> and you just appended the int x at its end. Which undo step is always correct?",
-      "explanation": "List.remove has two overloads, remove(int index) and remove(Object o). The index form on size() - 1 is both safe and O(1) for an ArrayList.",
+      "prompt": "Inside backtracking, `cur` is a `List<Integer>` and you just appended the `int` `x` at its end. Which undo step is always correct?",
+      "explanation": "`List.remove` has two overloads, `remove(int index)` and `remove(Object o)`. The index form on `size()` - 1 is both safe and O(1) for an ArrayList.",
       "options": [
         {
           "id": "a",
-          "text": "cur.remove(cur.size() - 1)",
+          "text": "`cur.remove(cur.size() - 1)`",
           "why": "Correct: removing by index drops exactly the last element, even with duplicates."
         },
         {
           "id": "b",
-          "text": "cur.remove(x), passing the primitive int x",
-          "why": "The int overload removes the element at index x, which is the wrong element or an exception."
+          "text": "`cur.remove(x)`, passing the primitive `int` `x`",
+          "why": "The `int` overload removes the element at index `x`, which is the wrong element or an exception."
         },
         {
           "id": "c",
-          "text": "cur.remove(Integer.valueOf(x)), removing the first element equal to x",
+          "text": "`cur.remove(Integer.valueOf(x))`, removing the first element equal to x",
           "why": "With an equal earlier element it removes the wrong one, corrupting the path."
         },
         {
           "id": "d",
-          "text": "cur.clear(), emptying the list after each recursive call",
+          "text": "`cur.clear()`, emptying the list after each recursive call",
           "why": "This destroys the whole path, so sibling branches start from nothing."
         }
       ],
@@ -185,8 +185,8 @@
       "concept": "Subsets backtracking",
       "type": "single",
       "difficulty": 2,
-      "prompt": "In the Java subsets backtracking, why does the for loop start at start instead of 0?",
-      "explanation": "Starting at 0 would generate permutations of subsets and duplicates. With start, the recursion tree has exactly 2^n nodes.",
+      "prompt": "In the Java subsets backtracking, why does the `for` loop start at `start` instead of `0`?",
+      "explanation": "Starting at `0` would generate permutations of subsets and duplicates. With `start`, the recursion tree has exactly 2^n nodes.",
       "options": [
         {
           "id": "a",
@@ -200,13 +200,13 @@
         },
         {
           "id": "c",
-          "text": "To avoid an ArrayIndexOutOfBoundsException on the first iteration.",
-          "why": "The index 0 is valid for any non-empty array, so nothing would throw."
+          "text": "To avoid an `ArrayIndexOutOfBoundsException` on the first iteration.",
+          "why": "The index `0` is valid for any non-empty array, so nothing would throw."
         },
         {
           "id": "d",
-          "text": "Because ArrayList.add only accepts increasing indices.",
-          "why": "add accepts any element; there is no ordering requirement on indices."
+          "text": "Because `ArrayList.add` only accepts increasing indices.",
+          "why": "`add` accepts any element; there is no ordering requirement on indices."
         }
       ],
       "correct": [
@@ -218,10 +218,10 @@
       "concept": "Subsets backtracking",
       "type": "assertion",
       "difficulty": 2,
-      "prompt": "A backtracking method adds the path to the result and later calls cur.remove(cur.size() - 1).",
-      "explanation": "Always snapshot with new ArrayList<>(cur) (or List.copyOf) before storing.",
-      "assertion": "Executing res.add(cur) instead of res.add(new ArrayList<>(cur)) leaves every stored subset equal to the final state of cur.",
-      "reason": "cur is one mutable ArrayList that the recursion keeps modifying.",
+      "prompt": "A backtracking method adds the path to the result and later calls `cur.remove(cur.size() - 1)`.",
+      "explanation": "Always snapshot with `new ArrayList<>(cur)` (or `List.copyOf`) before storing.",
+      "assertion": "Executing `res.add(cur)` instead of `res.add(new ArrayList<>(cur))` leaves every stored subset equal to the final state of `cur`.",
+      "reason": "`cur` is one mutable ArrayList that the recursion keeps modifying.",
       "correct": [
         "a"
       ],
@@ -237,10 +237,10 @@
       "concept": "Greedy implementation",
       "type": "assertion",
       "difficulty": 2,
-      "prompt": "Sorting activities in Java with Arrays.sort(a, (x, y) -> Integer.compare(x[1], y[1])).",
+      "prompt": "Sorting activities in Java with `Arrays.sort(a, (x, y) -> Integer.compare(x[1], y[1]))`.",
       "explanation": "Sorting by finish time is the first step of the earliest-finish greedy.",
       "assertion": "This comparator orders the activities by finish time ascending.",
-      "reason": "Integer.compare avoids the overflow that x[1] - y[1] can cause.",
+      "reason": "`Integer.compare` avoids the overflow that `x[1] - y[1]` can cause.",
       "correct": [
         "b"
       ],
@@ -275,9 +275,9 @@
       "concept": "Permutations",
       "type": "assertion",
       "difficulty": 1,
-      "prompt": "Permutations use a boolean[] used = new boolean[n] array.",
+      "prompt": "Permutations use a `boolean[] used = new boolean[n]` array.",
       "explanation": "Default values: 0 for numbers, false for booleans, null for references.",
-      "assertion": "A new boolean[n] array starts with every entry true.",
+      "assertion": "A `new boolean[n]` array starts with every entry true.",
       "reason": "Java initialises boolean array elements to false.",
       "correct": [
         "d"
@@ -321,27 +321,27 @@
       "right": [
         {
           "id": "p",
-          "text": "boolean[] used"
+          "text": "`boolean[] used`"
         },
         {
           "id": "q",
-          "text": "cur.remove(cur.size() - 1)"
+          "text": "`cur.remove(cur.size() - 1)`"
         },
         {
           "id": "r",
-          "text": "board[r][c] = '#'"
+          "text": "`board[r][c] = '#'`"
         },
         {
           "id": "s",
-          "text": "cur.clear()"
+          "text": "`cur.clear()`"
         },
         {
           "id": "t",
-          "text": "res.add(new ArrayList<>(cur))"
+          "text": "`res.add(new ArrayList<>(cur))`"
         },
         {
           "id": "u",
-          "text": "Arrays.sort(nums)"
+          "text": "`Arrays.sort(nums)`"
         }
       ],
       "pairs": {
@@ -358,7 +358,7 @@
       "type": "fill",
       "difficulty": 3,
       "prompt": "Complete the Java bitmask enumeration of subsets.",
-      "explanation": "The upper bound 1 << n equals 2^n subsets. The & 1 isolates bit j after shifting, and a non-zero result means that item is included.",
+      "explanation": "The upper bound `1 << n` equals 2^n subsets. The `& 1` isolates bit j after shifting, and a non-zero result means that item is included.",
       "text": "Loop mask from 0 while mask < {1}; item j belongs to the subset when ((mask >> j) & {2}) != {3}.",
       "blanks": {
         "1": "1 << n",

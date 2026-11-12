@@ -20,23 +20,23 @@
       "left": [
         {
           "id": "a",
-          "text": "mappedBy"
+          "text": "`mappedBy`"
         },
         {
           "id": "b",
-          "text": "@JoinColumn"
+          "text": "`@JoinColumn`"
         },
         {
           "id": "c",
-          "text": "cascade = CascadeType.ALL"
+          "text": "`cascade = CascadeType.ALL`"
         },
         {
           "id": "d",
-          "text": "orphanRemoval = true"
+          "text": "`orphanRemoval = true`"
         },
         {
           "id": "e",
-          "text": "@Version"
+          "text": "`@Version`"
         }
       ],
       "right": [
@@ -58,7 +58,7 @@
         },
         {
           "id": "t",
-          "text": "Adds a counter that is checked in the UPDATE's WHERE clause"
+          "text": "Adds a counter that is checked in the `UPDATE`'s `WHERE` clause"
         },
         {
           "id": "u",
@@ -76,7 +76,7 @@
         "d": "s",
         "e": "t"
       },
-      "explanation": "The owning side (the one without mappedBy, usually the @ManyToOne) is the only side Hibernate uses to write the foreign key. cascade moves operations down the tree, orphanRemoval deletes de-referenced children, @Version enables optimistic locking."
+      "explanation": "The owning side (the one without `mappedBy`, usually the `@ManyToOne`) is the only side Hibernate uses to write the foreign key. `cascade` moves operations down the tree, `orphanRemoval` deletes de-referenced children, `@Version` enables optimistic locking."
     },
     {
       "id": "jpa-basics-fill",
@@ -100,7 +100,7 @@
         "@JoinColumn",
         "lazy loading"
       ],
-      "explanation": "ORDINAL stores the position of the constant, so inserting a new constant in the middle silently remaps old rows. Dirty checking compares each managed entity with its loaded snapshot at flush and issues UPDATEs for the differences."
+      "explanation": "`ORDINAL` stores the position of the constant, so inserting a new constant in the middle silently remaps old rows. Dirty checking compares each managed entity with its loaded snapshot at flush and issues `UPDATEs` for the differences."
     },
     {
       "id": "osiv-lazy",
@@ -108,8 +108,8 @@
       "type": "assertion",
       "difficulty": 2,
       "prompt": "Read the assertion (A) and the reason (R), then choose the option that fits.",
-      "assertion": "With Spring Boot's default spring.jpa.open-in-view=true, a controller can still read a lazy collection of an entity returned by a service method.",
-      "reason": "The EntityManager stays bound to the web request thread until the response is rendered, so the Hibernate Session is still open.",
+      "assertion": "With Spring Boot's default `spring.jpa.open-in-view=true`, a controller can still read a lazy collection of an entity returned by a service method.",
+      "reason": "The `EntityManager` stays bound to the web request thread until the response is rendered, so the Hibernate `Session` is still open.",
       "correct": [
         "a"
       ],
@@ -119,7 +119,7 @@
         "c": "R is true here, so this option wrongly says it is false.",
         "d": "A is true, so this option wrongly says it is false."
       },
-      "explanation": "Open Session In View keeps the persistence context open for the whole request. It hides LazyInitializationException but holds a database connection until rendering ends and encourages N+1 in the view layer; many teams set it to false."
+      "explanation": "Open `Session` In View keeps the persistence context open for the whole request. It hides `LazyInitializationException` but holds a database connection until rendering ends and encourages N+1 in the view layer; many teams set it to false."
     },
     {
       "id": "eager-default",
@@ -127,8 +127,8 @@
       "type": "assertion",
       "difficulty": 3,
       "prompt": "Read the assertion (A) and the reason (R), then choose the option that fits.",
-      "assertion": "A @ManyToOne association is EAGER by default in JPA, so loading an OrderLine also loads its Order.",
-      "reason": "FetchType.EAGER guarantees that one SQL JOIN is used in every query that loads the entity.",
+      "assertion": "A `@ManyToOne` association is `EAGER` by default in JPA, so loading an `OrderLine` also loads its `Order`.",
+      "reason": "`FetchType.EAGER` guarantees that one SQL `JOIN` is used in every query that loads the entity.",
       "correct": [
         "c"
       ],
@@ -138,7 +138,7 @@
         "c": "Correct: A is true (ToOne defaults to EAGER) but R is false; EAGER only says the data must be loaded, not how.",
         "d": "A is true, so this option wrongly says it is false."
       },
-      "explanation": "EAGER with em.find() usually becomes a JOIN, but with JPQL, Criteria or Spring Data queries Hibernate runs the query first and then fires secondary SELECTs per row, which is a classic hidden N+1. Prefer LAZY everywhere and fetch explicitly per use case."
+      "explanation": "`EAGER` with `em.find()` usually becomes a `JOIN`, but with `JPQL`, Criteria or Spring Data queries Hibernate runs the query first and then fires secondary `SELECTs` per row, which is a classic hidden N+1. Prefer `LAZY` everywhere and fetch explicitly per use case."
     },
     {
       "id": "version-bulk",
@@ -146,8 +146,8 @@
       "type": "assertion",
       "difficulty": 3,
       "prompt": "Read the assertion (A) and the reason (R), then choose the option that fits.",
-      "assertion": "A JPQL bulk statement such as \"UPDATE Product p SET p.price = 0\" automatically increments the @Version column of the rows it touches.",
-      "reason": "For managed entities, the UPDATE that Hibernate flushes carries WHERE id = ? AND version = ?.",
+      "assertion": "A JPQL bulk statement such as `\"UPDATE Product p SET p.price = 0\"` automatically increments the `@Version` column of the rows it touches.",
+      "reason": "For managed entities, the `UPDATE` that Hibernate flushes carries `WHERE id = ? AND version = ?`.",
       "correct": [
         "d"
       ],
@@ -157,16 +157,16 @@
         "c": "R is true, so this option wrongly says it is false.",
         "d": "Correct: bulk statements bypass the persistence context and do not touch the version (HQL needs \"update versioned\" to do that); R describes the managed-entity path correctly."
       },
-      "explanation": "Bulk JPQL/HQL and native SQL updates skip dirty checking, the first-level cache and version checks, so the version column is not touched by default. Hibernate's HQL has an opt-in keyword (update versioned Product ...), or you can bump the column yourself (set p.version = p.version + 1); otherwise avoid mixing bulk updates with versioned entities."
+      "explanation": "Bulk `JPQL/HQL` and native SQL updates skip dirty checking, the first-level cache and version checks, so the version column is not touched by default. Hibernate's HQL has an opt-in keyword (`update versioned Product ...`), or you can bump the column yourself (`set p.version = p.version + 1`); otherwise avoid mixing bulk updates with versioned entities."
     },
     {
       "id": "batchsize-count",
       "concept": "N+1 problem",
       "type": "integer",
       "difficulty": 3,
-      "prompt": "50 Author entities are loaded with one query. Author.books is LAZY and mapped with @BatchSize(size = 10). A loop then calls author.getBooks().size() for every author. Counting the first query, how many SELECT statements does Hibernate run?",
+      "prompt": "50 `Author` entities are loaded with one query. `Author.books` is `LAZY` and mapped with `@BatchSize(size = 10)`. A loop then calls `author.getBooks().size()` for every author. Counting the first query, how many `SELECT` statements does Hibernate run?",
       "answer": 6,
-      "explanation": "The first touch of an uninitialised collection loads the collections of up to 10 not-yet-loaded owners with one IN query, so 50 authors need 5 batches: 1 + 5 = 6. Without @BatchSize it would be 1 + 50 = 51.",
+      "explanation": "The first touch of an uninitialised collection loads the collections of up to 10 not-yet-loaded owners with one `IN` query, so 50 authors need 5 batches: `1 + 5 = 6`. Without `@BatchSize` it would be `1 + 50 = 51`.",
       "unit": "statements"
     },
     {
@@ -178,12 +178,12 @@
       "options": [
         {
           "id": "a",
-          "text": "A @Query with JOIN FETCH on the books association.",
+          "text": "A `@Query` with `JOIN FETCH` on the books association.",
           "why": "Right: one SQL statement returns authors and books together."
         },
         {
           "id": "b",
-          "text": "@EntityGraph(attributePaths = \"books\") on the repository method.",
+          "text": "`@EntityGraph(attributePaths = \"books\")` on the repository method.",
           "why": "Right: it adds the fetch join declaratively."
         },
         {
@@ -193,12 +193,12 @@
         },
         {
           "id": "d",
-          "text": "Marking Author.books as FetchType.EAGER globally.",
+          "text": "Marking `Author.books` as `FetchType.EAGER` globally.",
           "why": "JPQL and derived queries still load the collection with extra selects per author."
         },
         {
           "id": "e",
-          "text": "Setting spring.jpa.show-sql=true.",
+          "text": "Setting `spring.jpa.show-sql=true`.",
           "why": "It only logs the statements; it does not change them."
         }
       ],
@@ -207,28 +207,28 @@
         "b",
         "c"
       ],
-      "explanation": "Fix N+1 per use case (fetch join, entity graph, projection, batch fetching) instead of changing the mapping to EAGER. Detect it by logging statements or asserting query counts in tests."
+      "explanation": "Fix N+1 per use case (fetch join, entity graph, projection, batch fetching) instead of changing the mapping to `EAGER`. Detect it by logging statements or asserting query counts in tests."
     },
     {
       "id": "paging-collection-fetch",
       "concept": "N+1 problem",
       "type": "single",
       "difficulty": 3,
-      "prompt": "GET /authors?page=0&size=20 must return authors with their books. A JOIN FETCH on the books collection combined with Pageable makes Hibernate log that it applies firstResult/maxResults in memory. What is the usual fix?",
+      "prompt": "`GET /authors?page=0&size=20` must return authors with their books. A `JOIN FETCH` on the books collection combined with `Pageable` makes Hibernate log that it applies `firstResult/maxResults` in memory. What is the usual fix?",
       "options": [
         {
           "id": "a",
-          "text": "Page the authors alone, then batch-load their books with @BatchSize or a second IN query.",
+          "text": "Page the authors alone, then batch-load their books with `@BatchSize` or a second `IN` query.",
           "why": "Right: the limit applies to authors in SQL and the children arrive in one extra statement."
         },
         {
           "id": "b",
-          "text": "Switch Author.books to FetchType.EAGER so the join happens automatically.",
-          "why": "EAGER does not change how a paged JPQL query works and can add secondary selects."
+          "text": "Switch `Author.books` to `FetchType.EAGER` so the join happens automatically.",
+          "why": "`EAGER` does not change how a paged JPQL query works and can add secondary selects."
         },
         {
           "id": "c",
-          "text": "Keep the JOIN FETCH and raise the page size so that the in-memory paging stays cheap enough.",
+          "text": "Keep the `JOIN FETCH` and raise the page size so that the in-memory paging stays cheap enough.",
           "why": "Hibernate would load every author and book row into memory and page there."
         },
         {
@@ -240,14 +240,14 @@
       "correct": [
         "a"
       ],
-      "explanation": "A join to a collection multiplies parent rows, so SQL LIMIT would cut rows, not authors; Hibernate therefore pages in memory and logs a warning (HHH000104 in Hibernate 5, HHH90003004 in Hibernate 6). Split into two steps: page the parents first, then load the children with an IN query or @BatchSize. Setting hibernate.query.fail_on_pagination_over_collection_fetch=true turns the silent fallback into an error."
+      "explanation": "A join to a collection multiplies parent rows, so SQL `LIMIT` would cut rows, not authors; Hibernate therefore pages in memory and logs a warning (`HHH000104` in Hibernate 5, `HHH90003004` in Hibernate 6). Split into two steps: page the parents first, then load the children with an `IN` query or `@BatchSize`. Setting `hibernate.query.fail_on_pagination_over_collection_fetch=true` turns the silent fallback into an error."
     },
     {
       "id": "code-join-fetch",
       "concept": "N+1 problem",
       "type": "code",
       "difficulty": 2,
-      "prompt": "Entity Author has a List<Book> books. In the Spring Data JPA interface AuthorRepository, declare a method findAllWithBooks() that returns List<Author> and loads every author together with its books in the same SELECT.",
+      "prompt": "Entity `Author` has a `List<Book> books`. In the Spring Data JPA interface `AuthorRepository`, declare a method `findAllWithBooks()` that returns `List<Author>` and loads every author together with its books in the same `SELECT`.",
       "language": "java",
       "checks": [
         {
@@ -264,7 +264,7 @@
         }
       ],
       "model": "@Query(\"select distinct a from Author a join fetch a.books\")\nList<Author> findAllWithBooks();",
-      "explanation": "DISTINCT removes duplicate Author references produced by the join (Hibernate 6 de-duplicates automatically). An @EntityGraph on an overridden findAll() is an equally valid solution.",
+      "explanation": "`DISTINCT` removes duplicate `Author` references produced by the join (Hibernate 6 de-duplicates automatically). An `@EntityGraph` on an overridden `findAll()` is an equally valid solution.",
       "starter": "public interface AuthorRepository extends JpaRepository<Author, Long> {\n    \n}"
     },
     {
@@ -272,7 +272,7 @@
       "concept": "Optimistic locking",
       "type": "code",
       "difficulty": 2,
-      "prompt": "Add optimistic locking to the JPA entity Product: write the version attribute (the annotation and the field) that Hibernate checks and increments on every update.",
+      "prompt": "Add optimistic locking to the JPA entity `Product`: write the version attribute (the annotation and the field) that Hibernate checks and increments on every update.",
       "language": "java",
       "checks": [
         {
@@ -285,23 +285,23 @@
         }
       ],
       "model": "@Version\nprivate Long version;",
-      "explanation": "Hibernate adds \"AND version = ?\" to the UPDATE and increments the value; if zero rows match it throws OptimisticLockException (wrapped by Spring as ObjectOptimisticLockingFailureException). Prefer a numeric counter over a timestamp."
+      "explanation": "Hibernate adds `\"AND version = ?\"` to the `UPDATE` and increments the value; if zero rows match it throws `OptimisticLockException` (wrapped by Spring as `ObjectOptimisticLockingFailureException`). Prefer a numeric counter over a timestamp."
     },
     {
       "id": "conflict-http",
       "concept": "Optimistic locking",
       "type": "single",
       "difficulty": 2,
-      "prompt": "Two users edit the same Product form. The second save fails with ObjectOptimisticLockingFailureException. What should a REST API normally do?",
+      "prompt": "Two users edit the same `Product` form. The second save fails with `ObjectOptimisticLockingFailureException`. What should a REST API normally do?",
       "options": [
         {
           "id": "a",
-          "text": "Return 409 Conflict (or 412 with ETag) and let the client reload and re-apply its change.",
+          "text": "Return `409 Conflict` (or 412 with `ETag`) and let the client reload and re-apply its change.",
           "why": "Right: the data changed underneath the client, so the user or client must merge."
         },
         {
           "id": "b",
-          "text": "Retry the identical UPDATE in a loop until it finally succeeds, as the conflict is only transient.",
+          "text": "Retry the identical `UPDATE` in a loop until it finally succeeds, as the conflict is only transient.",
           "why": "The stale version never matches again, so the loop would fail or need a reload anyway."
         },
         {
@@ -311,7 +311,7 @@
         },
         {
           "id": "d",
-          "text": "Remove @Version so later saves silently overwrite the first one.",
+          "text": "Remove `@Version` so later saves silently overwrite the first one.",
           "why": "That brings back lost updates."
         }
       ],
@@ -325,43 +325,43 @@
       "concept": "Batch writes",
       "type": "single",
       "difficulty": 3,
-      "prompt": "An import job calls repository.saveAll(...) with 5,000 new entities and hibernate.jdbc.batch_size=50, yet the SQL log shows 5,000 separate INSERT statements on PostgreSQL. Which cause is the most likely?",
+      "prompt": "An `import` job calls `repository.saveAll(...)` with 5,000 new entities and `hibernate.jdbc.batch_size=50`, yet the SQL log shows 5,000 separate `INSERT` statements on PostgreSQL. Which cause is the most likely?",
       "options": [
         {
           "id": "a",
-          "text": "The id is mapped with GenerationType.IDENTITY, so Hibernate must run each INSERT at once to learn the key.",
-          "why": "Correct: the generated key is needed when persist() returns, so inserts cannot be queued and grouped at flush time."
+          "text": "The id is mapped with `GenerationType.IDENTITY`, so Hibernate must run each `INSERT` at once to learn the key.",
+          "why": "Correct: the generated key is needed when `persist()` returns, so inserts cannot be queued and grouped at flush time."
         },
         {
           "id": "b",
-          "text": "hibernate.jdbc.batch_size only applies to UPDATE statements, never to INSERTs.",
-          "why": "Batching works for INSERT, UPDATE and DELETE when the id strategy allows it."
+          "text": "`hibernate.jdbc.batch_size` only applies to `UPDATE` statements, never to `INSERTs`.",
+          "why": "Batching works for `INSERT`, `UPDATE` and DELETE when the id strategy allows it."
         },
         {
           "id": "c",
-          "text": "saveAll always issues one statement per entity because it runs inside a transaction.",
+          "text": "`saveAll` always issues one statement per entity because it runs inside a transaction.",
           "why": "Transactions do not prevent batching; batching is applied to the statements inside a transaction."
         },
         {
           "id": "d",
-          "text": "spring.jpa.open-in-view is true, and that setting disables JDBC batching for inserts.",
+          "text": "`spring.jpa.open-in-view` is true, and that setting disables JDBC batching for inserts.",
           "why": "Open-in-view only keeps the session open during rendering and has no effect on statement batching."
         }
       ],
       "correct": [
         "a"
       ],
-      "explanation": "IDENTITY disables insert batching in Hibernate. Use a SEQUENCE generator (with an allocationSize that matches the database sequence increment) and consider hibernate.order_inserts=true; on MySQL, which has no sequences, accept the cost or batch with plain JDBC."
+      "explanation": "`IDENTITY` disables insert batching in Hibernate. Use a `SEQUENCE` generator (with an `allocationSize` that matches the database sequence increment) and consider `hibernate.order_inserts=true`; on MySQL, which has no sequences, accept the cost or batch with plain JDBC."
     },
     {
       "id": "onetomany-join-table",
       "concept": "JPA mapping",
       "type": "integer",
       "difficulty": 2,
-      "prompt": "Entity Order declares @OneToMany List<Line> lines with neither mappedBy nor @JoinColumn, and Line has no field pointing back to Order. When Hibernate generates the schema, how many tables does it create for these two entities in total, counting any link table?",
+      "prompt": "Entity `Order` declares `@OneToMany List<Line> lines` with neither `mappedBy` nor `@JoinColumn`, and `Line` has no field pointing back to `Order`. When Hibernate generates the schema, how many tables does it create for these two entities in total, counting any link table?",
       "answer": 3,
       "tolerance": 0,
-      "explanation": "A unidirectional @OneToMany without @JoinColumn is mapped through a join table (orders_lines), so the tables are orders, line and the link table: 3. Add @JoinColumn(name = \"order_id\") or make it bidirectional with mappedBy to keep the foreign key in the line table and drop the extra table.",
+      "explanation": "A unidirectional `@OneToMany` without `@JoinColumn` is mapped through a join table (`orders_lines`), so the tables are `orders`, `line` and the link table: 3. Add `@JoinColumn(name = \"order_id\")` or make it bidirectional with `mappedBy` to keep the foreign key in the `line` table and drop the extra table.",
       "unit": "tables"
     },
     {
@@ -369,7 +369,7 @@
       "concept": "JPA mapping",
       "type": "truefalse",
       "difficulty": 2,
-      "prompt": "True or false: inside a @Transactional method, changing a field of an entity that was just loaded through the repository is written to the database at commit even if save() is never called.",
+      "prompt": "True or false: inside a `@Transactional` method, changing a field of an entity that was just loaded through the repository is written to the database at commit even if `save()` is never called.",
       "options": [
         {
           "id": "a",
@@ -385,7 +385,7 @@
       "correct": [
         "a"
       ],
-      "explanation": "Calling save() on a managed entity is redundant but harmless. It matters for new entities and for detached ones, which need merge semantics."
+      "explanation": "Calling `save()` on a managed entity is redundant but harmless. It matters for new entities and for detached ones, which need `merge` semantics."
     },
     {
       "id": "first-level-cache-scope",
@@ -397,18 +397,18 @@
         {
           "id": "a",
           "text": "True",
-          "why": "Wrong: it is bound to one EntityManager and so to one unit of work."
+          "why": "Wrong: it is bound to one `EntityManager` and so to one unit of work."
         },
         {
           "id": "b",
           "text": "False",
-          "why": "Correct: each EntityManager has its own persistence context; sharing across requests would need the second-level cache."
+          "why": "Correct: each `EntityManager` has its own persistence context; sharing across requests would need the second-level cache."
         }
       ],
       "correct": [
         "b"
       ],
-      "explanation": "The first-level cache gives repeatable reads of entities inside one transaction and one thread. The optional second-level cache is the shared, SessionFactory-wide one."
+      "explanation": "The first-level cache gives repeatable reads of entities inside one transaction and one thread. The optional second-level cache is the shared, `SessionFactory`-wide one."
     }
   ]
 }

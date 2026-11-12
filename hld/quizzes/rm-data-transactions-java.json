@@ -20,27 +20,27 @@
       "left": [
         {
           "id": "a",
-          "text": "REQUIRED (default)"
+          "text": "`REQUIRED (default)`"
         },
         {
           "id": "b",
-          "text": "REQUIRES_NEW"
+          "text": "`REQUIRES_NEW`"
         },
         {
           "id": "c",
-          "text": "SUPPORTS"
+          "text": "`SUPPORTS`"
         },
         {
           "id": "d",
-          "text": "MANDATORY"
+          "text": "`MANDATORY`"
         },
         {
           "id": "e",
-          "text": "NEVER"
+          "text": "`NEVER`"
         },
         {
           "id": "f",
-          "text": "NESTED"
+          "text": "`NESTED`"
         }
       ],
       "right": [
@@ -81,16 +81,16 @@
         "e": "t",
         "f": "u"
       },
-      "explanation": "REQUIRES_NEW commits or rolls back independently of the caller (it needs a second connection, so it can deadlock a tiny pool). NESTED uses savepoints and works only with JDBC-style transaction managers."
+      "explanation": "`REQUIRES_NEW` commits or rolls back independently of the caller (it needs a second connection, so it can deadlock a tiny pool). `NESTED` uses savepoints and works only with JDBC-style transaction managers."
     },
     {
       "id": "self-invocation-count",
       "concept": "Self-invocation trap",
       "type": "integer",
       "difficulty": 2,
-      "prompt": "In one Spring bean (default proxy-based AOP), @Transactional public void place() calls this.audit(), which is annotated @Transactional(propagation = Propagation.REQUIRES_NEW). A controller calls place() on the injected bean. How many physical database transactions are started?",
+      "prompt": "In one Spring bean (default proxy-based AOP), `@Transactional public void place()` calls `this.audit()`, which is annotated `@Transactional(propagation = Propagation.REQUIRES_NEW)`. A controller calls `place()` on the injected bean. How many physical database transactions are started?",
       "answer": 1,
-      "explanation": "The call this.audit() never passes through the Spring proxy, so the REQUIRES_NEW advice is not applied and audit() simply runs inside place()'s transaction. Move audit() to another bean (or use AspectJ mode) to get the second transaction.",
+      "explanation": "The call `this.audit()` never passes through the Spring proxy, so the `REQUIRES_NEW` advice is not applied and `audit()` simply runs inside `place()`'s transaction. Move `audit()` to another bean (or use AspectJ mode) to get the second transaction.",
       "unit": "transactions"
     },
     {
@@ -98,9 +98,9 @@
       "concept": "Propagation",
       "type": "integer",
       "difficulty": 3,
-      "prompt": "OrderService.place() is @Transactional (REQUIRED). It inserts row A, then calls auditBean.log(), a method of a different bean annotated REQUIRES_NEW, which inserts row B and throws a RuntimeException. place() catches that exception, inserts row C and returns normally. How many of the rows A, B, C are committed?",
+      "prompt": "`OrderService.place()` is `@Transactional (REQUIRED)`. It inserts row A, then calls `auditBean.log()`, a method of a different bean annotated `REQUIRES_NEW`, which inserts row B and throws a `RuntimeException`. `place()` catches that exception, inserts row C and returns normally. How many of the rows A, B, C are committed?",
       "answer": 2,
-      "explanation": "B belongs to its own transaction, which rolled back; the outer transaction is unaffected, so A and C commit. If log() were REQUIRED instead, the shared transaction would be marked rollback-only and the outer commit would throw UnexpectedRollbackException, leaving 0 rows.",
+      "explanation": "B belongs to its own transaction, which rolled back; the outer transaction is unaffected, so A and C commit. If `log()` were `REQUIRED` instead, the shared transaction would be marked rollback-only and the outer commit would throw `UnexpectedRollbackException`, leaving 0 rows.",
       "unit": "rows"
     },
     {
@@ -108,11 +108,11 @@
       "concept": "Propagation",
       "type": "integer",
       "difficulty": 3,
-      "prompt": "OrderService.place() is @Transactional (REQUIRED). It inserts row A, then calls a method of another bean that is also REQUIRED, inserts row B and throws a RuntimeException. place() catches that exception, inserts row C and returns normally. How many of the rows A, B, C are committed?",
+      "prompt": "`OrderService.place()` is `@Transactional (REQUIRED)`. It inserts row A, then calls a method of another bean that is also `REQUIRED`, inserts row B and throws a `RuntimeException`. `place()` catches that exception, inserts row C and returns normally. How many of the rows A, B, C are committed?",
       "answer": 0,
       "tolerance": 0,
       "unit": "rows",
-      "explanation": "The inner REQUIRED method joined the same transaction, and its RuntimeException crossed the proxy and marked the transaction rollback-only. When place() finishes, the commit fails with UnexpectedRollbackException and nothing is committed."
+      "explanation": "The inner `REQUIRED` method joined the same transaction, and its `RuntimeException` crossed the proxy and marked the transaction rollback-only. When `place()` finishes, the commit fails with `UnexpectedRollbackException` and nothing is committed."
     },
     {
       "id": "self-invocation-why",
@@ -120,8 +120,8 @@
       "type": "assertion",
       "difficulty": 2,
       "prompt": "Read the assertion (A) and the reason (R), then choose the option that fits.",
-      "assertion": "A @Transactional method called through this.method() from another method of the same class does not get the intended transactional behaviour under default proxy mode.",
-      "reason": "Spring applies transactions through a proxy wrapped around the bean, and a call on this does not pass through that proxy.",
+      "assertion": "A `@Transactional` method called through `this.method()` from another method of the same class does not get the intended transactional behaviour under default proxy mode.",
+      "reason": "Spring applies transactions through a proxy wrapped around the bean, and a call on `this` does not pass through that proxy.",
       "correct": [
         "a"
       ],
@@ -131,7 +131,7 @@
         "c": "R is true, so this option wrongly calls it false.",
         "d": "A is true, so this option wrongly calls it false."
       },
-      "explanation": "The same proxy limitation applies to @Async, @Cacheable and @Retryable. Fixes: call through another bean, inject the proxy of yourself, restructure, or use AspectJ weaving."
+      "explanation": "The same proxy limitation applies to `@Async`, `@Cacheable` and `@Retryable`. Fixes: call through another bean, inject the proxy of yourself, restructure, or use AspectJ weaving."
     },
     {
       "id": "checked-rollback",
@@ -139,8 +139,8 @@
       "type": "assertion",
       "difficulty": 2,
       "prompt": "Read the assertion (A) and the reason (R), then choose the option that fits.",
-      "assertion": "A checked exception such as IOException thrown out of a @Transactional method rolls the transaction back by default.",
-      "reason": "Spring's default rollback rule applies to RuntimeException and Error only.",
+      "assertion": "A checked exception such as `IOException` thrown out of a `@Transactional` method rolls the transaction back by default.",
+      "reason": "Spring's default rollback rule applies to `RuntimeException` and `Error` only.",
       "correct": [
         "d"
       ],
@@ -150,7 +150,7 @@
         "c": "R is true, so this option wrongly calls it false.",
         "d": "Correct: the default is commit on checked exceptions; use rollbackFor = Exception.class to change it."
       },
-      "explanation": "This mirrors EJB semantics (checked exceptions are business exceptions). Interviewers love this trap: a method throwing IOException after a debit still commits unless rollbackFor is set."
+      "explanation": "This mirrors EJB semantics (checked exceptions are business exceptions). Interviewers love this trap: a method throwing `IOException` after a debit still commits unless `rollbackFor` is set."
     },
     {
       "id": "transactional-fill",
@@ -174,14 +174,14 @@
         "NESTED",
         "read-only"
       ],
-      "explanation": "The rollback-only flag is why the outer commit fails with UnexpectedRollbackException even though the caller caught the exception."
+      "explanation": "The rollback-only flag is why the outer commit fails with `UnexpectedRollbackException` even though the caller caught the exception."
     },
     {
       "id": "code-transactional-attrs",
       "concept": "Rollback rules",
       "type": "code",
       "difficulty": 2,
-      "prompt": "Annotate the service method `void audit(String msg) throws IOException` so that it always runs in its own new transaction and also rolls back when the checked IOException is thrown.",
+      "prompt": "Annotate the service method `void audit(String msg) throws IOException` so that it always runs in its own new transaction and also rolls back when the checked `IOException` is thrown.",
       "language": "java",
       "checks": [
         {
@@ -198,14 +198,14 @@
         }
       ],
       "model": "@Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Exception.class)\nvoid audit(String msg) throws IOException { /* ... */ }",
-      "explanation": "rollbackFor = IOException.class is also fine. Remember the annotation only takes effect when audit() is invoked from another bean through the proxy."
+      "explanation": "`rollbackFor = IOException.class` is also fine. Remember the annotation only takes effect when `audit()` is invoked from another bean through the proxy."
     },
     {
       "id": "code-named-jdbc",
       "concept": "Plain SQL access",
       "type": "code",
       "difficulty": 2,
-      "prompt": "A NamedParameterJdbcTemplate called `named` and a String variable `status` exist. Write the call that returns, as an Integer, the number of rows in table orders whose status column equals that variable, binding it as the named parameter :status.",
+      "prompt": "A `NamedParameterJdbcTemplate` called `named` and a `String` variable `status` exist. Write the call that returns, as an `Integer`, the number of rows in table `orders` whose `status` column equals that variable, binding it as the named parameter `:status`.",
       "language": "java",
       "checks": [
         {
@@ -226,14 +226,14 @@
         }
       ],
       "model": "Integer n = named.queryForObject(\n    \"SELECT COUNT(*) FROM orders WHERE status = :status\",\n    Map.of(\"status\", status), Integer.class);",
-      "explanation": "new MapSqlParameterSource(\"status\", status) works too. Never concatenate the value into the SQL string."
+      "explanation": "`new MapSqlParameterSource(\"status\", status)` works too. Never concatenate the value into the SQL string."
     },
     {
       "id": "jdbc-update-count",
       "concept": "Plain SQL access",
       "type": "code",
       "difficulty": 2,
-      "prompt": "With a JdbcTemplate called jdbc, int qty and long id, write the statement that decrements products.stock by qty for that product only if stock is at least qty, binding values with ? placeholders, and keeps the number of affected rows in int rows.",
+      "prompt": "With a `JdbcTemplate` called `jdbc`, `int qty` and `long id`, write the statement that decrements `products.stock` by `qty` for that product only if stock is at least `qty`, binding values with `?` placeholders, and keeps the number of affected rows in `int rows`.",
       "language": "java",
       "checks": [
         {
@@ -254,39 +254,39 @@
         }
       ],
       "model": "int rows = jdbc.update(\n    \"UPDATE products SET stock = stock - ? WHERE id = ? AND stock >= ?\",\n    qty, id, qty);",
-      "explanation": "rows == 0 means the guard failed (not enough stock or no such product), so the caller reports a conflict. A single guarded UPDATE is atomic and needs no explicit locking."
+      "explanation": "`rows == 0` means the guard failed (not enough stock or no such product), so the caller reports a conflict. A single guarded `UPDATE` is atomic and needs no explicit locking."
     },
     {
       "id": "jdbctemplate-facts",
       "concept": "Plain SQL access",
       "type": "multi",
       "difficulty": 2,
-      "prompt": "Select all true statements about Spring JdbcTemplate.",
+      "prompt": "Select all true statements about Spring `JdbcTemplate`.",
       "options": [
         {
           "id": "a",
-          "text": "queryForObject throws EmptyResultDataAccessException when no row matches.",
-          "why": "Right: it never returns null for a missing row."
+          "text": "`queryForObject` throws `EmptyResultDataAccessException` when no row matches.",
+          "why": "Right: it never returns `null` for a missing row."
         },
         {
           "id": "b",
-          "text": "update(...) returns the number of rows affected.",
+          "text": "`update(...)` returns the number of rows affected.",
           "why": "Right: useful for optimistic checks (0 means nothing matched)."
         },
         {
           "id": "c",
-          "text": "It translates SQLException into the unchecked DataAccessException hierarchy.",
-          "why": "Right: callers do not handle checked SQLExceptions."
+          "text": "It translates `SQLException` into the unchecked `DataAccessException` hierarchy.",
+          "why": "Right: callers do not handle checked `SQLExceptions`."
         },
         {
           "id": "d",
           "text": "It keeps a first-level cache of query results like Hibernate.",
-          "why": "JdbcTemplate is stateless and caches nothing."
+          "why": "`JdbcTemplate` is stateless and caches nothing."
         },
         {
           "id": "e",
-          "text": "queryForObject returns null when no row matches.",
-          "why": "It throws instead; use query(...) and check the list for an optional result."
+          "text": "`queryForObject` returns `null` when no row matches.",
+          "why": "It throws instead; use `query(...)` and check the list for an optional result."
         }
       ],
       "correct": [
@@ -294,70 +294,70 @@
         "b",
         "c"
       ],
-      "explanation": "JdbcTemplate removes connection/statement/exception boilerplate but stays plain SQL: you map rows yourself with RowMapper and manage the SQL."
+      "explanation": "`JdbcTemplate` removes connection/statement/exception boilerplate but stays plain SQL: you map rows yourself with `RowMapper` and manage the SQL."
     },
     {
       "id": "jdbc-injection-safe",
       "concept": "Plain SQL access",
       "type": "single",
       "difficulty": 1,
-      "prompt": "Which JdbcTemplate call is safe against SQL injection?",
+      "prompt": "Which `JdbcTemplate` call is safe against SQL injection?",
       "options": [
         {
           "id": "a",
-          "text": "jdbc.queryForList(\"SELECT * FROM users WHERE name = ?\", name)",
+          "text": "`jdbc.queryForList(\"SELECT * FROM users WHERE name = ?\", name)`",
           "why": "Correct: the value is bound as a parameter, never parsed as SQL."
         },
         {
           "id": "b",
-          "text": "jdbc.queryForList(\"SELECT * FROM users WHERE name = '\" + name + \"'\")",
+          "text": "`jdbc.queryForList(\"SELECT * FROM users WHERE name = '\" + name + \"'\")`",
           "why": "String concatenation lets a quote in the value rewrite the statement."
         },
         {
           "id": "c",
-          "text": "jdbc.queryForList(String.format(\"SELECT * FROM users WHERE name = '%s'\", name))",
-          "why": "String.format is still concatenation and equally injectable."
+          "text": "`jdbc.queryForList(String.format(\"SELECT * FROM users WHERE name = '%s'\", name))`",
+          "why": "`String.format` is still concatenation and equally injectable."
         },
         {
           "id": "d",
-          "text": "jdbc.queryForList(\"SELECT * FROM users WHERE name = ?\" + name)",
+          "text": "`jdbc.queryForList(\"SELECT * FROM users WHERE name = ?\" + name)`",
           "why": "It appends the value to the SQL text and leaves the placeholder unbound."
         }
       ],
       "correct": [
         "a"
       ],
-      "explanation": "Never build SQL from input. Placeholders cannot stand in for identifiers such as column names or ORDER BY direction, so allow-list those."
+      "explanation": "Never build SQL from input. Placeholders cannot stand in for identifiers such as column names or `ORDER BY` direction, so allow-list those."
     },
     {
       "id": "readonly-flush",
       "concept": "Spring @Transactional",
       "type": "truefalse",
       "difficulty": 2,
-      "prompt": "True or false: with JPA and Hibernate, a change made to a managed entity inside a @Transactional(readOnly = true) method is still flushed to the database at commit, just like in a normal transaction.",
+      "prompt": "True or false: with JPA and Hibernate, a change made to a managed entity inside a `@Transactional(readOnly = true)` method is still flushed to the database at commit, just like in a normal transaction.",
       "options": [
         {
           "id": "a",
           "text": "True",
-          "why": "Wrong: readOnly = true sets the Hibernate session to manual flush mode, so the change is not written."
+          "why": "Wrong: `readOnly = true` sets the Hibernate session to manual flush mode, so the change is not written."
         },
         {
           "id": "b",
           "text": "False",
-          "why": "Correct: readOnly = true puts Hibernate in MANUAL flush mode, so dirty changes are not flushed."
+          "why": "Correct: `readOnly = true` puts Hibernate in `MANUAL` flush mode, so dirty changes are not flushed."
         }
       ],
       "correct": [
         "b"
       ],
-      "explanation": "readOnly = true is a hint that lets Spring set the flush mode to MANUAL and tell the JDBC driver the transaction is read-only. It also saves dirty-checking work on large result sets. It is not a security control: use database privileges for that."
+      "explanation": "`readOnly = true` is a hint that lets Spring set the flush mode to `MANUAL` and tell the JDBC driver the transaction is read-only. It also saves dirty-checking work on large result sets. It is not a security control: use database privileges for that."
     },
     {
       "id": "runtime-exception-rollback",
       "concept": "Rollback rules",
       "type": "truefalse",
       "difficulty": 1,
-      "prompt": "True or false: a RuntimeException that leaves a @Transactional method (called through the proxy) marks the transaction for rollback by default.",
+      "prompt": "True or false: a `RuntimeException` that leaves a `@Transactional` method (called through the proxy) marks the transaction for rollback by default.",
       "options": [
         {
           "id": "a",
@@ -367,13 +367,13 @@
         {
           "id": "b",
           "text": "False",
-          "why": "Wrong: Spring's default rollback rule does cover RuntimeException and Error."
+          "why": "Wrong: Spring's default rollback rule does cover `RuntimeException` and `Error`."
         }
       ],
       "correct": [
         "a"
       ],
-      "explanation": "Checked exceptions commit by default, which is why rollbackFor = Exception.class is a common setting."
+      "explanation": "Checked exceptions commit by default, which is why `rollbackFor = Exception.class` is a common setting."
     },
     {
       "id": "jdbctemplate-translation",
@@ -381,8 +381,8 @@
       "type": "assertion",
       "difficulty": 2,
       "prompt": "Judge the assertion and the reason.",
-      "assertion": "JdbcTemplate converts SQLException into Spring's unchecked DataAccessException hierarchy.",
-      "reason": "JdbcTemplate keeps a cache of query results between calls.",
+      "assertion": "`JdbcTemplate` converts `SQLException` into Spring's unchecked `DataAccessException` hierarchy.",
+      "reason": "`JdbcTemplate` keeps a cache of query results between calls.",
       "correct": [
         "c"
       ],
@@ -392,40 +392,40 @@
         "c": "Correct: A is true (callers handle DuplicateKeyException and friends instead of vendor error codes); R is false because JdbcTemplate is stateless.",
         "d": "Wrong: A is true."
       },
-      "explanation": "The translation gives portable, unchecked exceptions such as DuplicateKeyException and DataIntegrityViolationException."
+      "explanation": "The translation gives portable, unchecked exceptions such as `DuplicateKeyException` and `DataIntegrityViolationException`."
     },
     {
       "id": "default-isolation",
       "concept": "Isolation levels",
       "type": "single",
       "difficulty": 2,
-      "prompt": "A Spring service uses @Transactional with the default isolation (Isolation.DEFAULT) against PostgreSQL. Which isolation level does each transaction run at?",
+      "prompt": "A Spring service uses `@Transactional` with the default isolation (`Isolation.DEFAULT`) against PostgreSQL. Which isolation level does each transaction run at?",
       "options": [
         {
           "id": "a",
-          "text": "READ COMMITTED, the PostgreSQL default.",
-          "why": "Correct: DEFAULT means the database default, and for PostgreSQL that is READ COMMITTED."
+          "text": "`READ COMMITTED`, the PostgreSQL default.",
+          "why": "Correct: DEFAULT means the database default, and for PostgreSQL that is `READ COMMITTED`."
         },
         {
           "id": "b",
-          "text": "REPEATABLE READ, as in every SQL database.",
-          "why": "REPEATABLE READ is the default of MySQL InnoDB, not of PostgreSQL."
+          "text": "`REPEATABLE READ`, as in every SQL database.",
+          "why": "`REPEATABLE READ` is the default of MySQL InnoDB, not of PostgreSQL."
         },
         {
           "id": "c",
-          "text": "SERIALIZABLE, because Spring prefers the safest level.",
-          "why": "Spring never upgrades the level on its own; SERIALIZABLE must be requested explicitly."
+          "text": "`SERIALIZABLE`, because Spring prefers the safest level.",
+          "why": "Spring never upgrades the level on its own; `SERIALIZABLE` must be requested explicitly."
         },
         {
           "id": "d",
-          "text": "READ UNCOMMITTED, to give the best throughput by default.",
-          "why": "PostgreSQL treats READ UNCOMMITTED as READ COMMITTED and Spring does not request it by default."
+          "text": "`READ UNCOMMITTED`, to give the best throughput by default.",
+          "why": "PostgreSQL treats `READ UNCOMMITTED` as `READ COMMITTED` and Spring does not request it by default."
         }
       ],
       "correct": [
         "a"
       ],
-      "explanation": "Isolation.DEFAULT delegates to the database: READ COMMITTED on PostgreSQL, Oracle and SQL Server, REPEATABLE READ on MySQL InnoDB. Higher levels can raise serialization failures that the application must retry."
+      "explanation": "`Isolation.DEFAULT` delegates to the database: `READ COMMITTED` on PostgreSQL, Oracle and SQL Server, `REPEATABLE READ` on MySQL InnoDB. Higher levels can raise serialization failures that the application must retry."
     }
   ]
 }

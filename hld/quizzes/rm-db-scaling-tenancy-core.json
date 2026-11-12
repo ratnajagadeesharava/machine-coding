@@ -16,7 +16,7 @@
       "concept": "Sharding",
       "type": "integer",
       "difficulty": 2,
-      "prompt": "Keys 0 to 19 are placed with shard = key mod N. The cluster grows from N=4 to N=5 shards. How many of the 20 keys end up on a different shard?",
+      "prompt": "Keys 0 to 19 are placed with `shard = key mod N`. The cluster grows from `N=4` to `N=5` shards. How many of the 20 keys end up on a different shard?",
       "answer": 16,
       "tolerance": 0,
       "unit": "keys",
@@ -38,18 +38,18 @@
       "concept": "Quorum",
       "type": "integer",
       "difficulty": 2,
-      "prompt": "A leaderless store has replication factor N=5 and writes use W=4. What is the smallest read quorum R that guarantees every read overlaps the latest acknowledged write (R + W > N)?",
+      "prompt": "A leaderless store has replication factor `N=5` and writes use `W=4`. What is the smallest read quorum `R` that guarantees every read overlaps the latest acknowledged write (`R + W > N`)?",
       "answer": 2,
       "tolerance": 0,
       "unit": "replicas",
-      "explanation": "R + 4 > 5 means R > 1, so R = 2. Overlap guarantees at least one replica in the read set saw the write, but you still need versions or timestamps to pick it."
+      "explanation": "`R + 4 > 5` means `R > 1`, so `R = 2`. Overlap guarantees at least one replica in the read set saw the write, but you still need versions or timestamps to pick it."
     },
     {
       "id": "quorum-failures",
       "concept": "Quorum",
       "type": "integer",
       "difficulty": 2,
-      "prompt": "Cassandra-style RF=5 with QUORUM reads and QUORUM writes. At most how many replicas of a partition can be down while both reads and writes still succeed?",
+      "prompt": "Cassandra-style `RF=5` with `QUORUM` reads and `QUORUM` writes. At most how many replicas of a partition can be down while both reads and writes still succeed?",
       "answer": 2,
       "tolerance": 0,
       "unit": "replicas",
@@ -166,7 +166,7 @@
       "concept": "Sharding",
       "type": "truefalse",
       "difficulty": 2,
-      "prompt": "True or false: range sharding a write-heavy events table on created_at sends nearly all new writes to the same shard.",
+      "prompt": "True or false: range sharding a write-heavy `events` table on `created_at` sends nearly all new writes to the same shard.",
       "options": [
         {
           "id": "a",
@@ -182,7 +182,7 @@
       "correct": [
         "a"
       ],
-      "explanation": "Hash the key (or add a bucket prefix) to spread inserts, accepting that range queries become scatter-gather. The classic fix is a composite key such as (hash(user_id) mod 16, created_at)."
+      "explanation": "Hash the key (or add a bucket prefix) to spread inserts, accepting that range queries become scatter-gather. The classic fix is a composite key such as `(hash(user_id) mod 16, created_at)`."
     },
     {
       "id": "quorum-overlap",
@@ -190,7 +190,7 @@
       "type": "assertion",
       "difficulty": 3,
       "prompt": "Read the assertion A and the reason R, then choose the correct relationship between them.",
-      "assertion": "With N replicas, W write acknowledgements and R read replies, R + W > N guarantees a read set shares at least one replica with the last successful write set.",
+      "assertion": "With N replicas, W write acknowledgements and R read replies, `R + W > N` guarantees a read set shares at least one replica with the last successful write set.",
       "reason": "Quorum reads and writes are always sent to the same fixed set of replicas.",
       "correct": [
         "c"
@@ -231,7 +231,7 @@
       "options": [
         {
           "id": "a",
-          "text": "Shared tables with a tenant_id column and row-level security.",
+          "text": "Shared tables with a `tenant_id` column and row-level security.",
           "why": "Right: one set of tables and one migration run covers every tenant at the lowest cost."
         },
         {
@@ -264,28 +264,28 @@
       "options": [
         {
           "id": "a",
-          "text": "Superusers and roles with BYPASSRLS skip the policies.",
+          "text": "Superusers and roles with `BYPASSRLS` skip the policies.",
           "why": "Right: connect the app with a plain role, never a superuser."
         },
         {
           "id": "b",
-          "text": "The table owner is exempt unless FORCE ROW LEVEL SECURITY is set.",
+          "text": "The table owner is exempt unless `FORCE ROW LEVEL SECURITY` is set.",
           "why": "Right: owners bypass by default, which surprises people running migrations as the app user."
         },
         {
           "id": "c",
-          "text": "Policies are only enforced once ALTER TABLE ... ENABLE ROW LEVEL SECURITY has been run.",
+          "text": "Policies are only enforced once `ALTER TABLE ... ENABLE ROW LEVEL SECURITY` has been run.",
           "why": "Right: creating a policy alone does nothing until RLS is enabled on the table."
         },
         {
           "id": "d",
-          "text": "A policy using current_setting('app.tenant_id') is safe with any pooler if set with a plain SET.",
-          "why": "A session-level SET can leak into the next client on a pooled connection; use SET LOCAL inside a transaction."
+          "text": "A policy using `current_setting('app.tenant_id')` is safe with any pooler if set with a plain `SET`.",
+          "why": "A session-level `SET` can leak into the next client on a pooled connection; use `SET LOCAL` inside a transaction."
         },
         {
           "id": "e",
-          "text": "RLS removes the need for a tenant_id index.",
-          "why": "The policy predicate is added to queries, so tenant_id still needs a (leading) index."
+          "text": "RLS removes the need for a `tenant_id` index.",
+          "why": "The policy predicate is added to queries, so `tenant_id` still needs a (leading) index."
         }
       ],
       "correct": [
@@ -293,14 +293,14 @@
         "b",
         "c"
       ],
-      "explanation": "RLS is defence in depth: the app should still filter, but a forgotten WHERE no longer leaks data. Test policies as the real application role."
+      "explanation": "RLS is defence in depth: the app should still filter, but a forgotten `WHERE` no longer leaks data. Test policies as the real application role."
     },
     {
       "id": "rls-policy",
       "concept": "Row-level security",
       "type": "code",
       "difficulty": 2,
-      "prompt": "Table invoices(id, tenant_id uuid, amount). Write the SQL to turn on row-level security for it and add a policy named tenant_isolation that only allows rows whose tenant_id equals the uuid in the session setting app.tenant_id.",
+      "prompt": "Table `invoices(id, tenant_id uuid, amount)`. Write the SQL to turn on row-level security for it and add a policy named `tenant_isolation` that only allows rows whose `tenant_id` equals the `uuid` in the session setting `app.tenant_id`.",
       "language": "sql",
       "starter": "",
       "checks": [
@@ -322,7 +322,7 @@
         }
       ],
       "model": "ALTER TABLE invoices ENABLE ROW LEVEL SECURITY;\nCREATE POLICY tenant_isolation ON invoices USING (tenant_id = current_setting('app.tenant_id')::uuid);",
-      "explanation": "The cast to uuid is optional if you compare as text. Add WITH CHECK to constrain inserts and updates too (it defaults to the USING expression). The app sets the value with SET LOCAL app.tenant_id = ... per transaction."
+      "explanation": "The cast to `uuid` is optional if you compare as text. Add `WITH CHECK` to constrain inserts and updates too (it defaults to the `USING` expression). The app sets the value with `SET LOCAL app.tenant_id = ...` per transaction."
     },
     {
       "id": "tenancy-fill",
@@ -351,7 +351,7 @@
       "type": "assertion",
       "difficulty": 3,
       "prompt": "Read the assertion A and the reason R, then choose the correct relationship between them.",
-      "assertion": "Running a plain SET app.tenant_id = ... on a PgBouncer connection in transaction pooling mode is a safe way to scope tenant queries.",
+      "assertion": "Running a plain `SET app.tenant_id = ...` on a PgBouncer connection in transaction pooling mode is a safe way to scope tenant queries.",
       "reason": "In transaction pooling mode the server connection is returned to the pool after each transaction and handed to a different client.",
       "correct": [
         "d"
@@ -360,16 +360,16 @@
         "a": "A is false, so R cannot explain a true A.",
         "b": "A is false, so this cannot be a both-true case.",
         "c": "R is true.",
-        "d": "Correct: R is true and is the very reason the plain SET leaks to the next client; use SET LOCAL within the transaction."
+        "d": "Correct: R is true and is the very reason the `plain SET` leaks to the next client; use `SET LOCAL` within the transaction."
       },
-      "explanation": "Session state does not survive pooling safely. SET LOCAL (or set_config(..., true)) lasts only until the end of the transaction."
+      "explanation": "Session state does not survive pooling safely. `SET LOCAL` (or `set_config(..., true)`) lasts only until the end of the transaction."
     },
     {
       "id": "ring-lookup",
       "concept": "Consistent hashing",
       "type": "code",
       "difficulty": 3,
-      "prompt": "In pseudocode, ring is an array of (hash, node) entries sorted by hash. Write getNode(ring, h) that returns the node owning hash h: the first entry with hash >= h, wrapping around to the first entry when h is past the last one. Use binary search.",
+      "prompt": "In pseudocode, `ring` is an array of `(hash, node)` entries sorted by hash. Write `getNode(ring, h)` that returns the node owning hash `h`: the first entry with `hash >= h`, wrapping around to the first entry when `h` is past the last one. Use binary search.",
       "language": "pseudocode",
       "checks": [
         {
@@ -386,7 +386,7 @@
         }
       ],
       "model": "function getNode(ring, h):\n    i = lowerBound(ring, h)     // first index with hash >= h, by binary search\n    if i == length(ring): i = 0 // wrap around\n    return ring[i].node",
-      "explanation": "Binary search finds the first entry with hash >= h in O(log n); the wrap-around turns the sorted array into a ring. A modulo (i % length) or a separate array of hashes is equally valid, but check the boundary rule."
+      "explanation": "Binary search finds the first entry with `hash >= h` in O(log n); the wrap-around turns the sorted array into a ring. A modulo (`i % length`) or a separate array of hashes is equally valid, but check the boundary rule."
     }
   ]
 }

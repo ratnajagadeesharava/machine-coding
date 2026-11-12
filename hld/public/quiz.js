@@ -2,6 +2,7 @@
 // and generate new quizzes with Claude. Progress lives in this browser's localStorage.
 import './apikey.js';
 import { SUBJECTS, subjectIdForTopic, topicRank } from '/shared/subjects.js';
+import { richText } from './rich.js';
 import { assertionBlock, codeWidget, fillWidget, integerWidget, matrixWidget } from './qtypes.js';
 import {
   isCorrect, numberFor, mulberry32, pickQuestions, presentQuestion, scoreAttempt, shuffle, validateQuiz,
@@ -626,7 +627,7 @@ function renderQuestion() {
   els.concept.textContent = q.concept;
   els.diff.replaceChildren(...[1, 2, 3].map((n) => h('i', { class: n <= q.difficulty ? 'on' : '' })));
   els.diff.setAttribute('aria-label', `Difficulty ${q.difficulty} of 3`);
-  els.prompt.textContent = q.prompt;
+  els.prompt.replaceChildren(...richText(h, q.prompt));
   els.hint.textContent = HINTS[q.type] || '';
   els.hint.hidden = !els.hint.textContent;
 
@@ -642,7 +643,7 @@ function renderQuestion() {
       class: cls, type: 'button', 'data-id': o.id, role: q.type === 'multi' ? 'checkbox' : 'radio', 'aria-checked': String(picked), disabled: checked,
       onclick: () => choose(o.id),
     }, h('span', { class: 'key', text: label }),
-    h('span', { class: 'txt' }, o.text, checked && o.why ? h('span', { class: 'why', text: o.why }) : null));
+    h('span', { class: 'txt' }, ...richText(h, o.text), checked && o.why ? h('span', { class: 'why' }, ...richText(h, o.why)) : null));
   });
   if (rich) els.options.replaceChildren(rich(h, q, [...sel], checked, setAnswer));
   else els.options.replaceChildren(...pre, ...buildOptions());
@@ -659,7 +660,7 @@ function renderQuestion() {
     const ok = isCorrect(q, [...sel]);
     els.verdict.textContent = ok ? 'Correct!' : q.type === 'multi' && [...sel].some((id) => q.correct.includes(id)) ? 'Partly right - you need exactly the right set.' : 'Not quite.';
     els.verdict.className = `verdict-line ${ok ? 'ok' : 'no'}`;
-    els.explain.textContent = q.explanation;
+    els.explain.replaceChildren(...richText(h, q.explanation));
     renderTutor();
   }
 }
@@ -920,7 +921,7 @@ function finish() {
   els.sub.textContent = 'Results';
 }
 
-function richText(q, ans) {
+function answerText(q, ans) {
   if (q.type === 'integer') return ans.length ? ans[0] : '(no answer)';
   if (q.type === 'code') return ans.length ? ans[0] : '(no answer)';
   const m = new Map(ans.map((a) => [a.slice(0, a.indexOf('=')), a.slice(a.indexOf('=') + 1)]));
@@ -932,7 +933,7 @@ const richCorrect = (q) => (q.type === 'integer' ? String(q.answer) : q.type ===
     : Object.entries(q.blanks).map(([k, w]) => `(${k}) ${w}`).join('  |  '));
 
 function textFor(q, ids) {
-  if (RICH[q.type]) return richText(q, ids);
+  if (RICH[q.type]) return answerText(q, ids);
   const picked = q.options.map((o, i) => ({ o, i })).filter(({ o }) => ids.includes(o.id));
   return picked.length ? picked.map(({ o, i }) => `${numberFor(i)}. ${o.text}`).join('  |  ') : '(no answer)';
 }
@@ -945,10 +946,10 @@ function renderReview() {
   if (!rows.length) { els.review.append(h('p', { class: 'empty', text: 'Nothing wrong here. Nice.' })); return; }
   for (const { q, n, ok } of rows) {
     els.review.append(h('article', { class: `rv${ok ? '' : ' bad'}` },
-      h('h4', { text: `${n + 1}. ${q.prompt}` }),
+      h('h4', {}, `${n + 1}. `, ...richText(h, q.prompt)),
       h('p', { class: 'ans' }, h('b', { text: 'Your answer: ' }), textFor(q, run.answers[q.id] || [])),
       ok ? null : h('p', { class: 'ans' }, h('b', { text: 'Correct: ' }), RICH[q.type] ? richCorrect(q) : textFor(q, q.correct)),
-      h('p', { class: 'ex', text: q.explanation })));
+      h('div', { class: 'ex' }, ...richText(h, q.explanation))));
   }
 }
 

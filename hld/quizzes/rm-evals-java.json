@@ -41,7 +41,7 @@
         }
       ],
       "model": "@Test\nvoid goldenPassRate() {\n    List<Map<String, Object>> results = runEval();\n    double rate = results.stream()\n        .filter(r -> (Boolean) r.get(\"passed\"))\n        .count() / (double) results.size();\n    assertTrue(rate >= 0.9, () -> \"pass rate \" + rate);\n}",
-      "explanation": "Casting the divisor to double avoids integer division. The lambda message is built only on failure, and it names the rate in the CI log. Other correct forms (mapToInt, an average of 1/0 values) pass.",
+      "explanation": "Casting the divisor to double avoids integer division. The lambda message is built only on failure, and it names the rate in the CI log. Other correct forms (`mapToInt`, an average of 1/0 values) pass.",
       "starter": "@Test\nvoid goldenPassRate() {\n    "
     },
     {
@@ -74,7 +74,7 @@
         }
       ],
       "model": "@ParameterizedTest(name = \"{0}\")\n@MethodSource(\"cases\")\nvoid golden(Case c) {\n    assertTrue(answer(c.question()).toLowerCase()\n        .contains(c.expectedContains().toLowerCase()));\n}",
-      "explanation": "Each case becomes its own test, so the report names the failing case (give the record a toString that returns its id, as I did when running it). Load the cases from a versioned JSON file in a real suite."
+      "explanation": "Each case becomes its own test, so the report names the failing case (give the record a `toString` that returns its id, as I did when running it). Load the cases from a versioned JSON file in a real suite."
     },
     {
       "id": "junit-redteam",
@@ -134,7 +134,7 @@
         }
       ],
       "model": "static double passAtK(int n, int c, int k) {\n    if (n - c < k) {\n        return 1.0;\n    }\n    double allFail = 1.0;\n    for (int i = n - c + 1; i <= n; i++) {\n        allFail *= 1.0 - (double) k / i;\n    }\n    return 1.0 - allFail;\n}",
-      "explanation": "This is the estimator 1 - C(n-c, k) / C(n, k) written as a product so no factorial overflows. I ran passAtK(10, 3, 2) and got 0.5333, matching the integer question in the language-independent evals quiz."
+      "explanation": "This is the estimator 1 - `C(n-c, k)` / `C(n, k)` written as a product so no factorial overflows. I ran `passAtK(10, 3, 2)` and got 0.5333, matching the integer question in the language-independent evals quiz."
     },
     {
       "id": "kappa-fn",
@@ -194,14 +194,14 @@
         }
       ],
       "model": "Timer timer = Timer.builder(\"llm.call\")\n    .tag(\"model\", MODEL)\n    .publishPercentiles(0.95)\n    .register(registry);\nreturn timer.record(() -> client.generate(prompt));",
-      "explanation": "record(Supplier) times the call and returns its value, and the timer is also updated when the call throws. I compiled and ran it with a SimpleMeterRegistry. Prefer publishPercentileHistogram() when you must aggregate across instances."
+      "explanation": "`record(Supplier)` times the call and returns its value, and the timer is also updated when the call throws. I compiled and ran it with a `SimpleMeterRegistry`. Prefer `publishPercentileHistogram()` when you must aggregate across instances."
     },
     {
       "id": "combined-sources",
       "concept": "Regression suites in CI",
       "type": "integer",
       "difficulty": 2,
-      "prompt": "A JUnit 5 test method combines @MethodSource (a factory that returns 3 strings) and @ValueSource(strings = {\"x\", \"y\"}) on the same @ParameterizedTest. How many invocations does it have?",
+      "prompt": "A JUnit 5 test method combines `@MethodSource` (a factory that returns 3 strings) and `@ValueSource(strings = {\"x\", \"y\"})` on the same `@ParameterizedTest`. How many invocations does it have?",
       "answer": 5,
       "explanation": "Several argument sources on one parameterized test add up: 3 + 2 = 5 invocations (I ran it with the console launcher and saw s=a, b, c, x, y). Unlike a cross product, they do not multiply, so build a combined stream yourself when you want every prompt against every model.",
       "unit": "invocations"
@@ -256,7 +256,7 @@
       "correct": [
         "a"
       ],
-      "explanation": "Micrometer documents publishPercentileHistogram() for aggregable percentiles; publishPercentiles(...) values are computed per instance and cannot be combined."
+      "explanation": "Micrometer documents `publishPercentileHistogram()` for aggregable percentiles; `publishPercentiles(...)` values are computed per instance and cannot be combined."
     },
     {
       "id": "java-eval-tools",
@@ -267,7 +267,7 @@
       "left": [
         {
           "id": "a",
-          "text": "JUnit 5 @ParameterizedTest"
+          "text": "JUnit 5 `@ParameterizedTest`"
         },
         {
           "id": "b",
@@ -275,7 +275,7 @@
         },
         {
           "id": "c",
-          "text": "ChatModelListener"
+          "text": "`ChatModelListener`"
         },
         {
           "id": "d",

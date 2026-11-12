@@ -18,7 +18,7 @@
       "difficulty": 3,
       "prompt": "A service handles 200 requests per second at steady state and each request holds a database connection for 50 ms on average. By Little's law, how many connections are in use on average?",
       "answer": 10,
-      "explanation": "L = lambda * W = 200 req/s * 0.05 s = 10 connections busy on average. Size above the average for bursts, but a pool of 10-20 serves 200 req/s; the mistake is to take 200 requests as 200 connections.",
+      "explanation": "`L = lambda * W = 200 req/s * 0.05 s = 10` connections busy on average. Size above the average for bursts, but a pool of 10-20 serves 200 req/s; the mistake is to take 200 requests as 200 connections.",
       "unit": "connections"
     },
     {
@@ -26,22 +26,22 @@
       "concept": "Pool sizing",
       "type": "integer",
       "difficulty": 2,
-      "prompt": "A widely quoted starting point from the PostgreSQL community is: pool connections = (core_count x 2) + effective_spindle_count. The database server has 4 cores and its data sits on one effective spindle (a single SSD). How many connections should the pool start with?",
+      "prompt": "A widely quoted starting point from the PostgreSQL community is: `pool connections = (core_count x 2) + effective_spindle_count`. The database server has 4 cores and its data sits on one effective spindle (a single SSD). How many connections should the pool start with?",
       "answer": 9,
       "tolerance": 0,
       "unit": "connections",
-      "explanation": "4 x 2 + 1 = 9. A database cannot run more CPU-bound queries in parallel than it has cores; extra connections only queue and context switch. Treat the formula as a starting point and load-test."
+      "explanation": "`4 x 2 + 1 = 9`. A database cannot run more CPU-bound queries in parallel than it has cores; extra connections only queue and context switch. Treat the formula as a starting point and load-test."
     },
     {
       "id": "pods-vs-max-connections",
       "concept": "Pool exhaustion",
       "type": "integer",
       "difficulty": 3,
-      "prompt": "A PostgreSQL server runs with max_connections = 100, of which 3 are reserved for superusers. Every application instance keeps a pool of at most 15 connections, and all pools can be fully busy at peak. What is the largest number of instances that cannot exhaust the usable connections?",
+      "prompt": "A PostgreSQL server runs with `max_connections = 100`, of which 3 are reserved for superusers. Every application instance keeps a pool of at most 15 connections, and all pools can be fully busy at peak. What is the largest number of instances that cannot exhaust the usable connections?",
       "answer": 6,
       "tolerance": 0,
       "unit": "instances",
-      "explanation": "100 - 3 = 97 usable connections; 6 instances need 90, 7 would need 105 > 97. Per-instance pools multiply with every autoscaled instance, so add a connection pooler in transaction mode or shrink the per-instance pool."
+      "explanation": "`100 - 3 = 97` usable connections; 6 instances need 90, 7 would need 105 > 97. Per-instance pools multiply with every autoscaled instance, so add a connection pooler in transaction mode or shrink the per-instance pool."
     },
     {
       "id": "bigger-pool",
@@ -67,18 +67,18 @@
       "concept": "Pool exhaustion",
       "type": "integer",
       "difficulty": 3,
-      "prompt": "Each request thread holds one connection and, through a nested call that opens a separate transaction, needs 4 connections at the same time. There are 5 such threads. Using the rule pool size >= threads x (connections needed per thread - 1) + 1, what is the smallest pool that can never deadlock?",
+      "prompt": "Each request thread holds one connection and, through a nested call that opens a separate transaction, needs 4 connections at the same time. There are 5 such threads. Using the rule `pool size >= threads x (connections needed per thread - 1) + 1`, what is the smallest pool that can never deadlock?",
       "answer": 16,
       "tolerance": 0,
       "unit": "connections",
-      "explanation": "5 x (4 - 1) + 1 = 16. With fewer, all 5 threads can each grab some connections and then wait forever for the rest. The better cure is not to hold a connection while asking for another."
+      "explanation": "`5 x (4 - 1) + 1 = 16`. With fewer, all 5 threads can each grab some connections and then wait forever for the rest. The better cure is not to hold a connection while asking for another."
     },
     {
       "id": "n-plus-1-join-sql",
       "concept": "N+1 problem",
       "type": "code",
       "difficulty": 2,
-      "prompt": "Tables orders(id, customer_id, total) and customers(id, name). A page currently runs one query for the orders and then one query per order to fetch the customer name. Write a single SQL statement that returns every order with its customer name.",
+      "prompt": "Tables `orders(id, customer_id, total)` and `customers(id, name)`. A page currently runs one query for the orders and then one query per order to fetch the customer name. Write a single SQL statement that returns every order with its customer name.",
       "language": "sql",
       "checks": [
         {
@@ -95,7 +95,7 @@
         }
       ],
       "model": "SELECT o.id, o.total, c.name\nFROM orders o\nJOIN customers c ON c.id = o.customer_id;",
-      "explanation": "One round trip replaces N+1. Another valid fix is two queries: load the orders, then load all needed customers with WHERE id IN (...). Both beat one query per row.",
+      "explanation": "One round trip replaces `N+1`. Another valid fix is two queries: load the orders, then load all needed customers with `WHERE id IN (...)`. Both beat one query per row.",
       "starter": "SELECT "
     },
     {
@@ -103,11 +103,11 @@
       "concept": "N+1 problem",
       "type": "integer",
       "difficulty": 3,
-      "prompt": "A list endpoint loads 30 posts with one query. Instead of one query per post for its author, the code collects the distinct author ids (30 of them) and fetches them with WHERE id IN (...) in batches of at most 10 ids. How many queries run in total, counting the first one?",
+      "prompt": "A list endpoint loads 30 posts with one query. Instead of one query per post for its author, the code collects the distinct author ids (30 of them) and fetches them with `WHERE id IN (...)` in batches of at most 10 ids. How many queries run in total, counting the first one?",
       "answer": 4,
       "tolerance": 0,
       "unit": "queries",
-      "explanation": "1 query for the posts plus ceil(30 / 10) = 3 batched author queries gives 4. Without batching it would be 1 + 30 = 31."
+      "explanation": "1 query for the posts plus `ceil(30 / 10) = 3` batched author queries gives 4. Without batching it would be `1 + 30 = 31`."
     },
     {
       "id": "isolation-anomalies",
@@ -165,24 +165,24 @@
         "l3": "r3",
         "l4": "r4"
       },
-      "explanation": "Dirty reads are only possible at READ UNCOMMITTED. Non-repeatable and phantom reads are possible at READ COMMITTED; snapshot-style REPEATABLE READ blocks them but still allows write skew, which only SERIALIZABLE prevents."
+      "explanation": "Dirty reads are only possible at `READ UNCOMMITTED`. Non-repeatable and phantom reads are possible at `READ COMMITTED`; snapshot-style `REPEATABLE READ` blocks them but still allows write skew, which only `SERIALIZABLE` prevents."
     },
     {
       "id": "read-committed-view",
       "concept": "Isolation levels",
       "type": "single",
       "difficulty": 2,
-      "prompt": "Under READ COMMITTED, transaction T1 reads an account balance of 100. T2 then updates it to 150 and commits. T1 reads the same row again before finishing. What does T1 see?",
+      "prompt": "Under `READ COMMITTED`, transaction T1 reads an account balance of 100. T2 then updates it to 150 and commits. T1 reads the same row again before finishing. What does T1 see?",
       "options": [
         {
           "id": "a",
           "text": "100, because T1 keeps using the snapshot that it took when its first statement started running.",
-          "why": "That is snapshot or REPEATABLE READ behaviour, not READ COMMITTED."
+          "why": "That is snapshot or `REPEATABLE READ` behaviour, not `READ COMMITTED`."
         },
         {
           "id": "b",
           "text": "150, because each statement sees the data committed when it starts.",
-          "why": "Correct: READ COMMITTED takes a fresh view per statement, so a non-repeatable read happens."
+          "why": "Correct: `READ COMMITTED` takes a fresh view per statement, so a non-repeatable read happens."
         },
         {
           "id": "c",
@@ -198,7 +198,7 @@
       "correct": [
         "b"
       ],
-      "explanation": "Know the three outcomes: READ COMMITTED sees the new value, REPEATABLE READ (snapshot) keeps the old one, and SERIALIZABLE may abort one of the transactions."
+      "explanation": "Know the three outcomes: `READ COMMITTED` sees the new value, `REPEATABLE READ` (snapshot) keeps the old one, and `SERIALIZABLE` may abort one of the transactions."
     },
     {
       "id": "serializable-retry",
@@ -206,7 +206,7 @@
       "type": "assertion",
       "difficulty": 3,
       "prompt": "Judge the assertion and the reason.",
-      "assertion": "A transaction running at SERIALIZABLE isolation can fail with a serialization error that the application is expected to retry.",
+      "assertion": "A transaction running at `SERIALIZABLE` isolation can fail with a serialization error that the application is expected to retry.",
       "reason": "Serializable implementations may abort a transaction when they detect a conflict instead of making it wait.",
       "correct": [
         "a"
@@ -224,11 +224,11 @@
       "concept": "Optimistic locking",
       "type": "integer",
       "difficulty": 2,
-      "prompt": "Row 1 has version 7. Users A and B both load it. A saves with UPDATE ... SET ..., version = 8 WHERE id = 1 AND version = 7 and it succeeds. B then runs the identical statement with the version it loaded. How many rows does B's UPDATE affect?",
+      "prompt": "Row 1 has version 7. Users A and B both load it. A saves with `UPDATE ... SET ..., version = 8 WHERE id = 1 AND version = 7` and it succeeds. B then runs the identical statement with the version it loaded. How many rows does B's `UPDATE` affect?",
       "answer": 0,
       "tolerance": 0,
       "unit": "rows",
-      "explanation": "The row now has version 8, so WHERE version = 7 matches nothing and the update touches 0 rows. Application code treats \"0 rows\" as a conflict and asks the user to reload instead of overwriting."
+      "explanation": "The row now has version 8, so `WHERE version = 7` matches nothing and the update touches 0 rows. Application code treats `\"0 rows\"` as a conflict and asks the user to reload instead of overwriting."
     },
     {
       "id": "conflict-http",
@@ -239,7 +239,7 @@
       "options": [
         {
           "id": "a",
-          "text": "The server repeats the identical UPDATE in a loop, over and over, until one of the attempts finally succeeds.",
+          "text": "The server repeats the identical `UPDATE` in a loop, over and over, until one of the attempts finally succeeds.",
           "why": "The stale version never matches again, so the loop would never succeed."
         },
         {
@@ -254,7 +254,7 @@
         },
         {
           "id": "d",
-          "text": "409 Conflict (or 412 with ETag), so the client reloads and re-applies its change.",
+          "text": "`409 Conflict` (or 412 with `ETag`), so the client reloads and re-applies its change.",
           "why": "Correct: the data changed underneath the client; the user must decide how to merge."
         }
       ],
@@ -272,12 +272,12 @@
       "options": [
         {
           "id": "a",
-          "text": "Add the new column as nullable, backfill in batches, then add the NOT NULL constraint in a later release.",
+          "text": "Add the new column as nullable, backfill in batches, then add the `NOT NULL` constraint in a later release.",
           "why": "Right: avoids long locks and works with old and new code."
         },
         {
           "id": "b",
-          "text": "Use CREATE INDEX CONCURRENTLY on a large live table (outside a transaction block).",
+          "text": "Use `CREATE INDEX CONCURRENTLY` on a large live table (outside a transaction block).",
           "why": "Right: it avoids blocking writes, at the cost of a slower build."
         },
         {
@@ -330,7 +330,7 @@
       "concept": "Schema migrations",
       "type": "code",
       "difficulty": 2,
-      "prompt": "Write the PostgreSQL statement that builds an index named idx_orders_customer on orders(customer_id) without blocking writes to the table.",
+      "prompt": "Write the PostgreSQL statement that builds an index named `idx_orders_customer` on `orders(customer_id)` without blocking writes to the table.",
       "language": "sql",
       "checks": [
         {
@@ -347,7 +347,7 @@
         }
       ],
       "model": "CREATE INDEX CONCURRENTLY idx_orders_customer ON orders (customer_id);",
-      "explanation": "A plain CREATE INDEX blocks writes for the whole build. CONCURRENTLY takes longer, cannot run inside a transaction block, and can leave an invalid index behind if it fails, which must be dropped and retried."
+      "explanation": "A plain `CREATE INDEX` blocks writes for the whole build. `CONCURRENTLY` takes longer, cannot run inside a transaction block, and can leave an invalid index behind if it fails, which must be dropped and retried."
     },
     {
       "id": "bind-parameters",
@@ -391,23 +391,23 @@
       "options": [
         {
           "id": "a",
-          "text": "REPEATABLE READ.",
+          "text": "`REPEATABLE READ`.",
           "why": "That is the default of MySQL InnoDB, not of PostgreSQL."
         },
         {
           "id": "b",
-          "text": "SERIALIZABLE.",
+          "text": "`SERIALIZABLE`.",
           "why": "Databases do not default to the strictest level; it is opt-in because it can abort transactions."
         },
         {
           "id": "c",
-          "text": "READ COMMITTED.",
+          "text": "`READ COMMITTED`.",
           "why": "Correct: it is the PostgreSQL default, as in Oracle and SQL Server."
         },
         {
           "id": "d",
-          "text": "READ UNCOMMITTED.",
-          "why": "PostgreSQL treats READ UNCOMMITTED as READ COMMITTED and never defaults to dirty reads."
+          "text": "`READ UNCOMMITTED`.",
+          "why": "PostgreSQL treats `READ UNCOMMITTED` as `READ COMMITTED` and never defaults to dirty reads."
         }
       ],
       "correct": [
@@ -432,7 +432,7 @@
         "c": "Correct: A is true and holds for any stable system on average; R is false because no arrival pattern is assumed.",
         "d": "Wrong: A is true."
       },
-      "explanation": "Size the pool above the average for bursts, but the average itself comes from arrival rate x hold time, for example 200 req/s x 0.05 s = 10."
+      "explanation": "Size the pool above the average for bursts, but the average itself comes from arrival rate x hold time, for example `200 req/s x 0.05 s = 10`."
     },
     {
       "id": "snapshot-write-skew",
@@ -440,7 +440,7 @@
       "type": "assertion",
       "difficulty": 3,
       "prompt": "Judge the assertion and the reason.",
-      "assertion": "Snapshot-based REPEATABLE READ prevents write skew.",
+      "assertion": "Snapshot-based `REPEATABLE READ` prevents write skew.",
       "reason": "Every transaction at that level reads from one consistent snapshot taken when it starts.",
       "correct": [
         "d"
@@ -451,7 +451,7 @@
         "c": "Wrong: A is false.",
         "d": "Correct: R is true, but two transactions can each read a consistent snapshot, update different rows and still break an invariant. Only SERIALIZABLE (or explicit locking) prevents write skew."
       },
-      "explanation": "Classic example: two on-call doctors each see the other on call and both go off call. Fix with SERIALIZABLE and retry, SELECT ... FOR UPDATE on a guard row, or a constraint."
+      "explanation": "Classic example: two on-call doctors each see the other on call and both go off call. Fix with `SERIALIZABLE` and retry, `SELECT ... FOR UPDATE` on a guard row, or a constraint."
     }
   ]
 }

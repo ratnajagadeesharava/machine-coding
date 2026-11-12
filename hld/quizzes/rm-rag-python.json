@@ -16,7 +16,7 @@
       "concept": "Chunking",
       "type": "code",
       "difficulty": 2,
-      "prompt": "Using LangChain, write Python that creates a RecursiveCharacterTextSplitter with chunk_size 800, chunk_overlap 100 and the separators paragraph break, newline, space, then empty string (in that order).",
+      "prompt": "Using LangChain, write Python that creates a `RecursiveCharacterTextSplitter` with `chunk_size` 800, `chunk_overlap` 100 and the separators paragraph break, newline, space, then empty string (in that order).",
       "language": "python",
       "starter": "from langchain_text_splitters import RecursiveCharacterTextSplitter\n",
       "checks": [
@@ -38,7 +38,7 @@
         }
       ],
       "model": "splitter = RecursiveCharacterTextSplitter(\n    chunk_size=800,\n    chunk_overlap=100,\n    separators=[\"\\n\\n\", \"\\n\", \" \", \"\"],\n)\nchunks = splitter.split_text(text)",
-      "explanation": "By default the size is measured in characters (len), not tokens; use from_tiktoken_encoder to count tokens. chunk_overlap must be smaller than chunk_size or the splitter raises a ValueError. The separators list is also the default order."
+      "explanation": "By default the size is measured in characters (len), not tokens; use `from_tiktoken_encoder` to count tokens. `chunk_overlap` must be smaller than `chunk_size` or the splitter raises a `ValueError`. The separators list is also the default order."
     },
     {
       "id": "rrf-fn",
@@ -104,14 +104,14 @@
         }
       ],
       "model": "def recall_at_k(retrieved, relevant, k):\n    return len(set(retrieved[:k]) & set(relevant)) / len(relevant)\n\ndef mrr(runs):\n    total = 0.0\n    for retrieved, relevant in runs:\n        for rank, doc in enumerate(retrieved, start=1):\n            if doc in relevant:\n                total += 1 / rank\n                break\n    return total / len(runs)",
-      "explanation": "Other layouts pass (a generator with next(), 0-based enumerate with rank + 1). Guard against an empty relevant set in real code."
+      "explanation": "Other layouts pass (a generator with `next()`, 0-based enumerate with rank + 1). Guard against an empty relevant set in real code."
     },
     {
       "id": "ndcg-fn",
       "concept": "nDCG",
       "type": "code",
       "difficulty": 3,
-      "prompt": "Write a Python function ndcg_at_k(rels, k) where rels is the list of graded relevance scores of the retrieved documents in rank order. Use DCG = sum of rel / log2(position + 1) over the first k results and divide by the DCG of the ideal ordering (the same scores sorted best first).",
+      "prompt": "Write a Python function `ndcg_at_k`(rels, k) where rels is the list of graded relevance scores of the retrieved documents in rank order. Use DCG = sum of rel / `log2(position + 1)` over the first k results and divide by the DCG of the ideal ordering (the same scores sorted best first).",
       "language": "python",
       "checks": [
         {
@@ -136,7 +136,7 @@
         }
       ],
       "model": "def ndcg_at_k(rels, k):\n    def dcg(r):\n        return sum(x / math.log2(i + 2) for i, x in enumerate(r[:k]))\n    ideal = dcg(sorted(rels, reverse=True))\n    return dcg(rels) / ideal if ideal else 0.0",
-      "explanation": "enumerate starts at 0, so the position is i + 1 and log2(position + 1) becomes log2(i + 2). I ran it: ndcg_at_k([1, 0, 1], 3) is 0.9197, the 92 from the earlier integer question. In a real evaluation the ideal list must come from all relevant documents, not only the retrieved ones, and an empty ideal needs the guard shown.",
+      "explanation": "enumerate starts at 0, so the position is i + 1 and `log2(position + 1)` becomes `log2(i + 2)`. I ran it: `ndcg_at_k([1, 0, 1], 3)` is 0.9197, the 92 from the earlier integer question. In a real evaluation the ideal list must come from all relevant documents, not only the retrieved ones, and an empty ideal needs the guard shown.",
       "starter": "import math\n\ndef ndcg_at_k(rels, k):\n    "
     },
     {
@@ -165,7 +165,7 @@
         }
       ],
       "model": "def cosine(a, b):\n    a = np.asarray(a, dtype=float)\n    b = np.asarray(b, dtype=float)\n    return float(a @ b / (np.linalg.norm(a) * np.linalg.norm(b)))",
-      "explanation": "I checked cosine([3, 4], [4, 3]) = 0.96. If both vectors are already L2-normalised the norms are 1 and the dot product alone is the cosine, which is why many vector stores use a dot-product index. A zero vector would divide by zero, so guard it in real code.",
+      "explanation": "I checked `cosine([3, 4], [4, 3])` = 0.96. If both vectors are already L2-normalised the norms are 1 and the dot product alone is the cosine, which is why many vector stores use a dot-product index. A zero vector would divide by zero, so guard it in real code.",
       "starter": "import numpy as np\n\ndef cosine(a, b):\n    "
     },
     {
@@ -173,9 +173,9 @@
       "concept": "Chunking",
       "type": "integer",
       "difficulty": 2,
-      "prompt": "A string text has 2,100 characters. How many chunks does [text[i:i + 500] for i in range(0, len(text), 400)] produce?",
+      "prompt": "A string `text` has 2,100 characters. How many chunks does `[text[i:i + 500] for i in range(0, len(text), 400)]` produce?",
       "answer": 6,
-      "explanation": "range(0, 2100, 400) yields starts 0, 400, 800, 1200, 1600 and 2000, so there are 6 chunks. The last one holds only 100 characters, all of them already inside the previous chunk's overlap. I ran it; with a 2,000-character text the same code gives 5, so the last start can add a chunk that carries no new text.",
+      "explanation": "`range(0, 2100, 400)` yields starts 0, 400, 800, 1200, 1600 and 2000, so there are 6 chunks. The last one holds only 100 characters, all of them already inside the previous chunk's overlap. I ran it; with a 2,000-character text the same code gives 5, so the last start can add a chunk that carries no new text.",
       "unit": "chunks"
     },
     {
@@ -219,7 +219,7 @@
       "correct": [
         "a"
       ],
-      "explanation": "sorted(scores, key=scores.get, reverse=True) is the fix. A quick unit test with two tiny rankings catches this kind of ordering bug immediately."
+      "explanation": "`sorted(scores, key=scores.get, reverse=True)` is the fix. A quick unit test with two tiny rankings catches this kind of ordering bug immediately."
     },
     {
       "id": "norm-dot",
@@ -227,7 +227,7 @@
       "type": "assertion",
       "difficulty": 2,
       "prompt": "Assertion and reason: read both statements and choose the right option.",
-      "assertion": "For two L2-normalised NumPy vectors a and b, the expression a @ b equals their cosine similarity.",
+      "assertion": "For two L2-normalised NumPy vectors a and b, the expression `a @ b` equals their cosine similarity.",
       "reason": "The norm of a normalised vector is 1, so the denominator of the cosine formula is 1.",
       "correct": [
         "a"
@@ -238,7 +238,7 @@
         "c": "Not chosen: R is true, because normalising divides a vector by its length.",
         "d": "Not chosen: A is true, so the dot product of unit vectors is the cosine."
       },
-      "explanation": "I checked it: [3, 4]/5 dotted with [4, 3]/5 gives 0.96, the same as the cosine of the raw vectors."
+      "explanation": "I checked it: `[3, 4]`/5 dotted with `[4, 3]`/5 gives 0.96, the same as the cosine of the raw vectors."
     },
     {
       "id": "splitter-methods",
@@ -259,36 +259,36 @@
         "from_documents",
         "embed_documents"
       ],
-      "explanation": "I ran all three on RecursiveCharacterTextSplitter. split_text loses metadata, split_documents keeps it, and create_documents accepts a list of strings with an optional list of metadata dictionaries."
+      "explanation": "I ran all three on `RecursiveCharacterTextSplitter`. `split_text` loses metadata, `split_documents` keeps it, and `create_documents` accepts a list of strings with an optional list of metadata dictionaries."
     },
     {
       "id": "splitter-classes",
       "concept": "Text splitters",
       "type": "matrix",
       "difficulty": 2,
-      "prompt": "Match each langchain_text_splitters class with how it cuts text.",
+      "prompt": "Match each `langchain_text_splitters` class with how it cuts text.",
       "left": [
         {
           "id": "a",
-          "text": "CharacterTextSplitter"
+          "text": "`CharacterTextSplitter`"
         },
         {
           "id": "b",
-          "text": "RecursiveCharacterTextSplitter"
+          "text": "`RecursiveCharacterTextSplitter`"
         },
         {
           "id": "c",
-          "text": "MarkdownHeaderTextSplitter"
+          "text": "`MarkdownHeaderTextSplitter`"
         },
         {
           "id": "d",
-          "text": "TokenTextSplitter"
+          "text": "`TokenTextSplitter`"
         }
       ],
       "right": [
         {
           "id": "p",
-          "text": "Splits on one separator string and then merges pieces up to chunk_size"
+          "text": "Splits on one separator string and then merges pieces up to `chunk_size`"
         },
         {
           "id": "q",
@@ -313,7 +313,7 @@
         "c": "r",
         "d": "s"
       },
-      "explanation": "All four classes exist in langchain_text_splitters 1.x (checked by importing them). Reranking is a retrieval-time step, not a splitter."
+      "explanation": "All four classes exist in `langchain_text_splitters` 1.x (checked by importing them). Reranking is a retrieval-time step, not a splitter."
     }
   ]
 }

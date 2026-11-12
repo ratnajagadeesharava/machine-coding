@@ -16,18 +16,18 @@
       "concept": "HashMap internals",
       "type": "integer",
       "difficulty": 2,
-      "prompt": "A new HashMap<>() has the default capacity of 16 and load factor 0.75. Counting from 1, which put of a new distinct key makes the table resize for the first time?",
+      "prompt": "A new `HashMap<>()` has the default capacity of 16 and load factor 0.75. Counting from 1, which put of a new distinct key makes the table resize for the first time?",
       "answer": 13,
-      "explanation": "Threshold = 16 x 0.75 = 12. The resize runs when the size exceeds the threshold, so the 13th insertion doubles the table to 32 (HashMap.putVal: if (++size > threshold) resize())."
+      "explanation": "Threshold = 16 x 0.75 = 12. The resize runs when the size exceeds the threshold, so the 13th insertion doubles the table to 32 (`HashMap.putVal`: `if (++size > threshold) resize()`)."
     },
     {
       "id": "treeify-min-capacity",
       "concept": "HashMap internals",
       "type": "integer",
       "difficulty": 3,
-      "prompt": "Since Java 8 a long collision chain in a HashMap bin can be converted into a red-black tree, but only if the table capacity is at least some minimum; below it the table is resized instead. What is that minimum capacity (MIN_TREEIFY_CAPACITY)?",
+      "prompt": "Since Java 8 a long collision chain in a `HashMap` bin can be converted into a red-black tree, but only if the table capacity is at least some minimum; below it the table is resized instead. What is that minimum capacity (`MIN_TREEIFY_CAPACITY`)?",
       "answer": 64,
-      "explanation": "TREEIFY_THRESHOLD = 8 (a bin is converted when an insertion makes the chain longer than 8, i.e. the 9th node), UNTREEIFY_THRESHOLD = 6, MIN_TREEIFY_CAPACITY = 64: while the table is smaller than 64 a long chain triggers a resize instead. Trees give O(log n) worst-case lookups instead of O(n), best for Comparable keys."
+      "explanation": "`TREEIFY_THRESHOLD = 8` (a bin is converted when an insertion makes the chain longer than 8, i.e. the 9th node), `UNTREEIFY_THRESHOLD = 6`, `MIN_TREEIFY_CAPACITY = 64`: while the table is smaller than 64 a long chain triggers a resize instead. Trees give O(log n) worst-case lookups instead of O(n), best for `Comparable` keys."
     },
     {
       "id": "structure-complexity",
@@ -38,33 +38,33 @@
       "left": [
         {
           "id": "a",
-          "text": "ArrayList"
+          "text": "`ArrayList`"
         },
         {
           "id": "b",
-          "text": "LinkedList"
+          "text": "`LinkedList`"
         },
         {
           "id": "c",
-          "text": "ArrayDeque"
+          "text": "`ArrayDeque`"
         },
         {
           "id": "d",
-          "text": "TreeMap"
+          "text": "`TreeMap`"
         },
         {
           "id": "e",
-          "text": "LinkedHashMap"
+          "text": "`LinkedHashMap`"
         }
       ],
       "right": [
         {
           "id": "p",
-          "text": "Resizable array: O(1) get(i), amortised O(1) add at the end, O(n) insert in the middle"
+          "text": "Resizable array: O(1) `get(i)`, amortised O(1) add at the end, O(n) insert in the middle"
         },
         {
           "id": "q",
-          "text": "Doubly linked nodes: O(1) unlink at a known node but O(n) get(i)"
+          "text": "Doubly linked nodes: O(1) unlink at a known node but O(n) `get(i)`"
         },
         {
           "id": "r",
@@ -90,7 +90,7 @@
         "d": "s",
         "e": "t"
       },
-      "explanation": "Pick by access pattern: random access (ArrayList), both ends (ArrayDeque), sorted keys (TreeMap), predictable iteration order (LinkedHashMap)."
+      "explanation": "Pick by access pattern: random access (`ArrayList`), both ends (`ArrayDeque`), sorted keys (`TreeMap`), predictable iteration order (`LinkedHashMap`)."
     },
     {
       "id": "arraydeque-vs-linkedlist",
@@ -98,8 +98,8 @@
       "type": "assertion",
       "difficulty": 2,
       "prompt": "Read the assertion (A) and the reason (R), then choose the option that fits.",
-      "assertion": "ArrayDeque is usually a better choice than LinkedList for a stack or a queue in Java.",
-      "reason": "ArrayDeque stores elements in a contiguous circular array and allocates no node object per element.",
+      "assertion": "`ArrayDeque` is usually a better choice than `LinkedList` for a stack or a queue in Java.",
+      "reason": "`ArrayDeque` stores elements in a contiguous circular array and allocates no node object per element.",
       "correct": [
         "a"
       ],
@@ -109,7 +109,7 @@
         "c": "R is true: the implementation is a resizable circular array.",
         "d": "A is true; the Javadoc says ArrayDeque is likely faster than Stack as a stack and than LinkedList as a queue."
       },
-      "explanation": "ArrayDeque rejects null elements and is not thread-safe. Prefer it over the legacy Stack class and over LinkedList for queues."
+      "explanation": "`ArrayDeque` rejects null elements and is not thread-safe. Prefer it over the legacy `Stack` class and over `LinkedList` for queues."
     },
     {
       "id": "hashmap-facts-fill",
@@ -138,7 +138,7 @@
       "concept": "Iteration and fail-fast",
       "type": "code",
       "difficulty": 2,
-      "prompt": "Write one Java statement or a short loop that removes all even numbers from a List<Integer> named nums without throwing ConcurrentModificationException.",
+      "prompt": "Write one Java statement or a short loop that removes all even numbers from a `List<Integer>` named `nums` without throwing `ConcurrentModificationException`.",
       "language": "java",
       "starter": "",
       "checks": [
@@ -152,40 +152,40 @@
         }
       ],
       "model": "nums.removeIf(n -> n % 2 == 0);",
-      "explanation": "removeIf is the idiom. An explicit Iterator with it.remove() is equally valid; a for-each loop that calls nums.remove(...) is the bug being avoided."
+      "explanation": "`removeIf` is the idiom. An explicit `Iterator` with `it.remove()` is equally valid; a for-each loop that calls `nums.remove(...)` is the bug being avoided."
     },
     {
       "id": "cme-trap",
       "concept": "Iteration and fail-fast",
       "type": "single",
       "difficulty": 3,
-      "prompt": "What does this Java snippet print?\nList<Integer> l = new ArrayList<>(List.of(1, 2, 3));\nfor (Integer i : l) {\n  if (i == 2) l.remove(i);\n}\nSystem.out.println(l);\nWhat is the output?",
+      "prompt": "What does this Java snippet print?\n\n```java\nList<Integer> l = new ArrayList<>(List.of(1, 2, 3));\nfor (Integer i : l) {\n    if (i == 2) l.remove(i);\n}\nSystem.out.println(l);\n```\n\nWhat is the output?",
       "options": [
         {
           "id": "a",
-          "text": "[1, 3], no exception",
-          "why": "Correct: remove(Object) deletes 2; size becomes 2 and the cursor is already 2, so hasNext() is false and no check for modification ever runs."
+          "text": "`[1, 3]`, no exception",
+          "why": "Correct: `remove(Object)` deletes 2; size becomes 2 and the cursor is already 2, so `hasNext()` is false and no check for modification ever runs."
         },
         {
           "id": "b",
-          "text": "ConcurrentModificationException",
-          "why": "This is the usual result, but here hasNext() returns false before next() can call checkForComodification()."
+          "text": "`ConcurrentModificationException`",
+          "why": "This is the usual result, but here `hasNext()` returns false before `next()` can call `checkForComodification()`."
         },
         {
           "id": "c",
-          "text": "[1, 2, 3]",
+          "text": "`[1, 2, 3]`",
           "why": "The element is removed from the list; nothing restores it."
         },
         {
           "id": "d",
-          "text": "[1]",
+          "text": "`[1]`",
           "why": "Only the element equal to 2 is removed, and the loop ends rather than removing more."
         }
       ],
       "correct": [
         "a"
       ],
-      "explanation": "Fail-fast iterators check modCount in next(), not in hasNext(). Removing the second-to-last element is the one case that silently works; removing the first would throw. (Verified by running it.)"
+      "explanation": "Fail-fast iterators check `modCount` in `next()`, not in `hasNext()`. Removing the second-to-last element is the one case that silently works; removing the first would throw. (Verified by running it.)"
     },
     {
       "id": "list-object-invariance",
@@ -193,8 +193,8 @@
       "type": "assertion",
       "difficulty": 2,
       "prompt": "Read the assertion (A) and the reason (R), then choose the option that fits.",
-      "assertion": "A List<String> can be passed where a List<Object> is expected in Java.",
-      "reason": "String is a subtype of Object.",
+      "assertion": "A `List<String>` can be passed where a `List<Object>` is expected in Java.",
+      "reason": "`String` is a subtype of `Object`.",
       "correct": [
         "d"
       ],
@@ -204,7 +204,7 @@
         "c": "R is true, so this option is wrong.",
         "d": "Correct: generics are invariant, so List<String> is not a List<Object> (use List<? extends Object> or List<?>), even though String extends Object."
       },
-      "explanation": "Invariance exists so that you cannot add an Integer through a List<Object> alias to a list that really holds strings. Arrays are covariant and pay for it with ArrayStoreException."
+      "explanation": "Invariance exists so that you cannot add an `Integer` through a `List<Object>` alias to a list that really holds strings. Arrays are covariant and pay for it with `ArrayStoreException`."
     },
     {
       "id": "erasure-facts",
@@ -215,28 +215,28 @@
       "options": [
         {
           "id": "a",
-          "text": "new ArrayList<String>().getClass() == new ArrayList<Integer>().getClass()",
+          "text": "`new ArrayList<String>().getClass() == new ArrayList<Integer>().getClass()`",
           "why": "Correct: the type arguments are erased, so both are the same runtime class."
         },
         {
           "id": "b",
-          "text": "Inside class Box<T>, the expression new T() does not compile.",
-          "why": "Correct: T is erased to Object (or its bound), so the runtime has no idea which class to instantiate."
+          "text": "Inside `class Box<T>`, the expression `new T()` does not compile.",
+          "why": "Correct: T is erased to `Object` (or its bound), so the runtime has no idea which class to instantiate."
         },
         {
           "id": "c",
-          "text": "Inside class Box<T>, the expression new T[10] does not compile.",
+          "text": "Inside `class Box<T>`, the expression `new T[10]` does not compile.",
           "why": "Correct: generic array creation is rejected because arrays need the reified element type."
         },
         {
           "id": "d",
-          "text": "void f(List<String>) and void f(List<Integer>) can be declared as overloads in one class.",
-          "why": "Both erase to f(List), a name clash compile error."
+          "text": "`void f(List<String>)` and `void f(List<Integer>)` can be declared as overloads in one class.",
+          "why": "Both erase to `f(List)`, a name clash compile error."
         },
         {
           "id": "e",
-          "text": "A primitive such as int can be used as a type argument: List<int>.",
-          "why": "Type arguments must be reference types; use List<Integer>."
+          "text": "A primitive such as `int` can be used as a type argument: `List<int>`.",
+          "why": "Type arguments must be reference types; use `List<Integer>`."
         }
       ],
       "correct": [
@@ -244,14 +244,14 @@
         "b",
         "c"
       ],
-      "explanation": "Erasure replaces type variables with their bound (Object by default) and inserts casts; generics exist only at compile time. Workarounds: pass a Class<T> token, or use a Supplier<T>."
+      "explanation": "Erasure replaces type variables with their bound (`Object` by default) and inserts casts; generics exist only at compile time. Workarounds: pass a `Class<T>` token, or use a `Supplier<T>`."
     },
     {
       "id": "bounded-max",
       "concept": "Generics and type erasure",
       "type": "code",
       "difficulty": 2,
-      "prompt": "Write a static generic Java method max that takes a non-empty List<T>, where T is bounded so its elements can be compared, and returns the largest element.",
+      "prompt": "Write a static generic Java method `max` that takes a non-empty `List<T>`, where T is bounded so its elements can be compared, and returns the largest element.",
       "language": "java",
       "starter": "static ",
       "checks": [
@@ -280,40 +280,40 @@
       "concept": "Generics and type erasure",
       "type": "single",
       "difficulty": 3,
-      "prompt": "Given void copy(List<? extends Number> src, List<? super Integer> dst), which statement compiles inside the method?",
+      "prompt": "Given `void copy(List<? extends Number> src, List<? super Integer> dst)`, which statement compiles inside the method?",
       "options": [
         {
           "id": "a",
-          "text": "dst.add(Integer.valueOf(1));",
-          "why": "Correct: a List<? super Integer> is a consumer; any Integer fits whatever supertype list it really is."
+          "text": "`dst.add(Integer.valueOf(1));`",
+          "why": "Correct: a `List<? super Integer>` is a consumer; any Integer fits whatever supertype list it really is."
         },
         {
           "id": "b",
-          "text": "src.add(Integer.valueOf(1000));",
-          "why": "src may be a List<Double>; the compiler cannot allow any add except null."
+          "text": "`src.add(Integer.valueOf(1000));`",
+          "why": "src may be a `List<Double>`; the compiler cannot allow any `add` except `null`."
         },
         {
           "id": "c",
-          "text": "Integer x = dst.get(0);",
-          "why": "dst could be a List<Number> or List<Object>, so get only promises Object."
+          "text": "`Integer x = dst.get(0);`",
+          "why": "dst could be a `List<Number>` or `List<Object>`, so `get` only promises `Object`."
         },
         {
           "id": "d",
-          "text": "Number n = dst.get(0);",
-          "why": "dst could be a List<Object>, so a Number is not guaranteed; only Object is."
+          "text": "`Number n = dst.get(0);`",
+          "why": "dst could be a `List<Object>`, so a Number is not guaranteed; only `Object` is."
         }
       ],
       "correct": [
         "a"
       ],
-      "explanation": "PECS: Producer Extends, Consumer Super. Read from ? extends, write to ? super. (Verified by compiling it.)"
+      "explanation": "PECS: Producer Extends, Consumer Super. Read from `? extends`, write to `? super`. (Verified by compiling it.)"
     },
     {
       "id": "reverse-treemap",
       "concept": "Sorted collections",
       "type": "code",
       "difficulty": 2,
-      "prompt": "Write one Java statement that creates a TreeMap<String, Integer> named scores which keeps its String keys in reverse natural (descending) order.",
+      "prompt": "Write one Java statement that creates a `TreeMap<String, Integer>` named `scores` which keeps its String keys in reverse natural (descending) order.",
       "language": "java",
       "checks": [
         {
@@ -326,7 +326,7 @@
         }
       ],
       "model": "TreeMap<String, Integer> scores = new TreeMap<>(Comparator.reverseOrder());",
-      "explanation": "A comparator passed to the constructor defines the ordering; Collections.reverseOrder() and (a, b) -> b.compareTo(a) are equally valid."
+      "explanation": "A comparator passed to the constructor defines the ordering; `Collections.reverseOrder()` and `(a, b) -> b.compareTo(a)` are equally valid."
     },
     {
       "id": "treeified-bins",
@@ -334,8 +334,8 @@
       "type": "assertion",
       "difficulty": 3,
       "prompt": "Read the assertion (A) and the reason (R), then choose the option that fits.",
-      "assertion": "Since Java 8 a HashMap with many colliding Comparable keys keeps lookups at O(log n) instead of O(n).",
-      "reason": "TreeMap keeps its keys in sorted order.",
+      "assertion": "Since Java 8 a `HashMap` with many colliding `Comparable` keys keeps lookups at O(log n) instead of O(n).",
+      "reason": "`TreeMap` keeps its keys in sorted order.",
       "correct": [
         "b"
       ],
@@ -345,40 +345,40 @@
         "c": "R is a true statement about TreeMap.",
         "d": "A is true: that is the point of treeification (JEP 180)."
       },
-      "explanation": "JEP 180 improved HashMap under heavy collisions, notably hash-flooding attacks. The tree uses hashCode then compareTo or a tie-breaker."
+      "explanation": "JEP 180 improved `HashMap` under heavy collisions, notably hash-flooding attacks. The tree uses `hashCode` then `compareTo` or a tie-breaker."
     },
     {
       "id": "aslist-fixed-size",
       "concept": "Collection choice",
       "type": "single",
       "difficulty": 2,
-      "prompt": "What does this Java code print?\n\nList<Integer> l = Arrays.asList(1, 2, 3);\nl.set(0, 9);\ntry { l.add(4); } catch (UnsupportedOperationException e) { System.out.print(\"U \"); }\nSystem.out.println(l);\n\nWhat is the output?",
+      "prompt": "What does this Java code print?\n\n```java\nList<Integer> l = Arrays.asList(1, 2, 3);\nl.set(0, 9);\ntry {\n    l.add(4);\n} catch (UnsupportedOperationException e) {\n    System.out.print(\"U \");\n}\nSystem.out.println(l);\n```\n\nWhat is the output?",
       "options": [
         {
           "id": "a",
-          "text": "U [9, 2, 3]",
-          "why": "Correct: Arrays.asList is a fixed-size view over the array, so set works but add throws UnsupportedOperationException."
+          "text": "`U [9, 2, 3]`",
+          "why": "Correct: `Arrays.asList` is a fixed-size view over the array, so `set` works but `add` throws `UnsupportedOperationException`."
         },
         {
           "id": "b",
-          "text": "[9, 2, 3, 4]",
-          "why": "Wrong: the list returned by Arrays.asList cannot grow, so add never succeeds."
+          "text": "`[9, 2, 3, 4]`",
+          "why": "Wrong: the list returned by `Arrays.asList` cannot grow, so `add` never succeeds."
         },
         {
           "id": "c",
-          "text": "U [1, 2, 3]",
-          "why": "Wrong: set is allowed on this list (it writes through to the backing array), so element 0 becomes 9."
+          "text": "`U [1, 2, 3]`",
+          "why": "Wrong: `set` is allowed on this list (it writes through to the backing array), so element 0 becomes 9."
         },
         {
           "id": "d",
-          "text": "UnsupportedOperationException from set and add",
-          "why": "Wrong: only structural changes (add and remove) are rejected; replacing an element is permitted."
+          "text": "`UnsupportedOperationException from set and add`",
+          "why": "Wrong: only structural changes (`add` and `remove`) are rejected; replacing an element is permitted."
         }
       ],
       "correct": [
         "a"
       ],
-      "explanation": "Arrays.asList = fixed-size, write-through view; List.of = fully immutable (and rejects nulls); new ArrayList<>(...) = independent resizable copy. Verified by running it."
+      "explanation": "`Arrays.asList` = fixed-size, write-through view; `List.of` = fully immutable (and rejects nulls); `new ArrayList<>(...)` = independent resizable copy. Verified by running it."
     },
     {
       "id": "pq-iteration-order",
@@ -386,8 +386,8 @@
       "type": "assertion",
       "difficulty": 2,
       "prompt": "Read the assertion (A) and the reason (R), then choose the option that fits.",
-      "assertion": "Iterating a Java PriorityQueue with a for-each loop yields its elements in sorted order.",
-      "reason": "PriorityQueue.poll() always removes the smallest element according to the queue ordering.",
+      "assertion": "Iterating a Java `PriorityQueue` with a for-each loop yields its elements in sorted order.",
+      "reason": "`PriorityQueue.poll()` always removes the smallest element according to the queue ordering.",
       "correct": [
         "d"
       ],
@@ -397,7 +397,7 @@
         "c": "Not chosen: R is true, so \"A true, R false\" does not fit.",
         "d": "Correct: only the head of the binary heap is guaranteed to be the minimum; the iterator walks the internal array, e.g. new PriorityQueue(List.of(5,3,8,1,9,2)) prints [1, 3, 2, 5, 9, 8]."
       },
-      "explanation": "The iterator and toString expose the heap array order. To get sorted output, poll repeatedly or copy and sort. Verified by running it."
+      "explanation": "The iterator and `toString` expose the heap array order. To get sorted output, `poll` repeatedly or copy and sort. Verified by running it."
     },
     {
       "id": "arraydeque-poll-vs-remove",
@@ -405,8 +405,8 @@
       "type": "assertion",
       "difficulty": 2,
       "prompt": "Read the assertion (A) and the reason (R), then choose the option that fits.",
-      "assertion": "ArrayDeque.pollFirst() takes O(1) time, whereas ArrayList.remove(0) takes O(n).",
-      "reason": "ArrayList is implemented as a doubly linked list of nodes.",
+      "assertion": "`ArrayDeque.pollFirst()` takes O(1) time, whereas `ArrayList.remove(0)` takes O(n).",
+      "reason": "`ArrayList` is implemented as a doubly linked list of nodes.",
       "correct": [
         "c"
       ],
@@ -416,17 +416,17 @@
         "c": "Correct: A is true (the array version shifts every element, the circular array just moves an index), but R is false: ArrayList is backed by an array.",
         "d": "This option says A is false and R is true, which does not match: A is true (the array version shifts every element, the circular array just moves an index), but R is false: ArrayList is backed by an array."
       },
-      "explanation": "Use ArrayDeque as a FIFO queue; removing from the front of an ArrayList shifts all remaining elements."
+      "explanation": "Use `ArrayDeque` as a FIFO queue; removing from the front of an `ArrayList` shifts all remaining elements."
     },
     {
       "id": "hashmap-presize",
       "concept": "HashMap internals",
       "type": "integer",
       "difficulty": 3,
-      "prompt": "You create new HashMap<>(100), so the table is rounded up to the next power of two, and the load factor is 0.75. What is the largest number of entries it can hold before the first resize happens?",
+      "prompt": "You create `new HashMap<>(100)`, so the table is rounded up to the next power of two, and the load factor is 0.75. What is the largest number of entries it can hold before the first resize happens?",
       "answer": 96,
       "tolerance": 0,
-      "explanation": "HashMap rounds the requested capacity 100 up to 128 (tableSizeFor), so the threshold is 128 x 0.75 = 96. The 97th insertion doubles the table to 256. Verified by running it with reflection. To store N entries without resizing use capacity N / 0.75 + 1 (or HashMap.newHashMap(N) in Java 19+).",
+      "explanation": "HashMap rounds the requested capacity 100 up to 128 (`tableSizeFor`), so the threshold is 128 x 0.75 = 96. The 97th insertion doubles the table to 256. Verified by running it with reflection. To store N entries without resizing use capacity `N / 0.75 + 1` (or `HashMap.newHashMap(N)` in Java 19+).",
       "unit": "entries"
     },
     {
@@ -434,63 +434,63 @@
       "concept": "Aliasing",
       "type": "single",
       "difficulty": 3,
-      "prompt": "What does this Java code print?\n\nList<List<Integer>> g = new ArrayList<>(Collections.nCopies(3, new ArrayList<>()));\ng.get(0).add(1);\nSystem.out.println(g);\n\nWhat is the output?",
+      "prompt": "What does this Java code print?\n\n```java\nList<List<Integer>> g = new ArrayList<>(Collections.nCopies(3, new ArrayList<>()));\ng.get(0).add(1);\nSystem.out.println(g);\n```\n\nWhat is the output?",
       "options": [
         {
           "id": "a",
-          "text": "[[1], [1], [1]], one shared inner list",
-          "why": "Correct: nCopies repeats one reference, so the three entries are aliases of one list."
+          "text": "`[[1], [1], [1]]`, one shared inner list",
+          "why": "Correct: `nCopies` repeats one reference, so the three entries are aliases of one list."
         },
         {
           "id": "b",
-          "text": "[[1], [], []], only the first list changes",
-          "why": "That needs three distinct lists, but nCopies reuses a single object."
+          "text": "`[[1], [], []]`, only the first list changes",
+          "why": "That needs three distinct lists, but `nCopies` reuses a single object."
         },
         {
           "id": "c",
-          "text": "UnsupportedOperationException, since nCopies lists are immutable",
-          "why": "The nCopies list itself is immutable, but it is only copied into a new ArrayList; the inner list is a normal one."
+          "text": "`UnsupportedOperationException`, since `nCopies` lists are immutable",
+          "why": "The `nCopies` list itself is immutable, but it is only copied into a new `ArrayList`; the inner list is a normal one."
         },
         {
           "id": "d",
-          "text": "[[1]], because duplicates are merged",
+          "text": "`[[1]]`, because duplicates are merged",
           "why": "Lists keep duplicates; nothing is merged."
         }
       ],
       "correct": [
         "a"
       ],
-      "explanation": "Same trap as sharing one mutable object across slots: build each inner list in a loop or with Stream.generate."
+      "explanation": "Same trap as sharing one mutable object across slots: build each inner list in a loop or with `Stream.generate`."
     },
     {
       "id": "hashmap-order",
       "concept": "HashMap internals",
       "type": "truefalse",
       "difficulty": 1,
-      "prompt": "Iterating a HashMap is guaranteed to return its entries in insertion order.",
+      "prompt": "Iterating a `HashMap` is guaranteed to return its entries in insertion order.",
       "options": [
         {
           "id": "a",
           "text": "True",
-          "why": "HashMap makes no ordering promise; only LinkedHashMap keeps insertion order."
+          "why": "`HashMap` makes no ordering promise; only `LinkedHashMap` keeps insertion order."
         },
         {
           "id": "b",
           "text": "False",
-          "why": "Correct: HashMap order depends on hashes and table size and can change after a resize."
+          "why": "Correct: `HashMap` order depends on hashes and table size and can change after a resize."
         }
       ],
       "correct": [
         "b"
       ],
-      "explanation": "Use LinkedHashMap for insertion order and TreeMap for sorted order."
+      "explanation": "Use `LinkedHashMap` for insertion order and `TreeMap` for sorted order."
     },
     {
       "id": "linkedhashmap-order",
       "concept": "HashMap internals",
       "type": "truefalse",
       "difficulty": 1,
-      "prompt": "A LinkedHashMap iterates its entries in insertion order by default.",
+      "prompt": "A `LinkedHashMap` iterates its entries in insertion order by default.",
       "options": [
         {
           "id": "a",
@@ -500,13 +500,13 @@
         {
           "id": "b",
           "text": "False",
-          "why": "Insertion order is the default; only the accessOrder constructor flag changes it."
+          "why": "Insertion order is the default; only the `accessOrder` constructor flag changes it."
         }
       ],
       "correct": [
         "a"
       ],
-      "explanation": "Access order plus removeEldestEntry gives a simple LRU cache."
+      "explanation": "Access order plus `removeEldestEntry` gives a simple LRU cache."
     }
   ]
 }

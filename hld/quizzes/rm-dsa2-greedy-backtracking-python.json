@@ -16,8 +16,8 @@
       "concept": "Greedy implementation",
       "type": "code",
       "difficulty": 2,
-      "prompt": "Write a Python function can_jump(nums). You start at index 0 and nums[i] is the maximum jump length from index i. Return True if the last index is reachable, in O(n) time using a greedy farthest-reach variable.",
-      "explanation": "Greedy works because reachable indices form a prefix: if you can reach index r, you can reach everything before it. A backwards \"goal post\" loop is an equally valid O(n) solution. For [2,3,1,1,4] the result is True and for [3,2,1,0,4] it is False.",
+      "prompt": "Write a Python function `can_jump(nums)`. You start at index 0 and `nums[i]` is the maximum jump length from index i. Return True if the last index is reachable, in O(n) time using a greedy farthest-reach variable.",
+      "explanation": "Greedy works because reachable indices form a prefix: if you can reach index r, you can reach everything before it. A backwards \"goal post\" loop is an equally valid O(n) solution. For `[2,3,1,1,4]` the result is True and for `[3,2,1,0,4]` it is False.",
       "language": "python",
       "starter": "def can_jump(nums):\n    ",
       "checks": [
@@ -45,8 +45,8 @@
       "concept": "Subsets backtracking",
       "type": "code",
       "difficulty": 2,
-      "prompt": "Write a Python function subsets(nums) that returns all subsets (the power set) of a list of distinct integers using backtracking with a nested helper.",
-      "explanation": "The copy cur[:] is essential: appending cur itself would leave every entry pointing at the same, finally empty list. There are 2^n results, each copied in O(n). An include/exclude recursion or a bitmask loop are also valid.",
+      "prompt": "Write a Python function `subsets(nums)` that returns all subsets (the power set) of a list of distinct integers using backtracking with a nested helper.",
+      "explanation": "The copy `cur[:]` is essential: appending `cur` itself would leave every entry pointing at the same, finally empty list. There are 2^n results, each copied in O(n). An include/exclude recursion or a bitmask loop are also valid.",
       "language": "python",
       "starter": "def subsets(nums):\n    ",
       "checks": [
@@ -74,8 +74,8 @@
       "concept": "Combination sum",
       "type": "code",
       "difficulty": 3,
-      "prompt": "Write a Python function combination_sum(cands, target) that returns all unique combinations of the positive integers in cands that sum to target, where each number may be reused. Sort first and prune once a candidate exceeds the remaining target.",
-      "explanation": "Starting each loop at start (not 0) prevents [2,3] and [3,2] both appearing. Passing i (not i + 1) is what allows reuse. The break is valid only because the list is sorted. Immutable alternatives (cur + [x]) avoid the pop.",
+      "prompt": "Write a Python function `combination_sum(cands, target)` that returns all unique combinations of the positive integers in cands that sum to target, where each number may be reused. Sort first and prune once a candidate exceeds the remaining target.",
+      "explanation": "Starting each loop at `start` (not `0`) prevents [2,3] and [3,2] both appearing. Passing `i` (not `i + 1`) is what allows reuse. The `break` is valid only because the list is sorted. Immutable alternatives (`cur + [x]`) avoid the pop.",
       "language": "python",
       "starter": "def combination_sum(cands, target):\n    ",
       "checks": [
@@ -103,7 +103,7 @@
       "concept": "Backtracking on grids",
       "type": "code",
       "difficulty": 3,
-      "prompt": "Write a Python function exist(board, word) that returns True if word can be traced in a grid of characters through horizontally or vertically adjacent cells, using each cell at most once per path.",
+      "prompt": "Write a Python function `exist(board, word)` that returns True if word can be traced in a grid of characters through horizontally or vertically adjacent cells, using each cell at most once per path.",
       "explanation": "Restoring the cell after the recursive calls is the backtracking step. Worst case O(R C 4^L) for a word of length L (each step has at most 3 fresh directions in practice). A visited set that you add to and remove from is equally valid.",
       "language": "python",
       "starter": "def exist(board, word):\n    ",
@@ -132,8 +132,8 @@
       "concept": "Combinations",
       "type": "integer",
       "difficulty": 2,
-      "prompt": "How many tuples does len(list(itertools.combinations(range(6), 3))) return?",
-      "explanation": "These are the 3-element subsets of 6 items: C(6, 3) = 20. itertools.combinations yields them in lexicographic order without repeats.",
+      "prompt": "How many tuples does `len(list(itertools.combinations(range(6), 3)))` return?",
+      "explanation": "These are the 3-element subsets of 6 items: C(6, 3) = 20. `itertools.combinations` yields them in lexicographic order without repeats.",
       "answer": 20,
       "unit": "tuples"
     },
@@ -142,8 +142,8 @@
       "concept": "Permutations",
       "type": "integer",
       "difficulty": 2,
-      "prompt": "How many tuples does len(list(itertools.permutations('AABC'))) return?",
-      "explanation": "permutations treats elements as distinct by position, not by value, so the two A's produce duplicates: 4! = 24 tuples, of which only 12 are distinct. Wrap in set(...) or sort and skip equal neighbours to deduplicate.",
+      "prompt": "How many tuples does `len(list(itertools.permutations('AABC')))` return?",
+      "explanation": "permutations treats elements as distinct by position, not by value, so the two A's produce duplicates: 4! = 24 tuples, of which only 12 are distinct. Wrap in `set(...)` or sort and skip equal neighbours to deduplicate.",
       "answer": 24,
       "unit": "tuples"
     },
@@ -152,27 +152,27 @@
       "concept": "Subsets backtracking",
       "type": "single",
       "difficulty": 1,
-      "prompt": "In Python backtracking, which statement correctly records the current path cur in the results list res?",
-      "explanation": "list(cur) and cur.copy() also work. Immutable tuples or new lists (cur + [x]) avoid both the copy and the pop.",
+      "prompt": "In Python backtracking, which statement correctly records the current path `cur` in the results list res?",
+      "explanation": "`list(cur)` and `cur.copy()` also work. Immutable tuples or new lists (`cur + [x]`) avoid both the copy and the pop.",
       "options": [
         {
           "id": "a",
-          "text": "res.append(cur[:])",
+          "text": "`res.append(cur[:])`",
           "why": "Correct: the slice makes a separate copy that later pops cannot change."
         },
         {
           "id": "b",
-          "text": "res.append(cur)",
+          "text": "`res.append(cur)`",
           "why": "This stores a reference, and the path keeps changing as the recursion continues."
         },
         {
           "id": "c",
-          "text": "res.append(cur.pop())",
+          "text": "`res.append(cur.pop())`",
           "why": "This stores one removed element and damages the path being built."
         },
         {
           "id": "d",
-          "text": "res.extend(cur)",
+          "text": "`res.extend(cur)`",
           "why": "This flattens the path into the results instead of storing it as a subset."
         }
       ],
@@ -185,8 +185,8 @@
       "concept": "Subsets backtracking",
       "type": "single",
       "difficulty": 2,
-      "prompt": "In the Python subsets backtracking, why does the loop use range(start, len(nums)) instead of range(len(nums))?",
-      "explanation": "Starting at 0 would generate permutations of subsets and duplicates. With start, the recursion tree has exactly 2^n nodes.",
+      "prompt": "In the Python subsets backtracking, why does the loop use `range(start, len(nums))` instead of `range(len(nums))`?",
+      "explanation": "Starting at `0` would generate permutations of subsets and duplicates. With `start`, the recursion tree has exactly 2^n nodes.",
       "options": [
         {
           "id": "a",
@@ -195,13 +195,13 @@
         },
         {
           "id": "b",
-          "text": "Because range(len(nums)) would raise an IndexError on the last item.",
-          "why": "range(len(nums)) yields valid indices only; nothing would raise."
+          "text": "Because `range(len(nums))` would raise an `IndexError` on the last item.",
+          "why": "`range(len(nums))` yields valid indices only; nothing would raise."
         },
         {
           "id": "c",
-          "text": "To keep the list sorted, since Python lists lose their order after a pop.",
-          "why": "pop leaves the order of the remaining items unchanged."
+          "text": "To keep the list sorted, since Python lists lose their order after a `pop`.",
+          "why": "`pop` leaves the order of the remaining items unchanged."
         },
         {
           "id": "d",
@@ -218,8 +218,8 @@
       "concept": "Undo step",
       "type": "truefalse",
       "difficulty": 3,
-      "prompt": "True or false: writing def go(path=[]) as a recursive helper is risky, because the same default list is shared by every call that omits the argument.",
-      "explanation": "Use path=None and create a fresh list inside, or pass the list explicitly. This is one of the most common Python backtracking bugs.",
+      "prompt": "True or false: writing `def go(path=[])` as a recursive helper is risky, because the same default list is shared by every call that omits the argument.",
+      "explanation": "Use `path=None` and create a fresh list inside, or pass the list explicitly. This is one of the most common Python backtracking bugs.",
       "options": [
         {
           "id": "a",
@@ -241,10 +241,10 @@
       "concept": "Subsets backtracking",
       "type": "assertion",
       "difficulty": 2,
-      "prompt": "A backtracking function appends cur to the results and later calls cur.pop().",
-      "explanation": "Snapshot with cur[:], list(cur) or cur.copy() before storing.",
-      "assertion": "Executing res.append(cur) instead of res.append(cur[:]) leaves every stored subset equal to the final state of cur.",
-      "reason": "cur is one mutable list that the recursion keeps modifying.",
+      "prompt": "A backtracking function appends `cur` to the results and later calls `cur.pop()`.",
+      "explanation": "Snapshot with `cur[:]`, `list(cur)` or `cur.copy()` before storing.",
+      "assertion": "Executing `res.append(cur)` instead of `res.append(cur[:])` leaves every stored subset equal to the final state of `cur`.",
+      "reason": "`cur` is one mutable list that the recursion keeps modifying.",
       "correct": [
         "a"
       ],
@@ -260,8 +260,8 @@
       "concept": "Combination sum",
       "type": "assertion",
       "difficulty": 2,
-      "prompt": "Combination Sum solved with sorted(candidates).",
-      "explanation": "On unsorted input a too-large candidate must be skipped with continue, not break.",
+      "prompt": "Combination Sum solved with `sorted(candidates)`.",
+      "explanation": "On unsorted input a too-large candidate must be skipped with `continue`, not `break`.",
       "assertion": "Sorting the candidates lets the loop break as soon as one exceeds the remaining target.",
       "reason": "sorted returns a new list and leaves the original list unchanged.",
       "correct": [
@@ -298,10 +298,10 @@
       "concept": "Permutations",
       "type": "assertion",
       "difficulty": 3,
-      "prompt": "A student calls list(itertools.permutations([1, 1, 2])).",
-      "explanation": "Use set(permutations(...)), or sort and skip equal neighbours in your own backtracking.",
+      "prompt": "A student calls `list(itertools.permutations([1, 1, 2]))`.",
+      "explanation": "Use `set(permutations(...))`, or sort and skip equal neighbours in your own backtracking.",
       "assertion": "The call returns exactly 3 distinct permutations.",
-      "reason": "itertools.permutations treats elements as unique by position, not by value.",
+      "reason": "`itertools.permutations` treats elements as unique by position, not by value.",
       "correct": [
         "d"
       ],
@@ -344,27 +344,27 @@
       "right": [
         {
           "id": "p",
-          "text": "itertools.combinations"
+          "text": "`itertools.combinations`"
         },
         {
           "id": "q",
-          "text": "cur.pop()"
+          "text": "`cur.pop()`"
         },
         {
           "id": "r",
-          "text": "board[r][c] = '#'"
+          "text": "`board[r][c] = '#'`"
         },
         {
           "id": "s",
-          "text": "cur.clear()"
+          "text": "`cur.clear()`"
         },
         {
           "id": "t",
-          "text": "res.append(cur[:])"
+          "text": "`res.append(cur[:])`"
         },
         {
           "id": "u",
-          "text": "nums.sort()"
+          "text": "`nums.sort()`"
         }
       ],
       "pairs": {
@@ -381,7 +381,7 @@
       "type": "fill",
       "difficulty": 3,
       "prompt": "Complete the Python bitmask enumeration of subsets.",
-      "explanation": "The range covers 2^n masks. Shifting right by j then & 1 isolates bit j; a non-zero (truthy) result means the item is included.",
+      "explanation": "The range covers 2^n masks. Shifting right by j then `& 1` isolates bit j; a non-zero (truthy) result means the item is included.",
       "text": "Loop mask over range(1 << {1}); item j belongs to the subset when (mask >> j) & {2} is {3}.",
       "blanks": {
         "1": "n",

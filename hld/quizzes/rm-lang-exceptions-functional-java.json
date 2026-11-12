@@ -16,7 +16,7 @@
       "concept": "Resource handling",
       "type": "code",
       "difficulty": 2,
-      "prompt": "Write a Java method static String firstLine(Path p) throws IOException that returns the first line of a text file and always closes the reader, using try-with-resources.",
+      "prompt": "Write a Java method `static String firstLine(Path p) throws IOException` that returns the first line of a text file and always closes the reader, using try-with-resources.",
       "language": "java",
       "starter": "static String firstLine(Path p) throws IOException {\n",
       "checks": [
@@ -38,16 +38,16 @@
         }
       ],
       "model": "static String firstLine(Path p) throws IOException {\n  try (BufferedReader r = Files.newBufferedReader(p)) {\n    return r.readLine();\n  }\n}",
-      "explanation": "Resources declared in the parentheses must implement AutoCloseable and are closed automatically, even on exceptions. Files.lines(p) in a try-with-resources is equally valid."
+      "explanation": "Resources declared in the parentheses must implement `AutoCloseable` and are closed automatically, even on exceptions. `Files.lines(p)` in a try-with-resources is equally valid."
     },
     {
       "id": "finally-return-value",
       "concept": "Exceptions in Java",
       "type": "integer",
       "difficulty": 3,
-      "prompt": "Consider:\nstatic int f() {\n  int x = 1;\n  try { return x; }\n  finally { x = 2; }\n}\nWhat does f() return?",
+      "prompt": "Consider:\n\n```java\nstatic int f() {\n    int x = 1;\n    try {\n        return x;\n    } finally {\n        x = 2;\n    }\n}\n```\n\nWhat does `f()` return?",
       "answer": 1,
-      "explanation": "The return value is evaluated and saved before finally runs, so reassigning the local x in finally cannot change it. (A return inside finally would override it and also swallow exceptions, which is why it is a code smell.) Verified by running it."
+      "explanation": "The return value is evaluated and saved before `finally` runs, so reassigning the local `x` in `finally` cannot change it. (A return inside `finally` would override it and also swallow exceptions, which is why it is a code smell.) Verified by running it."
     },
     {
       "id": "twr-order",
@@ -56,7 +56,7 @@
       "difficulty": 2,
       "prompt": "Read the assertion (A) and the reason (R), then choose the option that fits.",
       "assertion": "In try-with-resources, resources are closed in the reverse order of their declaration.",
-      "reason": "A resource used in try-with-resources must implement AutoCloseable.",
+      "reason": "A resource used in try-with-resources must implement `AutoCloseable`.",
       "correct": [
         "b"
       ],
@@ -66,7 +66,7 @@
         "c": "R is true: the compiler rejects other types.",
         "d": "A is true: JLS 14.20.3 specifies reverse order."
       },
-      "explanation": "Reverse closing mirrors construction, e.g. close the BufferedReader before the FileReader it wraps. Exceptions from close() are added as suppressed exceptions to the primary one."
+      "explanation": "Reverse closing mirrors construction, e.g. close the `BufferedReader` before the `FileReader` it wraps. Exceptions from `close()` are added as suppressed exceptions to the primary one."
     },
     {
       "id": "exception-facts",
@@ -77,28 +77,28 @@
       "options": [
         {
           "id": "a",
-          "text": "If the try body throws A and close() then throws B, A propagates and B is attached via getSuppressed().",
+          "text": "If the try body throws A and `close()` then throws B, A propagates and B is attached via `getSuppressed()`.",
           "why": "Correct: this is how try-with-resources avoids losing the original failure."
         },
         {
           "id": "b",
-          "text": "A custom class that extends RuntimeException is an unchecked exception.",
+          "text": "A custom class that extends `RuntimeException` is an unchecked exception.",
           "why": "Correct: the compiler does not force callers to catch or declare it."
         },
         {
           "id": "c",
-          "text": "catch (Exception e) also catches OutOfMemoryError.",
-          "why": "OutOfMemoryError is an Error, which is a sibling of Exception under Throwable."
+          "text": "`catch (Exception e)` also catches `OutOfMemoryError`.",
+          "why": "`OutOfMemoryError` is an `Error`, which is a sibling of `Exception` under `Throwable`."
         },
         {
           "id": "d",
-          "text": "catch (IOException | Exception e) compiles as a multi-catch.",
+          "text": "`catch (IOException | Exception e)` compiles as a multi-catch.",
           "why": "It does not: alternatives in a multi-catch must not be subclasses of one another. (Statement is false, so do not select it.)"
         },
         {
           "id": "e",
-          "text": "A finally block still runs if the try block calls System.exit(0).",
-          "why": "The JVM halts, so finally is skipped."
+          "text": "A `finally` block still runs if the try block calls `System.exit(0)`.",
+          "why": "The JVM halts, so `finally` is skipped."
         }
       ],
       "correct": [
@@ -116,23 +116,23 @@
       "left": [
         {
           "id": "a",
-          "text": "throws clause"
+          "text": "`throws` clause"
         },
         {
           "id": "b",
-          "text": "try-with-resources"
+          "text": "`try-with-resources`"
         },
         {
           "id": "c",
-          "text": "Multi-catch (catch (A | B e))"
+          "text": "Multi-catch (`catch (A | B e)`)"
         },
         {
           "id": "d",
-          "text": "Exception chaining (new X(message, cause))"
+          "text": "Exception chaining (`new X(message, cause)`)"
         },
         {
           "id": "e",
-          "text": "RuntimeException subclass"
+          "text": "`RuntimeException` subclass"
         }
       ],
       "right": [
@@ -142,7 +142,7 @@
         },
         {
           "id": "q",
-          "text": "Closes AutoCloseable resources and records close failures as suppressed"
+          "text": "Closes `AutoCloseable` resources and records close failures as suppressed"
         },
         {
           "id": "r",
@@ -150,7 +150,7 @@
         },
         {
           "id": "s",
-          "text": "Keeps the original failure available through getCause()"
+          "text": "Keeps the original failure available through `getCause()`"
         },
         {
           "id": "t",
@@ -190,7 +190,7 @@
         "suppressed",
         "chained"
       ],
-      "explanation": "Checked exceptions are enforced by the compiler; suppressed exceptions are read with Throwable.getSuppressed()."
+      "explanation": "Checked exceptions are enforced by the compiler; suppressed exceptions are read with `Throwable.getSuppressed()`."
     },
     {
       "id": "stream-sum-squares",
@@ -206,7 +206,7 @@
       "concept": "Collectors",
       "type": "code",
       "difficulty": 2,
-      "prompt": "Given List<String> words, write a Java stream expression that builds Map<Integer, List<String>> byLength grouping the words by their length.",
+      "prompt": "Given `List<String> words`, write a Java stream expression that builds `Map<Integer, List<String>> byLength` grouping the words by their length.",
       "language": "java",
       "starter": "Map<Integer, List<String>> byLength = ",
       "checks": [
@@ -224,14 +224,14 @@
         }
       ],
       "model": "Map<Integer, List<String>> byLength = words.stream().collect(Collectors.groupingBy(String::length));",
-      "explanation": "Add a downstream collector for aggregation, e.g. groupingBy(String::length, Collectors.counting()). A plain loop with computeIfAbsent also works but is not what the stem asks."
+      "explanation": "Add a downstream collector for aggregation, e.g. `groupingBy(String::length, Collectors.counting())`. A plain loop with `computeIfAbsent` also works but is not what the stem asks."
     },
     {
       "id": "optional-default",
       "concept": "Optional",
       "type": "code",
       "difficulty": 1,
-      "prompt": "Given Optional<String> name, write one Java expression that returns its value, or \"anon\" when it is empty.",
+      "prompt": "Given `Optional<String> name`, write one Java expression that returns its value, or `\"anon\"` when it is empty.",
       "language": "java",
       "checks": [
         {
@@ -240,40 +240,40 @@
         }
       ],
       "model": "name.orElse(\"anon\")",
-      "explanation": "orElseGet(() -> \"anon\") is equally correct and only builds the default when it is needed."
+      "explanation": "`orElseGet(() -> \"anon\")` is equally correct and only builds the default when it is needed."
     },
     {
       "id": "lazy-streams",
       "concept": "Lazy evaluation",
       "type": "single",
       "difficulty": 3,
-      "prompt": "What is printed?\nStream.of(\"a\", \"b\", \"c\")\n  .peek(s -> System.out.print(\"p\" + s + \" \"))\n  .filter(s -> !s.equals(\"b\"))\n  .findFirst();\nWhat is the output?",
+      "prompt": "What is printed?\n\n```java\nStream.of(\"a\", \"b\", \"c\")\n    .peek(s -> System.out.print(\"p\" + s + \" \"))\n    .filter(s -> !s.equals(\"b\"))\n    .findFirst();\n```\n\nWhat is the output?",
       "options": [
         {
           "id": "a",
-          "text": "pa pb pc",
-          "why": "Intermediate operations are lazy and findFirst short-circuits; the pipeline does not touch every element."
+          "text": "`pa pb pc`",
+          "why": "Intermediate operations are lazy and `findFirst` short-circuits; the pipeline does not touch every element."
         },
         {
           "id": "b",
-          "text": "pa only",
-          "why": "Correct: \"a\" passes the filter and findFirst stops the pipeline at once, so b and c are never visited."
+          "text": "`pa only`",
+          "why": "Correct: \"a\" passes the filter and `findFirst` stops the pipeline at once, so b and c are never visited."
         },
         {
           "id": "c",
-          "text": "pa pb",
+          "text": "`pa pb`",
           "why": "The first matching element ends the pipeline before b is pulled."
         },
         {
           "id": "d",
           "text": "no output",
-          "why": "findFirst is a terminal operation, so the pipeline runs."
+          "why": "`findFirst` is a terminal operation, so the pipeline runs."
         }
       ],
       "correct": [
         "b"
       ],
-      "explanation": "Streams are pull-based and lazy: nothing happens until a terminal operation, and short-circuiting ops (findFirst, limit, anyMatch) stop early. A stream also cannot be reused: a second terminal operation throws IllegalStateException. (Verified by running it.)"
+      "explanation": "Streams are pull-based and lazy: nothing happens until a terminal operation, and short-circuiting ops (`findFirst`, `limit`, `anyMatch`) stop early. A stream also cannot be reused: a second terminal operation throws `IllegalStateException`. (Verified by running it.)"
     },
     {
       "id": "checked-rule",
@@ -281,8 +281,8 @@
       "type": "assertion",
       "difficulty": 2,
       "prompt": "Read the assertion (A) and the reason (R), then choose the option that fits.",
-      "assertion": "A Java method that can throw a checked exception must either catch it or declare it in a throws clause.",
-      "reason": "RuntimeException is a checked exception.",
+      "assertion": "A Java method that can throw a checked exception must either catch it or declare it in a `throws` clause.",
+      "reason": "`RuntimeException` is a checked exception.",
       "correct": [
         "c"
       ],
@@ -292,7 +292,7 @@
         "c": "Correct: A is the compiler rule, but RuntimeException and its subclasses are unchecked, so R is false.",
         "d": "This option says A is false and R is true, which does not match: A is the compiler rule, but RuntimeException and its subclasses are unchecked, so R is false."
       },
-      "explanation": "Errors and RuntimeException subclasses are unchecked; all other Throwable subclasses are checked."
+      "explanation": "Errors and `RuntimeException` subclasses are unchecked; all other `Throwable` subclasses are checked."
     },
     {
       "id": "optional-get",
@@ -300,8 +300,8 @@
       "type": "assertion",
       "difficulty": 2,
       "prompt": "Read the assertion (A) and the reason (R), then choose the option that fits.",
-      "assertion": "Optional.get() is the safest way to read a value because it never throws.",
-      "reason": "Optional.get() throws NoSuchElementException when the Optional is empty.",
+      "assertion": "`Optional.get()` is the safest way to read a value because it never throws.",
+      "reason": "`Optional.get()` throws `NoSuchElementException` when the Optional is empty.",
       "correct": [
         "d"
       ],
@@ -311,7 +311,7 @@
         "c": "This option says A is true and R is false, which does not match: A is false because get() throws on an empty Optional, which R states correctly.",
         "d": "Correct: A is false because get() throws on an empty Optional, which R states correctly."
       },
-      "explanation": "Prefer orElse, orElseGet, orElseThrow or ifPresent to calling get() blindly."
+      "explanation": "Prefer `orElse`, `orElseGet`, `orElseThrow` or `ifPresent` to calling `get()` blindly."
     },
     {
       "id": "orelse-eager",
@@ -319,7 +319,7 @@
       "type": "assertion",
       "difficulty": 3,
       "prompt": "Read the assertion (A) and the reason (R), then choose the option that fits.",
-      "assertion": "In Java, optional.orElse(expensive()) calls expensive() even when the Optional already holds a value.",
+      "assertion": "In Java, `optional.orElse(expensive())` calls `expensive()` even when the Optional already holds a value.",
       "reason": "Java evaluates method arguments eagerly before the method is invoked.",
       "correct": [
         "a"
@@ -330,73 +330,73 @@
         "c": "R is true for Java.",
         "d": "A is true."
       },
-      "explanation": "orElseGet takes a Supplier and runs it only when empty. Also avoid Optional.get() without a check; prefer orElseThrow, map and ifPresent."
+      "explanation": "`orElseGet` takes a `Supplier` and runs it only when empty. Also avoid `Optional.get()` without a check; prefer `orElseThrow`, `map` and `ifPresent`."
     },
     {
       "id": "stream-reuse",
       "concept": "Lazy evaluation",
       "type": "single",
       "difficulty": 2,
-      "prompt": "What happens when this Java code runs?\n\nStream<Integer> s = Stream.of(1, 2, 3);\ns.count();\nSystem.out.println(s.count());\n\nWhat is the outcome?",
+      "prompt": "What happens when this Java code runs?\n\n```java\nStream<Integer> s = Stream.of(1, 2, 3);\ns.count();\nSystem.out.println(s.count());\n```\n\nWhat is the outcome?",
       "options": [
         {
           "id": "a",
-          "text": "IllegalStateException: stream already operated upon",
+          "text": "`IllegalStateException: stream already operated upon`",
           "why": "Correct: a stream can be consumed once; a terminal operation closes it."
         },
         {
           "id": "b",
-          "text": "It prints 3, because count does not consume the stream",
+          "text": "It prints 3, because `count` does not consume the stream",
           "why": "Streams are single-use, so the second terminal call fails."
         },
         {
           "id": "c",
-          "text": "It prints 0, because the first count consumed all the data",
+          "text": "It prints 0, because the first `count` consumed all the data",
           "why": "Java does not return an empty result; it throws."
         },
         {
           "id": "d",
-          "text": "NoSuchElementException, as no element is left to count",
-          "why": "That is thrown by Optional.get or iterators, not by reusing a stream."
+          "text": "`NoSuchElementException`, as no element is left to `count`",
+          "why": "That is thrown by `Optional.get` or iterators, not by reusing a stream."
         }
       ],
       "correct": [
         "a"
       ],
-      "explanation": "Create a new stream from the source (or use a Supplier<Stream<T>>) for each pipeline."
+      "explanation": "Create a new stream from the source (or use a `Supplier<Stream<T>>`) for each pipeline."
     },
     {
       "id": "tomap-duplicate",
       "concept": "Collectors",
       "type": "single",
       "difficulty": 2,
-      "prompt": "What happens when this Java code runs?\n\nStream.of(\"a\", \"bb\", \"cc\")\n  .collect(Collectors.toMap(String::length, s -> s));\n\nWhat is the result?",
+      "prompt": "What happens when this Java code runs?\n\n```java\nStream.of(\"a\", \"bb\", \"cc\")\n    .collect(Collectors.toMap(String::length, s -> s));\n```\n\nWhat is the result?",
       "options": [
         {
           "id": "a",
-          "text": "IllegalStateException: Duplicate key 2",
-          "why": "Correct: bb and cc both map to key 2, and the two-argument toMap has no merge function, so it throws."
+          "text": "`IllegalStateException: Duplicate key 2`",
+          "why": "Correct: `bb` and `cc` both map to key 2, and the two-argument `toMap` has no merge function, so it throws."
         },
         {
           "id": "b",
-          "text": "It returns {1=a, 2=cc}, the later value wins",
-          "why": "Wrong: that is what a merge function such as (x, y) -> y would do; without one the collector fails."
+          "text": "It returns `{1=a, 2=cc}`, the later value wins",
+          "why": "Wrong: that is what a merge function such as `(x, y) -> y` would do; without one the collector fails."
         },
         {
           "id": "c",
-          "text": "It returns {1=a, 2=bb}, the first value wins",
-          "why": "Wrong: toMap does not silently keep the first value; HashMap.put semantics are not used here."
+          "text": "It returns `{1=a, 2=bb}`, the first value wins",
+          "why": "Wrong: `toMap` does not silently keep the first value; `HashMap.put` semantics are not used here."
         },
         {
           "id": "d",
-          "text": "It returns {1=[a], 2=[bb, cc]}",
-          "why": "Wrong: grouping into lists is the job of Collectors.groupingBy, not toMap."
+          "text": "It returns `{1=[a], 2=[bb, cc]}`",
+          "why": "Wrong: grouping into lists is the job of `Collectors.groupingBy`, not `toMap`."
         }
       ],
       "correct": [
         "a"
       ],
-      "explanation": "Pass a third argument toMap(k, v, (x, y) -> y) to resolve clashes, or use groupingBy. Verified by running it."
+      "explanation": "Pass a third argument `toMap(k, v, (x, y) -> y)` to resolve clashes, or use `groupingBy`. Verified by running it."
     },
     {
       "id": "flatmap-count",
@@ -406,7 +406,7 @@
       "prompt": "What does Stream.of(List.of(1, 2), List.of(3), List.<Integer>of()).flatMap(List::stream).map(v -> v * 2).filter(v -> v > 2).count() return?",
       "answer": 2,
       "tolerance": 0,
-      "explanation": "flatMap flattens the three lists into 1, 2, 3 (the empty list adds nothing); doubling gives 2, 4, 6; only 4 and 6 are greater than 2, so the count is 2. Verified by running it."
+      "explanation": "`flatMap` flattens the three lists into 1, 2, 3 (the empty list adds nothing); doubling gives 2, 4, 6; only 4 and 6 are greater than 2, so the count is 2. Verified by running it."
     },
     {
       "id": "iterate-limit-sum",
@@ -416,40 +416,40 @@
       "prompt": "What does Stream.iterate(1, x -> x * 2).limit(5).reduce(0, Integer::sum) evaluate to?",
       "answer": 31,
       "tolerance": 0,
-      "explanation": "The pipeline is lazy and limit(5) stops the infinite stream: 1 + 2 + 4 + 8 + 16 = 31."
+      "explanation": "The pipeline is lazy and `limit(5)` stops the infinite stream: 1 + 2 + 4 + 8 + 16 = 31."
     },
     {
       "id": "finally-return-swallow",
       "concept": "Exceptions in Java",
       "type": "single",
       "difficulty": 3,
-      "prompt": "What does this Java method do when called?\n\nstatic int f() {\n  try { throw new RuntimeException(\"x\"); }\n  finally { return 7; }\n}\n\nWhat is the outcome of System.out.println(f())?",
+      "prompt": "What does this Java method do when called?\n\n```java\nstatic int f() {\n    try {\n        throw new RuntimeException(\"x\");\n    } finally {\n        return 7;\n    }\n}\n```\n\nWhat is the outcome of `System.out.println(f())`?",
       "options": [
         {
           "id": "a",
-          "text": "Prints 7 and the RuntimeException is discarded",
-          "why": "Correct: a return in finally overrides the pending exception, so it vanishes without a trace."
+          "text": "`Prints 7 and the RuntimeException is discarded`",
+          "why": "Correct: a `return` in `finally` overrides the pending exception, so it vanishes without a trace."
         },
         {
           "id": "b",
-          "text": "Throws RuntimeException: x after finally runs",
-          "why": "Wrong: the abrupt completion of the finally block replaces the try block outcome, so the exception never propagates."
+          "text": "`Throws RuntimeException: x after finally runs`",
+          "why": "Wrong: the abrupt completion of the `finally` block replaces the try block outcome, so the exception never propagates."
         },
         {
           "id": "c",
-          "text": "Does not compile: missing return statement",
-          "why": "Wrong: both paths end abruptly (throw, then return in finally), so the compiler accepts it, usually with a warning."
+          "text": "Does not compile: missing `return` statement",
+          "why": "Wrong: both paths end abruptly (throw, then `return` in `finally`), so the compiler accepts it, usually with a warning."
         },
         {
           "id": "d",
-          "text": "Prints 0, the default value of int",
-          "why": "Wrong: nothing is defaulted; the explicit return 7 supplies the result."
+          "text": "`Prints 0, the default value of int`",
+          "why": "Wrong: nothing is defaulted; the explicit `return 7` supplies the result."
         }
       ],
       "correct": [
         "a"
       ],
-      "explanation": "Never return, break or continue inside finally: it swallows exceptions. Verified by running it."
+      "explanation": "Never `return`, `break` or `continue` inside `finally`: it swallows exceptions. Verified by running it."
     }
   ]
 }

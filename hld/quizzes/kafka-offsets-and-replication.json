@@ -236,7 +236,7 @@
       "concept": "Consumer groups",
       "type": "single",
       "difficulty": 3,
-      "prompt": "Two consumers use the same groupId and two others use different groupIds. What happens?",
+      "prompt": "Two consumers use the same `groupId` and two others use different `groupIds`. What happens?",
       "options": [
         {
           "id": "a",
@@ -262,7 +262,7 @@
       "correct": [
         "a"
       ],
-      "explanation": "The groupId is what makes consumers share partitions."
+      "explanation": "The `groupId` is what makes consumers share partitions."
     }
   ]
 }

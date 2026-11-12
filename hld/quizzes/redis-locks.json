@@ -173,7 +173,7 @@
       "correct": [
         "a"
       ],
-      "explanation": "Redis also supports optimistic control: WATCH a key and run MULTI/EXEC; the transaction aborts if the key changed."
+      "explanation": "Redis also supports optimistic control: WATCH a key and run `MULTI`/`EXEC`; the transaction aborts if the key changed."
     },
     {
       "id": "failover-lock",
@@ -250,7 +250,7 @@
       "options": [
         {
           "id": "a",
-          "text": "Enforce the invariant where the data lives, for example a row lock or a conditional UPDATE with a version.",
+          "text": "Enforce the invariant where the data lives, for example a row lock or a conditional `UPDATE` with a version.",
           "why": "Right: the database makes the check atomic."
         },
         {

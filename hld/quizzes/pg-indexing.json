@@ -29,7 +29,7 @@
         {
           "id": "c",
           "text": "Only full-text searches over very long documents.",
-          "why": "Text search needs a GIN index over a tsvector."
+          "why": "Text search needs a GIN index over a `tsvector`."
         },
         {
           "id": "d",
@@ -80,21 +80,21 @@
       "concept": "Composite indexes",
       "type": "single",
       "difficulty": 2,
-      "prompt": "A profile page runs WHERE user_id = ? ORDER BY created_at DESC. Which index fits best?",
+      "prompt": "A profile page runs `WHERE user_id = ? ORDER BY created_at DESC`. Which index fits best?",
       "options": [
         {
           "id": "a",
-          "text": "One index on (user_id, created_at).",
+          "text": "One index on `(user_id, created_at)`.",
           "why": "Right: it finds the user rows and returns them already ordered."
         },
         {
           "id": "b",
-          "text": "Two separate single-column indexes on user_id and created_at.",
+          "text": "Two separate single-column indexes on `user_id` and `created_at`.",
           "why": "The planner has to combine them and may still sort."
         },
         {
           "id": "c",
-          "text": "An index on created_at only.",
+          "text": "An index on `created_at` only.",
           "why": "It would scan all dates instead of jumping to one user."
         },
         {
@@ -117,7 +117,7 @@
       "options": [
         {
           "id": "a",
-          "text": "A tsvector column with a GIN index, queried with @@ to_tsquery.",
+          "text": "A `tsvector` column with a GIN index, queried with `@@ to_tsquery`.",
           "why": "Right: GIN maps words to the rows containing them."
         },
         {
@@ -185,7 +185,7 @@
       "options": [
         {
           "id": "a",
-          "text": "A JSONB column with a GIN index, queried using the @> operator.",
+          "text": "A `JSONB` column with a GIN index, queried using the `@>` operator.",
           "why": "Right: flexible shape plus indexed containment queries."
         },
         {
@@ -201,13 +201,13 @@
         {
           "id": "d",
           "text": "A separate MongoDB cluster for the metadata only.",
-          "why": "It adds a system the JSONB feature makes unnecessary."
+          "why": "It adds a system the `JSONB` feature makes unnecessary."
         }
       ],
       "correct": [
         "a"
       ],
-      "explanation": "JSONB gives NoSQL-style flexibility inside PostgreSQL while keeping transactions and joins."
+      "explanation": "`JSONB` gives NoSQL-style flexibility inside PostgreSQL while keeping transactions and joins."
     },
     {
       "id": "postgis",
@@ -218,7 +218,7 @@
       "options": [
         {
           "id": "a",
-          "text": "The PostGIS extension with a GiST index and ST_DWithin.",
+          "text": "The PostGIS extension with a GiST index and `ST_DWithin`.",
           "why": "Right: spatial types and indexed distance queries."
         },
         {
@@ -228,7 +228,7 @@
         },
         {
           "id": "c",
-          "text": "A GIN index on a tsvector holding the place names.",
+          "text": "A GIN index on a `tsvector` holding the place names.",
           "why": "Text search does not compute distances."
         },
         {
@@ -247,7 +247,7 @@
       "concept": "Covering indexes",
       "type": "single",
       "difficulty": 3,
-      "prompt": "What does INCLUDE (title, created_at) add to an index on user_id?",
+      "prompt": "What does `INCLUDE (title, created_at)` add to an index on `user_id`?",
       "options": [
         {
           "id": "a",
@@ -256,7 +256,7 @@
         },
         {
           "id": "b",
-          "text": "The index also enforces uniqueness for title and created_at in a typical production setup.",
+          "text": "The index also enforces uniqueness for title and `created_at` in a typical production setup.",
           "why": "INCLUDE columns are payload, not part of the key."
         },
         {
@@ -284,7 +284,7 @@
       "options": [
         {
           "id": "a",
-          "text": "A partial index with WHERE status = 'active'.",
+          "text": "A partial index with `WHERE status = 'active'`.",
           "why": "Right: smaller and cheaper to maintain."
         },
         {

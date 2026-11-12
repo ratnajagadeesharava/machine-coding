@@ -16,9 +16,9 @@
       "concept": "Pool sizing",
       "type": "integer",
       "difficulty": 2,
-      "prompt": "The HikariCP \"About Pool Sizing\" guidance (from the PostgreSQL community) suggests connections = (core_count * 2) + effective_spindle_count as a starting point. The database server has 4 cores and its data lives on one effective spindle (a single SSD). How many connections should the pool start with?",
+      "prompt": "The HikariCP \"About Pool Sizing\" guidance (from the PostgreSQL community) suggests `connections = (core_count * 2) + effective_spindle_count` as a starting point. The database server has 4 cores and its data lives on one effective spindle (a single SSD). How many connections should the pool start with?",
       "answer": 9,
-      "explanation": "4 * 2 + 1 = 9. The point of the formula is that a small pool is usually enough: a database cannot run more CPU-bound queries in parallel than it has cores, and the rest just queue and context switch. Treat it as a starting point and load-test.",
+      "explanation": "`4 * 2 + 1 = 9`. The point of the formula is that a small pool is usually enough: a database cannot run more CPU-bound queries in parallel than it has cores, and the rest just queue and context switch. Treat it as a starting point and load-test.",
       "unit": "connections"
     },
     {
@@ -26,9 +26,9 @@
       "concept": "Pool exhaustion",
       "type": "integer",
       "difficulty": 3,
-      "prompt": "PostgreSQL runs with max_connections = 100 and the default superuser_reserved_connections = 3. Every application pod has a HikariCP pool with maximumPoolSize = 15 and all pools can be fully busy at peak. What is the largest number of pods that cannot exhaust the usable connections?",
+      "prompt": "PostgreSQL runs with `max_connections = 100` and the default `superuser_reserved_connections = 3`. Every application pod has a HikariCP pool with `maximumPoolSize = 15` and all pools can be fully busy at peak. What is the largest number of pods that cannot exhaust the usable connections?",
       "answer": 6,
-      "explanation": "100 - 3 = 97 usable connections; 6 pods need 90, 7 pods need 105 > 97. At that scale add PgBouncer (transaction pooling) or shrink the per-pod pool; per-instance pools multiply with every autoscaled pod.",
+      "explanation": "`100 - 3 = 97` usable connections; 6 pods need 90, 7 pods need 105 > 97. At that scale add `PgBouncer` (transaction pooling) or shrink the per-pod pool; per-instance pools multiply with every autoscaled pod.",
       "unit": "pods"
     },
     {
@@ -55,10 +55,10 @@
       "concept": "HikariCP",
       "type": "integer",
       "difficulty": 2,
-      "prompt": "A Spring Boot service sets spring.datasource.hikari.maximum-pool-size=20 and leaves minimum-idle unset. How many connections does Hikari keep in the pool while the service is idle?",
+      "prompt": "A Spring Boot service sets `spring.datasource.hikari.maximum-pool-size=20` and leaves `minimum-idle` unset. How many connections does Hikari keep in the pool while the service is idle?",
       "answer": 20,
       "tolerance": 0,
-      "explanation": "minimumIdle defaults to the value of maximumPoolSize, so Hikari runs a fixed-size pool of 20 and keeps all of them open. Set minimumIdle lower only if you accept the connect latency on a burst; the project recommends the default.",
+      "explanation": "`minimumIdle` defaults to the value of `maximumPoolSize`, so Hikari runs a fixed-size pool of 20 and keeps all of them open. Set `minimumIdle` lower only if you accept the connect latency on a burst; the project recommends the default.",
       "unit": "connections"
     },
     {
@@ -83,14 +83,14 @@
         "minimumIdle",
         "validationTimeout"
       ],
-      "explanation": "maxLifetime should be a few seconds shorter than any server or infrastructure timeout. leakDetectionThreshold is off (0) by default; set it in staging to find code that forgets to close or holds a connection across slow calls."
+      "explanation": "`maxLifetime` should be a few seconds shorter than any server or infrastructure timeout. `leakDetectionThreshold` is off (0) by default; set it in staging to find code that forgets to close or holds a connection across slow calls."
     },
     {
       "id": "code-hikari-yaml",
       "concept": "HikariCP",
       "type": "code",
       "difficulty": 2,
-      "prompt": "Write the Spring Boot application.yml fragment that configures the Hikari pool with a maximum of 10 connections, a 3000 ms connection timeout and leak detection after 20000 ms.",
+      "prompt": "Write the Spring Boot `application.yml` fragment that configures the Hikari pool with a maximum of 10 connections, a 3000 ms connection timeout and leak detection after 20000 ms.",
       "language": "yaml",
       "checks": [
         {
@@ -111,17 +111,17 @@
         }
       ],
       "model": "spring:\n  datasource:\n    hikari:\n      maximum-pool-size: 10\n      connection-timeout: 3000\n      leak-detection-threshold: 20000",
-      "explanation": "Spring Boot relaxed binding accepts maximumPoolSize or maximum-pool-size. A short connection timeout makes overload fail fast instead of piling up threads."
+      "explanation": "Spring Boot relaxed binding accepts `maximumPoolSize` or `maximum-pool-size`. A short connection timeout makes overload fail fast instead of piling up threads."
     },
     {
       "id": "pool-locking",
       "concept": "Pool exhaustion",
       "type": "integer",
       "difficulty": 3,
-      "prompt": "Each request thread holds one connection and, through nested REQUIRES_NEW calls, needs 4 connections at the same time. There are 5 such threads. Using the HikariCP pool-locking rule (threads x (connections needed per thread - 1) + 1), what is the smallest pool size that can never deadlock?",
+      "prompt": "Each request thread holds one connection and, through nested `REQUIRES_NEW` calls, needs 4 connections at the same time. There are 5 such threads. Using the HikariCP pool-locking rule (`threads x (connections needed per thread - 1) + 1`), what is the smallest pool size that can never deadlock?",
       "answer": 16,
       "tolerance": 0,
-      "explanation": "5 x (4 - 1) + 1 = 16. With fewer, all 5 threads can each grab some connections and wait forever for the rest. The better cure is to avoid holding a connection while asking for another (no REQUIRES_NEW inside open transactions).",
+      "explanation": "`5 x (4 - 1) + 1 = 16`. With fewer, all 5 threads can each grab some connections and wait forever for the rest. The better cure is to avoid holding a connection while asking for another (no `REQUIRES_NEW` inside open transactions).",
       "unit": "connections"
     },
     {
@@ -133,11 +133,11 @@
       "left": [
         {
           "id": "l1",
-          "text": "Hikari: \"Connection is not available, request timed out after 30000ms\""
+          "text": "Hikari: `\"Connection is not available, request timed out after 30000ms\"`"
         },
         {
           "id": "l2",
-          "text": "PostgreSQL: \"FATAL: sorry, too many clients already\""
+          "text": "PostgreSQL: `\"FATAL: sorry, too many clients already\"`"
         },
         {
           "id": "l3",
@@ -159,15 +159,15 @@
         },
         {
           "id": "r3",
-          "text": "Set maxLifetime a few seconds below the database or firewall idle timeout"
+          "text": "Set `maxLifetime` a few seconds below the database or firewall idle timeout"
         },
         {
           "id": "r4",
-          "text": "Set leakDetectionThreshold to log where connections are held"
+          "text": "Set `leakDetectionThreshold` to log where connections are held"
         },
         {
           "id": "r5",
-          "text": "Raise max_connections to 10000"
+          "text": "Raise `max_connections` to 10000"
         },
         {
           "id": "r6",
@@ -180,7 +180,7 @@
         "l3": "r3",
         "l4": "r4"
       },
-      "explanation": "Exhaustion (waiting for a free connection) and stale connections (dead sockets in the pool) look different but both surface as pool errors. Raising max_connections only moves the memory cost to the database."
+      "explanation": "Exhaustion (waiting for a free connection) and stale connections (dead sockets in the pool) look different but both surface as pool errors. Raising `max_connections` only moves the memory cost to the database."
     },
     {
       "id": "flyway-rerun",
@@ -188,7 +188,7 @@
       "type": "assertion",
       "difficulty": 2,
       "prompt": "Read the assertion (A) and the reason (R), then choose the option that fits.",
-      "assertion": "Flyway applies a versioned migration such as V3__add_status.sql exactly once per database.",
+      "assertion": "Flyway applies a versioned migration such as `V3__add_status.sql` exactly once per database.",
       "reason": "Flyway re-executes a versioned migration whenever the checksum of its file changes.",
       "correct": [
         "c"
@@ -199,14 +199,14 @@
         "c": "Correct: A is true; R is false because a changed checksum makes validation fail instead of re-running.",
         "d": "A is true, so this option wrongly calls it false."
       },
-      "explanation": "Only repeatable migrations (R__*.sql) re-run when their checksum changes. For a versioned migration that was already applied, fix forward with a new version, or use flyway repair deliberately."
+      "explanation": "Only repeatable migrations (`R__*.sql`) re-run when their checksum changes. For a versioned migration that was already applied, fix forward with a new version, or use `flyway repair` deliberately."
     },
     {
       "id": "flyway-edited-migration",
       "concept": "Flyway",
       "type": "single",
       "difficulty": 2,
-      "prompt": "A developer edits V3__add_status.sql after it already ran on staging, then deploys. What does Flyway do on staging at startup?",
+      "prompt": "A developer edits `V3__add_status.sql` after it already ran on staging, then deploys. What does Flyway do on staging at startup?",
       "options": [
         {
           "id": "a",
@@ -215,7 +215,7 @@
         },
         {
           "id": "b",
-          "text": "It silently re-runs V3 and applies the new SQL.",
+          "text": "It silently re-runs `V3` and applies the new SQL.",
           "why": "Versioned migrations are never re-run automatically."
         },
         {
@@ -225,14 +225,14 @@
         },
         {
           "id": "d",
-          "text": "It ignores the change because V3 is already in flyway_schema_history.",
+          "text": "It ignores the change because `V3` is already in `flyway_schema_history`.",
           "why": "It does not ignore it: the stored checksum no longer matches."
         }
       ],
       "correct": [
         "a"
       ],
-      "explanation": "Rule of the trade: applied migrations are immutable; add V4 to correct course. flyway repair realigns checksums only when you know the database really has the intended state."
+      "explanation": "Rule of the trade: applied migrations are immutable; add `V4` to correct course. `flyway repair` realigns checksums only when you know the database really has the intended state."
     },
     {
       "id": "ddl-auto-update",
@@ -240,8 +240,8 @@
       "type": "assertion",
       "difficulty": 2,
       "prompt": "Read the assertion (A) and the reason (R), then choose the option that fits.",
-      "assertion": "spring.jpa.hibernate.ddl-auto=update is a good way to manage the schema of a production database.",
-      "reason": "Hibernate update mode only adds missing tables and columns; it never drops or renames anything and keeps no history.",
+      "assertion": "`spring.jpa.hibernate.ddl-auto=update` is a good way to manage the schema of a production database.",
+      "reason": "Hibernate `update` mode only adds missing tables and columns; it never drops or renames anything and keeps no history.",
       "correct": [
         "d"
       ],
@@ -251,7 +251,7 @@
         "c": "R is true, so this option wrongly calls it false.",
         "d": "Correct: A is false because you get no reviewable, repeatable, ordered scripts, no renames or data fixes and no rollback story; R is true."
       },
-      "explanation": "Use Flyway or Liquibase for production and, at most, ddl-auto=validate to check that entities match the schema."
+      "explanation": "Use Flyway or Liquibase for production and, at most, `ddl-auto=validate` to check that entities match the schema."
     },
     {
       "id": "migration-vocab",
@@ -284,31 +284,31 @@
       "right": [
         {
           "id": "r1",
-          "text": "V3__add_status.sql"
+          "text": "`V3__add_status.sql`"
         },
         {
           "id": "r2",
-          "text": "R__refresh_views.sql"
+          "text": "`R__refresh_views.sql`"
         },
         {
           "id": "r3",
-          "text": "DATABASECHANGELOG"
+          "text": "`DATABASECHANGELOG`"
         },
         {
           "id": "r4",
-          "text": "flyway_schema_history"
+          "text": "`flyway_schema_history`"
         },
         {
           "id": "r5",
-          "text": "id + author + changelog file path"
+          "text": "`id + author + changelog file path`"
         },
         {
           "id": "r6",
-          "text": "schema_migrations"
+          "text": "`schema_migrations`"
         },
         {
           "id": "r7",
-          "text": "migration_log"
+          "text": "`migration_log`"
         }
       ],
       "pairs": {
@@ -318,14 +318,14 @@
         "l4": "r4",
         "l5": "r5"
       },
-      "explanation": "Liquibase identifies a changeset by id, author and file path and records it in DATABASECHANGELOG; Flyway orders by version and records checksums in flyway_schema_history."
+      "explanation": "Liquibase identifies a changeset by id, author and file path and records it in `DATABASECHANGELOG`; Flyway orders by version and records checksums in `flyway_schema_history`."
     },
     {
       "id": "liquibase-changeset",
       "concept": "Liquibase",
       "type": "code",
       "difficulty": 3,
-      "prompt": "Write a Liquibase YAML changelog with one changeSet (id 1, author ana) that adds a nullable column status of type varchar(20) to table orders.",
+      "prompt": "Write a Liquibase YAML changelog with one `changeSet` (`id 1`, `author ana`) that adds a nullable column `status` of type `varchar(20)` to table `orders`.",
       "language": "yaml",
       "checks": [
         {
@@ -342,7 +342,7 @@
         }
       ],
       "model": "databaseChangeLog:\n  - changeSet:\n      id: 1\n      author: ana\n      changes:\n        - addColumn:\n            tableName: orders\n            columns:\n              - column:\n                  name: status\n                  type: varchar(20)",
-      "explanation": "Liquibase records each applied changeset in DATABASECHANGELOG. A column that is nullable (no constraints block) is the safe first step of an expand/contract change.",
+      "explanation": "Liquibase records each applied changeset in `DATABASECHANGELOG`. A column that is nullable (no constraints block) is the safe first step of an expand/contract change.",
       "starter": "databaseChangeLog:\n"
     },
     {
@@ -354,7 +354,7 @@
       "options": [
         {
           "id": "a",
-          "text": "Add the new column as nullable, backfill in batches, then add the NOT NULL constraint in a later release.",
+          "text": "Add the new column as nullable, backfill in batches, then add the `NOT NULL` constraint in a later release.",
           "why": "Avoids long locks and works with old and new code."
         },
         {
@@ -364,12 +364,12 @@
         },
         {
           "id": "c",
-          "text": "Create indexes with CREATE INDEX CONCURRENTLY in a migration that Flyway runs outside a transaction.",
-          "why": "It avoids blocking writes; Flyway needs executeInTransaction=false for it."
+          "text": "Create indexes with `CREATE INDEX CONCURRENTLY` in a migration that Flyway runs outside a transaction.",
+          "why": "It avoids blocking writes; Flyway needs `executeInTransaction=false` for it."
         },
         {
           "id": "d",
-          "text": "Edit the already-applied V3 migration file to include the extra change.",
+          "text": "Edit the already-applied `V3` migration file to include the extra change.",
           "why": "Applied migrations are immutable; the checksum validation would fail."
         },
         {
@@ -390,7 +390,7 @@
       "concept": "HikariCP",
       "type": "truefalse",
       "difficulty": 2,
-      "prompt": "True or false: with maximumPoolSize = 10, Hikari never opens an 11th connection; additional threads wait up to connectionTimeout and then get an exception.",
+      "prompt": "True or false: with `maximumPoolSize = 10`, Hikari never opens an 11th connection; additional threads wait up to `connectionTimeout` and then get an exception.",
       "options": [
         {
           "id": "a",
@@ -406,14 +406,14 @@
       "correct": [
         "a"
       ],
-      "explanation": "This is a safety valve: size it for the database, set a short connectionTimeout so overload fails fast, and keep transactions short."
+      "explanation": "This is a safety valve: size it for the database, set a short `connectionTimeout` so overload fails fast, and keep transactions short."
     },
     {
       "id": "flyway-order",
       "concept": "Flyway",
       "type": "truefalse",
       "difficulty": 2,
-      "prompt": "True or false: Flyway compares version numbers as text, so V10__x.sql runs before V9__y.sql.",
+      "prompt": "True or false: Flyway compares version numbers as text, so `V10__x.sql` runs before `V9__y.sql`.",
       "options": [
         {
           "id": "a",
@@ -423,7 +423,7 @@
         {
           "id": "b",
           "text": "False",
-          "why": "Correct: Flyway orders numerically, so V9 runs before V10 (and V1.2 before V1.10)."
+          "why": "Correct: Flyway orders numerically, so `V9` runs before `V10` (and `V1.2` before `V1.10`)."
         }
       ],
       "correct": [

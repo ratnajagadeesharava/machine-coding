@@ -16,7 +16,7 @@
       "concept": "Two pointers",
       "type": "code",
       "difficulty": 2,
-      "prompt": "Write a Python function max_area(h) for \"container with most water\": the bars at indices l and r hold min(h[l], h[r]) * (r - l) water. Use two pointers starting at both ends.",
+      "prompt": "Write a Python function `max_area(h)` for \"container with most water\": the bars at indices `l` and `r` hold `min(h[l], h[r]) * (r - l)` water. Use two pointers starting at both ends.",
       "language": "python",
       "starter": "def max_area(h):\n    ",
       "checks": [
@@ -49,7 +49,7 @@
       "concept": "Sliding window",
       "type": "code",
       "difficulty": 2,
-      "prompt": "Write a Python function length_of_longest_substring(s) returning the length of the longest substring without repeating characters, using a sliding window and a dict of last-seen positions.",
+      "prompt": "Write a Python function `length_of_longest_substring(s)` returning the length of the longest substring without repeating characters, using a sliding window and a dict of last-seen positions.",
       "language": "python",
       "starter": "def length_of_longest_substring(s):\n    ",
       "checks": [
@@ -75,14 +75,14 @@
         }
       ],
       "model": "def length_of_longest_substring(s):\n    last, left, best = {}, 0, 0\n    for right, c in enumerate(s):\n        if c in last:\n            left = max(left, last[c] + 1)\n        last[c] = right\n        best = max(best, right - left + 1)\n    return best",
-      "explanation": "The max(left, ...) is the part people forget: for \"abba\" the second a must not drag the left edge backwards."
+      "explanation": "The `max(left, ...)` is the part people forget: for `\"abba\"` the second a must not drag the left edge backwards."
     },
     {
       "id": "sliding-max",
       "concept": "Monotonic deque",
       "type": "code",
       "difficulty": 3,
-      "prompt": "Write a Python function sliding_max(nums, k) returning the maximum of every window of size k, in O(n), using a deque of indices.",
+      "prompt": "Write a Python function `sliding_max(nums, k)` returning the maximum of every window of size k, in O(n), using a `deque` of indices.",
       "language": "python",
       "starter": "from collections import deque\n\ndef sliding_max(nums, k):\n    ",
       "checks": [
@@ -115,7 +115,7 @@
       "concept": "Stack",
       "type": "code",
       "difficulty": 1,
-      "prompt": "Write a Python function is_valid(s) that returns True when every bracket in s made of ()[]{} is closed by the right type in the right order.",
+      "prompt": "Write a Python function `is_valid(s)` that returns `True` when every bracket in s made of `()[]{}` is closed by the right type in the right order.",
       "language": "python",
       "starter": "def is_valid(s):\n    ",
       "checks": [
@@ -141,14 +141,14 @@
         }
       ],
       "model": "def is_valid(s):\n    pairs = {\")\": \"(\", \"]\": \"[\", \"}\": \"{\"}\n    st = []\n    for ch in s:\n        if ch in pairs:\n            if not st or st.pop() != pairs[ch]:\n                return False\n        else:\n            st.append(ch)\n    return not st",
-      "explanation": "Check for an empty stack before popping, and require the stack to be empty at the end (\"((\" must fail)."
+      "explanation": "Check for an empty stack before popping, and require the stack to be empty at the end (`\"((\"` must fail)."
     },
     {
       "id": "count-in-range",
       "concept": "Binary search",
       "type": "code",
       "difficulty": 2,
-      "prompt": "Write a Python function count_in_range(a, lo, hi) returning how many values x of the sorted list a satisfy lo <= x <= hi, using the bisect module (two O(log n) searches).",
+      "prompt": "Write a Python function `count_in_range(a, lo, hi)` returning how many values x of the sorted list a satisfy `lo <= x <= hi`, using the `bisect` module (two O(log n) searches).",
       "language": "python",
       "starter": "import bisect\n\ndef count_in_range(a, lo, hi):\n    ",
       "checks": [
@@ -170,17 +170,17 @@
         }
       ],
       "model": "import bisect\n\ndef count_in_range(a, lo, hi):\n    return bisect.bisect_right(a, hi) - bisect.bisect_left(a, lo)",
-      "explanation": "bisect_left(a, lo) is the first index with value >= lo and bisect_right(a, hi) is the first index with value > hi. The difference is the number of values in between."
+      "explanation": "`bisect_left(a, lo)` is the first index with value `>= lo` and `bisect_right(a, hi)` is the first index with value `> hi`. The difference is the number of values in between."
     },
     {
       "id": "bisect-count",
       "concept": "Binary search",
       "type": "integer",
       "difficulty": 2,
-      "prompt": "For a = [1, 2, 4, 4, 4, 7], what is bisect_right(a, 4) - bisect_left(a, 4)?",
+      "prompt": "For `a = [1, 2, 4, 4, 4, 7]`, what is `bisect_right(a, 4) - bisect_left(a, 4)`?",
       "answer": 3,
       "tolerance": 0,
-      "explanation": "bisect_left returns 2 and bisect_right returns 5, so the difference 3 is the number of copies of 4. I ran it to confirm."
+      "explanation": "`bisect_left` returns 2 and `bisect_right` returns 5, so the difference 3 is the number of copies of 4. I ran it to confirm."
     },
     {
       "id": "list-deque-api",
@@ -191,23 +191,23 @@
       "left": [
         {
           "id": "a",
-          "text": "stack.append(x)"
+          "text": "`stack.append(x)`"
         },
         {
           "id": "b",
-          "text": "stack.pop()"
+          "text": "`stack.pop()`"
         },
         {
           "id": "c",
-          "text": "stack[-1]"
+          "text": "`stack[-1]`"
         },
         {
           "id": "d",
-          "text": "dq.popleft()"
+          "text": "`dq.popleft()`"
         },
         {
           "id": "e",
-          "text": "dq.appendleft(x)"
+          "text": "`dq.appendleft(x)`"
         }
       ],
       "right": [
@@ -217,7 +217,7 @@
         },
         {
           "id": "q",
-          "text": "Removes and returns the last item, raising IndexError if empty"
+          "text": "Removes and returns the last item, raising `IndexError` if empty"
         },
         {
           "id": "r",
@@ -243,7 +243,7 @@
         "d": "s",
         "e": "t"
       },
-      "explanation": "A list is a fine stack because the end operations are O(1) amortised. For queues use collections.deque: list.pop(0) shifts every element and costs O(n)."
+      "explanation": "A list is a fine stack because the end operations are O(1) amortised. For queues use `collections.deque`: `list.pop(0)` shifts every element and costs O(n)."
     },
     {
       "id": "stack-fill",
@@ -265,7 +265,7 @@
         "0",
         "insert"
       ],
-      "explanation": "All three are O(1). For a queue use deque.popleft() instead of pop(0)."
+      "explanation": "All three are O(1). For a queue use `deque.popleft()` instead of `pop(0)`."
     },
     {
       "id": "no-overflow",
@@ -273,7 +273,7 @@
       "type": "assertion",
       "difficulty": 2,
       "prompt": "Evaluate the assertion and the reason.",
-      "assertion": "In Python, mid = (lo + hi) // 2 cannot overflow, unlike the same expression in languages with fixed-width integers.",
+      "assertion": "In Python, `mid = (lo + hi) // 2` cannot overflow, unlike the same expression in languages with fixed-width integers.",
       "reason": "Python integers have arbitrary precision.",
       "correct": [
         "a"
@@ -284,7 +284,7 @@
         "c": "R is true, so c is wrong.",
         "d": "A is true, so d is wrong."
       },
-      "explanation": "You can mention the overflow-safe form lo + (hi - lo) // 2 anyway to show you know the issue when the interviewer asks about other languages."
+      "explanation": "You can mention the overflow-safe form `lo + (hi - lo) // 2` anyway to show you know the issue when the interviewer asks about other languages."
     },
     {
       "id": "monotonic-stack-cost",
@@ -293,7 +293,7 @@
       "difficulty": 2,
       "prompt": "Evaluate the assertion and the reason.",
       "assertion": "A monotonic stack finds the next greater element for every item of a list in O(n) total time.",
-      "reason": "list.append and list.pop at the end are O(1) amortised.",
+      "reason": "`list.append` and `list.pop` at the end are O(1) amortised.",
       "correct": [
         "b"
       ],
@@ -311,8 +311,8 @@
       "type": "assertion",
       "difficulty": 3,
       "prompt": "Evaluate the assertion and the reason.",
-      "assertion": "bisect.insort inserts a value into a sorted list in O(log n) total time.",
-      "reason": "bisect finds the insertion position in O(log n) comparisons.",
+      "assertion": "`bisect.insort` inserts a value into a sorted list in O(log n) total time.",
+      "reason": "`bisect` finds the insertion position in O(log n) comparisons.",
       "correct": [
         "d"
       ],
@@ -322,7 +322,7 @@
         "c": "R is true, so c is wrong.",
         "d": "Correct: R is true, but the list insert shifts later elements, so the whole insort is O(n); a heap or sorted container is the answer when you need many inserts."
       },
-      "explanation": "Finding the place is logarithmic; making room is linear. Do not claim O(log n) for insort in an interview."
+      "explanation": "Finding the place is logarithmic; making room is linear. Do not claim O(log n) for `insort` in an interview."
     },
     {
       "id": "bisect-trusts",
@@ -330,8 +330,8 @@
       "type": "assertion",
       "difficulty": 3,
       "prompt": "Evaluate the assertion and the reason.",
-      "assertion": "Binary search on a sorted list with bisect needs the list to be sorted.",
-      "reason": "bisect sorts the list on every call.",
+      "assertion": "Binary search on a sorted list with `bisect` needs the list to be sorted.",
+      "reason": "`bisect` sorts the list on every call.",
       "correct": [
         "c"
       ],
@@ -341,14 +341,14 @@
         "c": "Correct: A is true (the result is meaningless on unsorted data), and R is false because bisect never sorts or checks the order.",
         "d": "A is true, so d is wrong."
       },
-      "explanation": "bisect trusts you. Sort once, then search many times."
+      "explanation": "`bisect` trusts you. Sort once, then search many times."
     },
     {
       "id": "list-pop-zero",
       "concept": "Stack and deque",
       "type": "truefalse",
       "difficulty": 2,
-      "prompt": "Using list.pop(0) to dequeue from a long Python list is O(n), so collections.deque with popleft() is preferred for queues.",
+      "prompt": "Using `list.pop(0)` to dequeue from a long Python list is O(n), so `collections.deque` with `popleft()` is preferred for queues.",
       "options": [
         {
           "id": "a",
@@ -371,7 +371,7 @@
       "concept": "Stack and deque",
       "type": "truefalse",
       "difficulty": 1,
-      "prompt": "list.append is O(n) in the worst case on every call, so a list is a poor stack.",
+      "prompt": "`list.append` is O(n) in the worst case on every call, so a list is a poor stack.",
       "options": [
         {
           "id": "a",
@@ -394,12 +394,12 @@
       "concept": "Binary search",
       "type": "single",
       "difficulty": 2,
-      "prompt": "A Python loop reads while lo <= hi: mid = (lo + hi) // 2; if a[mid] < target: lo = mid; else: hi = mid - 1. Which situation makes it loop forever?",
+      "prompt": "A Python loop reads\n\n```python\nwhile lo <= hi: mid = (lo + hi) // 2\nif a[mid] < target: lo = mid\nelse: hi = mid - 1\n```\n\nWhich situation makes it loop forever?",
       "options": [
         {
           "id": "a",
-          "text": "a[mid] < target while mid == lo, e.g. lo = 0, hi = 1",
-          "why": "Correct: lo = mid leaves lo unchanged, so the range never shrinks."
+          "text": "a[mid] < target while `mid == lo`, e.g. `lo = 0, hi = 1`",
+          "why": "Correct: `lo = mid` leaves lo unchanged, so the range never shrinks."
         },
         {
           "id": "b",
@@ -409,44 +409,44 @@
         {
           "id": "c",
           "text": "The target is smaller than every element in the whole list",
-          "why": "hi keeps decreasing until it drops below lo, so the loop exits."
+          "why": "`hi` keeps decreasing until it drops below `lo`, so the loop exits."
         },
         {
           "id": "d",
           "text": "The list length happens to be an odd number of elements",
-          "why": "Parity does not matter; the update rule for lo does."
+          "why": "Parity does not matter; the update rule for `lo` does."
         }
       ],
       "correct": [
         "a"
       ],
-      "explanation": "Use lo = mid + 1 for the \"go right\" branch (or switch to the half-open template). Always check that every branch shrinks the range."
+      "explanation": "Use `lo = mid + 1` for the \"go right\" branch (or switch to the half-open template). Always check that every branch shrinks the range."
     },
     {
       "id": "bisect-facts",
       "concept": "Binary search",
       "type": "multi",
       "difficulty": 2,
-      "prompt": "Which statements about Python's bisect module are true? Select all that apply.",
+      "prompt": "Which statements about Python's `bisect` module are true? Select all that apply.",
       "options": [
         {
           "id": "a",
-          "text": "bisect_left(a, x) returns the index of the leftmost position where x could be inserted keeping order.",
-          "why": "Correct: it is the first index whose value is >= x."
+          "text": "`bisect_left(a, x)` returns the index of the leftmost position where x could be inserted keeping order.",
+          "why": "Correct: it is the first index whose value is `>= x`."
         },
         {
           "id": "b",
-          "text": "bisect_right(a, x) returns an insertion point after any existing entries equal to x.",
-          "why": "Correct: it is the first index whose value is > x."
+          "text": "`bisect_right(a, x)` returns an insertion point after any existing entries equal to x.",
+          "why": "Correct: it is the first index whose value is `> x`."
         },
         {
           "id": "c",
-          "text": "bisect works on an unsorted list as long as the values are comparable.",
+          "text": "`bisect` works on an unsorted list as long as the values are comparable.",
           "why": "False: the result is meaningless unless the list is sorted."
         },
         {
           "id": "d",
-          "text": "insort(a, x) inserts in O(log n) total time.",
+          "text": "`insort(a, x)` inserts in O(log n) total time.",
           "why": "False: finding the spot is O(log n) but the insert shifts items, so it is O(n)."
         }
       ],
@@ -454,7 +454,7 @@
         "a",
         "b"
       ],
-      "explanation": "Both functions run in O(log n) comparisons; use the key= argument (Python 3.10+) to search by a computed value."
+      "explanation": "Both functions run in O(log n) comparisons; use the `key=` argument (Python 3.10+) to search by a computed value."
     }
   ]
 }

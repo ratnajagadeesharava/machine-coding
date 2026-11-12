@@ -42,7 +42,7 @@
         }
       ],
       "model": "def test_golden_pass_rate():\n    results = run_eval()\n    rate = sum(r[\"passed\"] for r in results) / len(results)\n    assert rate >= 0.9, f\"pass rate {rate:.0%}\"",
-      "explanation": "Other forms pass (statistics.mean, numpy, asserting on a precomputed number of failures). Put a message in the assert so the CI log says what failed."
+      "explanation": "Other forms pass (`statistics.mean`, numpy, asserting on a precomputed number of failures). Put a message in the assert so the CI log says what failed."
     },
     {
       "id": "pytest-param",
@@ -136,7 +136,7 @@
       "concept": "Tracing",
       "type": "code",
       "difficulty": 2,
-      "prompt": "In Python with OpenTelemetry, write a function call_llm(prompt) that runs inside a span named \"llm.call\" (use a tracer from trace.get_tracer) and sets a span attribute \"llm.model\" to MODEL before calling client.generate(prompt).",
+      "prompt": "In Python with OpenTelemetry, write a function `call_llm(prompt)` that runs inside a span named `\"llm.call\"` (use a tracer from `trace.get_tracer`) and sets a span attribute `\"llm.model\"` to `MODEL` before calling `client.generate(prompt)`.",
       "language": "python",
       "starter": "from opentelemetry import trace\ntracer = trace.get_tracer(__name__)\n",
       "checks": [
@@ -162,7 +162,7 @@
         }
       ],
       "model": "def call_llm(prompt):\n    with tracer.start_as_current_span(\"llm.call\") as span:\n        span.set_attribute(\"llm.model\", MODEL)\n        return client.generate(prompt)",
-      "explanation": "start_as_current_span ends the span and records exceptions for you. A decorator or start_span with try/finally also works but is more verbose; this check expects the context-manager form. The OpenTelemetry GenAI semantic conventions standardise attribute names such as gen_ai.request.model (still in development), so prefer those over invented keys like llm.model in real code."
+      "explanation": "`start_as_current_span` ends the span and records exceptions for you. A decorator or `start_span` with try/finally also works but is more verbose; this check expects the context-manager form. The OpenTelemetry GenAI semantic conventions standardise attribute names such as `gen_ai.request.model` (still in development), so prefer those over invented keys like `llm.model` in real code."
     },
     {
       "id": "redteam-pytest",
@@ -198,7 +198,7 @@
       "concept": "Reliability metrics",
       "type": "code",
       "difficulty": 3,
-      "prompt": "Write pass_at_k(n, c, k) in Python for n sampled runs of which c passed: return 1 - C(n - c, k) / C(n, k) using math.comb, and 1.0 when fewer than k runs failed.",
+      "prompt": "Write pass_at_k(n, c, k) in Python for n sampled runs of which c passed: return 1 - C(n - c, k) / `C(n, k)` using math.comb, and 1.0 when fewer than k runs failed.",
       "language": "python",
       "checks": [
         {
@@ -219,7 +219,7 @@
         }
       ],
       "model": "def pass_at_k(n, c, k):\n    if n - c < k:\n        return 1.0\n    return 1 - math.comb(n - c, k) / math.comb(n, k)",
-      "explanation": "I ran pass_at_k(10, 3, 2) = 0.5333, matching the earlier integer question. When fewer than k samples failed, every group of k contains a pass, so the answer is 1.0 (math.comb would also return 0 there, but the guard states the intent).",
+      "explanation": "I ran `pass_at_k(10, 3, 2)` = 0.5333, matching the earlier integer question. When fewer than k samples failed, every group of k contains a pass, so the answer is 1.0 (math.comb would also return 0 there, but the guard states the intent).",
       "starter": "import math\n\ndef pass_at_k(n, c, k):\n    "
     },
     {
@@ -256,7 +256,7 @@
       "concept": "Regression suites in CI",
       "type": "integer",
       "difficulty": 2,
-      "prompt": "A test function is decorated with @pytest.mark.parametrize('a', [1, 2, 3]) and also with @pytest.mark.parametrize('b', ['x', 'y']). How many test cases does pytest generate for it?",
+      "prompt": "A test function is decorated with `@pytest.mark.parametrize('a', [1, 2, 3])` and also with `@pytest.mark.parametrize('b', ['x', 'y'])`. How many test cases does pytest generate for it?",
       "answer": 6,
       "explanation": "Stacked parametrize marks multiply: 3 x 2 = 6 cases, one for each combination. I confirmed it with pytest --collect-only. Remember this when a matrix of prompts times models multiplies your LLM bill.",
       "unit": "tests"
@@ -289,29 +289,29 @@
       "options": [
         {
           "id": "a",
-          "text": "statistics.quantiles(latencies, n=20)[18]",
+          "text": "`statistics.quantiles(latencies, n=20)[18]`",
           "why": "Right: n=20 returns 19 cut points, and the 19th (index 18) is the 95th percentile."
         },
         {
           "id": "b",
-          "text": "statistics.quantiles(latencies, n=20)[19]",
-          "why": "This raises IndexError: only 19 cut points (indexes 0 to 18) are returned for n=20."
+          "text": "`statistics.quantiles(latencies, n=20)[19]`",
+          "why": "This raises `IndexError`: only 19 cut points (indexes 0 to 18) are returned for n=20."
         },
         {
           "id": "c",
-          "text": "statistics.median(latencies) * 0.95",
+          "text": "`statistics.median(latencies) * 0.95`",
           "why": "The median is the 50th percentile; scaling it by 0.95 is not a percentile."
         },
         {
           "id": "d",
-          "text": "sorted(latencies)[int(len(latencies) * 0.95) - 20]",
+          "text": "`sorted(latencies)[int(len(latencies) * 0.95) - 20]`",
           "why": "An arbitrary offset; the index must come from the percentile, not a magic number."
         }
       ],
       "correct": [
         "a"
       ],
-      "explanation": "I ran it on 1..100 and got 95.95 (the default exclusive method). numpy.percentile(latencies, 95) is the common alternative when NumPy is available."
+      "explanation": "I ran it on 1..100 and got 95.95 (the default exclusive method). `numpy.percentile(latencies, 95)` is the common alternative when NumPy is available."
     },
     {
       "id": "pytest-vocab",

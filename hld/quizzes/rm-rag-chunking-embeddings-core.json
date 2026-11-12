@@ -16,10 +16,10 @@
       "concept": "Chunking",
       "type": "integer",
       "difficulty": 2,
-      "prompt": "A document has 2000 tokens. You split it with a sliding window of chunk size 500 tokens and overlap 100 tokens (stride 400); the last chunk may be shorter. How many chunks are produced?",
+      "prompt": "A document has 2000 tokens. You split it with a sliding window of chunk size 500 tokens and overlap 100 tokens `(stride 400);` the last chunk may be shorter. How many chunks are produced?",
       "answer": 5,
       "unit": "chunks",
-      "explanation": "Chunks start at 0, 400, 800, 1200 and 1600. The fifth chunk covers 1600-2000 (the window would reach 2100, so it is cut at the end). A sixth would start at 2000 with nothing left. General rule: ceil((L - overlap) / (size - overlap)) when L > size."
+      "explanation": "Chunks start at 0, 400, 800, 1200 and 1600. The fifth chunk covers 1600-2000 (the window would reach 2100, so it is cut at the end). A sixth would start at 2000 with nothing left. General rule: `ceil((L - overlap) / (size - overlap))` when L > size."
     },
     {
       "id": "overlap-why",
@@ -160,7 +160,7 @@
         {
           "id": "a",
           "text": "Brute force scales linearly with corpus size; ANN trades some recall for speed.",
-          "why": "Right: HNSW and IVF cut the search space and expose recall-vs-speed knobs like ef_search or nprobe."
+          "why": "Right: HNSW and IVF cut the search space and expose recall-vs-speed knobs like `ef_search` or nprobe."
         },
         {
           "id": "b",

@@ -36,16 +36,16 @@
       "concept": "Edge cases",
       "type": "multi",
       "difficulty": 2,
-      "prompt": "A function parseDate(\"dd/mm/yyyy\") returns a calendar date. Which inputs are worthwhile edge cases? Select all that apply.",
+      "prompt": "A function `parseDate(\"dd/mm/yyyy\")` returns a calendar date. Which inputs are worthwhile edge cases? Select all that apply.",
       "options": [
         {
           "id": "a",
-          "text": "29/02/2024, a valid leap day.",
+          "text": "`29/02/2024`, a valid leap day.",
           "why": "Correct: a special calendar case that must be accepted."
         },
         {
           "id": "b",
-          "text": "29/02/2023, an impossible date.",
+          "text": "`29/02/2023`, an impossible date.",
           "why": "Correct: a well-formed string that must be rejected."
         },
         {
@@ -55,7 +55,7 @@
         },
         {
           "id": "d",
-          "text": "15/06/2024, another ordinary date.",
+          "text": "`15/06/2024`, another ordinary date.",
           "why": "It adds no new behaviour beyond the typical case already covered."
         }
       ],
@@ -414,7 +414,7 @@
       "concept": "Data tests",
       "type": "code",
       "difficulty": 2,
-      "prompt": "Write a SQL query that returns each email from the users table that appears more than once, together with its count. Use it as a data-quality test: it should return zero rows when the data is clean.",
+      "prompt": "Write a SQL query that returns each `email` from the `users` table that appears more than once, together with its count. Use it as a data-quality test: it should return zero rows when the data is clean.",
       "language": "sql",
       "starter": "SELECT ",
       "checks": [
@@ -432,14 +432,14 @@
         }
       ],
       "model": "SELECT email, count(*) FROM users GROUP BY email HAVING count(*) > 1;",
-      "explanation": "The same shape tests a uniqueness assumption before adding a UNIQUE constraint. Other valid forms use a window function or a self-join."
+      "explanation": "The same shape tests a uniqueness assumption before adding a `UNIQUE` constraint. Other valid forms use a window function or a self-join."
     },
     {
       "id": "smoke-curl",
       "concept": "Test strategy",
       "type": "code",
       "difficulty": 2,
-      "prompt": "Write a curl command for a smoke test that calls https://staging.example.com/health silently, fails the command on any HTTP error status, and gives up after 5 seconds.",
+      "prompt": "Write a curl command for a smoke test that calls `https://staging.example.com/health` silently, fails the command on any HTTP error status, and gives up after 5 seconds.",
       "language": "shell",
       "checks": [
         {
@@ -460,7 +460,7 @@
         }
       ],
       "model": "curl --fail --silent --max-time 5 https://staging.example.com/health",
-      "explanation": "A non-zero exit code makes a CI step fail. Combine short flags as -fsS -m 5 if you want errors still printed (-S). Smoke tests check that the deployment is alive, not that every feature works."
+      "explanation": "A non-zero exit code makes a CI step fail. Combine short flags as `-fsS -m 5` if you want errors still printed (`-S`). Smoke tests check that the deployment is alive, not that every feature works."
     }
   ]
 }

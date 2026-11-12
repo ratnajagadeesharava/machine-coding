@@ -245,10 +245,10 @@
       "concept": "Reliability metrics",
       "type": "integer",
       "difficulty": 3,
-      "prompt": "A code agent is sampled n = 10 times on a task and c = 3 samples pass. Using the unbiased pass@k estimator 1 - C(n-c, k) / C(n, k) from the Codex paper, compute pass@2 multiplied by 100, rounded to the nearest integer.",
+      "prompt": "A code agent is sampled n = 10 times on a task and c = 3 samples pass. Using the unbiased pass@k estimator 1 - `C(n-c, k)` / `C(n, k)` from the Codex paper, compute pass@2 multiplied by 100, rounded to the nearest integer.",
       "answer": 53,
       "tolerance": 0.5,
-      "explanation": "C(7,2) = 21 and C(10,2) = 45, so pass@2 = 1 - 21/45 = 0.533, i.e. 53. pass@k asks whether at least one of k tries succeeds, whereas pass^k (tau-bench) asks whether all k succeed."
+      "explanation": "`C(7,2)` = 21 and `C(10,2)` = 45, so pass@2 = 1 - 21/45 = 0.533, i.e. 53. pass@k asks whether at least one of k tries succeeds, whereas pass^k (tau-bench) asks whether all k succeed."
     },
     {
       "id": "judge-bias-fix",
@@ -330,7 +330,7 @@
         }
       ],
       "model": "SELECT category, AVG(passed) AS pass_rate\nFROM eval_results\nWHERE run_id = 'r42'\nGROUP BY category\nHAVING AVG(passed) < 0.9;",
-      "explanation": "A per-category gate stops a critical category hiding inside a healthy average. AVG over a 0/1 column is the pass rate; HAVING filters the groups after aggregation. Equivalent forms with SUM(passed) * 1.0 / COUNT(*) pass.",
+      "explanation": "A per-category gate stops a critical category hiding inside a healthy average. AVG over a 0/1 column is the pass rate; HAVING filters the groups after aggregation. Equivalent forms with `SUM(passed)` * 1.0 / `COUNT(*)` pass.",
       "starter": "SELECT "
     }
   ]

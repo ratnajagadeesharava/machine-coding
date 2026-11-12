@@ -16,7 +16,7 @@
       "concept": "Linked lists",
       "type": "code",
       "difficulty": 1,
-      "prompt": "Write a Java method ListNode reverse(ListNode head) that reverses a singly linked list iteratively (ListNode has int val and ListNode next) and returns the new head.",
+      "prompt": "Write a Java method `ListNode reverse(ListNode head)` that reverses a singly linked list iteratively (`ListNode has int val and ListNode next`) and returns the new head.",
       "language": "java",
       "starter": "static ListNode reverse(ListNode head) {\n  \n}",
       "checks": [
@@ -45,7 +45,7 @@
       "concept": "Trees",
       "type": "code",
       "difficulty": 2,
-      "prompt": "Write a Java method List<List<Integer>> levelOrder(TreeNode root) returning the values level by level, using a Queue (TreeNode has int val, TreeNode left and right).",
+      "prompt": "Write a Java method `List<List<Integer>> levelOrder(TreeNode root)` returning the values level by level, using a `Queue` (`TreeNode has int val, TreeNode left and right`).",
       "language": "java",
       "starter": "static List<List<Integer>> levelOrder(TreeNode root) {\n  \n}",
       "checks": [
@@ -71,14 +71,14 @@
         }
       ],
       "model": "static List<List<Integer>> levelOrder(TreeNode root) {\n  List<List<Integer>> out = new ArrayList<>();\n  if (root == null) return out;\n  Queue<TreeNode> q = new ArrayDeque<>();\n  q.offer(root);\n  while (!q.isEmpty()) {\n    int size = q.size();\n    List<Integer> level = new ArrayList<>();\n    for (int i = 0; i < size; i++) {\n      TreeNode node = q.poll();\n      level.add(node.val);\n      if (node.left != null) q.offer(node.left);\n      if (node.right != null) q.offer(node.right);\n    }\n    out.add(level);\n  }\n  return out;\n}",
-      "explanation": "Capture q.size() before the inner loop: it is the number of nodes on the current level. Guard the null root, because ArrayDeque.offer(null) throws."
+      "explanation": "Capture `q.size()` before the inner loop: it is the number of nodes on the current level. Guard the null root, because `ArrayDeque.offer(null)` throws."
     },
     {
       "id": "lca",
       "concept": "Trees",
       "type": "code",
       "difficulty": 3,
-      "prompt": "Write a Java method TreeNode lca(TreeNode root, TreeNode p, TreeNode q) returning the lowest common ancestor of nodes p and q in a binary tree (both exist; compare nodes with ==).",
+      "prompt": "Write a Java method `TreeNode lca(TreeNode root, TreeNode p, TreeNode q)` returning the lowest common ancestor of nodes `p` and `q` in a binary tree (both exist; compare nodes with `==`).",
       "language": "java",
       "starter": "static TreeNode lca(TreeNode root, TreeNode p, TreeNode q) {\n  \n}",
       "checks": [
@@ -107,7 +107,7 @@
       "concept": "Heaps",
       "type": "code",
       "difficulty": 2,
-      "prompt": "Write a Java method List<Integer> topKFrequent(int[] nums, int k) that returns the k most frequent values, counting with a HashMap and keeping a min-heap (PriorityQueue) of at most k entries.",
+      "prompt": "Write a Java method `List<Integer> topKFrequent(int[] nums, int k)` that returns the k most frequent values, counting with a `HashMap` and keeping a min-heap (`PriorityQueue`) of at most k entries.",
       "language": "java",
       "starter": "static List<Integer> topKFrequent(int[] nums, int k) {\n  \n}",
       "checks": [
@@ -140,7 +140,7 @@
       "concept": "LRU cache design",
       "type": "code",
       "difficulty": 3,
-      "prompt": "Write a Java class LRUCache<K, V> that extends LinkedHashMap<K, V> and evicts the least recently used entry once the size exceeds a given capacity.",
+      "prompt": "Write a Java class `LRUCache<K, V>` that extends `LinkedHashMap<K, V>` and evicts the least recently used entry once the size exceeds a given capacity.",
       "language": "java",
       "starter": "class LRUCache<K, V> extends LinkedHashMap<K, V> {\n  \n}",
       "checks": [
@@ -162,17 +162,17 @@
         }
       ],
       "model": "class LRUCache<K, V> extends LinkedHashMap<K, V> {\n  private final int capacity;\n  LRUCache(int capacity) {\n    super(16, 0.75f, true);\n    this.capacity = capacity;\n  }\n  @Override\n  protected boolean removeEldestEntry(Map.Entry<K, V> eldest) {\n    return size() > capacity;\n  }\n}",
-      "explanation": "accessOrder = true makes every get move the entry to the end, and removeEldestEntry is called after each put. In an interview you may also be asked to build the hash map plus doubly linked list by hand."
+      "explanation": "`accessOrder = true` makes every `get` move the entry to the end, and `removeEldestEntry` is called after each `put`. In an interview you may also be asked to build the hash map plus doubly linked list by hand."
     },
     {
       "id": "pq-peek",
       "concept": "Heaps",
       "type": "integer",
       "difficulty": 2,
-      "prompt": "A min-heap PriorityQueue<Integer> receives offers of 9, 4, 7, 1, 6, 2 in that order, then poll() is called twice. What does peek() return?",
+      "prompt": "A min-heap `PriorityQueue<Integer>` receives offers of `9, 4, 7, 1, 6, 2` in that order, then `poll()` is called twice. What does `peek()` return?",
       "answer": 4,
       "tolerance": 0,
-      "explanation": "The first two polls remove 1 and 2, the two smallest values. The remaining values are 4, 6, 7 and 9, so the head is 4."
+      "explanation": "The first two polls remove 1 and 2, the two smallest values. The remaining values are `4, 6, 7 and 9`, so the head is 4."
     },
     {
       "id": "merge-k",
@@ -180,8 +180,8 @@
       "type": "assertion",
       "difficulty": 3,
       "prompt": "Evaluate the assertion and the reason.",
-      "assertion": "Merging K sorted lists with N total nodes using a PriorityQueue of list heads costs O(N log K).",
-      "reason": "The PriorityQueue can grow to hold all N nodes at the same time.",
+      "assertion": "Merging K sorted lists with N total nodes using a `PriorityQueue` of list heads costs O(N log K).",
+      "reason": "The `PriorityQueue` can grow to hold all N nodes at the same time.",
       "correct": [
         "c"
       ],
@@ -191,7 +191,7 @@
         "c": "Correct: A is true and the queue holds at most K entries (one head per list), so R is false.",
         "d": "A is true, so this is wrong."
       },
-      "explanation": "Each of the N nodes is offered and polled once at O(log K). Divide and conquer (merge pairs of lists) gives the same bound with O(1) extra space."
+      "explanation": "Each of the N nodes is `offered` and `polled` once at O(log K). Divide and conquer (merge pairs of lists) gives the same bound with O(1) extra space."
     },
     {
       "id": "pq-heapify",
@@ -199,7 +199,7 @@
       "type": "assertion",
       "difficulty": 3,
       "prompt": "Evaluate the assertion and the reason.",
-      "assertion": "Constructing a PriorityQueue from an existing collection of n elements takes O(n) time, faster than offering the elements one by one.",
+      "assertion": "Constructing a `PriorityQueue` from an existing collection of n elements takes O(n) time, faster than offering the elements one by one.",
       "reason": "Half of the nodes of a binary heap are leaves, and the bulk build sifts down only from the internal nodes.",
       "correct": [
         "a"
@@ -218,8 +218,8 @@
       "type": "assertion",
       "difficulty": 2,
       "prompt": "Evaluate the assertion and the reason.",
-      "assertion": "PriorityQueue.peek() runs in O(1) time.",
-      "reason": "PriorityQueue is not thread safe.",
+      "assertion": "`PriorityQueue.peek()` runs in O(1) time.",
+      "reason": "`PriorityQueue` is not thread safe.",
       "correct": [
         "b"
       ],
@@ -229,7 +229,7 @@
         "c": "R is true, so c is wrong.",
         "d": "A is true, so d is wrong."
       },
-      "explanation": "peek is O(1), offer and poll are O(log n), and contains or remove(Object) are O(n). Use PriorityBlockingQueue when you need thread safety."
+      "explanation": "`peek` is O(1), `offer` and `poll` are O(log n), and `contains` or `remove(Object)` are O(n). Use `PriorityBlockingQueue` when you need thread safety."
     },
     {
       "id": "pq-api",
@@ -240,37 +240,37 @@
       "left": [
         {
           "id": "a",
-          "text": "pq.peek()"
+          "text": "`pq.peek()`"
         },
         {
           "id": "b",
-          "text": "pq.poll()"
+          "text": "`pq.poll()`"
         },
         {
           "id": "c",
-          "text": "pq.element()"
+          "text": "`pq.element()`"
         },
         {
           "id": "d",
-          "text": "pq.remove(obj)"
+          "text": "`pq.remove(obj)`"
         },
         {
           "id": "e",
-          "text": "pq.offer(x)"
+          "text": "`pq.offer(x)`"
         }
       ],
       "right": [
         {
           "id": "p",
-          "text": "Reads the head without removing it, returning null when empty"
+          "text": "Reads the head without removing it, returning `null` when empty"
         },
         {
           "id": "q",
-          "text": "Removes and returns the head, returning null when empty"
+          "text": "Removes and returns the head, returning `null` when empty"
         },
         {
           "id": "r",
-          "text": "Reads the head and throws NoSuchElementException when empty"
+          "text": "Reads the head and throws `NoSuchElementException` when empty"
         },
         {
           "id": "s",
@@ -299,40 +299,40 @@
       "concept": "Heaps",
       "type": "single",
       "difficulty": 2,
-      "prompt": "In Java you need a max-heap of int values that may include Integer.MIN_VALUE. Which PriorityQueue construction is safe?",
+      "prompt": "In Java you need a max-heap of `int` values that may include `Integer.MIN_VALUE`. Which `PriorityQueue` construction is safe?",
       "options": [
         {
           "id": "a",
-          "text": "new PriorityQueue<>(Comparator.reverseOrder())",
-          "why": "Correct: reverseOrder compares with compareTo and cannot overflow."
+          "text": "`new PriorityQueue<>(Comparator.reverseOrder())`",
+          "why": "Correct: `reverseOrder` compares with `compareTo` and cannot overflow."
         },
         {
           "id": "b",
-          "text": "new PriorityQueue<>((a, b) -> b - a) using plain subtraction",
-          "why": "Subtraction can overflow for values far apart, such as Integer.MIN_VALUE, and give the wrong sign."
+          "text": "`new PriorityQueue<>((a, b) -> b - a)` using plain subtraction",
+          "why": "Subtraction can overflow for values far apart, such as `Integer.MIN_VALUE`, and give the wrong sign."
         },
         {
           "id": "c",
-          "text": "new PriorityQueue<>((a, b) -> a - b) and read from the tail",
+          "text": "`new PriorityQueue<>((a, b) -> a - b)` and read from the tail",
           "why": "This is a min-heap, and the tail of the backing array is not the maximum."
         },
         {
           "id": "d",
-          "text": "new PriorityQueue<>(Collections.max()) with a null comparator",
-          "why": "Collections.max is not a Comparator, and a null comparator gives natural (min) ordering."
+          "text": "`new PriorityQueue<>(Collections.max())` with a `null` comparator",
+          "why": "`Collections.max` is not a `Comparator`, and a `null` comparator gives natural (min) ordering."
         }
       ],
       "correct": [
         "a"
       ],
-      "explanation": "Prefer Integer.compare(b, a) or Comparator.reverseOrder() over subtraction. Subtracting comparators are a classic latent overflow bug."
+      "explanation": "Prefer `Integer.compare(b, a)` or `Comparator.reverseOrder()` over subtraction. Subtracting comparators are a classic latent overflow bug."
     },
     {
       "id": "validate-bst-bounds",
       "concept": "Binary search trees",
       "type": "single",
       "difficulty": 3,
-      "prompt": "A Java validator isValid(node, int lo, int hi) is first called with Integer.MIN_VALUE and Integer.MAX_VALUE and requires lo < node.val < hi. Which valid BST does it wrongly reject?",
+      "prompt": "A Java validator `isValid(node, int lo, int hi)` is first called with `Integer.MIN_VALUE` and `Integer.MAX_VALUE` and requires `lo < node.val < hi`. Which valid BST does it wrongly reject?",
       "options": [
         {
           "id": "a",
@@ -352,13 +352,13 @@
         {
           "id": "d",
           "text": "A single node whose value is Integer.MAX_VALUE",
-          "why": "Correct: the strict check MAX_VALUE < MAX_VALUE fails even though the tree is valid."
+          "why": "Correct: the strict check `MAX_VALUE < MAX_VALUE` fails even though the tree is valid."
         }
       ],
       "correct": [
         "d"
       ],
-      "explanation": "Use Long bounds, or null bounds for \"no limit\". Checking only the parent (not the ancestors' bounds) is the other classic validate-BST bug."
+      "explanation": "Use `Long` bounds, or null bounds for \"no limit\". Checking only the parent (not the ancestors' bounds) is the other classic validate-BST bug."
     },
     {
       "id": "topk-fill",
@@ -387,7 +387,7 @@
       "concept": "Heaps",
       "type": "truefalse",
       "difficulty": 1,
-      "prompt": "Iterating over or printing a Java PriorityQueue returns its elements in sorted order.",
+      "prompt": "Iterating over or printing a Java `PriorityQueue` returns its elements in sorted order.",
       "options": [
         {
           "id": "a",
@@ -397,20 +397,20 @@
         {
           "id": "b",
           "text": "False",
-          "why": "Correct: the backing array is only heap-ordered. Offering 5, 3, 8, 1 prints [1, 3, 8, 5]."
+          "why": "Correct: the backing array is only heap-ordered. Offering `5, 3, 8, 1` prints `[1, 3, 8, 5]`."
         }
       ],
       "correct": [
         "b"
       ],
-      "explanation": "Poll repeatedly (or copy and sort) if you need sorted output. I ran the 5, 3, 8, 1 example and got [1, 3, 8, 5]."
+      "explanation": "Poll repeatedly (or copy and sort) if you need sorted output. I ran the `5, 3, 8, 1` example and got `[1, 3, 8, 5]`."
     },
     {
       "id": "pq-remove-cost",
       "concept": "Heaps",
       "type": "truefalse",
       "difficulty": 2,
-      "prompt": "In a Java PriorityQueue, contains(x) and remove(x) take O(n) time because the queue has to scan the array.",
+      "prompt": "In a Java `PriorityQueue`, `contains(x)` and `remove(x)` take O(n) time because the queue has to scan the array.",
       "options": [
         {
           "id": "a",
@@ -426,7 +426,7 @@
       "correct": [
         "a"
       ],
-      "explanation": "If you need fast arbitrary removal, use a TreeSet or a TreeMap, or use lazy deletion."
+      "explanation": "If you need fast arbitrary removal, use a `TreeSet` or a `TreeMap`, or use lazy deletion."
     }
   ]
 }

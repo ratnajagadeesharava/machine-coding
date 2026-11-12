@@ -16,40 +16,40 @@
       "concept": "Decorators and DI",
       "type": "single",
       "difficulty": 3,
-      "prompt": "What does this Python code print?\ndef shout(f):\n    def wrapper(*a):\n        return f(*a).upper()\n    return wrapper\n\n@shout\ndef hi(n):\n    return \"hi \" + n\n\nprint(hi(\"bo\"), hi.__name__)\nWhat is the output?",
+      "prompt": "What does this Python code print?\n\n```python\ndef shout(f):\n    def wrapper(*a):\n        return f(*a).upper()\n    return wrapper\n\n@shout\ndef hi(n):\n    return \"hi \" + n\n\nprint(hi(\"bo\"), hi.__name__)\n```\n\nWhat is the output?",
       "options": [
         {
           "id": "a",
-          "text": "HI BO hi",
-          "why": "The name now refers to the wrapper because the decorator did not copy metadata."
+          "text": "`HI BO hi`",
+          "why": "The name now refers to the `wrapper` because the decorator did not copy metadata."
         },
         {
           "id": "b",
-          "text": "HI BO wrapper",
-          "why": "Correct: @shout rebinds hi to wrapper, and without functools.wraps its __name__ is \"wrapper\"."
+          "text": "`HI BO wrapper`",
+          "why": "Correct: `@shout` rebinds hi to `wrapper`, and without `functools.wraps` its `__name__` is `\"wrapper\"`."
         },
         {
           "id": "c",
-          "text": "hi bo hi, decorator ignored",
-          "why": "The decorator syntax is equivalent to hi = shout(hi), so it is applied."
+          "text": "`hi bo hi`, decorator ignored",
+          "why": "The decorator syntax is equivalent to `hi = shout(hi)`, so it is applied."
         },
         {
           "id": "d",
           "text": "TypeError at decoration time",
-          "why": "Decoration only calls shout(hi), which returns a function without error."
+          "why": "Decoration only calls `shout(hi)`, which returns a function without error."
         }
       ],
       "correct": [
         "b"
       ],
-      "explanation": "Always put @functools.wraps(f) on the inner function to preserve __name__, __doc__ and the signature (important for FastAPI, pytest and logging). (Verified by running it.)"
+      "explanation": "Always put `@functools.wraps(f)` on the inner function to preserve `__name__`, `__doc__` and the signature (important for FastAPI, pytest and logging). (Verified by running it.)"
     },
     {
       "id": "log-calls-decorator",
       "concept": "Decorators and DI",
       "type": "code",
       "difficulty": 2,
-      "prompt": "Write a Python decorator log_calls that prints \"calling <function name>\" before running the wrapped function, passes all arguments through, returns the result, and keeps the original function metadata.",
+      "prompt": "Write a Python decorator `log_calls` that prints \"calling <function name>\" before running the wrapped function, passes all arguments through, returns the result, and keeps the original function metadata.",
       "language": "python",
       "starter": "import functools\n",
       "checks": [
@@ -82,7 +82,7 @@
       "options": [
         {
           "id": "a",
-          "text": "Pass a function or lambda as the strategy argument",
+          "text": "Pass a function or `lambda` as the strategy argument",
           "why": "Correct: functions are first-class, so a callable replaces the whole class hierarchy."
         },
         {
@@ -104,40 +104,40 @@
       "correct": [
         "a"
       ],
-      "explanation": "Examples: sorted(key=...), the key function of max, or a dict mapping names to callables."
+      "explanation": "Examples: `sorted(key=...)`, the key function of `max`, or a dict mapping names to callables."
     },
     {
       "id": "late-binding",
       "concept": "Observer",
       "type": "single",
       "difficulty": 3,
-      "prompt": "A developer registers three handlers in Python:\nhandlers = [lambda: i for i in range(3)]\nprint([h() for h in handlers])\nWhat does it print?",
+      "prompt": "A developer registers three handlers in Python:\n\n```python\nhandlers = [lambda: i for i in range(3)]\nprint([h() for h in handlers])\n```\n\nWhat does it print?",
       "options": [
         {
           "id": "a",
-          "text": "[0, 1, 2]",
+          "text": "`[0, 1, 2]`",
           "why": "That would need each lambda to capture its own value at creation time."
         },
         {
           "id": "b",
-          "text": "[2, 2, 2]",
-          "why": "Correct: closures capture the variable i, not its value, and the loop leaves i == 2."
+          "text": "`[2, 2, 2]`",
+          "why": "Correct: closures capture the variable `i`, not its value, and the loop leaves `i == 2`."
         },
         {
           "id": "c",
-          "text": "[3, 3, 3]",
-          "why": "range(3) ends at 2, so i never becomes 3."
+          "text": "`[3, 3, 3]`",
+          "why": "`range(3)` ends at 2, so `i` never becomes 3."
         },
         {
           "id": "d",
-          "text": "NameError: i is not defined",
-          "why": "i is still alive in the enclosing scope after the comprehension via the closure cell."
+          "text": "`NameError: i is not defined`",
+          "why": "`i` is still alive in the enclosing scope after the comprehension via the closure cell."
         }
       ],
       "correct": [
         "b"
       ],
-      "explanation": "Fix with a default argument: lambda i=i: i, or functools.partial. The same late-binding trap hits callbacks registered in loops. (Verified by running it.)"
+      "explanation": "Fix with a default argument: `lambda i=i: i`, or `functools.partial`. The same late-binding trap hits callbacks registered in loops. (Verified by running it.)"
     },
     {
       "id": "decorator-targets",
@@ -163,12 +163,12 @@
       "concept": "Singleton",
       "type": "truefalse",
       "difficulty": 2,
-      "prompt": "In Python, a module-level object is a simple singleton because the interpreter executes a module once and caches it in sys.modules.",
+      "prompt": "In Python, a module-level object is a simple singleton because the interpreter executes a module once and caches it in `sys.modules`.",
       "options": [
         {
           "id": "a",
           "text": "True",
-          "why": "Correct: sys.modules makes repeated imports return the same module object, so its top-level objects are created once per process."
+          "why": "Correct: `sys.modules` makes repeated imports return the same module object, so its top-level objects are created once per process."
         },
         {
           "id": "b",
@@ -186,7 +186,7 @@
       "concept": "Singleton",
       "type": "code",
       "difficulty": 2,
-      "prompt": "Write a Python class Config that behaves as a singleton by overriding __new__, so that Config() always returns the same object.",
+      "prompt": "Write a Python class `Config` that behaves as a singleton by overriding `__new__`, so that `Config()` always returns the same object.",
       "language": "python",
       "checks": [
         {
@@ -203,14 +203,14 @@
         }
       ],
       "model": "class Config:\n    _instance = None\n    def __new__(cls):\n        if cls._instance is None:\n            cls._instance = super().__new__(cls)\n        return cls._instance",
-      "explanation": "A module-level instance is simpler and just as good; note that __init__ runs on every Config() call here."
+      "explanation": "A module-level instance is simpler and just as good; note that `__init__` runs on every `Config()` call here."
     },
     {
       "id": "dataclass-builder",
       "concept": "Builder",
       "type": "code",
       "difficulty": 1,
-      "prompt": "Write a Python dataclass Pizza with an int field size and a bool field cheese that defaults to False, as the idiomatic replacement for a builder.",
+      "prompt": "Write a Python dataclass `Pizza` with an int field `size` and a bool field `cheese` that defaults to `False`, as the idiomatic replacement for a builder.",
       "language": "python",
       "checks": [
         {
@@ -234,7 +234,7 @@
       "concept": "Observer",
       "type": "code",
       "difficulty": 2,
-      "prompt": "Write a Python class Subject with subscribe(callback) and publish(msg) so that publishing calls every subscribed callback with the message.",
+      "prompt": "Write a Python class `Subject` with `subscribe(callback)` and `publish(msg)` so that publishing calls every subscribed callback with the message.",
       "language": "python",
       "checks": [
         {
@@ -258,7 +258,7 @@
       "concept": "Strategy",
       "type": "code",
       "difficulty": 1,
-      "prompt": "Given a list of strings words, write one Python expression that returns a new list sorted by string length, passing the strategy as a function.",
+      "prompt": "Given a list of strings `words`, write one Python expression that returns a new list sorted by string length, passing the strategy as a function.",
       "language": "python",
       "checks": [
         {
@@ -271,7 +271,7 @@
         }
       ],
       "model": "sorted(words, key=len)",
-      "explanation": "The key argument is the strategy: any function mapping an item to a sort key."
+      "explanation": "The `key` argument is the strategy: any function mapping an item to a sort `key`."
     },
     {
       "id": "singleton-pitfalls-py",
@@ -287,8 +287,8 @@
         },
         {
           "id": "b",
-          "text": "A __new__-based singleton runs __init__ again on every call to the class.",
-          "why": "Python calls __init__ whenever __new__ returns an instance of the class."
+          "text": "A `__new__`-based singleton runs `__init__` again on every call to the class.",
+          "why": "Python calls `__init__` whenever `__new__` returns an instance of the class."
         },
         {
           "id": "c",
@@ -298,12 +298,12 @@
         {
           "id": "d",
           "text": "A module-level instance is created again every time another module imports it.",
-          "why": "Imports are cached in sys.modules, so the module body runs once."
+          "why": "Imports are cached in `sys.modules`, so the module body runs once."
         },
         {
           "id": "e",
           "text": "A singleton can never be created lazily.",
-          "why": "Lazy creation inside __new__ or a function is straightforward."
+          "why": "Lazy creation inside `__new__` or a function is straightforward."
         }
       ],
       "correct": [
@@ -318,43 +318,43 @@
       "concept": "Singleton",
       "type": "integer",
       "difficulty": 3,
-      "prompt": "A class caches one instance in __new__ and its __init__ increments a class counter n (starting at 0) each time it runs. After Config(); Config(); Config(), what is n?",
+      "prompt": "A class caches one instance in `__new__` and its `__init__` increments a class counter `n` (starting at 0) each time it runs. After\n\n```python\nConfig()\nConfig()\nConfig()\n```\n\nWhat is `n`?",
       "answer": 3,
       "tolerance": 0,
-      "explanation": "__new__ returns the same object each time, but Python still calls __init__ on it after every Config() call, so n reaches 3."
+      "explanation": "`__new__` returns the same object each time, but Python still calls `__init__` on it after every `Config()` call, so n reaches 3."
     },
     {
       "id": "decorator-order",
       "concept": "Decorators and DI",
       "type": "single",
       "difficulty": 3,
-      "prompt": "What does this Python code print?\n\ndef tag(t):\n    def deco(f):\n        def w():\n            return f\"<{t}>\" + f() + f\"</{t}>\"\n        return w\n    return deco\n\n@tag(\"b\")\n@tag(\"i\")\ndef x():\n    return \"hi\"\n\nprint(x())\n\nWhat is the output?",
+      "prompt": "What does this Python code print?\n\n```python\ndef tag(t):\n    def deco(f):\n        def w():\n            return f\"<{t}>\" + f() + f\"</{t}>\"\n        return w\n    return deco\n\n@tag(\"b\")\n@tag(\"i\")\ndef x():\n    return \"hi\"\n\nprint(x())\n```\n\nWhat is the output?",
       "options": [
         {
           "id": "a",
-          "text": "<b><i>hi</i></b>",
+          "text": "`<b><i>hi</i></b>`",
           "why": "Correct: the decorator closest to the function applies first, so the b wrapper is outermost."
         },
         {
           "id": "b",
-          "text": "<i><b>hi</b></i>",
+          "text": "`<i><b>hi</b></i>`",
           "why": "That reverses the order; the bottom decorator is applied first and ends up inside."
         },
         {
           "id": "c",
-          "text": "<b>hi</b><i>hi</i>",
+          "text": "`<b>hi</b><i>hi</i>`",
           "why": "Each wrapper calls the function it wraps, not the original twice."
         },
         {
           "id": "d",
-          "text": "TypeError because tag is called twice",
-          "why": "tag(\"b\") and tag(\"i\") each return a decorator, which is the intended use."
+          "text": "`TypeError because tag is called twice`",
+          "why": "`tag(\"b\")` and `tag(\"i\")` each return a decorator, which is the intended use."
         }
       ],
       "correct": [
         "a"
       ],
-      "explanation": "Stacked decorators apply bottom-up: x = tag(\"b\")(tag(\"i\")(x))."
+      "explanation": "Stacked decorators apply bottom-up: `x = tag(\"b\")(tag(\"i\")(x))`."
     },
     {
       "id": "decorator-sugar",
@@ -376,7 +376,7 @@
         "contextlib",
         "id"
       ],
-      "explanation": "wraps copies __name__, __doc__ and other metadata so debugging and introspection still show the real function."
+      "explanation": "`wraps` copies __name__, __doc__ and other metadata so debugging and introspection still show the real function."
     },
     {
       "id": "decorator-tools",
@@ -387,23 +387,23 @@
       "left": [
         {
           "id": "a",
-          "text": "@staticmethod"
+          "text": "`@staticmethod`"
         },
         {
           "id": "b",
-          "text": "@classmethod"
+          "text": "`@classmethod`"
         },
         {
           "id": "c",
-          "text": "@property"
+          "text": "`@property`"
         },
         {
           "id": "d",
-          "text": "@functools.wraps"
+          "text": "`@functools.wraps`"
         },
         {
           "id": "e",
-          "text": "@dataclass"
+          "text": "`@dataclass`"
         }
       ],
       "right": [
@@ -425,7 +425,7 @@
         },
         {
           "id": "t",
-          "text": "Generates __init__, __repr__ and __eq__ from annotated fields"
+          "text": "Generates `__init__`, `__repr__` and `__eq__` from annotated fields"
         },
         {
           "id": "u",
@@ -467,7 +467,7 @@
       "difficulty": 2,
       "prompt": "Read the assertion (A) and the reason (R), then choose the option that fits.",
       "assertion": "Python allows several decorators to be stacked on one function.",
-      "reason": "functools.wraps copies the wrapped function's metadata onto the wrapper.",
+      "reason": "`functools.wraps` copies the wrapped function's metadata onto the wrapper.",
       "correct": [
         "b"
       ],
@@ -477,7 +477,7 @@
         "c": "This option says A is true and R is false, which does not match: Both are true, but wraps is a metadata convenience and has nothing to do with whether stacking is allowed.",
         "d": "This option says A is false and R is true, which does not match: Both are true, but wraps is a metadata convenience and has nothing to do with whether stacking is allowed."
       },
-      "explanation": "Stacking is just repeated application: f = a(b(f))."
+      "explanation": "Stacking is just repeated application: `f = a(b(f))`."
     },
     {
       "id": "listener-leak-py",
@@ -496,7 +496,7 @@
         "c": "Correct: A is true because the list holds a strong reference, but R is false: lists hold strong references.",
         "d": "This option says A is false and R is true, which does not match: A is true because the list holds a strong reference, but R is false: lists hold strong references."
       },
-      "explanation": "Use weakref.WeakSet or WeakMethod when listeners should not be kept alive by the subject."
+      "explanation": "Use `weakref.WeakSet` or `WeakMethod` when listeners should not be kept alive by the subject."
     }
   ]
 }

@@ -16,7 +16,7 @@
       "concept": "SQL guard",
       "type": "code",
       "difficulty": 3,
-      "prompt": "Using JSqlParser, write static boolean isSelectOnly(String sql) for LLM-generated PostgreSQL. Return true only if the text parses (CCJSqlParserUtil.parseStatements) into exactly one statement that is a PlainSelect. Return false when parsing throws JSQLParserException.",
+      "prompt": "Using JSqlParser, write static boolean isSelectOnly(String sql) for LLM-generated PostgreSQL. Return true only if the text parses (`CCJSqlParserUtil.parseStatements`) into exactly one statement that is a `PlainSelect`. Return false when parsing throws JSQLParserException.",
       "language": "java",
       "checks": [
         {
@@ -41,7 +41,7 @@
         }
       ],
       "model": "static boolean isSelectOnly(String sql) {\n    try {\n        Statements statements = CCJSqlParserUtil.parseStatements(sql);\n        return statements.size() == 1 && statements.get(0) instanceof PlainSelect;\n    } catch (JSQLParserException e) {\n        return false;\n    }\n}",
-      "explanation": "I ran this on JSqlParser 5.3: SELECT 1 and a WITH query parse to one PlainSelect, SELECT 1; DROP TABLE t gives two statements, a UNION is a SetOperationList, and DELETE is a Delete. Real systems add more: SELECT ... INTO still parses as a PlainSelect but creates a table, so also use a read-only role, a statement timeout and a row limit.",
+      "explanation": "I ran this on JSqlParser 5.3: SELECT 1 and a WITH query parse to one `PlainSelect`, SELECT 1; DROP TABLE t gives two statements, a UNION is a `SetOperationList`, and DELETE is a Delete. Real systems add more: SELECT ... INTO still parses as a `PlainSelect` but creates a table, so also use a read-only role, a statement timeout and a row limit.",
       "starter": "static boolean isSelectOnly(String sql) {\n    "
     },
     {
@@ -49,9 +49,9 @@
       "concept": "SQL guard",
       "type": "integer",
       "difficulty": 3,
-      "prompt": "A JSqlParser guard accepts SQL only if it parses into exactly one statement that is a PlainSelect. Of these five inputs, how many pass: (1) SELECT 1; (2) SELECT 1; DROP TABLE t; (3) WITH x AS (SELECT 1) SELECT * FROM x; (4) SELECT 1 UNION SELECT 2; (5) DELETE FROM t?",
+      "prompt": "A JSqlParser guard accepts SQL only if it parses into exactly one statement that is a `PlainSelect`. Of these five inputs, how many pass: (1) SELECT 1; (2) `SELECT 1; DROP TABLE t;` (3) `WITH x AS (SELECT 1) SELECT * FROM x;` (4) SELECT 1 UNION SELECT 2; (5) `DELETE FROM t`?",
       "answer": 2,
-      "explanation": "Inputs 1 and 3 pass (a WITH clause hangs off the PlainSelect). Input 2 is two statements, input 4 parses to a SetOperationList, and input 5 to a Delete; I confirmed each with JSqlParser 5.3. A set operation is a common false rejection, so a production guard usually allows it explicitly.",
+      "explanation": "Inputs 1 and 3 pass (a WITH clause hangs off the `PlainSelect`). Input 2 is two statements, input 4 parses to a `SetOperationList`, and input 5 to a Delete; I confirmed each with JSqlParser 5.3. A set operation is a common false rejection, so a production guard usually allows it explicitly.",
       "unit": "inputs"
     },
     {
@@ -84,14 +84,14 @@
         }
       ],
       "model": "record RefundArgs(\n    @NotNull @Pattern(regexp = \"ORD-\\\\d{6}\") String orderId,\n    @NotNull @DecimalMin(value = \"0\", inclusive = false) @DecimalMax(\"500\") BigDecimal amount) {}",
-      "explanation": "I validated instances with Hibernate Validator 9: ORD-12 with 600 gives 2 violations, 0 gives 1, 500 gives 0. @Positive plus @DecimalMax is equivalent. Validate before the tool runs and reject instead of coercing; the annotations do nothing until a Validator is called on the object."
+      "explanation": "I validated instances with Hibernate Validator 9: ORD-12 with 600 gives 2 violations, 0 gives 1, 500 gives 0. `@Positive` plus `@DecimalMax` is equivalent. Validate before the tool runs and reject instead of coercing; the annotations do nothing until a Validator is called on the object."
     },
     {
       "id": "retry-loop",
       "concept": "Validate and retry",
       "type": "code",
       "difficulty": 2,
-      "prompt": "Write generateValid(String prompt, int maxAttempts) in Java. It calls llm.apply(prompt + hint) to get JSON text, parses it with mapper.readValue(text, Answer.class) (Jackson) and returns the Answer. When parsing throws JsonProcessingException it puts the error message into the hint for the next attempt. After maxAttempts failures it throws IllegalStateException.",
+      "prompt": "Write generateValid(String prompt, int `maxAttempts`) in Java. It calls llm.apply(prompt + hint) to get JSON text, parses it with mapper.readValue(text, Answer.class) (Jackson) and returns the Answer. When parsing throws JsonProcessingException it puts the error message into the hint for the next attempt. After `maxAttempts` failures it throws IllegalStateException.",
       "language": "java",
       "checks": [
         {
@@ -124,7 +124,7 @@
       "concept": "Idempotent actions",
       "type": "code",
       "difficulty": 3,
-      "prompt": "RESULTS is a ConcurrentHashMap<String, PaymentResult>. Write PaymentResult processPayment(String key, long amount) that calls charge(amount) at most once per key, even when several threads call it with the same key at the same moment, and returns the stored result for repeats.",
+      "prompt": "RESULTS is a `ConcurrentHashMap`<String, PaymentResult>. Write PaymentResult processPayment(String key, long amount) that calls charge(amount) at most once per key, even when several threads call it with the same key at the same moment, and returns the stored result for repeats.",
       "language": "java",
       "checks": [
         {
@@ -141,7 +141,7 @@
         }
       ],
       "model": "PaymentResult processPayment(String key, long amount) {\n    return RESULTS.computeIfAbsent(key, k -> charge(amount));\n}",
-      "explanation": "ConcurrentHashMap.computeIfAbsent runs the mapping function at most once per absent key, atomically, so two concurrent requests cannot both charge. A get-then-put sequence would have a race. In production the key and result live in a database with a unique constraint (or Redis SET NX), and the key is bound to the request payload."
+      "explanation": "`ConcurrentHashMap`.`computeIfAbsent` runs the mapping function at most once per absent key, atomically, so two concurrent requests cannot both charge. A get-then-put sequence would have a race. In production the key and result live in a database with a unique constraint (or Redis SET NX), and the key is bound to the request payload."
     },
     {
       "id": "allow-list-dispatch",
@@ -176,7 +176,7 @@
       "concept": "Schema validation",
       "type": "integer",
       "difficulty": 2,
-      "prompt": "RefundArgs requires orderId to match ORD- plus six digits and amount to be greater than 0 and at most 500. How many ConstraintViolations does validator.validate(new RefundArgs(\"ORD-12\", new BigDecimal(\"600\"))) return?",
+      "prompt": "`RefundArgs` requires `orderId` to match `ORD-` plus six digits and `amount` to be greater than 0 and at most 500. How many `ConstraintViolation`s does `validator.validate(new RefundArgs(\"ORD-12\", new BigDecimal(\"600\")))` return?",
       "answer": 2,
       "explanation": "Both fields fail: the order id pattern and the amount above 500, so the set holds 2 violations (I ran it with Hibernate Validator 9). Return all violation messages to the model at once so it can fix everything in one retry.",
       "unit": "violations"
@@ -186,9 +186,9 @@
       "concept": "Retries",
       "type": "integer",
       "difficulty": 2,
-      "prompt": "A Resilience4j Retry is configured with RetryConfig.custom().maxAttempts(4) and wraps a Supplier that always throws. How many times is the supplier executed before the exception reaches the caller?",
+      "prompt": "A Resilience4j Retry is configured with RetryConfig.custom().`maxAttempts`(4) and wraps a Supplier that always throws. How many times is the supplier executed before the exception reaches the caller?",
       "answer": 4,
-      "explanation": "maxAttempts counts the first call, so 1 try + 3 retries = 4 executions (I counted with an AtomicInteger). Remember this when budgeting the worst-case cost of retrying a paid model call.",
+      "explanation": "`maxAttempts` counts the first call, so 1 try + 3 retries = 4 executions (I counted with an `AtomicInteger`). Remember this when budgeting the worst-case cost of retrying a paid model call.",
       "unit": "executions"
     },
     {
@@ -197,7 +197,7 @@
       "type": "assertion",
       "difficulty": 2,
       "prompt": "Assertion and reason: read both statements and choose the right option.",
-      "assertion": "@Pattern(regexp = \"ORD-\\\\d{6}\") on a String field rejects the value \"xORD-123456\" even though the regex has no ^ anchor.",
+      "assertion": "`@Pattern(regexp = \"ORD-\\\\d{6}\")` on a `String` field rejects the value `\"xORD-123456\"` even though the regex has no `^` anchor.",
       "reason": "Bean Validation requires the regular expression to match the entire value, not just a part of it.",
       "correct": [
         "a"
@@ -208,7 +208,7 @@
         "c": "Not chosen: R is true, since @Pattern uses a full match.",
         "d": "Not chosen: A is true; I validated the value and got one violation."
       },
-      "explanation": "I also checked that ORD-1234567 (seven digits) is rejected. Anchors are harmless but unnecessary with @Pattern."
+      "explanation": "I also checked that ORD-1234567 (seven digits) is rejected. Anchors are harmless but unnecessary with `@Pattern`."
     },
     {
       "id": "parser-exception",
@@ -216,8 +216,8 @@
       "type": "assertion",
       "difficulty": 3,
       "prompt": "Assertion and reason: read both statements and choose the right option.",
-      "assertion": "JSQLParserException is a checked exception, so a guard must either catch it or declare it.",
-      "reason": "SELECT * INTO new_t FROM t parses as a PlainSelect in JSqlParser 5.3.",
+      "assertion": "`JSQLParserException` is a checked exception, so a guard must either catch it or declare it.",
+      "reason": "`SELECT * INTO new_t FROM t` parses as a `PlainSelect` in JSqlParser 5.3.",
       "correct": [
         "b"
       ],
@@ -227,7 +227,7 @@
         "c": "Not chosen: R is true; I parsed that statement and got a PlainSelect.",
         "d": "Not chosen: A is true, the compiler enforces handling."
       },
-      "explanation": "R matters for a different reason: a plain instanceof PlainSelect check lets a table-creating SELECT INTO through, so add a read-only role and block INTO explicitly."
+      "explanation": "R matters for a different reason: a plain instanceof `PlainSelect` check lets a table-creating SELECT INTO through, so add a read-only role and block INTO explicitly."
     },
     {
       "id": "compact-ctor",
@@ -254,8 +254,8 @@
       "type": "assertion",
       "difficulty": 3,
       "prompt": "Assertion and reason: read both statements and choose the right option.",
-      "assertion": "A guard that wraps CCJSqlParserUtil.parseStatements in catch (JSQLParserException e) always returns a boolean for every possible input string.",
-      "reason": "In JSqlParser 5.3, parseStatements(\"\") throws a NullPointerException instead of a JSQLParserException.",
+      "assertion": "A guard that wraps `CCJSqlParserUtil.parseStatements` in `catch (JSQLParserException e)` always returns a boolean for every possible input string.",
+      "reason": "In JSqlParser 5.3, `parseStatements(\"\")` throws a `NullPointerException` instead of a JSQLParserException.",
       "correct": [
         "d"
       ],
@@ -265,24 +265,24 @@
         "c": "Not chosen: A is false, so this option is wrong.",
         "d": "A is false: the empty string escapes the catch block because it throws a NullPointerException. R is true (I ran it)."
       },
-      "explanation": "Reject null and blank input before parsing, or catch RuntimeException as well. This is a version-specific edge case, so test the empty and null inputs of any guard."
+      "explanation": "Reject null and blank input before parsing, or catch `RuntimeException` as well. This is a version-specific edge case, so test the empty and null inputs of any guard."
     },
     {
       "id": "select-into-java",
       "concept": "SQL guard",
       "type": "truefalse",
       "difficulty": 3,
-      "prompt": "True or false: a JSqlParser check that the single parsed statement is a PlainSelect is enough to guarantee that an LLM-generated PostgreSQL query cannot change data.",
+      "prompt": "True or false: a JSqlParser check that the single parsed statement is a `PlainSelect` is enough to guarantee that an LLM-generated PostgreSQL query cannot change data.",
       "options": [
         {
           "id": "a",
           "text": "True",
-          "why": "A PlainSelect does not prove read-only behaviour."
+          "why": "A `PlainSelect` does not prove read-only behaviour."
         },
         {
           "id": "b",
           "text": "False",
-          "why": "Right: SELECT * INTO new_t FROM t still parses as a PlainSelect yet creates a table, and functions such as pg_sleep run inside plain SELECTs."
+          "why": "Right: `SELECT * INTO new_t FROM t` still parses as a `PlainSelect` yet creates a table, and functions such as `pg_sleep` run inside plain SELECTs."
         }
       ],
       "correct": [
@@ -317,11 +317,11 @@
       "right": [
         {
           "id": "p",
-          "text": "PlainSelect"
+          "text": "`PlainSelect`"
         },
         {
           "id": "q",
-          "text": "SetOperationList"
+          "text": "`SetOperationList`"
         },
         {
           "id": "r",
@@ -342,7 +342,7 @@
         "c": "r",
         "d": "s"
       },
-      "explanation": "I printed the class names from parseStatements. A guard that checks only for PlainSelect rejects the union by accident; list the types you accept."
+      "explanation": "I printed the class names from `parseStatements`. A guard that checks only for `PlainSelect` rejects the union by accident; list the types you accept."
     },
     {
       "id": "validation-vocab",

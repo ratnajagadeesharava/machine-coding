@@ -16,7 +16,7 @@
       "concept": "Python collections",
       "type": "truefalse",
       "difficulty": 1,
-      "prompt": "In Python 3.7 and later, a dict iterates its keys in insertion order as part of the language guarantee.",
+      "prompt": "In Python 3.7 and later, a `dict` iterates its keys in insertion order as part of the language guarantee.",
       "options": [
         {
           "id": "a",
@@ -26,13 +26,13 @@
         {
           "id": "b",
           "text": "False",
-          "why": "It is guaranteed, not just a CPython quirk; collections.OrderedDict only adds extras like move_to_end and order-sensitive equality."
+          "why": "It is guaranteed, not just a CPython quirk; `collections.OrderedDict` only adds extras like `move_to_end` and order-sensitive equality."
         }
       ],
       "correct": [
         "a"
       ],
-      "explanation": "CPython keeps a compact entries array plus a sparse index table. Mutating a dict while iterating it raises RuntimeError: dictionary changed size during iteration."
+      "explanation": "CPython keeps a compact entries array plus a sparse index table. Mutating a `dict` while iterating it raises `RuntimeError: dictionary changed size during iteration`."
     },
     {
       "id": "python-dict-internals",
@@ -65,33 +65,33 @@
       "left": [
         {
           "id": "a",
-          "text": "list"
+          "text": "`list`"
         },
         {
           "id": "b",
-          "text": "collections.deque"
+          "text": "`collections.deque`"
         },
         {
           "id": "c",
-          "text": "dict"
+          "text": "`dict`"
         },
         {
           "id": "d",
-          "text": "set"
+          "text": "`set`"
         },
         {
           "id": "e",
-          "text": "heapq on a list"
+          "text": "`heapq on a list`"
         }
       ],
       "right": [
         {
           "id": "p",
-          "text": "Dynamic array: O(1) indexing and amortised append, O(n) insert at the front"
+          "text": "Dynamic array: O(1) indexing and amortised `append`, O(n) insert at the front"
         },
         {
           "id": "q",
-          "text": "Doubly linked blocks: O(1) append and popleft at both ends"
+          "text": "Doubly linked blocks: O(1) `append` and `popleft` at both ends"
         },
         {
           "id": "r",
@@ -103,7 +103,7 @@
         },
         {
           "id": "t",
-          "text": "Binary min-heap stored in a list: heappop is O(log n)"
+          "text": "Binary min-heap stored in a `list`: `heappop` is O(log n)"
         },
         {
           "id": "u",
@@ -117,7 +117,7 @@
         "d": "s",
         "e": "t"
       },
-      "explanation": "Choose by access pattern: index (list), both ends (deque), lookup by key (dict), membership (set), smallest-first (heapq)."
+      "explanation": "Choose by access pattern: index (`list`), both ends (deque), lookup by key (`dict`), membership (`set`), smallest-first (`heapq`)."
     },
     {
       "id": "deque-vs-list-pop",
@@ -125,8 +125,8 @@
       "type": "assertion",
       "difficulty": 2,
       "prompt": "Read the assertion (A) and the reason (R), then choose the option that fits.",
-      "assertion": "collections.deque.popleft() takes O(1) time, whereas list.pop(0) takes O(n).",
-      "reason": "A Python list is implemented as a doubly linked list of nodes.",
+      "assertion": "`collections.deque.popleft()` takes O(1) time, whereas `list.pop(0)` takes O(n).",
+      "reason": "A Python `list` is implemented as a doubly linked `list` of nodes.",
       "correct": [
         "c"
       ],
@@ -136,24 +136,24 @@
         "c": "Correct: A is true (the list shifts every remaining pointer); R is false because CPython lists are arrays of pointers (that is why index access is O(1)).",
         "d": "A is true, so d is wrong."
       },
-      "explanation": "Use deque for queues (BFS); a list is fine for stacks (append/pop at the end)."
+      "explanation": "Use `deque` for queues (BFS); a `list` is fine for stacks (append/pop at the end)."
     },
     {
       "id": "set-collapse",
       "concept": "Python collections",
       "type": "integer",
       "difficulty": 3,
-      "prompt": "How many elements does len({1, 1.0, True, \"1\", (1,)}) return? Note that 1 == 1.0 == True in Python.",
+      "prompt": "How many elements does `len({1, 1.0, True, \"1\", (1,)})` return? Note that `1 == 1.0 == True` in Python.",
       "answer": 3,
       "tolerance": 0,
-      "explanation": "1, 1.0 and True are equal and hash equally, so they collapse to one element; \"1\" and (1,) are distinct. That leaves 3."
+      "explanation": "`1, 1.0 and True` are equal and hash equally, so they collapse to one element; `\"1\"` and `(1,)` are distinct. That leaves 3."
     },
     {
       "id": "remove-evens-py",
       "concept": "Iteration and mutation",
       "type": "code",
       "difficulty": 2,
-      "prompt": "Write Python that removes all even numbers from the list nums in place (the same list object must end up with only the odd numbers) without skipping elements.",
+      "prompt": "Write Python that removes all even numbers from the list `nums` in place (the same list object must end up with only the odd numbers) without skipping elements.",
       "language": "python",
       "checks": [
         {
@@ -166,34 +166,34 @@
         }
       ],
       "model": "nums[:] = [n for n in nums if n % 2 != 0]",
-      "explanation": "Assigning to the slice nums[:] replaces the contents in place. Looping and calling remove() while iterating skips elements, so iterate over a copy or rebuild."
+      "explanation": "Assigning to the slice `nums[:]` replaces the contents in place. Looping and calling `remove()` while iterating skips elements, so iterate over a copy or rebuild."
     },
     {
       "id": "list-remove-while-iterating",
       "concept": "Iteration and mutation",
       "type": "single",
       "difficulty": 3,
-      "prompt": "What does this Python code print?\n\nl = [1, 2, 2, 3]\nfor v in l:\n    if v == 2:\n        l.remove(v)\nprint(l)\n\nWhat is the output?",
+      "prompt": "What does this Python code print?\n\n```python\nl = [1, 2, 2, 3]\nfor v in l:\n    if v == 2:\n        l.remove(v)\nprint(l)\n```\n\nWhat is the output?",
       "options": [
         {
           "id": "a",
-          "text": "[1, 2, 3], since one 2 is skipped",
+          "text": "`[1, 2, 3]`, since one 2 is skipped",
           "why": "Correct: removing shifts later items left while the iterator index moves on, so one 2 is never visited."
         },
         {
           "id": "b",
-          "text": "[1, 3], since both 2s are removed by the loop",
+          "text": "`[1, 3]`, since both 2s are removed by the loop",
           "why": "That would need the loop to see both 2s, but the shift makes it skip one."
         },
         {
           "id": "c",
-          "text": "RuntimeError: list changed size while looping",
+          "text": "`RuntimeError: list changed size while looping`",
           "why": "Only dicts and sets raise that error; a list silently misbehaves."
         },
         {
           "id": "d",
-          "text": "[1, 2, 2, 3], because remove inside a loop has no effect",
-          "why": "remove does modify the list; it just does it unpredictably here."
+          "text": "`[1, 2, 2, 3]`, because `remove` inside a loop has no effect",
+          "why": "`remove` does modify the list; it just does it unpredictably here."
         }
       ],
       "correct": [
@@ -206,11 +206,11 @@
       "concept": "Iteration and mutation",
       "type": "single",
       "difficulty": 3,
-      "prompt": "What happens when this Python code runs?\n\nd = {1: \"a\"}\nfor k in d:\n    d[k + 10] = \"b\"\n\nWhat is the outcome?",
+      "prompt": "What happens when this Python code runs?\n\n```python\nd = {1: \"a\"}\nfor k in d:\n    d[k + 10] = \"b\"\n```\n\nWhat is the outcome?",
       "options": [
         {
           "id": "a",
-          "text": "RuntimeError: dictionary changed size during iteration",
+          "text": "`RuntimeError: dictionary changed size during iteration`",
           "why": "Correct: adding a key while iterating invalidates the iterator, and the dict detects it."
         },
         {
@@ -220,45 +220,45 @@
         },
         {
           "id": "c",
-          "text": "d ends as {1: \"a\", 11: \"b\"} with no error",
+          "text": "`d ends as {1: \"a\", 11: \"b\"} with no error`",
           "why": "The size check makes the loop fail before it can finish quietly."
         },
         {
           "id": "d",
-          "text": "KeyError on the new key",
+          "text": "`KeyError` on the new key",
           "why": "Assigning a new key is allowed; the failure comes from the iteration."
         }
       ],
       "correct": [
         "a"
       ],
-      "explanation": "Iterate over list(d) or d.copy() if you need to change the dict inside the loop."
+      "explanation": "Iterate over `list(d)` or `d.copy()` if you need to change the dict inside the loop."
     },
     {
       "id": "py-list-alias",
       "concept": "Python collections",
       "type": "single",
       "difficulty": 2,
-      "prompt": "What does this Python code print?\n\ngrid = [[0] * 3] * 3\ngrid[0][0] = 1\nprint(grid)\n\nWhat is the output?",
+      "prompt": "What does this Python code print?\n\ngrid = [[0] `* 3`] `* 3`\ngrid[0][0] = 1\nprint(grid)\n\nWhat is the output?",
       "options": [
         {
           "id": "a",
-          "text": "[[1, 0, 0], [1, 0, 0], [1, 0, 0]]",
-          "why": "Correct: the outer * 3 repeats a reference to one inner list, so all three rows are the same object."
+          "text": "`[[1, 0, 0], [1, 0, 0], [1, 0, 0]]`",
+          "why": "Correct: the outer `* 3` repeats a reference to one inner list, so all three rows are the same object."
         },
         {
           "id": "b",
-          "text": "[[1, 0, 0], [0, 0, 0], [0, 0, 0]]",
-          "why": "Wrong: this is what you would get from [[0] * 3 for _ in range(3)], which builds three separate rows."
+          "text": "`[[1, 0, 0], [0, 0, 0], [0, 0, 0]]`",
+          "why": "Wrong: this is what you would get from `[[0] * 3 for _ in range(3)]`, which builds three separate rows."
         },
         {
           "id": "c",
-          "text": "[[1, 1, 1], [1, 1, 1], [1, 1, 1]]",
+          "text": "`[[1, 1, 1], [1, 1, 1], [1, 1, 1]]`",
           "why": "Wrong: only index 0 of the shared row is assigned, so the other columns stay 0."
         },
         {
           "id": "d",
-          "text": "TypeError: list assignment is not allowed here",
+          "text": "`TypeError: list assignment is not allowed here`",
           "why": "Wrong: lists are mutable and item assignment on a nested list is perfectly legal."
         }
       ],
@@ -272,7 +272,7 @@
       "concept": "Counting and grouping",
       "type": "code",
       "difficulty": 2,
-      "prompt": "Write Python that builds a dict counts mapping each word in the list words to how many times it appears.",
+      "prompt": "Write Python that builds a dict `counts` mapping each word in the list `words` to how many times it appears.",
       "language": "python",
       "checks": [
         {
@@ -285,14 +285,14 @@
         }
       ],
       "model": "from collections import Counter\ncounts = Counter(words)",
-      "explanation": "Counter is the idiomatic answer; a dict with get(w, 0) + 1, or defaultdict(int), is equally good."
+      "explanation": "`Counter` is the idiomatic answer; a dict with `get(w, 0) + 1`, or `defaultdict(int)`, is equally good."
     },
     {
       "id": "typevar-first",
       "concept": "Type hints",
       "type": "code",
       "difficulty": 2,
-      "prompt": "Write a Python function first(items) with type hints using a TypeVar named T so that mypy infers the element type of the sequence it returns.",
+      "prompt": "Write a Python function `first(items)` with type hints using a `TypeVar` named `T` so that `mypy` infers the element type of the sequence it returns.",
       "language": "python",
       "starter": "from typing import Sequence, TypeVar\n",
       "checks": [
@@ -314,7 +314,7 @@
         }
       ],
       "model": "T = TypeVar(\"T\")\n\ndef first(items: Sequence[T]) -> T:\n    return items[0]",
-      "explanation": "On Python 3.12+ you can write def first[T](items: Sequence[T]) -> T. Type hints are not enforced at runtime; mypy or pyright check them statically."
+      "explanation": "On Python 3.12+ you can write `def first[T](items: Sequence[T]) -> T`. Type hints are not enforced at runtime; `mypy` or `pyright` check them statically."
     },
     {
       "id": "set-membership",
@@ -322,8 +322,8 @@
       "type": "assertion",
       "difficulty": 2,
       "prompt": "Read the assertion (A) and the reason (R), then choose the option that fits.",
-      "assertion": "Testing membership with in is faster on a set than on a list when the collection is large.",
-      "reason": "A set stores its items in a hash table, so membership is O(1) on average, whereas a list scans up to n items.",
+      "assertion": "Testing membership with in is faster on a `set` than on a `list` when the collection is large.",
+      "reason": "A `set` stores its items in a hash table, so membership is O(1) on average, whereas a `list` scans up to n items.",
       "correct": [
         "a"
       ],
@@ -333,7 +333,7 @@
         "c": "This option says A is true and R is false, which does not match: the hash-table lookup is exactly why the set is faster than a linear scan.",
         "d": "This option says A is false and R is true, which does not match: the hash-table lookup is exactly why the set is faster than a linear scan."
       },
-      "explanation": "Convert a list to a set first when you run many membership tests."
+      "explanation": "Convert a `list` to a `set` first when you run many membership tests."
     },
     {
       "id": "dict-keys-hashable",
@@ -341,7 +341,7 @@
       "type": "assertion",
       "difficulty": 2,
       "prompt": "Read the assertion (A) and the reason (R), then choose the option that fits.",
-      "assertion": "A Python dict keeps its keys in insertion order.",
+      "assertion": "A Python `dict` keeps its keys in insertion order.",
       "reason": "Dict keys must be hashable.",
       "correct": [
         "b"
@@ -361,7 +361,7 @@
       "difficulty": 2,
       "prompt": "Read the assertion (A) and the reason (R), then choose the option that fits.",
       "assertion": "Python enforces type hints at run time by raising an error when an argument has the wrong type.",
-      "reason": "Annotations are stored on the function in its __annotations__ attribute.",
+      "reason": "Annotations are stored on the function in its `__annotations__` attribute.",
       "correct": [
         "d"
       ],
@@ -371,7 +371,7 @@
         "c": "This option says A is true and R is false, which does not match: A is false: the interpreter ignores hints when calling; R is true, which is how tools and libraries read them.",
         "d": "Correct: A is false: the interpreter ignores hints when calling; R is true, which is how tools and libraries read them."
       },
-      "explanation": "Hints are checked by external tools such as mypy, or by libraries that choose to read __annotations__."
+      "explanation": "Hints are checked by external tools such as mypy, or by libraries that choose to read `__annotations__`."
     },
     {
       "id": "container-facts",
@@ -382,7 +382,7 @@
       "options": [
         {
           "id": "a",
-          "text": "list.append is amortised O(1).",
+          "text": "`list.append` is amortised O(1).",
           "why": "The list over-allocates, so most appends write into spare capacity."
         },
         {
@@ -392,7 +392,7 @@
         },
         {
           "id": "c",
-          "text": "list.insert(0, x) is O(n).",
+          "text": "`list.insert(0, x)` is O(n).",
           "why": "Every existing element shifts one place to the right."
         },
         {

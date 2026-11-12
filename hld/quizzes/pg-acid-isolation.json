@@ -47,7 +47,7 @@
       "concept": "Consistency",
       "type": "single",
       "difficulty": 2,
-      "prompt": "A CHECK (balance >= 0) constraint exists and a transaction would make a balance negative. What does PostgreSQL do?",
+      "prompt": "A `CHECK (balance >= 0)` constraint exists and a transaction would make a balance negative. What does PostgreSQL do?",
       "options": [
         {
           "id": "a",
@@ -261,7 +261,7 @@
       "correct": [
         "a"
       ],
-      "explanation": "Write-ahead logging is why commits are durable yet cheap. Setting synchronous_commit = off relaxes it for speed and risks losing recent commits."
+      "explanation": "Write-ahead logging is why commits are durable yet cheap. Setting `synchronous_commit = off` relaxes it for speed and risks losing recent commits."
     }
   ],
   "seriesDescription": "Everything to know about PostgreSQL for system design interviews: when to pick it, SQL and ACID basics, indexing, scaling writes, replication and concurrency control, in eight short quizzes."

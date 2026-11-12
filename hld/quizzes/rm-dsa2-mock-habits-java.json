@@ -16,8 +16,8 @@
       "concept": "Integer overflow",
       "type": "integer",
       "difficulty": 2,
-      "prompt": "In Java, lo = 1,500,000,000 and hi = 2,000,000,000 are ints. What does (lo + hi) >>> 1 evaluate to?",
-      "explanation": "lo + hi = 3.5 billion wraps to a negative int, but its bit pattern is still the unsigned value 3.5 billion. >>> 1 treats it as unsigned and halves it to 1,750,000,000. The plain (lo + hi) / 2 would give a negative number; lo + (hi - lo) / 2 is the other safe form.",
+      "prompt": "In Java, lo = 1,500,000,000 and hi = 2,000,000,000 are `int`s. What does `(lo + hi) >>> 1` evaluate to?",
+      "explanation": "`lo + hi` = 3.5 billion wraps to a negative int, but its bit pattern is still the unsigned value 3.5 billion. >>> 1 treats it as unsigned and halves it to 1,750,000,000. The plain `(lo + hi) / 2` would give a negative number; `lo + (hi - lo) / 2` is the other safe form.",
       "answer": 1750000000
     },
     {
@@ -25,8 +25,8 @@
       "concept": "Integer overflow",
       "type": "integer",
       "difficulty": 2,
-      "prompt": "In Java, what does the int expression 100000 * 100000 evaluate to, given that the true product is 10,000,000,000?",
-      "explanation": "10^10 wraps modulo 2^32: 10,000,000,000 - 2 * 4,294,967,296 = 1,410,065,408, which fits in an int, so no error is raised. Write 100000L * 100000 to get the real value; n * n for n = 10^5 is a classic interview trap.",
+      "prompt": "In Java, what does the int expression `100000 * 100000` evaluate to, given that the true product is 10,000,000,000?",
+      "explanation": "10^10 wraps modulo 2^32: 10,000,000,000 - 2 * 4,294,967,296 = 1,410,065,408, which fits in an int, so no error is raised. Write `100000L * 100000` to get the real value; n * n for n = 10^5 is a classic interview trap.",
       "answer": 1410065408
     },
     {
@@ -34,8 +34,8 @@
       "concept": "Binary search",
       "type": "code",
       "difficulty": 2,
-      "prompt": "Write a Java method int lowerBound(int[] a, int target) that returns the first index i with a[i] >= target in a sorted array (a.length if none). Compute the midpoint so that it cannot overflow.",
-      "explanation": "(lo + hi) / 2 can overflow for arrays near Integer.MAX_VALUE in length; lo + (hi - lo) / 2 or (lo + hi) >>> 1 cannot. The half-open range makes lo the answer with no off-by-one fix-ups at the end.",
+      "prompt": "Write a Java method `int lowerBound(int[] a, int target)` that returns the first index i with `a[i] >= target` in a sorted array (a.length if none). Compute the midpoint so that it cannot overflow.",
+      "explanation": "`(lo + hi) / 2` can overflow for arrays near `Integer.MAX_VALUE` in length; `lo + (hi - lo) / 2` or `(lo + hi) >>> 1` cannot. The half-open range makes lo the answer with no off-by-one fix-ups at the end.",
       "language": "java",
       "starter": "static int lowerBound(int[] a, int target) {\n  \n}",
       "checks": [
@@ -63,8 +63,8 @@
       "concept": "Test cases",
       "type": "code",
       "difficulty": 2,
-      "prompt": "In Java, write three assert statements for int[][] merge(int[][] iv): an empty input, touching intervals {1,2} and {2,3}, and a nested pair {1,10} and {2,3}. Compare results with Arrays.deepEquals.",
-      "explanation": "Arrays.deepEquals is needed because == and equals compare array references. Remember that assert statements run only with the -ea flag, so in an interview a quick println or a tiny check() helper is just as good.",
+      "prompt": "In Java, write three `assert` statements for `int[][] merge(int[][] iv)`: an empty input, touching intervals `{1,2}` and `{2,3}`, and a nested pair `{1,10}` and `{2,3}`. Compare results with `Arrays.deepEquals`.",
+      "explanation": "`Arrays.deepEquals` is needed because `==` and `equals` compare array references. Remember that `assert` statements run only with the `-ea` flag, so in an interview a quick `println` or a tiny `check()` helper is just as good.",
       "language": "java",
       "starter": "// static int[][] merge(int[][] iv) is already written\n",
       "checks": [
@@ -92,8 +92,8 @@
       "concept": "Equality traps",
       "type": "truefalse",
       "difficulty": 3,
-      "prompt": "True or false: for Integer a = 1000 and Integer b = 1000, the expression a == b reliably evaluates to true.",
-      "explanation": "This is why comparing boxed values from a map or list with == produces flaky bugs that only appear for larger numbers.",
+      "prompt": "True or false: for `Integer a = 1000` and `Integer b = 1000`, the expression `a == b` reliably evaluates to true.",
+      "explanation": "This is why comparing boxed values from a map or list with `==` produces flaky bugs that only appear for larger numbers.",
       "options": [
         {
           "id": "a",
@@ -103,7 +103,7 @@
         {
           "id": "b",
           "text": "False",
-          "why": "Correct: == compares references for objects, so use equals or unbox to int."
+          "why": "Correct: `==` compares references for objects, so use `equals` or unbox to `int`."
         }
       ],
       "correct": [
@@ -116,26 +116,26 @@
       "type": "single",
       "difficulty": 1,
       "prompt": "You need a stack for an interview solution in Java. Which choice is the idiomatic one?",
-      "explanation": "The Deque interface documents push, pop and peek as the stack operations; ArrayDeque also beats LinkedList on speed and memory. It rejects null elements.",
+      "explanation": "The `Deque` interface documents `push`, `pop` and `peek` as the stack operations; `ArrayDeque` also beats `LinkedList` on speed and memory. It rejects `null` elements.",
       "options": [
         {
           "id": "a",
-          "text": "ArrayDeque, using push and pop.",
+          "text": "`ArrayDeque`, using `push` and `pop`.",
           "why": "Correct: it is fast, unsynchronised and the recommended Deque implementation."
         },
         {
           "id": "b",
-          "text": "Stack, because it is the modern class designed for this job.",
-          "why": "Stack is a legacy synchronised Vector subclass and is discouraged."
+          "text": "`Stack`, because it is the modern class designed for this job.",
+          "why": "`Stack` is a legacy synchronised `Vector` subclass and is discouraged."
         },
         {
           "id": "c",
-          "text": "Vector, because it grows automatically and keeps order.",
-          "why": "Vector is legacy too and has the same synchronisation overhead."
+          "text": "`Vector`, because it grows automatically and keeps order.",
+          "why": "`Vector` is legacy too and has the same synchronisation overhead."
         },
         {
           "id": "d",
-          "text": "PriorityQueue with a reversed comparator.",
+          "text": "`PriorityQueue` with a reversed comparator.",
           "why": "That orders by priority, not by insertion, so it is not a stack."
         }
       ],
@@ -148,28 +148,28 @@
       "concept": "Collections",
       "type": "single",
       "difficulty": 2,
-      "prompt": "Your solution prints the keys of a HashMap and the expected output shows them in insertion order. What should you use?",
-      "explanation": "HashMap iteration order is unspecified and can change between versions. Pick LinkedHashMap for insertion order and TreeMap for sorted order.",
+      "prompt": "Your solution prints the keys of a `HashMap` and the expected output shows them in insertion order. What should you use?",
+      "explanation": "`HashMap` iteration order is unspecified and can change between versions. Pick `LinkedHashMap` for insertion order and `TreeMap` for sorted order.",
       "options": [
         {
           "id": "a",
-          "text": "LinkedHashMap, which iterates in insertion order.",
+          "text": "`LinkedHashMap`, which iterates in insertion order.",
           "why": "Correct: it adds a linked list over the entries to remember the order."
         },
         {
           "id": "b",
-          "text": "HashMap with a larger initial capacity, which makes the order stable.",
+          "text": "`HashMap` with a larger initial capacity, which makes the order stable.",
           "why": "Capacity changes bucket layout, not any ordering guarantee."
         },
         {
           "id": "c",
-          "text": "TreeMap, because it keeps the keys in insertion order.",
-          "why": "TreeMap sorts by key (or comparator), not by insertion."
+          "text": "`TreeMap`, because it keeps the keys in insertion order.",
+          "why": "`TreeMap` sorts by key (or comparator), not by insertion."
         },
         {
           "id": "d",
-          "text": "A HashSet of the keys, which remembers the order of adds.",
-          "why": "HashSet iteration order is unspecified, just like HashMap."
+          "text": "A `HashSet` of the keys, which remembers the order of adds.",
+          "why": "`HashSet` iteration order is unspecified, just like `HashMap`."
         }
       ],
       "correct": [
@@ -181,7 +181,7 @@
       "concept": "Test cases",
       "type": "multi",
       "difficulty": 2,
-      "prompt": "A Java method takes an int[] and returns the maximum subarray sum. Select all that apply: which inputs belong in your own tests?",
+      "prompt": "A Java method takes an `int[]` and returns the maximum subarray sum. Select all that apply: which inputs belong in your own tests?",
       "explanation": "Also try an empty array (and agree on the expected behaviour), zeros, and alternating signs.",
       "options": [
         {
@@ -201,12 +201,12 @@
         },
         {
           "id": "d",
-          "text": "Values near Integer.MAX_VALUE.",
-          "why": "Correct: sums can overflow int, so a long accumulator may be needed."
+          "text": "Values near `Integer.MAX_VALUE`.",
+          "why": "Correct: sums can overflow int, so a `long` accumulator may be needed."
         },
         {
           "id": "e",
-          "text": "Strings, since the method takes an int[].",
+          "text": "Strings, since the method takes an `int[]`.",
           "why": "The method signature takes no strings, so such input is invalid."
         }
       ],
@@ -226,49 +226,49 @@
       "left": [
         {
           "id": "a",
-          "text": "(lo + hi) / 2 may overflow"
+          "text": "`(lo + hi) / 2` may overflow"
         },
         {
           "id": "b",
-          "text": "Comparator written as a - b"
+          "text": "Comparator written as `a - b`"
         },
         {
           "id": "c",
-          "text": "Building a string in a loop with +="
+          "text": "Building a string in a loop with `+=`"
         },
         {
           "id": "d",
-          "text": "Comparing two boxed Integer values with =="
+          "text": "Comparing two boxed `Integer` values with `==`"
         },
         {
           "id": "e",
-          "text": "Using Stack for a stack"
+          "text": "Using `Stack` for a stack"
         }
       ],
       "right": [
         {
           "id": "p",
-          "text": "Use a StringBuilder"
+          "text": "Use a `StringBuilder`"
         },
         {
           "id": "q",
-          "text": "Use equals or unbox to int"
+          "text": "Use `equals` or unbox to `int`"
         },
         {
           "id": "r",
-          "text": "Use ArrayDeque"
+          "text": "Use `ArrayDeque`"
         },
         {
           "id": "s",
-          "text": "Use a larger int array"
+          "text": "Use a larger `int` array"
         },
         {
           "id": "t",
-          "text": "Use lo + (hi - lo) / 2"
+          "text": "Use `lo + (hi - lo) / 2`"
         },
         {
           "id": "u",
-          "text": "Use Integer.compare(a, b)"
+          "text": "Use `Integer.compare(a, b)`"
         }
       ],
       "pairs": {
@@ -285,7 +285,7 @@
       "type": "fill",
       "difficulty": 1,
       "prompt": "Complete the Java habits for a timed round.",
-      "explanation": "StringBuilder avoids quadratic copying, ArrayDeque is the idiomatic Deque, and long holds sums beyond Integer.MAX_VALUE (about 2.1 billion).",
+      "explanation": "`StringBuilder` avoids quadratic copying, `ArrayDeque` is the idiomatic Deque, and `long` holds sums beyond `Integer.MAX_VALUE` (about 2.1 billion).",
       "text": "Use a {1} to build strings in a loop, an {2} as a stack or queue, and a {3} when a sum may exceed about 2 billion.",
       "blanks": {
         "1": "StringBuilder",
@@ -306,10 +306,10 @@
       "concept": "Integer overflow",
       "type": "assertion",
       "difficulty": 2,
-      "prompt": "Binary search in Java with int lo and hi near the top of the int range.",
-      "explanation": "Fix it with lo + (hi - lo) / 2 or (lo + hi) >>> 1.",
-      "assertion": "(lo + hi) / 2 can produce a negative midpoint.",
-      "reason": "The sum lo + hi can exceed Integer.MAX_VALUE and wrap around to a negative value.",
+      "prompt": "Binary search in Java with `int` `lo` and `hi` near the top of the int range.",
+      "explanation": "Fix it with `lo + (hi - lo) / 2` or `(lo + hi) >>> 1`.",
+      "assertion": "`(lo + hi) / 2` can produce a negative midpoint.",
+      "reason": "The sum `lo + hi` can exceed `Integer.MAX_VALUE` and wrap around to a negative value.",
       "correct": [
         "a"
       ],
@@ -326,9 +326,9 @@
       "type": "assertion",
       "difficulty": 3,
       "prompt": "Sorting in Java.",
-      "explanation": "Stability matters when sorting records by one key while keeping the earlier order for ties, for example sorting int[][] intervals.",
-      "assertion": "Arrays.sort(int[]) uses a dual-pivot quicksort and is not a stable sort.",
-      "reason": "Arrays.sort(Object[]) with a comparator is stable.",
+      "explanation": "Stability matters when sorting records by one key while keeping the earlier order for ties, for example sorting `int[]`[] intervals.",
+      "assertion": "`Arrays.sort(int[])` uses a dual-pivot quicksort and is not a stable sort.",
+      "reason": "`Arrays.sort(Object[])` with a comparator is stable.",
       "correct": [
         "b"
       ],
@@ -344,10 +344,10 @@
       "concept": "Collections",
       "type": "assertion",
       "difficulty": 2,
-      "prompt": "Removing from the front of an ArrayList.",
-      "explanation": "For a queue use ArrayDeque.poll(), which is O(1).",
-      "assertion": "list.remove(0) on an ArrayList takes O(n) time.",
-      "reason": "ArrayList is implemented as a doubly linked list of nodes.",
+      "prompt": "Removing from the front of an `ArrayList`.",
+      "explanation": "For a queue use `ArrayDeque.poll()`, which is O(1).",
+      "assertion": "`list.remove(0)` on an `ArrayList` takes O(n) time.",
+      "reason": "`ArrayList` is implemented as a doubly linked list of nodes.",
       "correct": [
         "c"
       ],
@@ -363,10 +363,10 @@
       "concept": "Integer overflow",
       "type": "assertion",
       "difficulty": 3,
-      "prompt": "A helper returns Math.abs(x) for an int x.",
-      "explanation": "The same trap hits -x and hash % n tricks. Use long, or handle the minimum value explicitly.",
-      "assertion": "Math.abs(Integer.MIN_VALUE) is a non-negative number.",
-      "reason": "There is no int equal to -Integer.MIN_VALUE, because the positive range is one smaller than the negative range.",
+      "prompt": "A helper returns `Math.abs(x)` for an int x.",
+      "explanation": "The same trap hits `-x` and `hash % n` tricks. Use `long`, or handle the minimum value explicitly.",
+      "assertion": "`Math.abs(Integer.MIN_VALUE)` is a non-negative number.",
+      "reason": "There is no int equal to `-Integer.MIN_VALUE`, because the positive range is one smaller than the negative range.",
       "correct": [
         "d"
       ],

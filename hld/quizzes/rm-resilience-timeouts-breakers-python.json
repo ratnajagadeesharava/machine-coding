@@ -16,7 +16,7 @@
       "concept": "Timeouts",
       "type": "code",
       "difficulty": 2,
-      "prompt": "Create an httpx.AsyncClient named client with a default timeout of 5 seconds but a connect timeout of only 2 seconds, using httpx.Timeout.",
+      "prompt": "Create an `httpx.AsyncClient` named `client` with a default timeout of 5 seconds but a connect timeout of only 2 seconds, using `httpx.Timeout`.",
       "language": "python",
       "starter": "import httpx\n",
       "checks": [
@@ -34,30 +34,30 @@
         }
       ],
       "model": "client = httpx.AsyncClient(timeout=httpx.Timeout(5.0, connect=2.0))",
-      "explanation": "httpx applies a 5 second default for each of connect, read, write and pool if you set nothing, unlike requests, which waits forever. Remember that each timeout applies per phase, not to the whole request, so add an overall deadline (asyncio.timeout) too."
+      "explanation": "httpx applies a 5 second default for each of connect, read, write and pool if you set nothing, unlike requests, which waits forever. Remember that each timeout applies per phase, not to the whole request, so add an overall deadline (`asyncio.timeout`) too."
     },
     {
       "id": "httpx-timeout-kinds",
       "concept": "Timeouts",
       "type": "matrix",
       "difficulty": 1,
-      "prompt": "Match each httpx timeout parameter with the phase it limits.",
+      "prompt": "Match each `httpx` timeout parameter with the phase it limits.",
       "left": [
         {
           "id": "l1",
-          "text": "connect"
+          "text": "`connect`"
         },
         {
           "id": "l2",
-          "text": "read"
+          "text": "`read`"
         },
         {
           "id": "l3",
-          "text": "write"
+          "text": "`write`"
         },
         {
           "id": "l4",
-          "text": "pool"
+          "text": "`pool`"
         }
       ],
       "right": [
@@ -95,7 +95,7 @@
       "concept": "Timeouts",
       "type": "code",
       "difficulty": 2,
-      "prompt": "Using the asyncio.timeout context manager, write the code that gives the awaited call fetch_all() an overall deadline of 3 seconds and returns None if the deadline is exceeded. Assign the result to data.",
+      "prompt": "Using the `asyncio.timeout` context manager, write the code that gives the awaited call `fetch_all()` an overall deadline of 3 seconds and returns `None` if the deadline is exceeded. Assign the result to `data`.",
       "language": "python",
       "checks": [
         {
@@ -116,14 +116,14 @@
         }
       ],
       "model": "try:\n    async with asyncio.timeout(3):\n        data = await fetch_all()\nexcept TimeoutError:\n    data = None",
-      "explanation": "asyncio.timeout (Python 3.11+) cancels the work inside the block and raises TimeoutError at its exit. asyncio.wait_for(fetch_all(), 3) is the older equivalent. Per-phase httpx timeouts do not replace an overall deadline."
+      "explanation": "`asyncio.timeout` (Python 3.11+) cancels the work inside the block and raises `TimeoutError` at its exit. `asyncio.wait_for(fetch_all(), 3)` is the older equivalent. Per-phase httpx timeouts do not replace an overall deadline."
     },
     {
       "id": "wait-for-cancels",
       "concept": "Timeouts",
       "type": "truefalse",
       "difficulty": 3,
-      "prompt": "True or false: when asyncio.wait_for(task_coro, timeout) times out, the inner coroutine is cancelled before TimeoutError reaches the caller.",
+      "prompt": "True or false: when `asyncio.wait_for(task_coro, timeout)` times out, the inner coroutine is cancelled before `TimeoutError` reaches the caller.",
       "options": [
         {
           "id": "a",
@@ -139,14 +139,14 @@
       "correct": [
         "a"
       ],
-      "explanation": "The inner code sees asyncio.CancelledError at its next await. Do not swallow it, and keep cleanup quick or shielded, otherwise the timeout is delayed."
+      "explanation": "The inner code sees `asyncio.CancelledError` at its next await. Do not swallow it, and keep cleanup quick or shielded, otherwise the timeout is delayed."
     },
     {
       "id": "tenacity-retry",
       "concept": "Retry libraries",
       "type": "code",
       "difficulty": 2,
-      "prompt": "Decorate fetch_price so it is retried up to 5 attempts in total, using exponential wait with jitter, only when httpx.TransportError is raised, and re-raises the last exception at the end. Use tenacity.",
+      "prompt": "Decorate `fetch_price` so it is retried up to 5 attempts in total, using exponential wait with jitter, only when `httpx.TransportError` is raised, and re-raises the last exception at the end. Use tenacity.",
       "language": "python",
       "starter": "from tenacity import retry, stop_after_attempt, wait_exponential_jitter, retry_if_exception_type\n",
       "checks": [
@@ -172,17 +172,17 @@
         }
       ],
       "model": "@retry(stop=stop_after_attempt(5), wait=wait_exponential_jitter(initial=0.5, max=10), retry=retry_if_exception_type(httpx.TransportError), reraise=True)\nasync def fetch_price(): ...",
-      "explanation": "tenacity supports async functions with the same decorator. Without reraise=True you get a RetryError wrapping the last exception. wait_random_exponential is another jittered option."
+      "explanation": "tenacity supports async functions with the same decorator. Without `reraise=True` you get a `RetryError` wrapping the last exception. `wait_random_exponential` is another jittered option."
     },
     {
       "id": "tenacity-wait-sum",
       "concept": "Retry libraries",
       "type": "integer",
       "difficulty": 3,
-      "prompt": "A function is decorated with stop_after_attempt(6) and wait=wait_exponential(multiplier=1, min=1, max=8). If every attempt fails, how many seconds in total does tenacity wait between the attempts?",
+      "prompt": "A function is decorated with `stop_after_attempt(6)` and `wait=wait_exponential(multiplier=1, min=1, max=8)`. If every attempt fails, how many seconds in total does tenacity wait between the attempts?",
       "answer": 23,
       "unit": "s",
-      "explanation": "There are 5 gaps. The waits are 1, 2, 4, 8 and then 16 capped at max=8: 1 + 2 + 4 + 8 + 8 = 23 seconds (checked against tenacity 9). wait_exponential computes multiplier x 2^(attempt-1) and clips it between min and max."
+      "explanation": "There are 5 gaps. The waits are 1, 2, 4, 8 and then 16 capped at `max=8`: 1 + 2 + 4 + 8 + 8 = 23 seconds (checked against tenacity 9). `wait_exponential` computes multiplier x 2^(attempt-1) and clips it between min and max."
     },
     {
       "id": "tenacity-fill",
@@ -203,7 +203,7 @@
         "retry_if_result",
         "after_log"
       ],
-      "explanation": "retry_if_exception_type decides which errors are retried, and before_sleep_log lets you log each retry. All of them are keyword arguments of the @retry decorator."
+      "explanation": "`retry_if_exception_type` decides which errors are retried, and `before_sleep_log` lets you log each retry. All of them are keyword arguments of the `@retry` decorator."
     },
     {
       "id": "tenacity-retryerror",
@@ -211,8 +211,8 @@
       "type": "assertion",
       "difficulty": 2,
       "prompt": "Read the assertion A and the reason R, then choose the correct relationship between them.",
-      "assertion": "Without reraise=True, a tenacity-decorated function that fails on its last attempt raises RetryError rather than the original exception.",
-      "reason": "The same @retry decorator also works on coroutine functions.",
+      "assertion": "Without `reraise=True`, a tenacity-decorated function that fails on its last attempt raises `RetryError` rather than the original exception.",
+      "reason": "The same `@retry` decorator also works on coroutine functions.",
       "correct": [
         "b"
       ],
@@ -222,14 +222,14 @@
         "c": "Not this one: A is true while R is false does not describe this pair; check the truth of R again.",
         "d": "Not this one: A is false while R is true does not describe this pair; check the truth of A again."
       },
-      "explanation": "Catch RetryError and call e.last_attempt.exception() when you need the cause, or use reraise=True to make callers see the real error."
+      "explanation": "Catch `RetryError` and call `e.last_attempt.exception()` when you need the cause, or use `reraise=True` to make callers see the real error."
     },
     {
       "id": "pybreaker",
       "concept": "Circuit breaker",
       "type": "code",
       "difficulty": 2,
-      "prompt": "With pybreaker, create a breaker named breaker that opens after 5 consecutive failures and tries again after 30 seconds, then decorate the synchronous function call_api with it.",
+      "prompt": "With pybreaker, create a breaker named `breaker` that opens after 5 consecutive failures and tries again after 30 seconds, then decorate the synchronous function `call_api` with it.",
       "language": "python",
       "starter": "import pybreaker\n",
       "checks": [
@@ -251,7 +251,7 @@
         }
       ],
       "model": "breaker = pybreaker.CircuitBreaker(fail_max=5, reset_timeout=30)\n\n@breaker\ndef call_api():\n    ...",
-      "explanation": "When open, pybreaker raises CircuitBreakerError immediately; the call that makes the fail_max-th failure also raises it. Catch it to run a fallback. For coroutines use aiobreaker instead."
+      "explanation": "When open, pybreaker raises `CircuitBreakerError` immediately; the call that makes the `fail_max`-th failure also raises it. Catch it to run a fallback. For coroutines use aiobreaker instead."
     },
     {
       "id": "pybreaker-async",
@@ -259,7 +259,7 @@
       "type": "assertion",
       "difficulty": 3,
       "prompt": "Read the assertion A and the reason R, then choose the correct relationship between them.",
-      "assertion": "Decorating an async def function with a plain pybreaker @breaker counts that function's failures like a synchronous one.",
+      "assertion": "Decorating an `async def` function with a plain pybreaker `@breaker` counts that function's failures like a synchronous one.",
       "reason": "The decorator wraps the synchronous call that merely creates the coroutine object, and the exception is raised later when the coroutine is awaited.",
       "correct": [
         "d"
@@ -270,14 +270,14 @@
         "c": "Not this one: A is true while R is false does not describe this pair; check the truth of R again.",
         "d": "Correct: A is false: the breaker sees the coroutine creation succeed, so its failure counter stays at zero. R is true and is the reason."
       },
-      "explanation": "Verified with pybreaker 1.4: fail_counter remains 0 after an awaited failure. Use aiobreaker, or wrap the awaited call yourself."
+      "explanation": "Verified with pybreaker 1.4: `fail_counter` remains 0 after an awaited failure. Use aiobreaker, or wrap the awaited call yourself."
     },
     {
       "id": "aiobreaker",
       "concept": "Circuit breaker",
       "type": "code",
       "difficulty": 3,
-      "prompt": "With aiobreaker, create a breaker named breaker that opens after 5 failures and stays open for 30 seconds (use timedelta), then decorate the coroutine function call_api with it.",
+      "prompt": "With aiobreaker, create a breaker named `breaker` that opens after 5 failures and stays open for 30 seconds (use `timedelta`), then decorate the coroutine function `call_api` with it.",
       "language": "python",
       "starter": "from datetime import timedelta\nfrom aiobreaker import CircuitBreaker\n",
       "checks": [
@@ -295,14 +295,14 @@
         }
       ],
       "model": "breaker = CircuitBreaker(fail_max=5, timeout_duration=timedelta(seconds=30))\n\n@breaker\nasync def call_api():\n    ...",
-      "explanation": "aiobreaker is a fork of pybreaker built for asyncio: the decorated coroutine is awaited inside the breaker, so its failures are counted and an open circuit raises CircuitBreakerError. Combine it with httpx timeouts so a hung call can fail."
+      "explanation": "aiobreaker is a fork of pybreaker built for asyncio: the decorated coroutine is awaited inside the breaker, so its failures are counted and an open circuit raises `CircuitBreakerError`. Combine it with httpx timeouts so a hung call can fail."
     },
     {
       "id": "slowapi-limit",
       "concept": "Rate limiting",
       "type": "code",
       "difficulty": 2,
-      "prompt": "In a FastAPI app using slowapi, limiter is already created. Rate limit the route handler search to 5 requests per minute per client, with the handler taking the request argument slowapi requires.",
+      "prompt": "In a FastAPI app using slowapi, `limiter` is already created. Rate limit the route handler `search` to 5 requests per minute per client, with the handler taking the `request` argument slowapi requires.",
       "language": "python",
       "starter": "from fastapi import Request\n",
       "checks": [
@@ -320,7 +320,7 @@
         }
       ],
       "model": "@app.get(\"/search\")\n@limiter.limit(\"5/minute\")\nasync def search(request: Request):\n    return {\"ok\": True}",
-      "explanation": "slowapi needs the Request parameter to read the client key (for example get_remote_address). Register app.state.limiter and the RateLimitExceeded handler (checked: the sixth request gets HTTP 429). Behind a proxy use the forwarded address."
+      "explanation": "slowapi needs the Request parameter to read the client key (for example `get_remote_address`). Register `app.state.limiter` and the `RateLimitExceeded` handler (checked: the sixth request gets HTTP 429). Behind a proxy use the forwarded address."
     },
     {
       "id": "slowapi-workers",
@@ -339,14 +339,14 @@
         "c": "Not this one: A is true while R is false does not describe this pair; check the truth of R again.",
         "d": "Not this one: A is false while R is true does not describe this pair; check the truth of A again."
       },
-      "explanation": "Give the Limiter a shared storage_uri such as Redis (storage_uri=\"redis://...\") so every worker counts against the same window."
+      "explanation": "Give the Limiter a shared `storage_uri` such as Redis (`storage_uri=\"redis://...\"`) so every worker counts against the same window."
     },
     {
       "id": "retry-after-429",
       "concept": "Load shedding",
       "type": "code",
       "difficulty": 2,
-      "prompt": "In a FastAPI route handler, write the statement that rejects the request with status 429, the detail \"slow down\" and a Retry-After header of 30 seconds.",
+      "prompt": "In a FastAPI route handler, write the statement that rejects the request with status 429, the detail `\"slow down\"` and a `Retry-After` header of 30 seconds.",
       "language": "python",
       "starter": "from fastapi import HTTPException\n",
       "checks": [
@@ -368,14 +368,14 @@
         }
       ],
       "model": "raise HTTPException(status_code=429, detail=\"slow down\", headers={\"Retry-After\": \"30\"})",
-      "explanation": "Header values must be strings. Well-behaved clients honour Retry-After and add jitter. status.HTTP_429_TOO_MANY_REQUESTS is the same number."
+      "explanation": "Header values must be strings. Well-behaved clients honour `Retry-After` and add jitter. `status.HTTP_429_TOO_MANY_REQUESTS` is the same number."
     },
     {
       "id": "semaphore-bulkhead",
       "concept": "Bulkhead",
       "type": "code",
       "difficulty": 3,
-      "prompt": "Create an asyncio.Semaphore named inventory_slots that allows 10 concurrent calls, then write an async function get_stock(sku) that awaits client.fetch(sku) only while holding a slot and returns the result.",
+      "prompt": "Create an `asyncio.Semaphore` named `inventory_slots` that allows 10 concurrent calls, then write an async function `get_stock(sku)` that awaits `client.fetch(sku)` only while holding a slot and returns the result.",
       "language": "python",
       "starter": "import asyncio\n",
       "checks": [
@@ -397,7 +397,7 @@
         }
       ],
       "model": "inventory_slots = asyncio.Semaphore(10)\n\nasync def get_stock(sku):\n    async with inventory_slots:\n        return await client.fetch(sku)",
-      "explanation": "A semaphore is a lightweight bulkhead: at most 10 calls are in flight, the rest wait. Add asyncio.timeout around the acquire if waiting forever is unacceptable, and a separate semaphore per dependency so one slow dependency cannot use every slot."
+      "explanation": "A semaphore is a lightweight bulkhead: at most 10 calls are in flight, the rest wait. Add `asyncio.timeout` around the acquire if waiting forever is unacceptable, and a separate semaphore per dependency so one slow dependency cannot use every slot."
     },
     {
       "id": "tenacity-attempts",
@@ -405,8 +405,8 @@
       "type": "assertion",
       "difficulty": 2,
       "prompt": "Read the assertion A and the reason R, then choose the correct relationship between them.",
-      "assertion": "A function decorated with stop_after_attempt(3) can run at most 3 times in total.",
-      "reason": "stop_after_attempt counts only the retries and not the original call.",
+      "assertion": "A function decorated with `stop_after_attempt(3)` can run at most 3 times in total.",
+      "reason": "`stop_after_attempt` counts only the retries and not the original call.",
       "correct": [
         "c"
       ],
@@ -416,7 +416,7 @@
         "c": "Correct: A is true because the original call counts as the first attempt. R is false.",
         "d": "Not this one: A is false while R is true does not describe this pair; check the truth of A again."
       },
-      "explanation": "So stop_after_attempt(3) means 1 original call + 2 retries. Always check whether a library counts the first call when it asks for a number of attempts."
+      "explanation": "So `stop_after_attempt(3)` means 1 original call + 2 retries. Always check whether a library counts the first call when it asks for a number of attempts."
     },
     {
       "id": "retry-where",
@@ -442,7 +442,7 @@
         },
         {
           "id": "d",
-          "text": "Add an overall asyncio.timeout around the whole retried operation, plus per-attempt timeouts.",
+          "text": "Add an overall `asyncio.timeout` around the whole retried operation, plus per-attempt timeouts.",
           "why": "Correct: the overall deadline bounds the sum of attempts and waits."
         }
       ],

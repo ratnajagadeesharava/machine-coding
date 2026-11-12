@@ -16,7 +16,7 @@
       "concept": "Retrievers",
       "type": "integer",
       "difficulty": 2,
-      "prompt": "An ExpandingQueryTransformer with its default setting rewrites the question into 3 variants, and each variant retrieves maxResults = 4 chunks. If 4 of the 12 results are repeats of chunks already returned, how many unique chunks go into the prompt?",
+      "prompt": "An ExpandingQueryTransformer with its default setting rewrites the question into 3 variants, and each variant retrieves `maxResults` = 4 chunks. If 4 of the 12 results are repeats of chunks already returned, how many unique chunks go into the prompt?",
       "answer": 8,
       "explanation": "3 x 4 = 12 retrieved, minus 4 repeats = 8 unique chunks. I confirmed that the default n is 3 and that the transformer returns only the generated variants. Multi-query raises recall at the cost of an extra model call and a bigger prompt, so aggregate and dedupe before building the context.",
       "unit": "chunks"
@@ -26,9 +26,9 @@
       "concept": "RAG context budget",
       "type": "integer",
       "difficulty": 1,
-      "prompt": "Segments are 500 tokens each and the retriever returns maxResults = 6. Together with a 400-token prompt template and a 100-token question, how many input tokens does the final chat model call use?",
+      "prompt": "Segments are 500 tokens each and the retriever returns `maxResults` = 6. Together with a 400-token prompt template and a 100-token question, how many input tokens does the final chat model call use?",
       "answer": 3500,
-      "explanation": "6 x 500 = 3,000 context tokens + 400 + 100 = 3,500. Raising maxResults or the segment size grows cost and latency linearly.",
+      "explanation": "6 x 500 = 3,000 context tokens + 400 + 100 = 3,500. Raising `maxResults` or the segment size grows cost and latency linearly.",
       "unit": "tokens"
     },
     {
@@ -47,7 +47,7 @@
       "type": "assertion",
       "difficulty": 2,
       "prompt": "Assertion and reason: read both statements and choose the right option.",
-      "assertion": "DocumentSplitters.recursive(500, 600) is rejected, because the overlap is larger than the segment size.",
+      "assertion": "`DocumentSplitters.recursive(500, 600)` is rejected, because the overlap is larger than the segment size.",
       "reason": "The overlap argument must lie between 0 and the maximum segment size.",
       "correct": [
         "a"
@@ -66,8 +66,8 @@
       "type": "assertion",
       "difficulty": 2,
       "prompt": "Assertion and reason: read both statements and choose the right option.",
-      "assertion": "EmbeddingStoreContentRetriever embeds the user's query with the EmbeddingModel you give it before it searches the store.",
-      "reason": "InMemoryEmbeddingStore keeps its vectors on the heap and loses them when the process stops.",
+      "assertion": "`EmbeddingStoreContentRetriever` embeds the user's query with the `EmbeddingModel` you give it before it searches the store.",
+      "reason": "`InMemoryEmbeddingStore` keeps its vectors on the heap and loses them when the process stops.",
       "correct": [
         "b"
       ],
@@ -85,8 +85,8 @@
       "type": "assertion",
       "difficulty": 3,
       "prompt": "Assertion and reason: read both statements and choose the right option.",
-      "assertion": "A Spring AI SearchRequest with similarityThreshold(0.6) can return fewer than topK documents.",
-      "reason": "VectorStore.similaritySearch always returns exactly topK documents.",
+      "assertion": "A Spring AI `SearchRequest` with `similarityThreshold(0.6)` can return fewer than `topK` documents.",
+      "reason": "`VectorStore`.`similaritySearch` always returns exactly `topK` documents.",
       "correct": [
         "c"
       ],
@@ -104,7 +104,7 @@
       "type": "assertion",
       "difficulty": 3,
       "prompt": "Assertion and reason: read both statements and choose the right option.",
-      "assertion": "Segments embedded with two different EmbeddingModel instances can be stored in one EmbeddingStore and searched together.",
+      "assertion": "Segments embedded with two different `EmbeddingModel` instances can be stored in one `EmbeddingStore` and searched together.",
       "reason": "A query must be embedded with the same model that embedded the stored segments.",
       "correct": [
         "d"
@@ -126,7 +126,7 @@
       "left": [
         {
           "id": "a",
-          "text": "FileSystemDocumentLoader"
+          "text": "`FileSystemDocumentLoader`"
         },
         {
           "id": "b",
@@ -134,15 +134,15 @@
         },
         {
           "id": "c",
-          "text": "EmbeddingStoreContentRetriever"
+          "text": "`EmbeddingStoreContentRetriever`"
         },
         {
           "id": "d",
-          "text": "ReciprocalRankFuser"
+          "text": "`ReciprocalRankFuser`"
         },
         {
           "id": "e",
-          "text": "ChatModelListener"
+          "text": "`ChatModelListener`"
         }
       ],
       "right": [
@@ -164,7 +164,7 @@
         },
         {
           "id": "t",
-          "text": "Receives onRequest, onResponse and onError callbacks for model calls"
+          "text": "Receives `onRequest`, `onResponse` and `onError` callbacks for model calls"
         },
         {
           "id": "u",
@@ -199,7 +199,7 @@
         "onComplete",
         "TokenStream"
       ],
-      "explanation": "I attached a listener to an OpenAiChatModel builder and compiled it. Listeners are the place to record prompts, token usage and latency."
+      "explanation": "I attached a listener to an `OpenAiChatModel` builder and compiled it. Listeners are the place to record prompts, token usage and latency."
     },
     {
       "id": "split-config",
@@ -223,14 +223,14 @@
         }
       ],
       "model": "DocumentSplitter splitter = DocumentSplitters.recursive(500, 50);\nList<TextSegment> segments = splitter.split(doc);",
-      "explanation": "The recursive splitter tries paragraphs, then lines, sentences, words and finally characters until each piece fits. splitAll(documents) handles a list. Add a TokenCountEstimator as a third argument to size segments in tokens instead of characters."
+      "explanation": "The recursive splitter tries paragraphs, then lines, sentences, words and finally characters until each piece fits. `splitAll(documents)` handles a list. Add a `TokenCountEstimator` as a third argument to size segments in tokens instead of characters."
     },
     {
       "id": "retriever-wiring",
       "concept": "Retrievers",
       "type": "code",
       "difficulty": 2,
-      "prompt": "Build an EmbeddingStoreContentRetriever from the variables store and embeddingModel that returns at most 4 segments scoring at least 0.6, then create an Assistant AI Service from the variable model that uses it.",
+      "prompt": "Build an `EmbeddingStoreContentRetriever` from the variables store and embeddingModel that returns at most 4 segments scoring at least 0.6, then create an Assistant AI Service from the variable model that uses it.",
       "language": "java",
       "checks": [
         {
@@ -251,14 +251,14 @@
         }
       ],
       "model": "ContentRetriever retriever = EmbeddingStoreContentRetriever.builder()\n    .embeddingStore(store)\n    .embeddingModel(embeddingModel)\n    .maxResults(4)\n    .minScore(0.6)\n    .build();\n\nAssistant a = AiServices.builder(Assistant.class)\n    .chatModel(model)\n    .contentRetriever(retriever)\n    .build();",
-      "explanation": "I compiled and ran this with the all-MiniLM embedding model and an in-memory store. Retrieved segments are injected into the user message before the model call. For query rewriting or routing use a DefaultRetrievalAugmentor through retrievalAugmentor(...) instead."
+      "explanation": "I compiled and ran this with the all-MiniLM embedding model and an in-memory store. Retrieved segments are injected into the user message before the model call. For query rewriting or routing use a `DefaultRetrievalAugmentor` through `retrievalAugmentor(...)` instead."
     },
     {
       "id": "spring-search",
       "concept": "Retrievers",
       "type": "code",
       "difficulty": 2,
-      "prompt": "With a Spring AI VectorStore variable vectorStore, fetch the 4 most similar documents for the query 'refund policy' that score at least 0.6, as a List<Document>.",
+      "prompt": "With a Spring AI `VectorStore` variable vectorStore, fetch the 4 most similar documents for the query 'refund policy' that score at least 0.6, as a List<Document>.",
       "language": "java",
       "checks": [
         {
@@ -283,14 +283,14 @@
         }
       ],
       "model": "List<Document> docs = vectorStore.similaritySearch(\n    SearchRequest.builder()\n        .query(\"refund policy\")\n        .topK(4)\n        .similarityThreshold(0.6)\n        .build());",
-      "explanation": "I compiled this against Spring AI 1.1.8. A filterExpression(...) on the request limits the search by metadata such as tenant or source, which is how you enforce per-tenant access."
+      "explanation": "I compiled this against Spring AI 1.1.8. A `filterExpression(...)` on the request limits the search by metadata such as tenant or source, which is how you enforce per-tenant access."
     },
     {
       "id": "qa-advisor",
       "concept": "Retrievers",
       "type": "code",
       "difficulty": 3,
-      "prompt": "Build a Spring AI ChatClient from the ChatModel variable model that automatically retrieves context from the VectorStore variable vectorStore for every prompt by registering a QuestionAnswerAdvisor as a default advisor.",
+      "prompt": "Build a Spring AI ChatClient from the `ChatModel` variable model that automatically retrieves context from the `VectorStore` variable vectorStore for every prompt by registering a QuestionAnswerAdvisor as a default advisor.",
       "language": "java",
       "checks": [
         {
@@ -307,14 +307,14 @@
         }
       ],
       "model": "ChatClient rag = ChatClient.builder(model)\n    .defaultAdvisors(QuestionAnswerAdvisor.builder(vectorStore).build())\n    .build();",
-      "explanation": "The advisor searches the store with the user's text and appends the matches to the prompt before the model call; it needs the spring-ai-advisors-vector-store module (I compiled it against 1.1.8). Pass .searchRequest(SearchRequest.builder().topK(4).build()) to tune the search. RetrievalAugmentationAdvisor adds query rewriting and other stages."
+      "explanation": "The advisor searches the store with the user's text and appends the matches to the prompt before the model call; it needs the spring-ai-advisors-vector-store module (I compiled it against 1.1.8). Pass `.searchRequest(SearchRequest.builder().topK(4).build())` to tune the search. `RetrievalAugmentationAdvisor` adds query rewriting and other stages."
     },
     {
       "id": "chat-listener",
       "concept": "Callbacks and tracing",
       "type": "code",
       "difficulty": 3,
-      "prompt": "Write a class Tracer that implements LangChain4j's ChatModelListener and prints \"request\" in onRequest and \"done\" in onResponse (both take the matching context object), then build an OpenAiChatModel from the String variable key with model name \"gpt-4o-mini\" and that listener registered.",
+      "prompt": "Write a class Tracer that implements LangChain4j's `ChatModelListener` and prints \"request\" in `onRequest` and \"done\" in `onResponse` (both take the matching context object), then build an `OpenAiChatModel` from the String variable key with model name \"gpt-4o-mini\" and that listener registered.",
       "language": "java",
       "checks": [
         {
@@ -335,7 +335,7 @@
         }
       ],
       "model": "class Tracer implements ChatModelListener {\n  @Override public void onRequest(ChatModelRequestContext ctx) { System.out.println(\"request\"); }\n  @Override public void onResponse(ChatModelResponseContext ctx) { System.out.println(\"done\"); }\n}\n\nChatModel chat = OpenAiChatModel.builder()\n    .apiKey(key)\n    .modelName(\"gpt-4o-mini\")\n    .listeners(List.of(new Tracer()))\n    .build();",
-      "explanation": "All three callbacks are default methods, so you override only what you need; onError receives the failure. I compiled this against LangChain4j 1.23. The contexts carry the request, response, token usage and an attributes map, which is the hook for custom tracing."
+      "explanation": "All three callbacks are default methods, so you override only what you need; `onError` receives the failure. I compiled this against LangChain4j 1.23. The contexts carry the request, response, token usage and an attributes map, which is the hook for custom tracing."
     },
     {
       "id": "similarity-threshold-fix",
@@ -346,12 +346,12 @@
       "options": [
         {
           "id": "a",
-          "text": "Set a similarityThreshold and answer \"I don't know\" when nothing comes back.",
+          "text": "Set a `similarityThreshold` and answer \"I don't know\" when nothing comes back.",
           "why": "Right: weak matches are dropped before they reach the prompt."
         },
         {
           "id": "b",
-          "text": "Raise topK to 50 so that the right document is likelier to be among the many results.",
+          "text": "Raise `topK` to 50 so that the right document is likelier to be among the many results.",
           "why": "More results add noise and cost; they do not remove irrelevant ones."
         },
         {
@@ -401,7 +401,7 @@
       "correct": [
         "a"
       ],
-      "explanation": "LangChain4j's DefaultContentAggregator fuses the result lists of several ContentRetrievers by reciprocal rank (I found ReciprocalRankFuser in its bytecode). Hybrid search is the standard answer for IDs, SKUs and error codes."
+      "explanation": "LangChain4j's `DefaultContentAggregator` fuses the result lists of several `ContentRetrievers` by reciprocal rank (I found `ReciprocalRankFuser` in its bytecode). Hybrid search is the standard answer for IDs, SKUs and error codes."
     },
     {
       "id": "vector-facts",
@@ -422,7 +422,7 @@
         },
         {
           "id": "c",
-          "text": "InMemoryEmbeddingStore is a good choice for a production service that must survive restarts.",
+          "text": "`InMemoryEmbeddingStore` is a good choice for a production service that must survive restarts.",
           "why": "It keeps vectors on the heap and loses them when the process stops."
         },
         {

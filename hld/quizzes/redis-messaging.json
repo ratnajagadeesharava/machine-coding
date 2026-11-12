@@ -41,7 +41,7 @@
       "correct": [
         "a"
       ],
-      "explanation": "Producers append with XADD; consumers read and track their position."
+      "explanation": "Producers append with `XADD`; consumers read and track their position."
     },
     {
       "id": "consumer-groups",
@@ -74,7 +74,7 @@
       "correct": [
         "a"
       ],
-      "explanation": "XREADGROUP reads, processing happens, then the worker acknowledges."
+      "explanation": "`XREADGROUP` reads, processing happens, then the worker acknowledges."
     },
     {
       "id": "worker-dies",
@@ -85,7 +85,7 @@
       "options": [
         {
           "id": "a",
-          "text": "Another worker claims it with XCLAIM or XAUTOCLAIM after its idle time grows.",
+          "text": "Another worker claims it with `XCLAIM` or `XAUTOCLAIM` after its idle time grows.",
           "why": "Right: pending entries carry an idle time."
         },
         {
@@ -180,7 +180,7 @@
       "concept": "Sharded Pub/Sub",
       "type": "single",
       "difficulty": 3,
-      "prompt": "What problem does sharded Pub/Sub (SPUBLISH, SSUBSCRIBE) fix in a cluster?",
+      "prompt": "What problem does sharded Pub/Sub (`SPUBLISH`, `SSUBSCRIBE`) fix in a cluster?",
       "options": [
         {
           "id": "a",

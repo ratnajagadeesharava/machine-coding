@@ -16,7 +16,7 @@
       "concept": "Linked lists",
       "type": "integer",
       "difficulty": 2,
-      "prompt": "The list is 1 -> 2 -> 3 -> 4 -> 5 and node 5 points back to node 3. Slow and fast both start at node 1; each iteration moves slow by 1 and fast by 2. After how many iterations do they first meet?",
+      "prompt": "The list is `1 -> 2 -> 3 -> 4 -> 5` and node 5 points back to node 3. Slow and fast both start at node 1; each iteration moves slow by 1 and fast by 2. After how many iterations do they first meet?",
       "answer": 3,
       "tolerance": 0,
       "explanation": "Iteration 1: slow at 2, fast at 3. Iteration 2: slow at 3, fast at 5. Iteration 3: slow at 4, fast goes 5 -> 3 -> 4, so they meet at node 4.",
@@ -130,7 +130,7 @@
       "concept": "Binary search trees",
       "type": "single",
       "difficulty": 2,
-      "prompt": "Which is the standard bug in a validate-BST function that only checks node.left.val < node.val < node.right.val at every node?",
+      "prompt": "Which is the standard bug in a validate-BST function that only checks `node.left.val < node.val < node.right.val` at every node?",
       "options": [
         {
           "id": "a",
@@ -156,7 +156,7 @@
       "correct": [
         "a"
       ],
-      "explanation": "Pass down an allowed range (low, high) that tightens as you recurse, or check that an inorder traversal is strictly increasing."
+      "explanation": "Pass down an allowed range `(low, high)` that tightens as you recurse, or check that an inorder traversal is strictly increasing."
     },
     {
       "id": "serialize-fill",
@@ -223,7 +223,7 @@
       "concept": "Heaps",
       "type": "integer",
       "difficulty": 3,
-      "prompt": "A running-median structure keeps the smaller half in a max-heap and the larger half in a min-heap, rebalanced so the max-heap holds equal or one more element. After inserting 1, 2, ..., 9, how many elements are in the max-heap?",
+      "prompt": "A running-median structure keeps the smaller half in a max-heap and the larger half in a min-heap, rebalanced so the max-heap holds equal or one more element. After inserting `1, 2, ..., 9`, how many elements are in the max-heap?",
       "answer": 5,
       "tolerance": 0,
       "explanation": "With 9 elements the halves are 5 and 4, and the extra element goes to the max-heap, so it holds 5. The median is the max-heap root.",
@@ -313,10 +313,10 @@
       "concept": "Trees and recursion",
       "type": "integer",
       "difficulty": 2,
-      "prompt": "A tree has edges 1-2, 1-3, 2-4, 2-5, 4-6 and 5-7. How many edges are on its longest path between any two nodes (the diameter)?",
+      "prompt": "A tree has edges `1-2, 1-3, 2-4, 2-5, 4-6` and `5-7`. How many edges are on its longest path between any two nodes (the diameter)?",
       "answer": 4,
       "tolerance": 0,
-      "explanation": "The path 6-4-2-5-7 has 4 edges, as does 3-1-2-4-6. Compute it as the maximum over nodes of (left height + right height) in one post-order pass.",
+      "explanation": "The path `6-4-2-5-7` has 4 edges, as does `3-1-2-4-6`. Compute it as the maximum over nodes of (left height + right height) in one post-order pass.",
       "unit": "edges"
     },
     {

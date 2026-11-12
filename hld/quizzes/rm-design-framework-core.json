@@ -340,7 +340,7 @@
       "concept": "Data model",
       "type": "code",
       "difficulty": 2,
-      "prompt": "Write the SQL to create a table urls for a URL shortener: short_code (VARCHAR(8), primary key), long_url (TEXT, not null) and created_at (timestamp, not null).",
+      "prompt": "Write the SQL to create a table `urls` for a URL shortener: `short_code` (`VARCHAR(8)`, primary key), `long_url` (`TEXT`, not null) and `created_at` (timestamp, not null).",
       "language": "sql",
       "checks": [
         {
@@ -361,7 +361,7 @@
         }
       ],
       "model": "CREATE TABLE urls (\n  short_code VARCHAR(8) PRIMARY KEY,\n  long_url   TEXT NOT NULL,\n  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP\n);",
-      "explanation": "The primary key on short_code gives the index for redirects. Other column orders and types (TIMESTAMPTZ) are fine in practice; the checks here accept TIMESTAMP spelled directly."
+      "explanation": "The primary key on `short_code` gives the index for redirects. Other column orders and types (`TIMESTAMPTZ`) are fine in practice; the checks here accept `TIMESTAMP` spelled directly."
     },
     {
       "id": "latency-matrix",
