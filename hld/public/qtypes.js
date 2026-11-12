@@ -2,6 +2,7 @@
 // statement block lives here), matrix match, drag-the-words fill, and short code answers. Each widget gets the answer as a
 // string[] (same shape the grader in /shared/quiz.js expects) and reports changes through onChange.
 import { codeChecks } from '/shared/quiz.js';
+import { richText } from './rich.js';
 
 const TOKEN = /\{([A-Za-z0-9]+)\}/g;
 
@@ -14,8 +15,8 @@ const toAnswer = (m) => [...m].map(([k, v]) => `${k}=${v}`);
 
 export function assertionBlock(h, q) {
   return h('div', { class: 'ar' },
-    h('p', {}, h('b', { text: 'Assertion (A): ' }), q.assertion),
-    h('p', {}, h('b', { text: 'Reason (R): ' }), q.reason));
+    h('div', { class: 'ar-row' }, h('b', { text: 'Assertion (A): ' }), ...richText(h, q.assertion)),
+    h('div', { class: 'ar-row' }, h('b', { text: 'Reason (R): ' }), ...richText(h, q.reason)));
 }
 
 export function integerWidget(h, q, answer, checked, onChange) {
@@ -37,16 +38,16 @@ export function matrixWidget(h, q, answer, checked, onChange) {
   const rows = q.left.map((l) => {
     const sel = h('select', { 'aria-label': `Match for ${l.text}`, disabled: checked },
       h('option', { value: '', text: 'Choose...' }),
-      ...q.right.map((r, i) => h('option', { value: r.id, text: `${String.fromCharCode(80 + i)}. ${r.text}`, selected: got.get(l.id) === r.id })));
+      ...q.right.map((r, i) => h('option', { value: r.id, text: `${String.fromCharCode(80 + i)}. ${r.text.replace(/`/g, '')}`, selected: got.get(l.id) === r.id })));
     sel.addEventListener('change', () => { if (sel.value) got.set(l.id, sel.value); else got.delete(l.id); onChange(toAnswer(got)); });
     const right = q.pairs[l.id];
     const state = checked ? (got.get(l.id) === right ? ' right' : ' wrong') : '';
     const rr = q.right.find((r) => r.id === right);
     return h('div', { class: `mx-row${state}` },
-      h('span', { class: 'mx-l', text: `${l.id.toUpperCase()}. ${l.text}` }), sel,
+      h('span', { class: 'mx-l' }, `${l.id.toUpperCase()}. `, ...richText(h, l.text)), sel,
       checked && got.get(l.id) !== right ? h('span', { class: 'mx-fix', text: `Correct: ${rr.text}` }) : null);
   });
-  const legend = h('div', { class: 'mx-right' }, ...q.right.map((r, i) => h('span', { text: `${String.fromCharCode(80 + i)}. ${r.text}` })));
+  const legend = h('div', { class: 'mx-right' }, ...q.right.map((r, i) => h('span', {}, `${String.fromCharCode(80 + i)}. `, ...richText(h, r.text))));
   return h('div', { class: 'mx' }, h('p', { class: 'mx-note', text: 'Match each item in Column I with one item in Column II. Each Column II item is used at most once.' }), ...rows, h('div', { class: 'mx-colhead', text: 'Column II' }), legend);
 }
 

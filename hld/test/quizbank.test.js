@@ -155,3 +155,17 @@ test('every quiz topic maps to a subject, and a subject never mixes Java and Pyt
   assert.ok(!bySubject.get('java')?.some((l) => l !== 'java'), 'the Java subject holds only Java quizzes');
   assert.ok(!bySubject.get('python')?.some((l) => l !== 'python'), 'the Python subject holds only Python quizzes');
 });
+
+// ---------- code in a prompt is written as a fenced snippet (```lang ... ```) or `inline code`, never as run-on text ----------
+const stripCode = (t) => t.replace(/```[\s\S]*?```/g, ' ').replace(/`[^`\n]*`/g, ' ');
+const CODE_LEAK = /;\s*\S|[{}]|\bdef\s+\w+\(|=>|\bnew\s+[A-Z]\w*[<(]|\bSELECT\b[^.?]*\bFROM\b|\b[a-z]\w*\.[a-z]\w*\([^)]*\)\s*(;|\.|\+)|\w+\s*=\s*\w+\(|\bimport\s+[a-z]\w*(\.\w+)*\b|\bfor\s+\w+\s+in\s+\w|\bclass\s+[A-Z]\w*\s*[({:]/;
+for (const quiz of quizzes) {
+  test(`quiz "${quiz.id}" formats code in prompts`, () => {
+    for (const q of quiz.questions) {
+      const prose = stripCode([q.prompt, q.assertion, q.reason].filter(Boolean).join('\n'));
+      const m = CODE_LEAK.exec(prose);
+      assert.ok(!m, `${q.id}: put the code in a \`\`\`lang fenced block or \`inline code\`: ...${prose.slice(Math.max(0, m?.index - 20), (m?.index ?? 0) + 40).replace(/\n/g, ' ')}...`);
+      assert.equal((q.prompt.match(/```/g) || []).length % 2, 0, `${q.id}: unbalanced code fence`);
+    }
+  });
+}

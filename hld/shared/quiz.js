@@ -21,7 +21,7 @@ export const ASSERTION_OPTIONS = [
   { id: 'c', text: 'A is true, but R is false.' },
   { id: 'd', text: 'A is false, but R is true.' },
 ];
-export const LIMITS = { questions: 40, options: 6, prompt: 600, option: 300, explanation: 900, concept: 60, title: 100 };
+export const LIMITS = { questions: 40, options: 6, prompt: 1600, option: 400, explanation: 1600, concept: 60, title: 100 };
 
 const isText = (v, max, min = 1) => typeof v === 'string' && v.trim().length >= min && v.length <= max;
 const BANNED_OPTION = /^\s*(all|none|both|neither)\s+of\s+the\s+(above|these|following)\b/i;
