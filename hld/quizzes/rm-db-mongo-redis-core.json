@@ -53,7 +53,7 @@
       "left": [
         {
           "id": "l1",
-          "text": "Compound index {status: 1, createdAt: -1}"
+          "text": "Compound index `{status: 1, createdAt: -1}`"
         },
         {
           "id": "l2",
@@ -65,7 +65,7 @@
         },
         {
           "id": "l4",
-          "text": "Partial index with partialFilterExpression"
+          "text": "Partial index with `partialFilterExpression`"
         }
       ],
       "right": [
@@ -103,7 +103,7 @@
       "concept": "Aggregation pipeline",
       "type": "code",
       "difficulty": 2,
-      "prompt": "Collection orders has documents {customerId, status, amount}. In mongosh, write db.orders.aggregate(...) returning the 3 customers with the highest total amount among orders whose status is \"paid\", as {_id: customerId, total: ...}.",
+      "prompt": "Collection `orders` has documents `{customerId, status, amount}`. In mongosh, write `db.orders.aggregate(...)` returning the 3 customers with the highest total amount among orders whose status is \"paid\", as `{_id: customerId, total: ...}`.",
       "language": "javascript",
       "starter": "db.orders.aggregate([\n",
       "checks": [
@@ -129,14 +129,14 @@
         }
       ],
       "model": "db.orders.aggregate([\n  { $match: { status: \"paid\" } },\n  { $group: { _id: \"$customerId\", total: { $sum: \"$amount\" } } },\n  { $sort: { total: -1 } },\n  { $limit: 3 }\n])",
-      "explanation": "Put $match first so it can use an index and shrink the stream. $sort followed by $limit is optimised into a top-k sort. Quoting the stage keys (as JSON) is equally valid."
+      "explanation": "Put `$match` first so it can use an index and shrink the stream. `$sort` followed by `$limit` is optimised into a top-k sort. Quoting the stage keys (as JSON) is equally valid."
     },
     {
       "id": "mongo-find-shell",
       "concept": "MongoDB queries",
       "type": "code",
       "difficulty": 2,
-      "prompt": "Collection orders has documents {customerId, status, amount}. In mongosh, write a find that returns only customerId and amount (no _id) of the 5 largest orders whose status is \"paid\".",
+      "prompt": "Collection `orders` has documents `{customerId, status, amount}`. In mongosh, write a `find` that returns only `customerId` and `amount` (no `_id`) of the 5 largest orders whose status is \"paid\".",
       "language": "javascript",
       "starter": "db.orders.find(",
       "checks": [
@@ -158,7 +158,7 @@
         }
       ],
       "model": "db.orders.find({ status: \"paid\" }, { _id: 0, customerId: 1, amount: 1 }).sort({ amount: -1 }).limit(5)",
-      "explanation": "The second argument of find is the projection; _id is returned unless excluded explicitly. The cursor methods sort and limit may be chained in any order because the server always applies sort, then skip, then limit. An aggregate with $match, $sort, $limit and $project is an equally valid answer."
+      "explanation": "The second argument of `find` is the projection; `_id` is returned unless excluded explicitly. The cursor methods `sort` and `limit` may be chained in any order because the server always applies sort, then skip, then limit. An aggregate with `$match`, `$sort`, `$limit` and `$project` is an equally valid answer."
     },
     {
       "id": "embed-vs-reference",
@@ -184,11 +184,11 @@
       "concept": "Aggregation pipeline",
       "type": "integer",
       "difficulty": 2,
-      "prompt": "Collection sales holds {sku:\"a\",qty:2}, {sku:\"a\",qty:3}, {sku:\"b\",qty:1}, {sku:\"c\",qty:6}. The pipeline is [{$group:{_id:\"$sku\", total:{$sum:\"$qty\"}}}, {$match:{total:{$gte:5}}}]. How many documents does it output?",
+      "prompt": "Collection `sales` holds `{sku:\"a\",qty:2}`, `{sku:\"a\",qty:3}`, `{sku:\"b\",qty:1}`, `{sku:\"c\",qty:6}`. The pipeline is `[{$group:{_id:\"$sku\", total:{$sum:\"$qty\"}}}, {$match:{total:{$gte:5}}}]`. How many documents does it output?",
       "answer": 2,
       "tolerance": 0,
       "unit": "documents",
-      "explanation": "Totals are a=5, b=1, c=6. Matching total >= 5 keeps a and c, so 2. $match after $group is like HAVING."
+      "explanation": "Totals are a=5, b=1, c=6. Matching `total >= 5` keeps a and c, so 2. `$match` after `$group` is like `HAVING`."
     },
     {
       "id": "redis-structures",
@@ -221,19 +221,19 @@
       "right": [
         {
           "id": "r1",
-          "text": "Counter or rate limit using INCR"
+          "text": "Counter or rate limit using `INCR`"
         },
         {
           "id": "r2",
-          "text": "Object with fields, read with HGET and HGETALL"
+          "text": "Object with fields, read with `HGET` and `HGETALL`"
         },
         {
           "id": "r3",
-          "text": "Simple job queue with LPUSH and BRPOP"
+          "text": "Simple job queue with `LPUSH` and `BRPOP`"
         },
         {
           "id": "r4",
-          "text": "Leaderboard ranked by score with ZADD and ZREVRANGE"
+          "text": "Leaderboard ranked by score with `ZADD` and `ZREVRANGE`"
         },
         {
           "id": "r5",
@@ -251,14 +251,14 @@
         "l4": "r4",
         "l5": "r5"
       },
-      "explanation": "The last item is a HyperLogLog (PFADD, PFCOUNT), about 12 KB per key with roughly 0.81 percent standard error. A Redis list is fine for a queue but has no acknowledgement; streams add consumer groups and XACK. ZREVRANGE has been deprecated since Redis 6.2 in favour of ZRANGE key 0 -1 REV, but still works."
+      "explanation": "The last item is a HyperLogLog (`PFADD`, `PFCOUNT`), about 12 KB per key with roughly 0.81 percent standard error. A Redis list is fine for a queue but has no acknowledgement; streams add consumer groups and `XACK`. `ZREVRANGE` has been deprecated since Redis 6.2 in favour of `ZRANGE key 0 -1 REV`, but still works."
     },
     {
       "id": "redis-set-nx",
       "concept": "Redis commands",
       "type": "code",
       "difficulty": 2,
-      "prompt": "Write the redis-cli command that stores the value u1 under the key session:abc only if the key does not exist yet, and makes it expire after 60 seconds, in a single atomic command.",
+      "prompt": "Write the `redis-cli` command that stores the value `u1` under the key `session:abc` only if the key does not exist yet, and makes it expire after 60 seconds, in a single atomic command.",
       "language": "shell",
       "starter": "redis-cli ",
       "checks": [
@@ -276,51 +276,51 @@
         }
       ],
       "model": "redis-cli SET session:abc u1 NX EX 60",
-      "explanation": "SETNX followed by EXPIRE is two commands, so a crash between them leaves a key that never expires. SET with NX and EX is atomic. The same pattern with a random token is the basis of a simple lock."
+      "explanation": "`SETNX` followed by `EXPIRE` is two commands, so a crash between them leaves a key that never expires. `SET` with `NX` and `EX` is atomic. The same pattern with a random token is the basis of a simple lock."
     },
     {
       "id": "incr-trace",
       "concept": "Redis commands",
       "type": "integer",
       "difficulty": 2,
-      "prompt": "Starting with no key c, redis-cli runs: SET c 5, then INCRBY c 7, then DECR c, then INCR c, then INCR c. What does GET c return?",
+      "prompt": "Starting with no key `c`, `redis-cli` runs: `SET c 5`, then `INCRBY c 7`, then `DECR c`, then `INCR c`, then `INCR c`. What does `GET c` return?",
       "answer": 13,
       "tolerance": 0,
       "unit": "",
-      "explanation": "5 + 7 = 12, DECR gives 11, then two INCRs give 13. These commands are atomic integer operations on a string value, which is why INCR is the standard counter and rate-limit primitive."
+      "explanation": "5 + 7 = 12, `DECR` gives 11, then two `INCR`s give 13. These commands are atomic integer operations on a string value, which is why `INCR` is the standard counter and rate-limit primitive."
     },
     {
       "id": "eviction-policy",
       "concept": "Redis eviction",
       "type": "single",
       "difficulty": 2,
-      "prompt": "Redis is used purely as a cache with maxmemory set. Every key is a rebuildable cache entry and many have no TTL. Which maxmemory-policy is the sensible choice?",
+      "prompt": "Redis is used purely as a cache with `maxmemory` set. Every key is a rebuildable cache entry and many have no TTL. Which `maxmemory-policy` is the sensible choice?",
       "options": [
         {
           "id": "a",
-          "text": "allkeys-lru",
+          "text": "`allkeys-lru`",
           "why": "Right: any key may be evicted, least recently used first, so writes keep succeeding."
         },
         {
           "id": "b",
-          "text": "noeviction",
+          "text": "`noeviction`",
           "why": "Writes return OOM errors once memory is full, which is right for a primary store but not a cache."
         },
         {
           "id": "c",
-          "text": "volatile-lru",
+          "text": "`volatile-lru`",
           "why": "Only keys with a TTL are candidates, so keys without TTL fill memory and writes can still fail."
         },
         {
           "id": "d",
-          "text": "volatile-ttl",
-          "why": "Same candidate pool as volatile-lru, and it evicts by shortest remaining TTL, not usage."
+          "text": "`volatile-ttl`",
+          "why": "Same candidate pool as `volatile-lru`, and it evicts by shortest remaining TTL, not usage."
         }
       ],
       "correct": [
         "a"
       ],
-      "explanation": "allkeys-lfu is the other good cache choice when frequency matters more than recency. Memory behaviour is a deployment decision that interviewers like to probe."
+      "explanation": "`allkeys-lfu` is the other good cache choice when frequency matters more than recency. Memory behaviour is a deployment decision that interviewers like to probe."
     },
     {
       "id": "cache-patterns",
@@ -371,7 +371,7 @@
         {
           "id": "a",
           "text": "A lock without an expiry is held forever if its owner crashes.",
-          "why": "Right: SET ... NX PX ttl exists to avoid this."
+          "why": "Right: `SET ... NX PX ttl` exists to avoid this."
         },
         {
           "id": "b",
@@ -385,7 +385,7 @@
         },
         {
           "id": "d",
-          "text": "One Redis instance with SET NX EX guarantees mutual exclusion even through failover.",
+          "text": "One Redis instance with `SET NX EX` guarantees mutual exclusion even through failover.",
           "why": "With asynchronous replication a failover can promote a replica that never saw the key."
         },
         {
@@ -407,7 +407,7 @@
       "type": "assertion",
       "difficulty": 3,
       "prompt": "Read the assertion A and the reason R, then choose the correct relationship between them.",
-      "assertion": "A Redis SET NX PX lock can still be held by two clients at once in some failure cases.",
+      "assertion": "A Redis `SET NX PX` lock can still be held by two clients at once in some failure cases.",
       "reason": "Redis executes commands on a single thread.",
       "correct": [
         "b"
@@ -481,7 +481,7 @@
         "text",
         "geo"
       ],
-      "explanation": "Equality fields narrow to an exact key prefix, sort fields then deliver ordered output without an in-memory sort, and range fields come last because a range on an earlier field breaks the ordering of later ones. So find({status:'paid', amount:{$gt:10}}).sort({createdAt:-1}) is served best by {status:1, createdAt:-1, amount:1}."
+      "explanation": "Equality fields narrow to an exact key prefix, sort fields then deliver ordered output without an in-memory sort, and range fields come last because a range on an earlier field breaks the ordering of later ones. So `find({status:'paid', amount:{$gt:10}}).sort({createdAt:-1})` is served best by `{status:1, createdAt:-1, amount:1}`."
     },
     {
       "id": "redis-persistence",
@@ -496,11 +496,11 @@
         },
         {
           "id": "b",
-          "text": "AOF with appendfsync everysec"
+          "text": "AOF with `appendfsync everysec`"
         },
         {
           "id": "c",
-          "text": "AOF with appendfsync always"
+          "text": "AOF with `appendfsync always`"
         },
         {
           "id": "d",
