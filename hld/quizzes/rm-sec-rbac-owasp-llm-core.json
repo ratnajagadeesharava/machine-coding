@@ -146,7 +146,7 @@
       "concept": "SQL injection",
       "type": "integer",
       "difficulty": 2,
-      "prompt": "The `users` table has 7 rows. Code builds `\"SELECT * FROM users WHERE name = '\" + input + \"'\"` and the attacker sends the input `x' OR '1'='1`. How many rows come back?",
+      "prompt": "The `users` table has 7 rows. Code builds\n\n```sql\n\"SELECT *\nFROM users\nWHERE name = '\" + input + \"'\"\n```\n\n and the attacker sends the input `x' OR '1'='1`. How many rows come back?",
       "answer": 7,
       "unit": "rows",
       "explanation": "The query becomes `WHERE name = 'x' OR '1'='1'`, and the OR condition is true for every row, so all 7 return. The same trick with UNION or stacked statements can read other tables."

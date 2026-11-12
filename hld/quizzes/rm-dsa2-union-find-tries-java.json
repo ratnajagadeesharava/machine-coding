@@ -249,7 +249,7 @@
       "prompt": "A trie stores children in a `HashMap<Character, Node>` and lists the words below a prefix.",
       "explanation": "If suggestions must come back in sorted order, store children in a `TreeMap` or sort them after collecting.",
       "assertion": "Iterating the children of a `HashMap<Character, Node>` visits them in insertion order.",
-      "reason": "`HashMap` iteration order is unspecified`;` `LinkedHashMap` preserves insertion order and `TreeMap` sorts by key.",
+      "reason": "`HashMap` iteration order is unspecified; `LinkedHashMap` preserves insertion order and `TreeMap` sorts by key.",
       "correct": [
         "d"
       ],

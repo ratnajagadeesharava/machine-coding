@@ -78,7 +78,7 @@
       "concept": "Trees",
       "type": "code",
       "difficulty": 3,
-      "prompt": "Write a Python function `lca(root, p, q)` returning the lowest common ancestor of nodes `p` and `q` in a binary tree (both `exist;` compare nodes with `is`).",
+      "prompt": "Write a Python function `lca(root, p, q)` returning the lowest common ancestor of nodes `p` and `q` in a binary tree (both exist; compare nodes with `is`).",
       "language": "python",
       "starter": "def lca(root, p, q):\n    ",
       "checks": [

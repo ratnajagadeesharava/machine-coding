@@ -48,7 +48,7 @@
       "concept": "Producer acks",
       "type": "single",
       "difficulty": 2,
-      "prompt": "What does acks=all guarantee?",
+      "prompt": "What does `acks=all` guarantee?",
       "options": [
         {
           "id": "a",
@@ -74,7 +74,7 @@
       "correct": [
         "a"
       ],
-      "explanation": "Replication factor 3 plus acks=all: the message lives on several brokers before the producer hears done."
+      "explanation": "Replication factor 3 plus `acks=all`: the message lives on several brokers before the producer hears done."
     },
     {
       "id": "always-available",

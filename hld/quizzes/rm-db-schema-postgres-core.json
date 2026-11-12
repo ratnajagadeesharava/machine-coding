@@ -110,19 +110,19 @@
       "left": [
         {
           "id": "l1",
-          "text": "`data -> 'tag'`"
+          "text": "``data -> 'tag'``"
         },
         {
           "id": "l2",
-          "text": "`data ->> 'tag'`"
+          "text": "``data ->> 'tag'``"
         },
         {
           "id": "l3",
-          "text": "`data @> '{\"tag\": \"x\"}'`"
+          "text": "``data @> '{\"tag\": \"x\"}'``"
         },
         {
           "id": "l4",
-          "text": "`data ? 'tag'`"
+          "text": "``data ? 'tag'``"
         }
       ],
       "right": [
@@ -164,22 +164,22 @@
       "options": [
         {
           "id": "a",
-          "text": "`CREATE INDEX ON events USING gin (payload);`",
+          "text": "``CREATE INDEX ON events USING gin (payload);``",
           "why": "Right: the default `jsonb_ops` GIN class supports `@>, ?, ?| and ?&`."
         },
         {
           "id": "b",
-          "text": "`CREATE INDEX ON events (payload);`",
+          "text": "``CREATE INDEX ON events (payload);``",
           "why": "A btree on jsonb only helps equality and ordering of the whole document, not containment."
         },
         {
           "id": "c",
-          "text": "`CREATE INDEX ON events USING hash (id);`",
+          "text": "``CREATE INDEX ON events USING hash (id);``",
           "why": "It indexes a different column and a hash index cannot do containment anyway."
         },
         {
           "id": "d",
-          "text": "`CREATE INDEX ON events USING brin (payload);`",
+          "text": "``CREATE INDEX ON events USING brin (payload);``",
           "why": "`BRIN` stores block ranges for naturally ordered data; it cannot answer containment."
         }
       ],

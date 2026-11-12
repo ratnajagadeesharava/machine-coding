@@ -318,7 +318,7 @@
       "concept": "Singleton",
       "type": "integer",
       "difficulty": 3,
-      "prompt": "A class caches one instance in `__new__` and its `__init__` increments a class counter `n` (starting at 0) each time it runs. After `Config(); Config(); Config()`, what is `n`?",
+      "prompt": "A class caches one instance in `__new__` and its `__init__` increments a class counter `n` (starting at 0) each time it runs. After\n\n```python\nConfig()\nConfig()\nConfig()\n```\n\nWhat is `n`?",
       "answer": 3,
       "tolerance": 0,
       "explanation": "`__new__` returns the same object each time, but Python still calls `__init__` on it after every `Config()` call, so n reaches 3."

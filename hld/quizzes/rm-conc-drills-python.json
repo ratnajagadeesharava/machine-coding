@@ -289,7 +289,7 @@
       "concept": "Condition variables",
       "type": "code",
       "difficulty": 3,
-      "prompt": "Write a Python class `Buffer(cap)` holding a `collections.deque` and one `threading.Condition`. `put(x)` must wait while the buffer is full and `take()` must wait while it is `empty;` both wake the other side with `notify_all`.",
+      "prompt": "Write a Python class `Buffer(cap)` holding a `collections.deque` and one `threading.Condition`. `put(x)` must wait while the buffer is full and `take()` must wait while it is empty; both wake the other side with `notify_all`.",
       "language": "python",
       "checks": [
         {

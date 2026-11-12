@@ -180,7 +180,7 @@
       "concept": "Hashing ids",
       "type": "truefalse",
       "difficulty": 1,
-      "prompt": "True or false: hashing a primary identifier such as userId or postId is a common way to get an even spread across shards.",
+      "prompt": "True or false: hashing a primary identifier such as `userId` or `postId` is a common way to get an even spread across shards.",
       "options": [
         {
           "id": "a",

@@ -49,7 +49,7 @@
       "concept": "SQL guard",
       "type": "integer",
       "difficulty": 3,
-      "prompt": "A JSqlParser guard accepts SQL only if it parses into exactly one statement that is a `PlainSelect`. Of these five inputs, how many pass: (1) `SELECT 1;` (2) `SELECT 1; DROP TABLE t;` (3) `WITH x AS (SELECT 1) SELECT * FROM x;` (4) `SELECT 1 UNION SELECT 2;` (5) `DELETE FROM t`?",
+      "prompt": "A JSqlParser guard accepts SQL only if it parses into exactly one statement that is a `PlainSelect`. Of these five inputs, how many pass: (1) SELECT 1; (2) `SELECT 1; DROP TABLE t;` (3) `WITH x AS (SELECT 1) SELECT * FROM x;` (4) SELECT 1 UNION SELECT 2; (5) `DELETE FROM t`?",
       "answer": 2,
       "explanation": "Inputs 1 and 3 pass (a WITH clause hangs off the `PlainSelect`). Input 2 is two statements, input 4 parses to a `SetOperationList`, and input 5 to a Delete; I confirmed each with JSqlParser 5.3. A set operation is a common false rejection, so a production guard usually allows it explicitly.",
       "unit": "inputs"

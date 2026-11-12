@@ -69,7 +69,7 @@
       "concept": "Anti-join SQL",
       "type": "code",
       "difficulty": 2,
-      "prompt": "Tables sap_invoices(doc_id, amount) and dwh_invoices(doc_id, amount) should match. Write one SQL query that lists doc_id values that are missing from dwh_invoices or have a different amount.",
+      "prompt": "Tables `sap_invoices(doc_id, amount)` and `dwh_invoices(doc_id, amount)` should match. Write one SQL query that lists `doc_id` values that are missing from `dwh_invoices` or have a different amount.",
       "language": "sql",
       "checks": [
         {
@@ -90,7 +90,7 @@
         }
       ],
       "model": "SELECT s.doc_id\nFROM sap_invoices s\nLEFT JOIN dwh_invoices d ON d.doc_id = s.doc_id\nWHERE d.doc_id IS NULL OR d.amount <> s.amount;",
-      "explanation": "SELECT doc_id, amount FROM sap_invoices EXCEPT SELECT doc_id, amount FROM dwh_invoices is a shorter alternative. A FULL OUTER JOIN additionally finds rows that exist only in the warehouse."
+      "explanation": "`SELECT doc_id, amount FROM sap_invoices EXCEPT SELECT doc_id, amount FROM dwh_invoices` is a shorter alternative. A `FULL OUTER JOIN` additionally finds rows that exist only in the warehouse."
     },
     {
       "id": "recon-causes",
@@ -198,7 +198,7 @@
       "concept": "Agent evals",
       "type": "code",
       "difficulty": 2,
-      "prompt": "Table eval_runs(case_id, run_no, passed) stores one row per agent run on a golden set, where passed is 1 or 0. Write one SQL query that returns the overall pass rate as a fraction between 0 and 1.",
+      "prompt": "Table `eval_runs(case_id, run_no, passed)` stores one row per agent run on a golden set, where `passed` is 1 or 0. Write one SQL query that returns the overall pass rate as a fraction between 0 and 1.",
       "language": "sql",
       "checks": [
         {
@@ -215,7 +215,7 @@
         }
       ],
       "model": "SELECT AVG(passed * 1.0) AS pass_rate FROM eval_runs;",
-      "explanation": "AVG over a 0/1 column is the pass fraction (multiply by 1.0 so integer division does not truncate in some engines). SUM(passed) * 1.0 / COUNT(*) is equivalent. Real agent evals rarely use equality: use rubric graders, schema checks or an LLM judge, and run each case several times because outputs vary."
+      "explanation": "`AVG` over a 0/1 column is the pass fraction (multiply by 1.0 so integer division does not truncate in some engines). `SUM(passed) * 1.0 / COUNT(*)` is equivalent. Real agent evals rarely use equality: use rubric graders, schema checks or an LLM judge, and run each case several times because outputs vary."
     },
     {
       "id": "agent-metrics",

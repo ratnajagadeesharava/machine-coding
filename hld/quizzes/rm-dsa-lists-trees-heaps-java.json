@@ -78,7 +78,7 @@
       "concept": "Trees",
       "type": "code",
       "difficulty": 3,
-      "prompt": "Write a Java method `TreeNode lca(TreeNode root, TreeNode p, TreeNode q)` returning the lowest common ancestor of nodes `p` and `q` in a binary tree (both `exist;` compare nodes with `==`).",
+      "prompt": "Write a Java method `TreeNode lca(TreeNode root, TreeNode p, TreeNode q)` returning the lowest common ancestor of nodes `p` and `q` in a binary tree (both exist; compare nodes with `==`).",
       "language": "java",
       "starter": "static TreeNode lca(TreeNode root, TreeNode p, TreeNode q) {\n  \n}",
       "checks": [

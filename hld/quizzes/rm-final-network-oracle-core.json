@@ -461,7 +461,7 @@
       "concept": "SDKs and reliability",
       "type": "code",
       "difficulty": 3,
-      "prompt": "Write pseudocode for `call_with_retry(send, max_attempts)`. `send()` returns a response with an integer status. Return the response unless the status is 429 or at least `500;` in that case wait `2^attempt` seconds and try again. After `max_attempts` attempts raise an error.",
+      "prompt": "Write pseudocode for `call_with_retry(send, max_attempts)`. `send()` returns a response with an integer status. Return the response unless the status is 429 or at least 500; in that case wait `2^attempt` seconds and try again. After `max_attempts` attempts raise an error.",
       "language": "pseudocode",
       "checks": [
         {

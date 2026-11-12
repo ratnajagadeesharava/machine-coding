@@ -418,7 +418,7 @@
       "concept": "CompletableFuture",
       "type": "single",
       "difficulty": 3,
-      "prompt": "`ok` sleeps 300 ms then returns `1;` `bad` throws an `IllegalStateException` at once. Both run on a 3-thread executor. What does `CompletableFuture.allOf(ok, bad).join()` do?",
+      "prompt": "`ok` sleeps 300 ms then returns 1; `bad` throws an `IllegalStateException` at once. Both run on a 3-thread executor. What does `CompletableFuture.allOf(ok, bad).join()` do?",
       "options": [
         {
           "id": "a",

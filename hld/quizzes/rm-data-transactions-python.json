@@ -218,7 +218,7 @@
       "concept": "Savepoints",
       "type": "integer",
       "difficulty": 3,
-      "prompt": "In one Session transaction the code adds Author A, then runs `\"with session.begin_nested(): add Author B; raise ValueError\"` inside `try/except ValueError`, then adds Author C and calls `session.commit()`. How many of A, B, C are committed?",
+      "prompt": "In one Session transaction the code adds Author A, then runs\n\n```python\n\"with session.begin_nested(): add Author B; raise ValueError\"\n```\n\n inside `try/except ValueError`, then adds Author C and calls `session.commit()`. How many of A, B, C are committed?",
       "answer": 2,
       "tolerance": 0,
       "unit": "rows",

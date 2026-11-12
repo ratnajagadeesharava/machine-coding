@@ -20,27 +20,27 @@
       "left": [
         {
           "id": "a",
-          "text": "`ROW_NUMBER()`"
+          "text": "``ROW_NUMBER()``"
         },
         {
           "id": "b",
-          "text": "`RANK()`"
+          "text": "``RANK()``"
         },
         {
           "id": "c",
-          "text": "`DENSE_RANK()`"
+          "text": "``DENSE_RANK()``"
         },
         {
           "id": "d",
-          "text": "`LAG(amount)`"
+          "text": "``LAG(amount)``"
         },
         {
           "id": "e",
-          "text": "`SUM(amount) OVER (ORDER BY paid_on)`"
+          "text": "``SUM(amount) OVER (ORDER BY paid_on)``"
         },
         {
           "id": "f",
-          "text": "`NTILE(4)`"
+          "text": "``NTILE(4)``"
         }
       ],
       "right": [
@@ -108,7 +108,7 @@
       "concept": "Recursive CTE",
       "type": "integer",
       "difficulty": 2,
-      "prompt": "What does this query return? `WITH RECURSIVE n(i) AS (SELECT 1 UNION ALL SELECT i + 1 FROM n WHERE i < 5) SELECT SUM(i) FROM n`.",
+      "prompt": "What does this query return?\n\n```sql\nWITH RECURSIVE n(i) AS (SELECT 1\nUNION ALL SELECT i + 1\nFROM n\nWHERE i < 5) SELECT SUM(i)\nFROM n\n```\n\n.",
       "answer": 15,
       "explanation": "The anchor emits 1; each iteration adds i + 1 until i reaches 5, so n holds 1..5 and the sum is 15. The `WHERE` in the recursive part is the termination condition; without it the query would loop forever."
     },
@@ -118,7 +118,7 @@
       "type": "assertion",
       "difficulty": 2,
       "prompt": "Read the assertion (A) and the reason (R), then choose the option that fits.",
-      "assertion": "A window function cannot appear directly in a `WHERE clause;` to filter on `ROW_NUMBER()` you wrap the query in a subquery or CTE.",
+      "assertion": "A window function cannot appear directly in a WHERE clause; to filter on `ROW_NUMBER()` you wrap the query in a subquery or CTE.",
       "reason": "`WHERE` is evaluated before window functions are computed.",
       "correct": [
         "a"
@@ -329,22 +329,22 @@
       "options": [
         {
           "id": "a",
-          "text": "`DELETE FROM users WHERE id IN (SELECT id FROM (SELECT id, ROW_NUMBER() OVER (PARTITION BY email ORDER BY id) rn FROM users) t WHERE rn > 1)`",
+          "text": "``DELETE FROM users WHERE id IN (SELECT id FROM (SELECT id, ROW_NUMBER() OVER (PARTITION BY email ORDER BY id) rn FROM users) t WHERE rn > 1)``",
           "why": "Right: rn = 1 is the survivor of each email, every other copy is deleted."
         },
         {
           "id": "b",
-          "text": "`DELETE FROM users WHERE email IN (SELECT email FROM users GROUP BY email HAVING COUNT(*) > 1) AND id IS NOT NULL`",
+          "text": "``DELETE FROM users WHERE email IN (SELECT email FROM users GROUP BY email HAVING COUNT(*) > 1) AND id IS NOT NULL``",
           "why": "This deletes every copy of a duplicated email, including the one to keep."
         },
         {
           "id": "c",
-          "text": "`DELETE FROM users GROUP BY email HAVING COUNT(*) > 1 ORDER BY id OFFSET 1`",
+          "text": "``DELETE FROM users GROUP BY email HAVING COUNT(*) > 1 ORDER BY id OFFSET 1``",
           "why": "`DELETE` has no `GROUP BY`, `HAVING` or `OFFSET` clause; it is a syntax error."
         },
         {
           "id": "d",
-          "text": "`DELETE FROM users WHERE email IN (SELECT email FROM users GROUP BY email HAVING COUNT(*) > 1) AND id <> (SELECT MIN(id) FROM users) AND email IS NOT NULL`",
+          "text": "``DELETE FROM users WHERE email IN (SELECT email FROM users GROUP BY email HAVING COUNT(*) > 1) AND id <> (SELECT MIN(id) FROM users) AND email IS NOT NULL``",
           "why": "The global MIN(id) spares only one row in the table, not one per email."
         }
       ],

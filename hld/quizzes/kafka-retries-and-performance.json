@@ -140,7 +140,7 @@
       "correct": [
         "a"
       ],
-      "explanation": "sendBatch() can cover several topics at once."
+      "explanation": "`sendBatch()` can cover several topics at once."
     },
     {
       "id": "key-perf",
@@ -217,12 +217,12 @@
       "options": [
         {
           "id": "a",
-          "text": "retention.ms sets a time limit.",
+          "text": "`retention.ms` sets a time limit.",
           "why": "Yes; it does not answer the question asked."
         },
         {
           "id": "b",
-          "text": "retention.bytes sets a size limit.",
+          "text": "`retention.bytes` sets a size limit.",
           "why": "Yes; it does not answer the question asked."
         },
         {

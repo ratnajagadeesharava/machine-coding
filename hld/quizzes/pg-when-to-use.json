@@ -56,8 +56,8 @@
         },
         {
           "id": "b",
-          "text": "A mix of structured data and flexible semi-structured metadata (JSONB).",
-          "why": "Yes: JSONB gives document-style flexibility in the same database."
+          "text": "A mix of structured data and flexible semi-structured metadata (`JSONB`).",
+          "why": "Yes: `JSONB` gives document-style flexibility in the same database."
         },
         {
           "id": "c",
@@ -75,7 +75,7 @@
         "b",
         "c"
       ],
-      "explanation": "PostgreSQL combines relational integrity, flexible JSONB, search and geo features. Extreme write rates are where you start looking elsewhere."
+      "explanation": "PostgreSQL combines relational integrity, flexible `JSONB`, search and geo features. Extreme write rates are where you start looking elsewhere."
     },
     {
       "id": "extreme-writes",
@@ -208,7 +208,7 @@
       "options": [
         {
           "id": "a",
-          "text": "PostgreSQL alone, using JSONB for metadata and full-text search for text.",
+          "text": "PostgreSQL alone, using `JSONB` for metadata and full-text search for text.",
           "why": "Right: one system covers all three, with less to operate."
         },
         {

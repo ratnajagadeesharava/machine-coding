@@ -89,7 +89,7 @@
       "concept": "SKIP LOCKED queue",
       "type": "integer",
       "difficulty": 2,
-      "prompt": "A `jobs` table has 10 rows with status `'queued'` (ids 1 to 10). Worker A holds `FOR UPDATE` row locks on ids 1, 2 and 3 in an open transaction. Worker B runs `SELECT id FROM jobs WHERE status = 'queued' ORDER BY id LIMIT 10 FOR UPDATE SKIP LOCKED`. How many rows does B get?",
+      "prompt": "A `jobs` table has 10 rows with status `'queued'` (ids 1 to 10). Worker A holds `FOR UPDATE` row locks on ids 1, 2 and 3 in an open transaction. Worker B runs\n\n```sql\nSELECT id\nFROM jobs\nWHERE status = 'queued'\nORDER BY id\nLIMIT 10 FOR UPDATE SKIP LOCKED\n```\n\nHow many rows does B get?",
       "answer": 7,
       "explanation": "B skips the three locked rows and locks ids 4 to 10, so 7 rows come back without waiting. (Verified on PostgreSQL.) Without `SKIP LOCKED` B would block on id 1; with `NOWAIT` it would fail with `55P03`.",
       "unit": "rows"

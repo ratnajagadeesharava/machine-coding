@@ -89,7 +89,7 @@
       "concept": "S/4HANA migration",
       "type": "integer",
       "difficulty": 3,
-      "prompt": "A legacy system has 10,000 customers and 2,000 vendors, of which 500 are the same organisation (both customer and vendor). In S/4HANA, customers and vendors are created as `Business Partners;` one partner can hold both roles. How many Business Partners should you expect if the 500 are merged into one each?",
+      "prompt": "A legacy system has 10,000 customers and 2,000 vendors, of which 500 are the same organisation (both customer and vendor). In S/4HANA, customers and vendors are created as Business Partners; one partner can hold both roles. How many Business Partners should you expect if the 500 are merged into one each?",
       "answer": 11500,
       "unit": "partners",
       "explanation": "10,000 + 2,000 - 500 = 11,500. In S/4HANA the Business Partner is the leading object for customer and vendor master data, so duplicates should be matched and merged during migration."

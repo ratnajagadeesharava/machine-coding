@@ -14,7 +14,7 @@
       "concept": "Foreign keys",
       "type": "single",
       "difficulty": 1,
-      "prompt": "What does a foreign key such as REFERENCES users(id) on posts.user_id give you?",
+      "prompt": "What does a foreign key such as `REFERENCES users(id)` on `posts.user_id` give you?",
       "options": [
         {
           "id": "a",
@@ -34,7 +34,7 @@
         {
           "id": "d",
           "text": "Permission for any user to edit any other user's posts.",
-          "why": "Access control is a separate concern (GRANT and REVOKE)."
+          "why": "Access control is a separate concern (`GRANT` and `REVOKE`)."
         }
       ],
       "correct": [
@@ -84,7 +84,7 @@
       "options": [
         {
           "id": "a",
-          "text": "A likes table with user_id and post_id, keyed on the pair.",
+          "text": "A likes table with `user_id and post_id`, keyed on the pair.",
           "why": "Right: a join table with a composite primary key."
         },
         {
@@ -146,7 +146,7 @@
       "concept": "Denormalization",
       "type": "single",
       "difficulty": 3,
-      "prompt": "A feed page shows a like count for every post. When is storing like_count on the posts row a sensible denormalization?",
+      "prompt": "A feed page shows a like count for every post. When is storing `like_count` on the posts row a sensible denormalization?",
       "options": [
         {
           "id": "a",
@@ -183,22 +183,22 @@
       "options": [
         {
           "id": "a",
-          "text": "SELECT",
+          "text": "`SELECT`",
           "why": "Yes: reading data is DML."
         },
         {
           "id": "b",
-          "text": "INSERT",
+          "text": "`INSERT`",
           "why": "Yes: adding rows is DML."
         },
         {
           "id": "c",
-          "text": "UPDATE",
+          "text": "`UPDATE`",
           "why": "Yes: changing rows is DML."
         },
         {
           "id": "d",
-          "text": "CREATE TABLE",
+          "text": "`CREATE TABLE`",
           "why": "That is DDL: it defines structure, not row data."
         }
       ],
@@ -207,14 +207,14 @@
         "b",
         "c"
       ],
-      "explanation": "DDL defines structure (CREATE, ALTER, DROP), DML works with rows, DCL grants access, TCL controls transactions."
+      "explanation": "DDL defines structure (`CREATE`, `ALTER`, `DROP`), DML works with rows, DCL grants access, TCL controls transactions."
     },
     {
       "id": "tcl",
       "concept": "SQL command types",
       "type": "single",
       "difficulty": 1,
-      "prompt": "Which category do BEGIN, COMMIT and ROLLBACK belong to?",
+      "prompt": "Which category do `BEGIN`, `COMMIT` and `ROLLBACK` belong to?",
       "options": [
         {
           "id": "a",
@@ -224,7 +224,7 @@
         {
           "id": "b",
           "text": "DCL, data control language.",
-          "why": "DCL is GRANT and REVOKE for permissions."
+          "why": "DCL is `GRANT` and `REVOKE` for permissions."
         },
         {
           "id": "c",

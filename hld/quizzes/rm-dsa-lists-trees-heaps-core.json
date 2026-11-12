@@ -16,7 +16,7 @@
       "concept": "Linked lists",
       "type": "integer",
       "difficulty": 2,
-      "prompt": "The list is `1 -> 2 -> 3 -> 4 -> 5` and node 5 points back to node 3. Slow and fast both start at node `1;` each iteration moves slow by 1 and fast by 2. After how many iterations do they first meet?",
+      "prompt": "The list is `1 -> 2 -> 3 -> 4 -> 5` and node 5 points back to node 3. Slow and fast both start at node 1; each iteration moves slow by 1 and fast by 2. After how many iterations do they first meet?",
       "answer": 3,
       "tolerance": 0,
       "explanation": "Iteration 1: slow at 2, fast at 3. Iteration 2: slow at 3, fast at 5. Iteration 3: slow at 4, fast goes 5 -> 3 -> 4, so they meet at node 4.",

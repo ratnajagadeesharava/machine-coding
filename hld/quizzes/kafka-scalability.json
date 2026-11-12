@@ -52,7 +52,7 @@
       "options": [
         {
           "id": "a",
-          "text": "Under 1 MB; the hard limit is message.max.bytes.",
+          "text": "Under 1 MB; the hard limit is `message.max.bytes`.",
           "why": "Right: small messages are processed quickly."
         },
         {
@@ -180,7 +180,7 @@
       "concept": "Partition formula",
       "type": "single",
       "difficulty": 3,
-      "prompt": "Using partition = hash(key) % num_partitions, a key hashes to 17 and there are 3 partitions. Which partition?",
+      "prompt": "Using `partition = hash(key) % num_partitions`, a key hashes to 17 and there are 3 partitions. Which partition?",
       "options": [
         {
           "id": "a",

@@ -28,7 +28,7 @@
       "difficulty": 3,
       "prompt": "A sliding-window-counter limiter keeps counts per fixed minute. The previous minute had 80 requests, the current minute has 30 so far, and we are 25% into the current minute. What is the weighted estimate of requests in the last 60 seconds?",
       "answer": 90,
-      "explanation": "Estimate = previous x (1 - 0.25) + current = 80 x 0.75 + 30 = 90. It approximates a true sliding log using only two counters per key.",
+      "explanation": "Estimate = `previous x (1 - 0.25) + current` = 80 x 0.75 + 30 = 90. It approximates a true sliding log using only two counters per key.",
       "unit": "requests"
     },
     {
@@ -144,7 +144,7 @@
         "Location",
         "cookie jar"
       ],
-      "explanation": "Many APIs also return X-RateLimit-Limit and X-RateLimit-Remaining headers; the IETF HTTPAPI working group has an Internet-Draft (draft-ietf-httpapi-ratelimit-headers) for standard RateLimit and RateLimit-Policy fields, but it is not yet an RFC, and its field design has changed between revisions."
+      "explanation": "Many APIs also return `X-RateLimit-Limit` and `X-RateLimit-Remaining` headers; the IETF HTTPAPI working group has an Internet-Draft (draft-ietf-httpapi-ratelimit-headers) for standard `RateLimit` and `RateLimit-Policy` fields, but it is not yet an RFC, and its field design has changed between revisions."
     },
     {
       "id": "shared-counter",
@@ -447,7 +447,7 @@
       "concept": "Consistent hashing",
       "type": "integer",
       "difficulty": 3,
-      "prompt": "A cache cluster routes keys with hash(key) mod N. One million keys are spread uniformly and N grows from 4 to 5 servers. About how many keys now map to a different server than before?",
+      "prompt": "A cache cluster routes keys with `hash(key) mod N`. One million keys are spread uniformly and N grows from 4 to 5 servers. About how many keys now map to a different server than before?",
       "answer": 800000,
       "unit": "keys",
       "tolerance": 1000,

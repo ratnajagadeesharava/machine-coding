@@ -352,7 +352,7 @@
       "concept": "SQL injection",
       "type": "code",
       "difficulty": 2,
-      "prompt": "Using the DB-API with `sqlite3` (cursor `cur`), run the query `SELECT * FROM users WHERE email = <email>` safely with the variable `email` and assign `cur.fetchone()` to `row`.",
+      "prompt": "Using the DB-API with `sqlite3` (cursor `cur`), run the query\n\n```sql\nSELECT *\nFROM users\nWHERE email = <email>\n```\n\n safely with the variable `email` and assign `cur.fetchone()` to `row`.",
       "language": "python",
       "checks": [
         {
@@ -380,7 +380,7 @@
       "concept": "SQL injection",
       "type": "code",
       "difficulty": 2,
-      "prompt": "Using SQLAlchemy, execute `text(\"SELECT * FROM users WHERE email = :email\")` on the `session` with the variable `email` bound as a parameter, and assign the first row to `row`.",
+      "prompt": "Using SQLAlchemy, execute\n\n```sql\ntext(\"SELECT *\nFROM users\nWHERE email = :email\")\n```\n\n on the `session` with the variable `email` bound as a parameter, and assign the first row to `row`.",
       "language": "python",
       "starter": "from sqlalchemy import text\n",
       "checks": [

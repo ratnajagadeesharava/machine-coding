@@ -16,7 +16,7 @@
       "concept": "SQL guard",
       "type": "integer",
       "difficulty": 3,
-      "prompt": "A guard accepts SQL only if it parses into exactly one statement whose root node is a plain SELECT. Of these five inputs, how many pass: (1) `SELECT 1;` (2) `SELECT 1; DROP TABLE t;` (3) `WITH x AS (SELECT 1) SELECT * FROM x;` (4) `SELECT 1 UNION SELECT 2;` (5) `DELETE FROM t`?",
+      "prompt": "A guard accepts SQL only if it parses into exactly one statement whose root node is a plain SELECT. Of these five inputs, how many pass: (1) SELECT 1; (2) `SELECT 1; DROP TABLE t;` (3) `WITH x AS (SELECT 1) SELECT * FROM x;` (4) SELECT 1 UNION SELECT 2; (5) `DELETE FROM t`?",
       "answer": 2,
       "unit": "inputs",
       "explanation": "Inputs 1 and 3 pass (a WITH clause hangs off the SELECT node). Input 2 has two statements, input 4 has a Union root rather than a Select, and input 5 is a Delete. Union is a common false rejection, so a production guard usually allows set operations explicitly."

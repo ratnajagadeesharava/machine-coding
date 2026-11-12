@@ -16,7 +16,7 @@
       "concept": "State and reducers",
       "type": "integer",
       "difficulty": 2,
-      "prompt": "State is `count: Annotated[int, operator.add]` starting at 0. START fans out to nodes A and B in `parallel;` A returns `{'count': 2}` and B returns `{'count': 3}`. Both feed node C, which returns `{'count': 1}`. What is `count` when the graph finishes?",
+      "prompt": "State is `count: Annotated[int, operator.add]` starting at 0. START fans out to nodes A and B in parallel; A returns `{'count': 2}` and B returns `{'count': 3}`. Both feed node C, which returns `{'count': 1}`. What is `count` when the graph finishes?",
       "answer": 6,
       "explanation": "A and B run in the same superstep and the add reducer combines both writes: 0 + 2 + 3 = 5. Then C adds 1 = 6. I ran this graph and got 6. Without the reducer the two parallel writes would raise `InvalidUpdateError`."
     },
@@ -35,7 +35,7 @@
       "concept": "Messages reducer",
       "type": "integer",
       "difficulty": 3,
-      "prompt": "`existing = [Human(id='1'), AI(id='2', content='b')]; update = [AI(id='2', content='b2'), Human(no id)]`. After `add_messages(existing, update)`, how many messages are in the list?",
+      "prompt": "```python\nexisting = [Human(id='1'), AI(id='2', content='b')]\nupdate = [AI(id='2', content='b2'), Human(no id)]\n```\n\nAfter `add_messages(existing, update)`, how many messages are in the list?",
       "answer": 3,
       "explanation": "`add_messages` merges by id: the update with id '2' replaces the existing message, and the message without an id gets a new generated id and is appended. 2 original (one replaced) + 1 new = 3. I verified it by running `add_messages`.",
       "unit": "messages"

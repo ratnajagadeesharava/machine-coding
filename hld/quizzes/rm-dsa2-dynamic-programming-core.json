@@ -98,7 +98,7 @@
       "concept": "DP complexity",
       "type": "matrix",
       "difficulty": 2,
-      "prompt": "Match each classic problem to the time complexity of its standard solution (`m`, `n` are string or array lengths`;` `k` is the number of items`;` `A` is the capacity).",
+      "prompt": "Match each classic problem to the time complexity of its standard solution (`m`, `n` are string or array lengths; `k` is the number of items; `A` is the capacity).",
       "explanation": "Time = number of states times work per state: LCS has m*n cells, knapsack k*A cells. The simple LIS DP compares each element with all earlier ones (n^2); keeping tails and binary searching gives n log n. Without memoisation fib branches twice per call, so it is exponential (bounded by 2^n; tighter is about 1.6^n).",
       "left": [
         {

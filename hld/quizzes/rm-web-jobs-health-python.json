@@ -199,7 +199,7 @@
       "concept": "Health checks (FastAPI)",
       "type": "code",
       "difficulty": 2,
-      "prompt": "Write `GET /health/ready` for FastAPI. Call `db_ping()` (raises on failure)`;` on success return `{\"status\": \"ok\"}`, on failure answer HTTP 503.",
+      "prompt": "Write `GET /health/ready` for FastAPI. Call `db_ping()` (raises on failure); on success return `{\"status\": \"ok\"}`, on failure answer HTTP 503.",
       "language": "python",
       "starter": "from fastapi import HTTPException\n",
       "checks": [

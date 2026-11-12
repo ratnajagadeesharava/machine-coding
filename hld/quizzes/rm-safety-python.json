@@ -45,7 +45,7 @@
       "concept": "SQL guard",
       "type": "integer",
       "difficulty": 3,
-      "prompt": "A guard built on sqlglot accepts SQL only if it parses into exactly one statement whose root node is a plain `Select`. Of these five inputs, how many pass: (1) `SELECT 1;` (2) `SELECT 1; DROP TABLE t;` (3) `WITH x AS (SELECT 1) SELECT * FROM x;` (4) `SELECT 1 UNION SELECT 2;` (5) `DELETE FROM t`?",
+      "prompt": "A guard built on sqlglot accepts SQL only if it parses into exactly one statement whose root node is a plain `Select`. Of these five inputs, how many pass: (1) SELECT 1; (2) `SELECT 1; DROP TABLE t;` (3) `WITH x AS (SELECT 1) SELECT * FROM x;` (4) SELECT 1 UNION SELECT 2; (5) `DELETE FROM t`?",
       "answer": 2,
       "unit": "inputs",
       "explanation": "Inputs 1 and 3 pass (a WITH clause hangs off the Select node). Input 2 parses to two statements (Select and Drop), input 4 to a Union root, and input 5 to a Delete; I confirmed each with `sqlglot.parse`. Union is a common false rejection, so a production guard usually allows set operations explicitly."
@@ -121,7 +121,7 @@
       "concept": "Idempotent actions",
       "type": "code",
       "difficulty": 3,
-      "prompt": "Write `process_payment(key, amount)` in Python. `RESULTS` is a module-level dict. If `key` is already in `RESULTS` return the stored `result;` otherwise call `charge(amount)`, store the outcome under `key` and return it.",
+      "prompt": "Write `process_payment(key, amount)` in Python. `RESULTS` is a module-level dict. If `key` is already in `RESULTS` return the stored result; otherwise call `charge(amount)`, store the outcome under `key` and return it.",
       "language": "python",
       "starter": "RESULTS = {}\n\ndef process_payment(key, amount):\n    ",
       "checks": [

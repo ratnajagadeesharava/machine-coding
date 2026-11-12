@@ -98,7 +98,7 @@
       "concept": "Aggregation",
       "type": "integer",
       "difficulty": 3,
-      "prompt": "```text\ndepartments has ids 1, 2, 3, 4 (id 4 is Legal);\nemployees.dept_id values are 1, 1, 1, 2, 2, 2, 3 and NULL.\n```\n\nFor `SELECT d.name, COUNT(*) FROM departments d LEFT JOIN employees e ON e.dept_id = d.id GROUP BY d.name`, what count is shown next to Legal?",
+      "prompt": "```text\ndepartments has ids 1, 2, 3, 4 (id 4 is Legal);\nemployees.dept_id values are 1, 1, 1, 2, 2, 2, 3 and NULL.\n```\n\nFor\n\n```sql\nSELECT d.name, COUNT(*)\nFROM departments d\nLEFT JOIN employees e ON e.dept_id = d.id\nGROUP BY d.name\n```\n\nWhat count is shown next to Legal?",
       "answer": 1,
       "explanation": "The unmatched department still produces one null-extended row, and `COUNT(*)` counts rows, so Legal shows 1. `COUNT(e.id)` would show 0 because it ignores NULLs. Classic interview trap.",
       "unit": "count"
@@ -284,7 +284,7 @@
       "concept": "Join types",
       "type": "single",
       "difficulty": 3,
-      "prompt": "Query: `SELECT d.name, e.name FROM departments d LEFT JOIN employees e ON e.dept_id = d.id WHERE e.salary > 100`. A teammate expected departments without any high earner to appear with `NULL`s. What actually happens?",
+      "prompt": "Query:\n\n```sql\nSELECT d.name, e.name\nFROM departments d\nLEFT JOIN employees e ON e.dept_id = d.id\nWHERE e.salary > 100\n```\n\nA teammate expected departments without any high earner to appear with `NULL`s. What actually happens?",
       "options": [
         {
           "id": "a",

@@ -132,7 +132,7 @@
       "concept": "Bitmask subsets",
       "type": "integer",
       "difficulty": 1,
-      "prompt": "A Java loop `for (int mask = 0; mask < (1 << 5); mask++)` enumerates all subsets of 5 items. How many iterations does it run?",
+      "prompt": "A Java loop\n\n```java\nfor (int mask = 0; mask < (1 << 5); mask++)\n```\n\n enumerates all subsets of 5 items. How many iterations does it run?",
       "explanation": "`1 << 5` = 32 = 2^5, one iteration per subset. Bit j of `mask` says whether item j is included, so the loop needs no recursion.",
       "answer": 32,
       "unit": "iterations"

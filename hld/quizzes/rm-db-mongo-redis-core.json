@@ -298,22 +298,22 @@
       "options": [
         {
           "id": "a",
-          "text": "`allkeys-lru`",
+          "text": "``allkeys-lru``",
           "why": "Right: any key may be evicted, least recently used first, so writes keep succeeding."
         },
         {
           "id": "b",
-          "text": "`noeviction`",
+          "text": "``noeviction``",
           "why": "Writes return OOM errors once memory is full, which is right for a primary store but not a cache."
         },
         {
           "id": "c",
-          "text": "`volatile-lru`",
+          "text": "``volatile-lru``",
           "why": "Only keys with a TTL are candidates, so keys without TTL fill memory and writes can still fail."
         },
         {
           "id": "d",
-          "text": "`volatile-ttl`",
+          "text": "``volatile-ttl``",
           "why": "Same candidate pool as `volatile-lru`, and it evicts by shortest remaining TTL, not usage."
         }
       ],

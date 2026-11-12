@@ -241,7 +241,7 @@
       "difficulty": 2,
       "prompt": "Read the assertion (A) and the reason (R), then choose the option that fits.",
       "assertion": "`spring.jpa.hibernate.ddl-auto=update` is a good way to manage the schema of a production database.",
-      "reason": "Hibernate `update` mode only adds missing tables and columns`;` it never drops or renames anything and keeps no history.",
+      "reason": "Hibernate `update` mode only adds missing tables and columns; it never drops or renames anything and keeps no history.",
       "correct": [
         "d"
       ],
@@ -390,7 +390,7 @@
       "concept": "HikariCP",
       "type": "truefalse",
       "difficulty": 2,
-      "prompt": "True or false: with `maximumPoolSize = 10`, Hikari never opens an 11th connection`;` additional threads wait up to `connectionTimeout` and then get an exception.",
+      "prompt": "True or false: with `maximumPoolSize = 10`, Hikari never opens an 11th connection; additional threads wait up to `connectionTimeout` and then get an exception.",
       "options": [
         {
           "id": "a",

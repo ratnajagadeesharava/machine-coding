@@ -79,7 +79,7 @@
       "concept": "Composite indexes",
       "type": "integer",
       "difficulty": 2,
-      "prompt": "A B-tree index exists on `(a, b, c)`. Under the classic leftmost-prefix rule, for how many of these WHERE clauses can the index seek on the leading column `a`? `(1) a = 1; (2) b = 2; (3) a = 1 AND b = 2; (4) a = 1 AND c = 3; (5) b = 2 AND c = 3; (6) a = 1 AND b = 2 AND c = 3`.",
+      "prompt": "A B-tree index exists on `(a, b, c)`. Under the classic leftmost-prefix rule, for how many of these WHERE clauses can the index seek on the leading column `a`?\n\n```text\n(1) a = 1;\n(2) b = 2;\n(3) a = 1 AND b = 2;\n(4) a = 1 AND c = 3;\n(5) b = 2 AND c = 3;\n(6) a = 1 AND b = 2 AND c = 3\n```\n\n.",
       "answer": 4,
       "explanation": "Clauses 1, 3, 4 and 6 constrain a, so the tree can be descended directly (in 4 only a narrows the range; c is just a filter inside it). Clauses 2 and 5 lack the leading column and, at best, scan the whole index.",
       "unit": "clauses"

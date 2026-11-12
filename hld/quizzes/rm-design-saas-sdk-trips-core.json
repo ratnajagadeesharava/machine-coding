@@ -49,7 +49,7 @@
       "concept": "Row level security",
       "type": "code",
       "difficulty": 3,
-      "prompt": "In PostgreSQL, turn on row level security for table orders and add a policy named tenant_isolation that only lets rows through where tenant_id equals the uuid in the session setting app.tenant_id.",
+      "prompt": "In PostgreSQL, turn on row level security for table `orders` and add a policy named `tenant_isolation` that only lets rows through where `tenant_id` equals the `uuid` in the session setting `app.tenant_id`.",
       "language": "sql",
       "checks": [
         {
@@ -70,7 +70,7 @@
         }
       ],
       "model": "ALTER TABLE orders ENABLE ROW LEVEL SECURITY;\nCREATE POLICY tenant_isolation ON orders\n  USING (tenant_id = current_setting('app.tenant_id')::uuid);",
-      "explanation": "The application runs SET app.tenant_id = ... (or set_config) per request or transaction. The table owner and superusers bypass RLS unless FORCE ROW LEVEL SECURITY is used, so connect as a normal role."
+      "explanation": "The application runs `SET app.tenant_id = ...` (or `set_config`) per request or transaction. The table owner and superusers bypass RLS unless `FORCE ROW LEVEL SECURITY` is used, so connect as a normal role."
     },
     {
       "id": "schema-count",
@@ -213,7 +213,7 @@
       "concept": "Deprecation",
       "type": "code",
       "difficulty": 2,
-      "prompt": "The endpoint /v1/fetch is replaced by /v2/fetch. Write the three HTTP response headers that tell clients it is deprecated, that it will be removed on Fri, 31 Dec 2027 23:59:59 GMT (RFC 8594), and where the successor lives.",
+      "prompt": "The endpoint `/v1/fetch` is replaced by `/v2/fetch`. Write the three HTTP response headers that tell clients it is deprecated, that it will be removed on `Fri, 31 Dec 2027 23:59:59 GMT` (RFC 8594), and where the successor lives.",
       "language": "http",
       "checks": [
         {
@@ -230,7 +230,7 @@
         }
       ],
       "model": "Deprecation: true\nSunset: Fri, 31 Dec 2027 23:59:59 GMT\nLink: </v2/fetch>; rel=\"successor-version\"",
-      "explanation": "Sunset is defined by RFC 8594; the Deprecation header (RFC 9745) can carry a date or true, and rel=\"successor-version\" comes from the IANA link relation registry. Pair the headers with changelog notices, usage metrics per client, and removal only in the next major version. Other correct header orders pass."
+      "explanation": "`Sunset` is defined by RFC 8594; the `Deprecation` header (RFC 9745) can carry a date or true, and `rel=\"successor-version\"` comes from the IANA link relation registry. Pair the headers with changelog notices, usage metrics per client, and removal only in the next major version. Other correct header orders pass."
     },
     {
       "id": "leaky-types",
@@ -350,7 +350,7 @@
       "concept": "Optimistic locking",
       "type": "code",
       "difficulty": 3,
-      "prompt": "Write the SQL that completes a trip: set status to COMPLETED and increment version, but only if the row with id = 7 is still in status STARTED and has version = 3.",
+      "prompt": "Write the SQL that completes a trip: set `status` to `COMPLETED` and increment `version`, but only if the row with `id = 7` is still in status `STARTED` and has `version = 3`.",
       "language": "sql",
       "checks": [
         {
@@ -407,20 +407,20 @@
         {
           "id": "b",
           "text": "False",
-          "why": "Right: owners (and superusers or roles with BYPASSRLS) skip policies unless the owner opts in with ALTER TABLE ... FORCE ROW LEVEL SECURITY."
+          "why": "Right: owners (and superusers or roles with BYPASSRLS) skip policies unless the owner opts in with ALTER TABLE ... `FORCE ROW LEVEL SECURITY`."
         }
       ],
       "correct": [
         "b"
       ],
-      "explanation": "Use a separate non-owner application role without BYPASSRLS, and consider FORCE ROW LEVEL SECURITY. With RLS enabled and no policy, non-owner roles see no rows (default deny)."
+      "explanation": "Use a separate non-owner application role without BYPASSRLS, and consider `FORCE ROW LEVEL SECURITY`. With RLS enabled and no policy, non-owner roles see no rows (default deny)."
     },
     {
       "id": "semver-zero",
       "concept": "Semantic versioning",
       "type": "truefalse",
       "difficulty": 2,
-      "prompt": "True or false: under Semantic Versioning 2.0.0, versions 0.y.z are for initial development and anything may change at any time.",
+      "prompt": "True or false: under Semantic Versioning 2.0.0, versions `0.y.z` are for initial development and anything may change at any time.",
       "options": [
         {
           "id": "a",
@@ -430,7 +430,7 @@
         {
           "id": "b",
           "text": "False",
-          "why": "Incorrect: stability promises only begin at 1.0.0; 0.y.z carries no compatibility guarantee."
+          "why": "Incorrect: stability promises only begin at 1.0.0; `0.y.z` carries no compatibility guarantee."
         }
       ],
       "correct": [

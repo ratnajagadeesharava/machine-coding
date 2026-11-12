@@ -157,7 +157,7 @@
       "concept": "Bit tricks",
       "type": "code",
       "difficulty": 1,
-      "prompt": "Write a Python function `missing_number(nums)` for a list holding n distinct numbers taken from 0..n with one missing`;` return the missing one in O(n) time and O(1) extra space using XOR or a sum.",
+      "prompt": "Write a Python function `missing_number(nums)` for a list holding n distinct numbers taken from 0..n with one missing; return the missing one in O(n) time and O(1) extra space using XOR or a sum.",
       "explanation": "XOR of 0..n with every element cancels all pairs and leaves the missing number. `n(n+1)/2 - sum(nums)` is the equally valid sum version, and Python ints never overflow. Sorting or a hash set would use more time or space.",
       "language": "python",
       "starter": "def missing_number(nums):\n    ",

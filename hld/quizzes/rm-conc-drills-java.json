@@ -248,7 +248,7 @@
       "concept": "Thread ordering",
       "type": "code",
       "difficulty": 2,
-      "prompt": "Three threads run `first()`, `second()` and `third()` in an arbitrary start order, but the output must always be first, second, third. Given `CountDownLatch l1` and `l2` (each `new CountDownLatch(1)`), write the three `methods;` each prints its own name and may throw `InterruptedException`.",
+      "prompt": "Three threads run `first()`, `second()` and `third()` in an arbitrary start order, but the output must always be first, second, third. Given `CountDownLatch l1` and `l2` (each `new CountDownLatch(1)`), write the three methods; each prints its own name and may throw `InterruptedException`.",
       "language": "java",
       "checks": [
         {

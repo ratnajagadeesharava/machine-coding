@@ -52,7 +52,7 @@
       "options": [
         {
           "id": "a",
-          "text": "The node replies MOVED, and the client updates its slot map and retries.",
+          "text": "The node replies `MOVED`, and the client updates its slot map and retries.",
           "why": "Right: clients cache the map; nodes do not forward requests."
         },
         {
@@ -114,12 +114,12 @@
       "concept": "Hash tags",
       "type": "single",
       "difficulty": 3,
-      "prompt": "How do you make {user:123}:posts and {user:123}:likes land on the same node?",
+      "prompt": "How do you make `{user:123}:posts` and `{user:123}:likes` land on the same node?",
       "options": [
         {
           "id": "a",
           "text": "Hash tags: only the part inside braces is hashed, so both keys share a slot.",
-          "why": "Right: ready for a MULTI transaction across both."
+          "why": "Right: ready for a `MULTI` transaction across both."
         },
         {
           "id": "b",
@@ -264,7 +264,7 @@
       "correct": [
         "b"
       ],
-      "explanation": "Clients read from the primary unless configured for replica reads (READONLY), which interviewers like to probe."
+      "explanation": "Clients read from the primary unless configured for replica reads (`READONLY`), which interviewers like to probe."
     }
   ]
 }

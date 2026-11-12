@@ -16,7 +16,7 @@
       "concept": "Idempotency on resume",
       "type": "integer",
       "difficulty": 3,
-      "prompt": "A node does: `charge_card(); ok = interrupt('approve?'); return {'ok': ok}`. The graph runs with a checkpointer until the interrupt, then you resume once with `Command(resume=True)`. How many times in total is `charge_card()` executed?",
+      "prompt": "A node does:\n\n```python\ncharge_card()\nok = interrupt('approve?')\nreturn {'ok': ok}\n```\n\nThe graph runs with a checkpointer until the interrupt, then you resume once with `Command(resume=True)`. How many times in total is `charge_card()` executed?",
       "answer": 2,
       "explanation": "On resume LangGraph re-runs the interrupted node from its first line; `interrupt()` then returns the resume value instead of pausing. So the code before `interrupt()` runs twice (I counted it with a run). Put side effects after `interrupt()` or make them idempotent.",
       "unit": "calls"

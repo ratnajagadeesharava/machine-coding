@@ -394,7 +394,7 @@
       "concept": "Binary search",
       "type": "single",
       "difficulty": 2,
-      "prompt": "A Python loop reads `while lo <= hi: mid = (lo + hi) // 2; if a[mid] < target: lo = mid; else: hi = mid - 1`. Which situation makes it loop forever?",
+      "prompt": "A Python loop reads\n\n```python\nwhile lo <= hi: mid = (lo + hi) // 2\nif a[mid] < target: lo = mid\nelse: hi = mid - 1\n```\n\nWhich situation makes it loop forever?",
       "options": [
         {
           "id": "a",

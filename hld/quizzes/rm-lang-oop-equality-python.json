@@ -235,7 +235,7 @@
       "concept": "Equality and hashing",
       "type": "integer",
       "difficulty": 2,
-      "prompt": "Consider `x = [1, 2]; y = x; z = [1, 2]`. How many of these four expressions are True: `x is y`, `x == z`, `x is z`, `x is not z`?",
+      "prompt": "Consider\n\n```python\nx = [1, 2]\ny = x\nz = [1, 2]\n```\n\nHow many of these four expressions are True: `x is y`, `x == z`, `x is z`, `x is not z`?",
       "answer": 3,
       "tolerance": 0,
       "explanation": "`x is y` is True (same object), `x == z` is True (equal values), `x is z` is False (different objects), `x is not z` is True. `==` compares values via `__eq__`, is compares identity."

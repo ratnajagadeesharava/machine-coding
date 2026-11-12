@@ -41,14 +41,14 @@
       "correct": [
         "a"
       ],
-      "explanation": "ZADD sets or replaces a member's score, so re-adding a post with a new count moves its rank."
+      "explanation": "`ZADD` sets or replaces a member's score, so re-adding a post with a new count moves its rank."
     },
     {
       "id": "trim",
       "concept": "Leaderboards",
       "type": "single",
       "difficulty": 3,
-      "prompt": "ZREMRANGEBYRANK tiger_posts 0 -6 keeps what?",
+      "prompt": "`ZREMRANGEBYRANK tiger_posts 0 -6` keeps what?",
       "options": [
         {
           "id": "a",
@@ -81,7 +81,7 @@
       "concept": "Rate limiting",
       "type": "single",
       "difficulty": 2,
-      "prompt": "How does a fixed-window limiter work with INCR?",
+      "prompt": "How does a fixed-window limiter work with `INCR`?",
       "options": [
         {
           "id": "a",
@@ -118,7 +118,7 @@
       "options": [
         {
           "id": "a",
-          "text": "Only when INCR returns 1, the first request of the window.",
+          "text": "Only when `INCR` returns 1, the first request of the window.",
           "why": "Right: otherwise traffic keeps pushing the reset forward."
         },
         {
@@ -140,7 +140,7 @@
       "correct": [
         "a"
       ],
-      "explanation": "Run INCR and EXPIRE as one Lua script so a crash between them cannot leave a counter that never resets."
+      "explanation": "Run `INCR` and `EXPIRE` as one Lua script so a crash between them cannot leave a counter that never resets."
     },
     {
       "id": "sliding-window",
@@ -151,17 +151,17 @@
       "options": [
         {
           "id": "a",
-          "text": "Remove entries older than the window with ZREMRANGEBYSCORE.",
+          "text": "Remove entries older than the window with `ZREMRANGEBYSCORE`.",
           "why": "Yes: drop expired timestamps."
         },
         {
           "id": "b",
-          "text": "Count what is left with ZCARD.",
+          "text": "Count what is left with `ZCARD`.",
           "why": "Yes: that is the current request count."
         },
         {
           "id": "c",
-          "text": "Add the new request with ZADD if the count is under N.",
+          "text": "Add the new request with `ZADD` if the count is under N.",
           "why": "Yes: record accepted requests."
         },
         {
@@ -186,22 +186,22 @@
       "options": [
         {
           "id": "a",
-          "text": "GEOADD to index it and GEOSEARCH to query a radius.",
+          "text": "`GEOADD` to index it and `GEOSEARCH` to query a radius.",
           "why": "Right: built-in geospatial support."
         },
         {
           "id": "b",
-          "text": "SADD and SMEMBERS on a set of coordinates in the majority of deployments.",
+          "text": "`SADD` and `SMEMBERS` on a set of coordinates in the majority of deployments.",
           "why": "Sets have no distance search."
         },
         {
           "id": "c",
-          "text": "XADD and XREAD on a stream of coordinates.",
+          "text": "`XADD` and `XREAD` on a stream of coordinates.",
           "why": "Streams are logs, not spatial indexes."
         },
         {
           "id": "d",
-          "text": "PUBLISH and SUBSCRIBE on a location channel as a general rule of thumb.",
+          "text": "`PUBLISH` and `SUBSCRIBE` on a location channel as a general rule of thumb.",
           "why": "Pub/Sub does not store points."
         }
       ],
@@ -215,7 +215,7 @@
       "concept": "Proximity search",
       "type": "single",
       "difficulty": 3,
-      "prompt": "Why does GEOSEARCH cost O(N + log M) with two different counts?",
+      "prompt": "Why does `GEOSEARCH` cost `O(N + log M)` with two different counts?",
       "options": [
         {
           "id": "a",

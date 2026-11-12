@@ -25,7 +25,7 @@
         },
         {
           "id": "c",
-          "text": "Relational databases serialise all SELECT statements, so only one read can run at a time.",
+          "text": "Relational databases serialise all `SELECT` statements, so only one read can run at a time.",
           "why": "False: databases serve many concurrent reads. The limit is total capacity, not a lack of parallelism."
         },
         {
@@ -143,27 +143,27 @@
       "concept": "Indexing",
       "type": "single",
       "difficulty": 3,
-      "prompt": "You create a compound index on (status, created_at). Which query gets NO help from it?",
+      "prompt": "You create a compound index on `(status, created_at)`. Which query gets NO help from it?",
       "options": [
         {
           "id": "a",
-          "text": "WHERE created_at > '2025-01-01' (no filter on status)",
-          "why": "Correct: the index is ordered by status first, so a filter on created_at alone cannot use it efficiently."
+          "text": "`WHERE created_at > '2025-01-01'` (no filter on status)",
+          "why": "Correct: the index is ordered by status first, so a filter on `created_at` alone cannot use it efficiently."
         },
         {
           "id": "b",
-          "text": "WHERE status = 'shipped'",
+          "text": "`WHERE status = 'shipped'`",
           "why": "This uses the leading column of the index."
         },
         {
           "id": "c",
-          "text": "WHERE status = 'shipped' AND created_at > '2025-01-01'",
+          "text": "`WHERE status = 'shipped' AND created_at > '2025-01-01'`",
           "why": "This uses both columns, the ideal case."
         },
         {
           "id": "d",
-          "text": "WHERE status = 'shipped' ORDER BY created_at",
-          "why": "The index already provides rows for one status in created_at order."
+          "text": "`WHERE status = 'shipped' ORDER BY created_at`",
+          "why": "The index already provides rows for one status in `created_at` order."
         }
       ],
       "correct": [
@@ -203,7 +203,7 @@
       "options": [
         {
           "id": "a",
-          "text": "Denormalisation: copy the user and product fields into one order_summary table so a single read replaces the join.",
+          "text": "Denormalisation: copy the user and product fields into one `order_summary` table so a single read replaces the join.",
           "why": "Correct: one single-table read replaces a four-way join."
         },
         {
@@ -274,7 +274,7 @@
         },
         {
           "id": "b",
-          "text": "Add an index on reviews.rating so the average can be computed from already-sorted data on every single page load.",
+          "text": "Add an index on `reviews.rating` so the average can be computed from already-sorted data on every single page load.",
           "why": "The database still has to aggregate every matching review per product."
         },
         {

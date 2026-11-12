@@ -77,7 +77,7 @@
       "concept": "nDCG",
       "type": "code",
       "difficulty": 3,
-      "prompt": "Write `static double ndcgAtK(double[] rels, int k)` where `rels` holds the graded relevance of the retrieved documents in rank order. DCG sums `rel / log2(position + 1)` over the first `k` `results;` divide by the DCG of the same scores sorted best first. Return 0 when the ideal DCG is 0.",
+      "prompt": "Write `static double ndcgAtK(double[] rels, int k)` where `rels` holds the graded relevance of the retrieved documents in rank order. DCG sums `rel / log2(position + 1)` over the first `k` results; divide by the DCG of the same scores sorted best first. Return 0 when the ideal DCG is 0.",
       "language": "java",
       "checks": [
         {

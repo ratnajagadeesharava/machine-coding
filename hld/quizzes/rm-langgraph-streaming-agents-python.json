@@ -16,7 +16,7 @@
       "concept": "Subgraphs",
       "type": "integer",
       "difficulty": 3,
-      "prompt": "Parent and subgraph share the key `x` declared as `Annotated[list, operator.add]`. The parent node `p1` returns `{'x': ['p1']}`, then the subgraph node `sub` `runs;` inside, node `s1` returns `{'x': ['s1']}`. The parent started with `x = []`. How many items are in `x` at the end?",
+      "prompt": "Parent and subgraph share the key `x` declared as `Annotated[list, operator.add]`. The parent node `p1` returns `{'x': ['p1']}`, then the subgraph node `sub` runs; inside, node `s1` returns `{'x': ['s1']}`. The parent started with `x = []`. How many items are in `x` at the end?",
       "answer": 3,
       "explanation": "The subgraph receives x = `['p1']`, appends 's1' and returns its full state `['p1', 's1']`; the parent's add reducer then appends that to `['p1']`, giving `['p1', 'p1', 's1']`: 3 items. I ran it. Fix by giving the subgraph its own state schema or an overwrite/dedupe reducer.",
       "unit": "items"
@@ -36,7 +36,7 @@
       "concept": "Copilot graph",
       "type": "integer",
       "difficulty": 3,
-      "prompt": "Reference design used in this roadmap, an 11-node copilot graph: `guard_in` (input policy check, no LLM), `router` (LLM classifier), `retrieve` (vector search), `grade_docs` (LLM relevance check), `tool_agent` (LLM with `bind_tools`), `tools` (`ToolNode`), `approval` (human interrupt), `sql_gen` (LLM text-to-SQL), `sql_validate` (code check), `sql_exec` (read-only run), `respond` (LLM answer, streamed). A data question generates SQL, and `sql_validate` rejects the first two attempts and routes back to `sql_gen` `each time;` the third attempt passes and executes. How many LLM calls are made in total?",
+      "prompt": "Reference design used in this roadmap, an 11-node copilot graph: `guard_in` (input policy check, no LLM), `router` (LLM classifier), `retrieve` (vector search), `grade_docs` (LLM relevance check), `tool_agent` (LLM with `bind_tools`), `tools` (`ToolNode`), `approval` (human interrupt), `sql_gen` (LLM text-to-SQL), `sql_validate` (code check), `sql_exec` (read-only run), `respond` (LLM answer, streamed). A data question generates SQL, and `sql_validate` rejects the first two attempts and routes back to `sql_gen` each time; the third attempt passes and executes. How many LLM calls are made in total?",
       "answer": 5,
       "explanation": "router (1) + `sql_gen` three times (3) + respond (1) = 5. `sql_validate` and `sql_exec` are plain code. Cap the regeneration loop with a counter in state so a stubborn failure does not run forever.",
       "unit": "LLM calls"

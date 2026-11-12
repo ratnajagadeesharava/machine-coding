@@ -47,7 +47,7 @@
       "concept": "Row-level locking",
       "type": "single",
       "difficulty": 2,
-      "prompt": "What does SELECT ... FOR UPDATE do in the bidding transaction?",
+      "prompt": "What does `SELECT ... FOR UPDATE` do in the bidding transaction?",
       "options": [
         {
           "id": "a",
@@ -179,7 +179,7 @@
       "concept": "Optimistic concurrency",
       "type": "single",
       "difficulty": 3,
-      "prompt": "You add a version column and run UPDATE ... WHERE id = ? AND version = 5. Zero rows are updated. What does it mean?",
+      "prompt": "You add a version column and run `UPDATE ... WHERE id = ? AND version = 5`. Zero rows are updated. What does it mean?",
       "options": [
         {
           "id": "a",
@@ -258,11 +258,11 @@
       "concept": "Concurrent transactions",
       "type": "single",
       "difficulty": 2,
-      "prompt": "Which approach avoids lost updates on a counter such as stock = stock - 1?",
+      "prompt": "Which approach avoids lost updates on a counter such as `stock = stock - 1`?",
       "options": [
         {
           "id": "a",
-          "text": "A single atomic UPDATE using the current value in the statement itself.",
+          "text": "A single atomic `UPDATE` using the current value in the statement itself.",
           "why": "Right: the database applies it atomically per row."
         },
         {

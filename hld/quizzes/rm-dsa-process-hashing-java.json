@@ -301,7 +301,7 @@
       "concept": "Two sum family",
       "type": "single",
       "difficulty": 2,
-      "prompt": "This Java two sum puts first and then checks: `for (int i = 0; i < nums.length; i++) { seen.put(nums[i], i); Integer j = seen.get(target - nums[i]); if (j != null) return new int[]{j, i}; }`. What does it return for `nums = {3, 2, 4}`, `target = 6`?",
+      "prompt": "This Java two sum puts first and then checks:\n\n```java\nfor (int i = 0; i < nums.length; i++) {\n    seen.put(nums[i], i);\n    Integer j = seen.get(target - nums[i]);\n    if (j != null) return new int[] {\n        j, i\n    };\n}\n```\n\nWhat does it return for `nums = {3, 2, 4}`, `target = 6`?",
       "options": [
         {
           "id": "a",

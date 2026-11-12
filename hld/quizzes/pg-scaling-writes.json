@@ -47,7 +47,7 @@
       "concept": "Batching",
       "type": "single",
       "difficulty": 2,
-      "prompt": "Instead of 1,000 single-row inserts you send one multi-row INSERT in one transaction. What is the main risk?",
+      "prompt": "Instead of 1,000 single-row inserts you send one multi-row `INSERT` in one transaction. What is the main risk?",
       "options": [
         {
           "id": "a",
@@ -150,7 +150,7 @@
       "options": [
         {
           "id": "a",
-          "text": "user_id, so each user's posts live on one shard.",
+          "text": "`user_id`, so each user's posts live on one shard.",
           "why": "Right: avoids scatter-gather for the common query."
         },
         {
@@ -160,7 +160,7 @@
         },
         {
           "id": "c",
-          "text": "The post's created_at date, bucketed by day.",
+          "text": "The post's `created_at` date, bucketed by day.",
           "why": "It sends all new writes to the same hot shard."
         },
         {
@@ -216,7 +216,7 @@
         },
         {
           "id": "c",
-          "text": "Increase max_connections to the number of clients as a general rule of thumb.",
+          "text": "Increase `max_connections` to the number of clients as a general rule of thumb.",
           "why": "More processes worsen context switching."
         },
         {

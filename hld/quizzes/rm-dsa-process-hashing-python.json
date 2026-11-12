@@ -297,7 +297,7 @@
       "concept": "Two sum family",
       "type": "single",
       "difficulty": 2,
-      "prompt": "This Python two sum inserts first and then checks: `for i, x in enumerate(nums): seen[x] = i; if target - x in seen: return [seen[target - x], i]`. What does it return for `nums = [3, 2, 4]`, `target = 6`?",
+      "prompt": "This Python two sum inserts first and then checks:\n\n```python\nfor i, x in enumerate(nums): seen[x] = i\nif target - x in seen: return [seen[target - x], i]\n```\n\nWhat does it return for `nums = [3, 2, 4]`, `target = 6`?",
       "options": [
         {
           "id": "a",

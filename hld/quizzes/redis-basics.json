@@ -96,7 +96,7 @@
         {
           "id": "c",
           "text": "Geospatial indexes for proximity search.",
-          "why": "Yes: GEOADD and GEOSEARCH are built in."
+          "why": "Yes: `GEOADD` and `GEOSEARCH` are built in."
         },
         {
           "id": "d",
@@ -116,17 +116,17 @@
       "concept": "Commands",
       "type": "single",
       "difficulty": 1,
-      "prompt": "What does the sequence SET foo 1, then INCR foo return from INCR?",
+      "prompt": "What does the sequence SET foo 1, then `INCR` foo return from `INCR`?",
       "options": [
         {
           "id": "a",
           "text": "2, the incremented value.",
-          "why": "Right: INCR atomically adds one and returns the result."
+          "why": "Right: `INCR` atomically adds one and returns the result."
         },
         {
           "id": "b",
           "text": "1, the original value.",
-          "why": "INCR returns the new value, not the old one."
+          "why": "`INCR` returns the new value, not the old one."
         },
         {
           "id": "c",
@@ -186,7 +186,7 @@
       "options": [
         {
           "id": "a",
-          "text": "Pipeline the commands or use MGET so one round trip serves all of them.",
+          "text": "Pipeline the commands or use `MGET` so one round trip serves all of them.",
           "why": "Right: the server cost is tiny; round trips are what add up."
         },
         {
@@ -208,7 +208,7 @@
       "correct": [
         "a"
       ],
-      "explanation": "N+1 against Redis will not sink a design, but pipelining or MGET still pays one round trip instead of a hundred."
+      "explanation": "N+1 against Redis will not sink a design, but pipelining or `MGET` still pays one round trip instead of a hundred."
     },
     {
       "id": "everything-memory",

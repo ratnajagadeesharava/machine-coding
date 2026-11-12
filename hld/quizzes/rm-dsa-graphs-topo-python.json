@@ -45,7 +45,7 @@
       "concept": "Graphs",
       "type": "code",
       "difficulty": 2,
-      "prompt": "Write a Python function `num_islands(grid)` for a grid of `\"1\"` (land) and `\"0\"` (water) `strings;` count the 4-directionally connected groups of land. You may modify the grid.",
+      "prompt": "Write a Python function `num_islands(grid)` for a grid of `\"1\"` (land) and `\"0\"` (water) strings; count the 4-directionally connected groups of land. You may modify the grid.",
       "language": "python",
       "starter": "def num_islands(grid):\n    ",
       "checks": [

@@ -25,7 +25,7 @@
       "concept": "HashMap internals",
       "type": "integer",
       "difficulty": 3,
-      "prompt": "Since Java 8 a long collision chain in a `HashMap` bin can be converted into a red-black tree, but only if the table capacity is at least some minimum`;` below it the table is resized instead. What is that minimum capacity (`MIN_TREEIFY_CAPACITY`)?",
+      "prompt": "Since Java 8 a long collision chain in a `HashMap` bin can be converted into a red-black tree, but only if the table capacity is at least some minimum; below it the table is resized instead. What is that minimum capacity (`MIN_TREEIFY_CAPACITY`)?",
       "answer": 64,
       "explanation": "`TREEIFY_THRESHOLD = 8` (a bin is converted when an insertion makes the chain longer than 8, i.e. the 9th node), `UNTREEIFY_THRESHOLD = 6`, `MIN_TREEIFY_CAPACITY = 64`: while the table is smaller than 64 a long chain triggers a resize instead. Trees give O(log n) worst-case lookups instead of O(n), best for `Comparable` keys."
     },
