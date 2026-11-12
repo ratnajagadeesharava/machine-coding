@@ -41,6 +41,7 @@ The **Quizzes** tab (`/quiz.html`) is for checking what you know between intervi
   messaging, system design, backend concepts, AI engineering, behavioural prep) and a search box. Open a subject to see its **topic cards** (for example
   *Java: multithreading*), open a topic to see its **quizzes**. Search works at every level and shows where each result lives. Java and Python quizzes
   are never mixed: each has its own topics. The subject list lives in `shared/subjects.js`.
+- **Focused player:** starting a quiz opens a full-screen player (one question at a time, progress segments, keyboard `1-9` / `Enter` / arrows / `F` flag / `C` Claude). The **Ask Claude** panel slides in from the right after you check an answer, with the explanation first and follow-up suggestions you can hide. The page uses one light cream-and-amber look everywhere; there is no dark mode.
 - **Modes:** full quiz, **Quick 10** (a random ten), and **Retry missed** (only what you got wrong last time). A toggle switches between
   feedback after every question and exam style with everything revealed at the end.
 - **Every option explains itself** once you have answered, and a summary shows your score by concept, weakest first, with a review
