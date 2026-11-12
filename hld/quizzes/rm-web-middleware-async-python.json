@@ -16,10 +16,10 @@
       "concept": "Middleware (FastAPI)",
       "type": "integer",
       "difficulty": 3,
-      "prompt": "Three Starlette middleware A, B and C are added to an app in that order with app.add_middleware(A), then B, then C. At which position (1 = first to see an incoming request) does A's pre-request code run?",
+      "prompt": "Three Starlette middleware A, B and C are added to an app in that order with `app.add_middleware(A)`, then B, then C. At which position (1 = first to see an incoming request) does A's pre-request code run?",
       "answer": 3,
       "tolerance": 0,
-      "explanation": "Middleware added last is outermost, so a request goes C, B, A. Responses unwind A, B, C. Verified with @app.middleware logging.",
+      "explanation": "Middleware added last is outermost, so a request goes C, B, A. Responses unwind A, B, C. Verified with `@app.middleware` logging.",
       "unit": "position"
     },
     {
@@ -27,7 +27,7 @@
       "concept": "Middleware (FastAPI)",
       "type": "code",
       "difficulty": 2,
-      "prompt": "Write a FastAPI HTTP middleware that measures how long the request took (time.perf_counter) and sets the response header X-Process-Time.",
+      "prompt": "Write a FastAPI HTTP middleware that measures how long the request took (`time.perf_counter`) and sets the response header `X-Process-Time`.",
       "language": "python",
       "starter": "import time\n",
       "checks": [
@@ -49,14 +49,14 @@
         }
       ],
       "model": "@app.middleware(\"http\")\nasync def add_time(request, call_next):\n    start = time.perf_counter()\n    response = await call_next(request)\n    response.headers[\"X-Process-Time\"] = str(time.perf_counter() - start)\n    return response",
-      "explanation": "Pure ASGI middleware or add_middleware(BaseHTTPMiddleware) subclasses are equivalent. Note BaseHTTPMiddleware has caveats with streaming responses and contextvars."
+      "explanation": "Pure ASGI middleware or `add_middleware(BaseHTTPMiddleware)` subclasses are equivalent. Note `BaseHTTPMiddleware` has caveats with streaming responses and `contextvars`."
     },
     {
       "id": "api-key-dependency",
       "concept": "Dependencies as cross-cutting (FastAPI)",
       "type": "code",
       "difficulty": 2,
-      "prompt": "Write a FastAPI dependency require_key that reads the X-API-Key header and raises HTTPException 401 unless it equals \"secret\", then attach it to a router so every route needs it.",
+      "prompt": "Write a FastAPI dependency `require_key` that reads the `X-API-Key` header and raises `HTTPException 401` unless it equals `\"secret\"`, then attach it to a router so every route needs it.",
       "language": "python",
       "starter": "from fastapi import APIRouter, Depends, Header, HTTPException\n",
       "checks": [
@@ -74,7 +74,7 @@
         }
       ],
       "model": "def require_key(x_api_key: str = Header(...)):\n    if x_api_key != \"secret\":\n        raise HTTPException(status_code=401)\n\nrouter = APIRouter(dependencies=[Depends(require_key)])",
-      "explanation": "Dependencies are the FastAPI answer to per-route auth: they run inside routing, know path params and can use other dependencies. Verified: missing header gives 422, wrong key 401, right key 200."
+      "explanation": "Dependencies are the FastAPI answer to per-route auth: they run inside routing, know path params and can use other dependencies. Verified: missing header gives `422`, wrong key 401, right key 200."
     },
     {
       "id": "dependency-vs-middleware",
@@ -82,7 +82,7 @@
       "type": "assertion",
       "difficulty": 3,
       "prompt": "Judge the assertion and the reason.",
-      "assertion": "A FastAPI dependency can short-circuit a request by raising HTTPException.",
+      "assertion": "A FastAPI dependency can short-circuit a request by raising `HTTPException`.",
       "reason": "Dependencies run only after all middleware has already returned a response.",
       "correct": [
         "c"
@@ -100,10 +100,10 @@
       "concept": "Blocking calls",
       "type": "integer",
       "difficulty": 3,
-      "prompt": "An async def FastAPI endpoint calls time.sleep(2) inside its body. A single uvicorn worker receives 3 requests at the same instant. About how many seconds until the last client gets its response?",
+      "prompt": "An `async def` FastAPI endpoint calls `time.sleep(2)` inside its body. A single `uvicorn` worker receives 3 requests at the same instant. About how many seconds until the last client gets its response?",
       "answer": 6,
       "tolerance": 0,
-      "explanation": "time.sleep blocks the event loop, so requests are served one after another: 3 x 2 = 6. With a plain def the work runs in the threadpool, giving roughly 2, and await asyncio.sleep(2) also gives roughly 2.",
+      "explanation": "`time.sleep` blocks the event loop, so requests are served one after another: 3 x 2 = 6. With a plain `def` the work runs in the threadpool, giving roughly 2, and `await asyncio.sleep(2)` also gives roughly 2.",
       "unit": "seconds"
     },
     {
@@ -115,36 +115,36 @@
       "options": [
         {
           "id": "a",
-          "text": "A plain def endpoint, so FastAPI runs it in a threadpool.",
+          "text": "A plain `def` endpoint, so FastAPI runs it in a threadpool.",
           "why": "The sync code runs off the event loop, so other requests keep flowing."
         },
         {
           "id": "b",
-          "text": "async def, with the blocking call made directly inside the endpoint body.",
+          "text": "`async def`, with the blocking call made directly inside the endpoint body.",
           "why": "The blocking call freezes the whole event loop while it runs."
         },
         {
           "id": "c",
-          "text": "async def and sprinkle await in front of the driver call.",
+          "text": "`async def` and sprinkle `await` in front of the driver call.",
           "why": "Awaiting a non-awaitable fails; it does not make the driver non-blocking."
         },
         {
           "id": "d",
-          "text": "async def plus a global asyncio lock.",
+          "text": "`async def` plus a global `asyncio` lock.",
           "why": "A lock serialises requests and does not stop the loop from blocking."
         }
       ],
       "correct": [
         "a"
       ],
-      "explanation": "Use async def only with async libraries (asyncpg, httpx.AsyncClient) or offload with run_in_threadpool."
+      "explanation": "Use `async def` only with async libraries (`asyncpg`, `httpx.AsyncClient`) or offload with `run_in_threadpool`."
     },
     {
       "id": "sse-fastapi",
       "concept": "Streaming / SSE",
       "type": "code",
       "difficulty": 3,
-      "prompt": "Write a FastAPI GET /events endpoint that streams server-sent events: an async generator that yields \"data: tick N\" for N = 0, 1, 2 (with the SSE blank-line terminator), wrapped in a streaming response of the right media type.",
+      "prompt": "Write a FastAPI `GET /events` endpoint that streams server-sent events: an async generator that yields `\"data: tick N\"` for `N = 0, 1, 2` (with the SSE blank-line terminator), wrapped in a streaming response of the right media type.",
       "language": "python",
       "starter": "from fastapi.responses import StreamingResponse\n",
       "checks": [
@@ -166,17 +166,17 @@
         }
       ],
       "model": "@app.get(\"/events\")\nasync def events():\n    async def gen():\n        for n in range(3):\n            yield f\"data: tick {n}\\n\\n\"\n    return StreamingResponse(gen(), media_type=\"text/event-stream\")",
-      "explanation": "Each SSE event ends with a blank line. Verified: output is 'data: 0\\n\\ndata: 1\\n\\n' with content type text/event-stream. Browsers consume it with EventSource, which reconnects automatically."
+      "explanation": "Each SSE event ends with a blank line. Verified: output is `'data: 0\\n\\ndata: 1\\n\\n'` with content type `text/event-stream`. Browsers consume it with `EventSource`, which reconnects automatically."
     },
     {
       "id": "threadpool-limit",
       "concept": "Async endpoints (FastAPI)",
       "type": "integer",
       "difficulty": 3,
-      "prompt": "A plain def FastAPI endpoint runs time.sleep(1) in the default threadpool, which allows 40 worker threads. One uvicorn worker receives 100 requests at the same instant. About how many seconds until the last response?",
+      "prompt": "A plain `def` FastAPI endpoint runs `time.sleep(1)` in the default threadpool, which allows 40 worker threads. One `uvicorn` worker receives 100 requests at the same instant. About how many seconds until the last response?",
       "answer": 3,
       "tolerance": 0,
-      "explanation": "Sync endpoints run in AnyIO's threadpool with a default limit of 40 threads, so the 100 requests go in batches of 40, 40 and 20: 3 seconds (measured 3.3 s locally). The same 100 requests to an async def with asyncio.sleep(1) would take about 1 s.",
+      "explanation": "Sync endpoints run in `AnyIO`'s threadpool with a default limit of 40 threads, so the 100 requests go in batches of 40, 40 and 20: 3 seconds (measured 3.3 s locally). The same 100 requests to an `async def` with `asyncio.sleep(1)` would take about 1 s.",
       "unit": "seconds"
     },
     {
@@ -184,12 +184,12 @@
       "concept": "Exception handling",
       "type": "truefalse",
       "difficulty": 2,
-      "prompt": "True or false: in FastAPI, when a dependency raises HTTPException(401), the resulting 401 response still passes back through your @app.middleware(\"http\") function, so a header set there is added to it.",
+      "prompt": "True or false: in FastAPI, when a dependency raises `HTTPException(401)`, the resulting 401 response still passes back through your `@app.middleware(\"http\")` function, so a header set there is added to it.",
       "options": [
         {
           "id": "a",
           "text": "True",
-          "why": "Correct: HTTPException is converted to a response by Starlette's exception handling, which sits inside user middleware."
+          "why": "Correct: `HTTPException` is converted to a response by Starlette's exception handling, which sits inside user middleware."
         },
         {
           "id": "b",
@@ -200,14 +200,14 @@
       "correct": [
         "a"
       ],
-      "explanation": "ExceptionMiddleware sits inside the middleware you add, so HTTPException responses unwind through it (verified locally: 401 carried the middleware's header). Truly unhandled exceptions are turned into 500 by the outermost ServerErrorMiddleware."
+      "explanation": "`ExceptionMiddleware` sits inside the middleware you add, so `HTTPException` responses unwind through it (verified locally: 401 carried the middleware's header). Truly unhandled exceptions are turned into 500 by the outermost `ServerErrorMiddleware`."
     },
     {
       "id": "run-in-threadpool",
       "concept": "Async endpoints (FastAPI)",
       "type": "code",
       "difficulty": 2,
-      "prompt": "Inside an async def FastAPI route, call the blocking, synchronous function crunch(data) without freezing the event loop, by running it in a worker thread, and return the result.",
+      "prompt": "Inside an `async def` FastAPI route, call the blocking, synchronous function `crunch(data)` without freezing the event loop, by running it in a worker thread, and return the result.",
       "language": "python",
       "checks": [
         {
@@ -224,7 +224,7 @@
         }
       ],
       "model": "@app.post(\"/crunch\")\nasync def crunch_route(data: dict):\n    result = await run_in_threadpool(crunch, data)\n    return result",
-      "explanation": "asyncio.to_thread(crunch, data) is equivalent. Both use a thread pool, so CPU-bound pure-Python work still competes for the GIL; use a process pool or a task queue for heavy CPU work.",
+      "explanation": "`asyncio.to_thread(crunch, data)` is equivalent. Both use a thread pool, so CPU-bound pure-Python work still competes for the `GIL`; use a process pool or a task queue for heavy CPU work.",
       "starter": "from fastapi.concurrency import run_in_threadpool\nimport asyncio\n"
     },
     {
@@ -232,11 +232,11 @@
       "concept": "Event loop",
       "type": "integer",
       "difficulty": 2,
-      "prompt": "An async def route runs await asyncio.gather(a(), b(), c()), where each coroutine does await asyncio.sleep(0.5). About how many milliseconds does the route take?",
+      "prompt": "An `async def` route runs `await asyncio.gather(a(), b(), c())`, where each coroutine does `await asyncio.sleep(0.5)`. About how many milliseconds does the route take?",
       "answer": 500,
       "tolerance": 100,
       "unit": "ms",
-      "explanation": "gather starts the three coroutines together and the sleeps overlap, so the total is about 0.5 s (verified: 0.50 s). Awaiting them one after another would take about 1500 ms."
+      "explanation": "`gather` starts the three coroutines together and the sleeps overlap, so the total is about 0.5 s (verified: 0.50 s). Awaiting them one after another would take about 1500 ms."
     },
     {
       "id": "await-yields",
@@ -244,8 +244,8 @@
       "type": "assertion",
       "difficulty": 2,
       "prompt": "Judge the assertion and the reason.",
-      "assertion": "An async def route that awaits asyncio.sleep(2) does not stop the server from handling other requests during those 2 seconds.",
-      "reason": "await hands control back to the event loop until the awaited operation finishes.",
+      "assertion": "An `async def` route that awaits `asyncio.sleep(2)` does not stop the server from handling other requests during those 2 seconds.",
+      "reason": "`await` hands control back to the event loop until the awaited operation finishes.",
       "correct": [
         "a"
       ],
@@ -255,7 +255,7 @@
         "c": "Wrong: R is true.",
         "d": "Wrong: A is true."
       },
-      "explanation": "This is why async shines for I/O-bound work and why one blocking call such as time.sleep breaks it."
+      "explanation": "This is why async shines for I/O-bound work and why one blocking call such as `time.sleep` breaks it."
     },
     {
       "id": "starlette-stack",
@@ -266,19 +266,19 @@
       "left": [
         {
           "id": "l1",
-          "text": "ServerErrorMiddleware"
+          "text": "`ServerErrorMiddleware`"
         },
         {
           "id": "l2",
-          "text": "ExceptionMiddleware"
+          "text": "`ExceptionMiddleware`"
         },
         {
           "id": "l3",
-          "text": "CORSMiddleware"
+          "text": "`CORSMiddleware`"
         },
         {
           "id": "l4",
-          "text": "GZipMiddleware"
+          "text": "`GZipMiddleware`"
         }
       ],
       "right": [
@@ -288,11 +288,11 @@
         },
         {
           "id": "r2",
-          "text": "Converts HTTPException and registered exception handlers into responses"
+          "text": "Converts `HTTPException` and registered exception handlers into responses"
         },
         {
           "id": "r3",
-          "text": "Answers preflight requests and adds Access-Control-* headers"
+          "text": "Answers preflight requests and adds `Access-Control-*` headers"
         },
         {
           "id": "r4",
@@ -300,7 +300,7 @@
         },
         {
           "id": "r5",
-          "text": "Validates the request body against a Pydantic model"
+          "text": "Validates the request body against a `Pydantic` model"
         },
         {
           "id": "r6",
@@ -313,14 +313,14 @@
         "l3": "r3",
         "l4": "r4"
       },
-      "explanation": "Request validation happens inside routing, not in middleware. Custom middleware you add sits between ServerErrorMiddleware and ExceptionMiddleware."
+      "explanation": "Request validation happens inside routing, not in middleware. Custom middleware you add sits between `ServerErrorMiddleware` and `ExceptionMiddleware`."
     },
     {
       "id": "cors-middleware",
       "concept": "CORS",
       "type": "code",
       "difficulty": 2,
-      "prompt": "Add Starlette's CORS middleware to a FastAPI app so that only the origin https://app.example.com may call the API, with only the methods GET and POST.",
+      "prompt": "Add Starlette's CORS middleware to a FastAPI app so that only the origin `https://app.example.com` may call the API, with only the methods `GET` and `POST`.",
       "language": "python",
       "checks": [
         {
@@ -337,7 +337,7 @@
         }
       ],
       "model": "app.add_middleware(\n    CORSMiddleware,\n    allow_origins=[\"https://app.example.com\"],\n    allow_methods=[\"GET\", \"POST\"],\n)",
-      "explanation": "Verified: a request with Origin: https://app.example.com receives the matching Access-Control-Allow-Origin header. Never combine allow_origins=[\"*\"] with allow_credentials=True.",
+      "explanation": "Verified: a request with `Origin: https://app.example.com` receives the matching `Access-Control-Allow-Origin` header. Never combine `allow_origins=[\"*\"]` with `allow_credentials=True`.",
       "starter": "from fastapi import FastAPI\nfrom fastapi.middleware.cors import CORSMiddleware\napp = FastAPI()\n"
     },
     {
@@ -345,16 +345,16 @@
       "concept": "Dependencies as cross-cutting (FastAPI)",
       "type": "single",
       "difficulty": 2,
-      "prompt": "Only the /admin routes need an API-key check, and the check needs the path parameters of the matched route. Which tool fits best?",
+      "prompt": "Only the `/admin` routes need an API-key check, and the check needs the path parameters of the matched route. Which tool fits best?",
       "options": [
         {
           "id": "a",
-          "text": "An @app.middleware(\"http\") function that inspects request.url.path.",
+          "text": "An `@app.middleware(\"http\")` function that inspects `request.url.path`.",
           "why": "Middleware runs before routing, is global and cannot see matched route parameters."
         },
         {
           "id": "b",
-          "text": "A startup hook in lifespan that registers the allowed keys.",
+          "text": "A startup hook in `lifespan` that registers the allowed keys.",
           "why": "Lifespan runs once per process, not per request."
         },
         {
@@ -364,7 +364,7 @@
         },
         {
           "id": "d",
-          "text": "A dependency attached to an APIRouter for /admin.",
+          "text": "A dependency attached to an `APIRouter` for `/admin`.",
           "why": "Correct: dependencies run inside routing, so they see matched parameters and apply to a subset."
         }
       ],
@@ -378,12 +378,12 @@
       "concept": "Blocking calls",
       "type": "truefalse",
       "difficulty": 1,
-      "prompt": "True or false: calling time.sleep(2) inside an async def route blocks every other request handled by that worker for 2 seconds.",
+      "prompt": "True or false: calling `time.sleep(2)` inside an `async def` route blocks every other request handled by that worker for 2 seconds.",
       "options": [
         {
           "id": "a",
           "text": "True",
-          "why": "Correct: time.sleep does not yield to the event loop, so the whole loop is frozen."
+          "why": "Correct: `time.sleep` does not yield to the event loop, so the whole loop is frozen."
         },
         {
           "id": "b",
@@ -394,30 +394,30 @@
       "correct": [
         "a"
       ],
-      "explanation": "Use await asyncio.sleep(2) in coroutines, or a plain def route, which FastAPI runs in a thread pool."
+      "explanation": "Use `await asyncio.sleep(2)` in coroutines, or a plain `def` route, which FastAPI runs in a thread pool."
     },
     {
       "id": "async-in-threadpool",
       "concept": "Async endpoints (FastAPI)",
       "type": "truefalse",
       "difficulty": 2,
-      "prompt": "True or false: FastAPI runs async def routes in a thread pool, which is why blocking calls inside them are harmless.",
+      "prompt": "True or false: FastAPI runs `async def` routes in a thread pool, which is why blocking calls inside them are harmless.",
       "options": [
         {
           "id": "a",
           "text": "True",
-          "why": "Wrong: async def routes run directly on the event loop."
+          "why": "Wrong: `async def` routes run directly on the event loop."
         },
         {
           "id": "b",
           "text": "False",
-          "why": "Correct: only plain def routes (and sync dependencies) go to the thread pool; async def routes run on the loop itself."
+          "why": "Correct: only plain `def` routes (and sync dependencies) go to the thread pool; `async def` routes run on the loop itself."
         }
       ],
       "correct": [
         "b"
       ],
-      "explanation": "This is the root of the classic mistake of putting blocking database calls inside async def routes."
+      "explanation": "This is the root of the classic mistake of putting blocking database calls inside `async def` routes."
     }
   ]
 }

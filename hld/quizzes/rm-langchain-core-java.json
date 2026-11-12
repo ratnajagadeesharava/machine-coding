@@ -16,9 +16,9 @@
       "concept": "Tool-calling loop",
       "type": "integer",
       "difficulty": 2,
-      "prompt": "An AI Service has two @Tool methods, getWeather and convertToF. A user asks for the weather in Paris and Rome in Fahrenheit. Round 1: the model requests getWeather for both cities in one response. Round 2: it requests convertToF for both in one response. Round 3: it writes the final answer. How many chat model calls does the service make in total?",
+      "prompt": "An AI Service has two `@Tool` methods, `getWeather` and `convertToF`. A user asks for the weather in Paris and Rome in Fahrenheit. Round 1: the model requests `getWeather` for both cities in one response. Round 2: it requests `convertToF` for `both` in one response. Round 3: it writes the final answer. How many chat model calls does the service make in total?",
       "answer": 3,
-      "explanation": "Each model response is one chat model call: two tool-requesting responses plus the final answer = 3. The four tool executions are ordinary Java method calls, not model calls. I ran exactly this script against a stub ChatModel with LangChain4j 1.23 and counted 3 calls and 4 tool executions.",
+      "explanation": "Each model response is one chat model call: two tool-requesting responses plus the final answer = 3. The four tool executions are ordinary Java method calls, not model calls. I ran exactly this script against a stub `ChatModel` with LangChain4j 1.23 and counted 3 calls and 4 tool executions.",
       "unit": "model calls"
     },
     {
@@ -26,9 +26,9 @@
       "concept": "Chat memory",
       "type": "integer",
       "difficulty": 2,
-      "prompt": "An AI Service is built with chatMemory(MessageWindowChatMemory.withMaxMessages(4)) and no system message. The user sends 3 messages and the model answers each one once. How many messages does the memory hold afterwards?",
+      "prompt": "An AI Service is built with `chatMemory`(`MessageWindowChatMemory`.withMaxMessages(4)) and no system message. The user sends 3 messages and the model answers each one once. How many messages does the memory hold afterwards?",
       "answer": 4,
-      "explanation": "Three turns add 6 messages (user and AI each time), and the window keeps only the newest 4: the second user message and answer, and the third pair. I printed memory.messages() to confirm. A window counts messages, not tokens, so long messages can still overflow the context.",
+      "explanation": "Three turns add 6 messages (user and AI each time), and the window keeps only the newest 4: the second user message and answer, and the third pair. I printed `memory.messages()` to confirm. A window counts messages, not tokens, so long messages can still overflow the context.",
       "unit": "messages"
     },
     {
@@ -36,7 +36,7 @@
       "concept": "Tool-calling loop",
       "type": "integer",
       "difficulty": 3,
-      "prompt": "An AI Service is built with maxSequentialToolsInvocations(3) and a stub model that requests a tool in every single response. How many chat model calls are made before the exception is thrown?",
+      "prompt": "An AI Service is built with `maxSequentialToolsInvocations`(3) and a stub model that requests a tool in every single response. How many chat model calls are made before the exception is thrown?",
       "answer": 4,
       "explanation": "The first call plus 3 allowed round trips is 4 calls; the fourth response still asks for a tool, and LangChain4j throws instead of calling a fifth time. I ran this on LangChain4j 1.23 (the message says it exceeded 3 tool calling round trips). Always cap the loop: a model that never stops asking for tools burns tokens forever.",
       "unit": "model calls"
@@ -47,8 +47,8 @@
       "type": "assertion",
       "difficulty": 2,
       "prompt": "Assertion and reason: read both statements and choose the right option.",
-      "assertion": "The model itself never executes a @Tool method.",
-      "reason": "The model replies with a tool execution request (a name plus JSON arguments); LangChain4j calls the Java method in your application and sends the result back to the model.",
+      "assertion": "The model itself never executes a `@Tool` method.",
+      "reason": "The model replies with a tool execution request `(a name plus JSON arguments);` LangChain4j calls the Java method in your application and sends the result back to the model.",
       "correct": [
         "a"
       ],
@@ -66,7 +66,7 @@
       "type": "assertion",
       "difficulty": 1,
       "prompt": "Assertion and reason: read both statements and choose the right option.",
-      "assertion": "AiServices.create(Assistant.class, model) returns an object that implements the Assistant interface at runtime.",
+      "assertion": "`AiServices.create(Assistant.class, model)` returns an object that implements the Assistant interface at runtime.",
       "reason": "A Java interface may declare default methods.",
       "correct": [
         "b"
@@ -104,8 +104,8 @@
       "type": "assertion",
       "difficulty": 3,
       "prompt": "Assertion and reason: read both statements and choose the right option.",
-      "assertion": "One AI Service built with a single shared MessageWindowChatMemory keeps every user's conversation separate.",
-      "reason": "Combining @MemoryId with chatMemoryProvider gives each memory id its own ChatMemory.",
+      "assertion": "One AI Service built with a single shared `MessageWindowChatMemory` keeps every user's conversation separate.",
+      "reason": "Combining `@MemoryId` with `chatMemoryProvider` gives each memory id its own `ChatMemory`.",
       "correct": [
         "d"
       ],
@@ -126,23 +126,23 @@
       "left": [
         {
           "id": "a",
-          "text": "@SystemMessage"
+          "text": "`@SystemMessage`"
         },
         {
           "id": "b",
-          "text": "@V"
+          "text": "`@V`"
         },
         {
           "id": "c",
-          "text": "@MemoryId"
+          "text": "`@MemoryId`"
         },
         {
           "id": "d",
-          "text": "MessageWindowChatMemory"
+          "text": "`MessageWindowChatMemory`"
         },
         {
           "id": "e",
-          "text": "@Tool"
+          "text": "`@Tool`"
         }
       ],
       "right": [
@@ -152,7 +152,7 @@
         },
         {
           "id": "q",
-          "text": "Binds a method parameter to a {{variable}} in the prompt template"
+          "text": "Binds a method parameter to a `{{variable}}` in the prompt template"
         },
         {
           "id": "r",
@@ -178,7 +178,7 @@
         "d": "s",
         "e": "t"
       },
-      "explanation": "The unused role belongs to a ContentRetriever, which is part of the RAG side of LangChain4j."
+      "explanation": "The unused role belongs to a `ContentRetriever`, which is part of the RAG side of LangChain4j."
     },
     {
       "id": "tool-vocabulary",
@@ -199,7 +199,7 @@
         "@V",
         "chatMemory"
       ],
-      "explanation": "@V binds prompt template variables, chatMemory configures memory; tools(...) accepts one or more objects whose @Tool methods become available to the model."
+      "explanation": "`@V` binds prompt template variables, `chatMemory` configures memory; `tools(...)` accepts one or more objects whose `@Tool` methods become available to the model."
     },
     {
       "id": "langchain4j-aiservice",
@@ -227,7 +227,7 @@
         }
       ],
       "model": "interface Assistant {\n  @SystemMessage(\"You are a terse assistant.\")\n  String chat(String userMessage);\n}\nAssistant a = AiServices.create(Assistant.class, model);",
-      "explanation": "AiServices builds a proxy that formats the prompt, calls the model and parses the result. AiServices.builder(...).chatModel(model).build() is an equivalent way to create it. I compiled and ran this shape against LangChain4j 1.23 with a stub model."
+      "explanation": "`AiServices` builds a proxy that formats the prompt, calls the model and parses the result. `AiServices.builder(...).chatModel(model).build()` is an equivalent way to create it. I compiled and ran this shape against LangChain4j 1.23 with a stub model."
     },
     {
       "id": "tool-and-register",
@@ -259,14 +259,14 @@
         }
       ],
       "model": "class OrderTools {\n  @Tool(\"Look up the shipping status of an order\")\n  String orderStatus(@P(\"the order id\") String orderId) {\n    return \"shipped\";\n  }\n}\n\nAssistant a = AiServices.builder(Assistant.class)\n    .chatModel(model)\n    .tools(new OrderTools())\n    .build();",
-      "explanation": "@Tool takes the description as its value, and @P describes a parameter. Compile with -parameters, or give every parameter a @P, so parameter names reach the model correctly (without the flag the names appear as arg0). tools(...) also accepts several objects."
+      "explanation": "`@Tool` takes the description as its value, and `@P` describes a parameter. Compile with -parameters, or give every parameter a `@P`, so parameter names reach the model correctly (without the flag the names appear as arg0). `tools(...)` also accepts several objects."
     },
     {
       "id": "user-template",
       "concept": "Prompt templates",
       "type": "code",
       "difficulty": 2,
-      "prompt": "Declare an interface Summariser with a method String summarise(String text) whose user message template is 'Summarise in one sentence: {{text}}', binding the method argument to that template variable.",
+      "prompt": "Declare an interface `Summariser` with a method `String summarise(String text)` whose user message template is `'Summarise in one sentence: {{text}}'`, binding the method argument to that template variable.",
       "language": "java",
       "checks": [
         {
@@ -283,7 +283,7 @@
         }
       ],
       "model": "interface Summariser {\n  @UserMessage(\"Summarise in one sentence: {{text}}\")\n  String summarise(@V(\"text\") String text);\n}",
-      "explanation": "With exactly one parameter the template may use the implicit variable {{it}} and the parameter needs no @V (I ran that variant too). With several parameters, name each with @V."
+      "explanation": "With exactly one parameter the template may use the implicit variable `{{it}}` and the parameter needs no `@V` (I ran that variant too). With several parameters, name each with `@V`."
     },
     {
       "id": "structured-record",
@@ -307,14 +307,14 @@
         }
       ],
       "model": "record Person(String name, int age) {}\n\ninterface Extractor {\n  Person extract(String text);\n}\n\nExtractor extractor = AiServices.create(Extractor.class, model);",
-      "explanation": "No parsing code is needed: LangChain4j asks for JSON matching the record and deserialises it (I ran this with a stub that returned {\"name\":\"Ada\",\"age\":36}). The result can still be wrong, so validate the fields afterwards."
+      "explanation": "No parsing code is needed: LangChain4j asks for JSON matching the record and deserialises it (I ran this with a stub that returned `{\"name\":\"Ada\",\"age\":36}`). The result can still be wrong, so validate the fields afterwards."
     },
     {
       "id": "memory-id",
       "concept": "Chat memory",
       "type": "code",
       "difficulty": 3,
-      "prompt": "Declare an interface MultiChat with a method String chat(@MemoryId String userId, @UserMessage String message), then build it from the variable model so that each userId gets its own window of the last 10 messages.",
+      "prompt": "Declare an interface MultiChat with a method String chat(`@MemoryId` String userId, @UserMessage String message), then build it from the variable model so that each userId gets its own window of the last 10 messages.",
       "language": "java",
       "checks": [
         {
@@ -335,14 +335,14 @@
         }
       ],
       "model": "interface MultiChat {\n  String chat(@MemoryId String userId, @UserMessage String message);\n}\n\nMultiChat chat = AiServices.builder(MultiChat.class)\n    .chatModel(model)\n    .chatMemoryProvider(id -> MessageWindowChatMemory.withMaxMessages(10))\n    .build();",
-      "explanation": "The provider is called with the memory id and returns that id's own ChatMemory (I ran two users through it). Use a persistent ChatMemoryStore if conversations must survive a restart."
+      "explanation": "The provider is called with the memory id and returns that id's own `ChatMemory` (I ran two users through it). Use a persistent `ChatMemoryStore` if conversations must survive a restart."
     },
     {
       "id": "chatclient-basic",
       "concept": "Spring AI ChatClient",
       "type": "code",
       "difficulty": 2,
-      "prompt": "With a Spring AI ChatModel variable model, build a ChatClient with the default system prompt 'You are a terse assistant.' and use it to send the user text in the String variable q, returning the answer as a String.",
+      "prompt": "With a Spring AI `ChatModel` variable model, build a ChatClient with the default system prompt 'You are a terse assistant.' and use it to send the user text in the String variable q, returning the answer as a String.",
       "language": "java",
       "checks": [
         {
@@ -363,7 +363,7 @@
         }
       ],
       "model": "ChatClient client = ChatClient.builder(model)\n    .defaultSystem(\"You are a terse assistant.\")\n    .build();\nString answer = client.prompt().user(q).call().content();",
-      "explanation": "I compiled this against Spring AI 1.1.8. ChatClient.create(model) plus .system(...) per call is equivalent. Replace .content() with .entity(SomeRecord.class) to get a typed object, or .stream().content() for a reactive stream of text."
+      "explanation": "I compiled this against Spring AI 1.1.8. `ChatClient.create(model)` plus `.system(...)` per call is equivalent. Replace `.content()` with `.entity(SomeRecord.class)` to get a typed object, or `.stream().content()` for a reactive stream of text."
     },
     {
       "id": "java-ai-facts",
@@ -374,7 +374,7 @@
       "options": [
         {
           "id": "a",
-          "text": "The Java method behind a @Tool runs inside your own application, not at the model provider.",
+          "text": "The Java method behind a `@Tool` runs inside your own application, not at the model provider.",
           "why": "True: the model only asks for it by name and JSON arguments."
         },
         {
@@ -389,12 +389,12 @@
         },
         {
           "id": "d",
-          "text": "maxSequentialToolsInvocations limits how many times the model may chain tool calls in one request.",
+          "text": "`maxSequentialToolsInvocations` limits how many times the model may chain tool calls in one request.",
           "why": "True: it protects against an endless tool-calling loop."
         },
         {
           "id": "e",
-          "text": "AiServices.create works only for interface methods that return String.",
+          "text": "`AiServices.create` works only for interface methods that return String.",
           "why": "False: records, lists, enums and Result<T> are supported return types."
         }
       ],
@@ -403,7 +403,7 @@
         "b",
         "d"
       ],
-      "explanation": "I verified the tool, record and cap behaviour with a stub ChatModel. Know the method family: AiServices.create or builder, then chatModel, chatMemory, tools and contentRetriever."
+      "explanation": "I verified the tool, record and cap behaviour with a stub `ChatModel`. Know the method family: `AiServices.create` or builder, then `chatModel`, `chatMemory`, tools and `contentRetriever`."
     },
     {
       "id": "entity-vs-content",
@@ -414,46 +414,46 @@
       "options": [
         {
           "id": "a",
-          "text": "client.prompt().user(text).call().entity(Person.class)",
-          "why": "Right: entity(Class) converts the reply to the requested type."
+          "text": "`client.prompt().user(text).call().entity(Person.class)`",
+          "why": "Right: `entity(Class)` converts the reply to the requested type."
         },
         {
           "id": "b",
-          "text": "client.prompt().user(text).call().content()",
-          "why": "content() returns the answer as a plain String."
+          "text": "`client.prompt().user(text).call().content()`",
+          "why": "`content()` returns the answer as a plain String."
         },
         {
           "id": "c",
-          "text": "client.prompt().user(text).stream().chatResponse()",
-          "why": "stream().chatResponse() returns a reactive stream of ChatResponse objects, not a Person."
+          "text": "`client.prompt().user(text).stream().chatResponse()`",
+          "why": "`stream().chatResponse()` returns a reactive stream of `ChatResponse` objects, not a Person."
         },
         {
           "id": "d",
-          "text": "client.prompt().user(text).call().chatResponse().getResult()",
-          "why": "getResult() returns the first Generation of the response, not a Person."
+          "text": "`client.prompt().user(text).call().chatResponse().getResult()`",
+          "why": "`getResult()` returns the first Generation of the response, not a Person."
         }
       ],
       "correct": [
         "a"
       ],
-      "explanation": "All four chains exist; the difference is the return type. entity(...) uses a structured output converter that adds format instructions to the prompt and parses the reply."
+      "explanation": "All four chains exist; the difference is the return type. `entity(...)` uses a structured output converter that adds format instructions to the prompt and parses the reply."
     },
     {
       "id": "chat-model-name",
       "concept": "AI Services",
       "type": "truefalse",
       "difficulty": 1,
-      "prompt": "True or false: in LangChain4j 1.x the AiServices builder method that sets the model is chatModel(...).",
+      "prompt": "True or false: in LangChain4j 1.x the `AiServices` builder method that sets the model is `chatModel(...)`.",
       "options": [
         {
           "id": "a",
           "text": "True",
-          "why": "Right: AiServices.builder(X.class).chatModel(model) compiles on 1.23, which I checked."
+          "why": "Right: `AiServices.builder(X.class).chatModel(model)` compiles on 1.23, which I checked."
         },
         {
           "id": "b",
           "text": "False",
-          "why": "Not true: older tutorials show chatLanguageModel(...), but current releases use chatModel(...)."
+          "why": "Not true: older tutorials show `chatLanguageModel(...)`, but current releases use `chatModel(...)`."
         }
       ],
       "correct": [
@@ -466,7 +466,7 @@
       "concept": "Tools",
       "type": "truefalse",
       "difficulty": 2,
-      "prompt": "True or false: LangChain4j sends the body of a @Tool method to the model so that the model can run the code itself.",
+      "prompt": "True or false: LangChain4j sends the body of a `@Tool` method to the model so that the model can run the code itself.",
       "options": [
         {
           "id": "a",

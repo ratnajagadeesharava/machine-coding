@@ -16,8 +16,8 @@
       "concept": "Coin change",
       "type": "code",
       "difficulty": 2,
-      "prompt": "Write a Python function coin_change(coins, amount) that returns the minimum number of coins for the amount, or -1 if impossible. Use a bottom-up list dp.",
-      "explanation": "float('inf') is a clean sentinel because inf + 1 stays inf. Time O(amount * len(coins)), space O(amount). A BFS over amounts is another valid solution. For {1,5,6,9} and 11 it gives 2, for {2} and 3 it gives -1.",
+      "prompt": "Write a Python function `coin_change(coins, amount)` that returns the minimum number of coins for the amount, or -1 if impossible. Use a bottom-up list `dp`.",
+      "explanation": "`float('inf')` is a clean sentinel because `inf + 1` stays `inf`. Time O(amount * len(coins)), space O(amount). A BFS over amounts is another valid solution. For `{1,5,6,9}` and 11 it gives 2, for `{2}` and 3 it gives -1.",
       "language": "python",
       "starter": "def coin_change(coins, amount):\n    ",
       "checks": [
@@ -45,8 +45,8 @@
       "concept": "Edit distance",
       "type": "code",
       "difficulty": 3,
-      "prompt": "Write a Python function edit_distance(a, b) returning the Levenshtein distance, using top-down memoisation with functools.cache (or lru_cache) on a helper go(i, j) over the prefix lengths.",
-      "explanation": "State: go(i, j) = distance between the first i chars of a and the first j of b. Delete, insert and substitute are the three neighbours. Time and space O(m * n). The recursion depth is m + n, so very long strings need the bottom-up table. A bottom-up solution passes only if it names dp.",
+      "prompt": "Write a Python function `edit_distance(a, b)` returning the Levenshtein distance, using top-down memoisation with `functools.cache` (or `lru_cache`) on a helper `go(i, j)` over the prefix lengths.",
+      "explanation": "State: `go(i, j)` = distance between the first i chars of a and the first j of b. Delete, insert and substitute are the three neighbours. Time and space O(m * n). The recursion depth is m + n, so very long strings need the bottom-up table. A bottom-up solution passes only if it names `dp`.",
       "language": "python",
       "starter": "from functools import cache\n\ndef edit_distance(a, b):\n    ",
       "checks": [
@@ -74,8 +74,8 @@
       "concept": "Grid DP",
       "type": "code",
       "difficulty": 2,
-      "prompt": "Write a Python function paths(grid) counting the ways to go from the top-left to the bottom-right of a grid moving only right or down, where grid[r][c] == 1 is an obstacle you cannot enter.",
-      "explanation": "State: dp[r][c] = ways to reach the cell; transition: from above plus from the left; a blocked cell has 0. The single row dp[c] is the space-optimised form, O(R C) time and O(C) space. For a grid without obstacles the answer is C(R+C-2, R-1) (28 for 3 x 7).",
+      "prompt": "Write a Python function `paths(grid)` counting the ways to go from the top-left to the bottom-right of a grid moving only right or down, where `grid[r][c] == 1` is an obstacle you cannot enter.",
+      "explanation": "State: `dp[r][c]` = ways to reach the cell; transition: from above plus from the left; a blocked cell has 0. The single row `dp[c]` is the space-optimised form, O(R C) time and O(C) space. For a grid without obstacles the answer is C(R+C-2, R-1) (28 for 3 x 7).",
       "language": "python",
       "starter": "def paths(grid):\n    ",
       "checks": [
@@ -103,8 +103,8 @@
       "concept": "String DP",
       "type": "code",
       "difficulty": 2,
-      "prompt": "Write a Python function word_break(s, words) returning True if s can be split into one or more words from the list (words may be reused).",
-      "explanation": "dp[i] means the first i characters can be segmented. O(n^2) splits times the substring/hash cost (so up to O(n^3) character work), or O(n * maxWordLen) if you only try lengths up to the longest word. A top-down version with memoisation is also correct but would not match the bottom-up checks here.",
+      "prompt": "Write a Python function `word_break(s, words)` returning True if s can be split into one or more words from the list (words may be reused).",
+      "explanation": "`dp[i]` means the first i characters can be segmented. O(n^2) splits times the substring/hash cost (so up to O(n^3) character work), or O(n * maxWordLen) if you only try lengths up to the longest word. A top-down version with memoisation is also correct but would not match the bottom-up checks here.",
       "language": "python",
       "starter": "def word_break(s, words):\n    ",
       "checks": [
@@ -132,7 +132,7 @@
       "concept": "Top-down memoisation",
       "type": "integer",
       "difficulty": 2,
-      "prompt": "A function fib(n) decorated with functools.cache returns n if n < 2, else fib(n - 1) + fib(n - 2). After calling fib(30) once, how many times has the function body actually run?",
+      "prompt": "A function `fib(n)` decorated with `functools.cache` returns n if `n < 2`, else `fib(n - 1) + fib(n - 2)`. After calling `fib(30)` once, how many times has the function body actually run?",
       "explanation": "Each distinct argument 0, 1, ..., 30 is computed exactly once and then served from the cache, so the body runs 31 times. Without the cache it would run about 2.7 million times.",
       "answer": 31,
       "unit": "calls"
@@ -142,7 +142,7 @@
       "concept": "Table tracing",
       "type": "integer",
       "difficulty": 1,
-      "prompt": "For \"kitten\" and \"sitting\", the edit distance table is built as [[0] * 8 for _ in range(7)]. How many cells does it contain?",
+      "prompt": "For \"kitten\" and \"sitting\", the edit distance table is built as `[[0] * 8 for _ in range(7)]`. How many cells does it contain?",
       "explanation": "(m + 1) x (n + 1) = 7 x 8 = 56 cells, including the empty-prefix row and column. Time and space are both proportional to this count.",
       "answer": 56,
       "unit": "cells"
@@ -152,12 +152,12 @@
       "concept": "Top-down versus bottom-up",
       "type": "single",
       "difficulty": 3,
-      "prompt": "A memoised recursive coin_change(amount) works for amount = 500 but raises RecursionError for amount = 50000. What is the most robust fix?",
-      "explanation": "Raising sys.setrecursionlimit can crash the interpreter on very deep recursion; tabulation is the interview answer.",
+      "prompt": "A memoised recursive `coin_change(amount)` works for amount = 500 but raises `RecursionError` for amount = 50000. What is the most robust fix?",
+      "explanation": "Raising `sys.setrecursionlimit` can crash the interpreter on very deep recursion; tabulation is the interview answer.",
       "options": [
         {
           "id": "a",
-          "text": "Wrap the call in try/except RecursionError and call it again.",
+          "text": "Wrap the call in `try/except RecursionError` and call it again.",
           "why": "The second call reaches the same depth and raises the same error."
         },
         {
@@ -167,7 +167,7 @@
         },
         {
           "id": "c",
-          "text": "Replace the cache decorator with a manual dict so frames get smaller.",
+          "text": "Replace the cache decorator with a manual `dict` so frames get smaller.",
           "why": "The dict does not change how many frames the recursion needs."
         },
         {
@@ -186,7 +186,7 @@
       "type": "truefalse",
       "difficulty": 1,
       "prompt": "True or false: because Python ints are arbitrary precision, a counting DP such as grid paths for a 100 x 100 grid needs no overflow handling.",
-      "explanation": "Contest problems usually still ask for the answer modulo 10^9 + 7 to keep numbers small and fast, so apply % MOD at each addition.",
+      "explanation": "Contest problems usually still ask for the answer modulo 10^9 + 7 to keep numbers small and fast, so apply `% MOD` at each addition.",
       "options": [
         {
           "id": "a",
@@ -208,9 +208,9 @@
       "concept": "Table layout",
       "type": "assertion",
       "difficulty": 3,
-      "prompt": "A student builds an edit distance table with dp = [[0] * 3] * 3 and later sets dp[1][1] = 5.",
-      "explanation": "Build rows independently: [[0] * 3 for _ in range(3)]. This bug silently ruins many DP tables.",
-      "assertion": "After that assignment every row of dp shows 5 in column 1.",
+      "prompt": "A student builds an edit distance table with `dp` = `[[0] * 3] * 3` and later sets `dp[1][1] = 5`.",
+      "explanation": "Build rows independently: `[[0] * 3 for _ in range(3)]`. This bug silently ruins many DP tables.",
+      "assertion": "After that assignment every row of `dp` shows 5 in column 1.",
       "reason": "List multiplication repeats references to the same inner list rather than copying it.",
       "correct": [
         "a"
@@ -227,10 +227,10 @@
       "concept": "Top-down memoisation",
       "type": "assertion",
       "difficulty": 2,
-      "prompt": "Memoising go(i, j) for two strings of lengths m and n with functools.cache.",
+      "prompt": "Memoising `go(i, j)` for two strings of lengths m and n with `functools.cache`.",
       "explanation": "Memory is the price of memoisation; a bottom-up version with rolling rows can use O(min(m, n)) space.",
       "assertion": "The cache can end up holding up to about m * n results.",
-      "reason": "functools.cache was added in Python 3.9 as a shorthand for lru_cache(maxsize=None).",
+      "reason": "`functools.cache` was added in Python 3.9 as a shorthand for `lru_cache(maxsize=None)`.",
       "correct": [
         "b"
       ],
@@ -246,10 +246,10 @@
       "concept": "Top-down memoisation",
       "type": "assertion",
       "difficulty": 2,
-      "prompt": "Choosing between functools.cache and functools.lru_cache(maxsize=None).",
-      "explanation": "Use lru_cache(maxsize=N) if memory must be bounded; plain cache is perfect for DP where every state may be reused.",
+      "prompt": "Choosing between `functools.cache` and `functools.lru_cache(maxsize=None)`.",
+      "explanation": "Use `lru_cache`(maxsize=N) if memory must be bounded; plain cache is perfect for DP where every state may be reused.",
       "assertion": "The two decorators behave the same: both keep every result forever.",
-      "reason": "functools.cache evicts the least recently used entries once its size limit is reached.",
+      "reason": "`functools.cache` evicts the least recently used entries once its size limit is reached.",
       "correct": [
         "c"
       ],
@@ -265,9 +265,9 @@
       "concept": "Top-down memoisation",
       "type": "assertion",
       "difficulty": 3,
-      "prompt": "A memoised helper takes a list as one of its arguments and is decorated with functools.cache.",
+      "prompt": "A memoised helper takes a list as one of its arguments and is decorated with `functools.cache`.",
       "explanation": "Cache keys must be hashable. Convert lists to tuples, or pass indices into a shared list.",
-      "assertion": "Decorating a function that receives a list argument with functools.cache works without changes.",
+      "assertion": "Decorating a function that receives a list argument with `functools.cache` works without changes.",
       "reason": "Lists are mutable, so they are unhashable and cannot serve as cache keys.",
       "correct": [
         "d"
@@ -285,11 +285,11 @@
       "type": "matrix",
       "difficulty": 1,
       "prompt": "Match each DP need with the Python idiom that serves it.",
-      "explanation": "The comprehension makes separate rows, whereas the starred version aliases one row. inf never overflows, and Python ints never wrap.",
+      "explanation": "The comprehension makes separate rows, whereas the starred version aliases one row. `inf` never overflows, and Python ints never wrap.",
       "left": [
         {
           "id": "a",
-          "text": "Top-down memoisation with no manual dict"
+          "text": "Top-down memoisation with no manual `dict`"
         },
         {
           "id": "b",
@@ -311,27 +311,27 @@
       "right": [
         {
           "id": "p",
-          "text": "float('inf')"
+          "text": "`float('inf')`"
         },
         {
           "id": "q",
-          "text": "Plain ints, which grow automatically"
+          "text": "Plain `int`s, which grow automatically"
         },
         {
           "id": "r",
-          "text": "min or max"
+          "text": "`min` or `max`"
         },
         {
           "id": "s",
-          "text": "[[0] * (n + 1)] * (m + 1)"
+          "text": "`[[0] * (n + 1)] * (m + 1)`"
         },
         {
           "id": "t",
-          "text": "@functools.cache on a helper"
+          "text": "`@functools.cache` on a helper"
         },
         {
           "id": "u",
-          "text": "[[0] * (n + 1) for _ in range(m + 1)]"
+          "text": "`[[0] * (n + 1) for _ in range(m + 1)]`"
         }
       ],
       "pairs": {
@@ -348,7 +348,7 @@
       "type": "fill",
       "difficulty": 1,
       "prompt": "Complete the Python setup for bottom-up coin change.",
-      "explanation": "inf marks unreachable amounts, 0 coins make amount 0, and min keeps the best transition.",
+      "explanation": "`inf` marks unreachable amounts, 0 coins make amount 0, and min keeps the best transition.",
       "text": "Create dp = [{1}] * (amount + 1), set dp[0] = {2}, and update each cell with {3}(dp[a], dp[a - c] + 1).",
       "blanks": {
         "1": "float('inf')",

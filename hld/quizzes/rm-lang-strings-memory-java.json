@@ -16,42 +16,42 @@
       "concept": "String pool",
       "type": "integer",
       "difficulty": 2,
-      "prompt": "Consider:\nString a = \"hi\", b = \"hi\";\nString c = new String(\"hi\");\nString d = c.intern();\nHow many of these six expressions are true: a == b, a == c, a == d, c == d, a.equals(c), c.equals(d)?",
+      "prompt": "Consider:\n\n```java\nString a = \"hi\", b = \"hi\";\nString c = new String(\"hi\");\nString d = c.intern();\n```\n\nHow many of these six expressions are true: `a == b`, `a == c`, `a == d`, `c == d`, `a.equals(c)`, `c.equals(d)`?",
       "answer": 4,
-      "explanation": "Literals share one pooled object (a == b). new String creates a separate heap object (a == c and c == d are false). intern() returns the pooled instance (a == d). Both equals calls are true. Total 4. (Verified by running it.)"
+      "explanation": "Literals share one pooled object (`a == b`). `new String` creates a separate heap object (`a == c` and `c == d` are false). `intern()` returns the pooled instance (`a == d`). Both `equals` calls are true. Total 4. (Verified by running it.)"
     },
     {
       "id": "constant-folding",
       "concept": "String pool",
       "type": "single",
       "difficulty": 3,
-      "prompt": "What do these Java comparisons print?\nString s1 = \"ab\", s2 = \"a\" + \"b\";\nString s3 = \"a\", s4 = s3 + \"b\";\nSystem.out.println((s1 == s2) + \" \" + (s1 == s4));\nWhat is printed?",
+      "prompt": "What do these Java comparisons print?\n\n```java\nString s1 = \"ab\", s2 = \"a\" + \"b\";\nString s3 = \"a\", s4 = s3 + \"b\";\nSystem.out.println((s1 == s2) + \" \" + (s1 == s4));\n```\n\nWhat is printed?",
       "options": [
         {
           "id": "a",
-          "text": "true true",
-          "why": "Only constant expressions are folded by the compiler; s3 is not a constant, so s4 is built at runtime."
+          "text": "`true true`",
+          "why": "Only constant expressions are folded by the compiler; `s3` is not a constant, so `s4` is built at runtime."
         },
         {
           "id": "b",
-          "text": "false false",
-          "why": "\"a\" + \"b\" is a compile-time constant and is interned, so s1 == s2 is true."
+          "text": "`false false`",
+          "why": "`\"a\" + \"b\"` is a compile-time constant and is interned, so `s1 == s2` is true."
         },
         {
           "id": "c",
-          "text": "true false",
-          "why": "Correct: s2 is folded to the pooled \"ab\", while s4 is created at runtime as a new object."
+          "text": "`true false`",
+          "why": "Correct: `s2` is folded to the pooled `\"ab\"`, while `s4` is created at runtime as a new object."
         },
         {
           "id": "d",
-          "text": "false true",
+          "text": "`false true`",
           "why": "It is the other way round: the constant matches, the runtime concatenation does not."
         }
       ],
       "correct": [
         "c"
       ],
-      "explanation": "If s3 were declared final String s3 = \"a\", then s3 + \"b\" would be a constant expression and s1 == s4 would be true. Always compare strings with equals. (Verified by running it.)"
+      "explanation": "If `s3` were declared `final String s3 = \"a\"`, then `s3 + \"b\"` would be a constant expression and `s1 == s4` would be true. Always compare strings with `equals`. (Verified by running it.)"
     },
     {
       "id": "string-thread-safe",
@@ -59,8 +59,8 @@
       "type": "assertion",
       "difficulty": 2,
       "prompt": "Read the assertion (A) and the reason (R), then choose the option that fits.",
-      "assertion": "A Java String can be shared between threads without any synchronization.",
-      "reason": "A String caches its hash code after the first call to hashCode().",
+      "assertion": "A Java `String` can be shared between threads without any synchronization.",
+      "reason": "A `String` caches its hash code after the first call to `hashCode()`.",
       "correct": [
         "b"
       ],
@@ -77,7 +77,7 @@
       "concept": "Mutable vs immutable strings",
       "type": "code",
       "difficulty": 1,
-      "prompt": "Given an int n, write Java that builds the string \"0,1,2,...,n-1\" (no trailing comma) in a variable s, using a StringBuilder instead of repeated + on a String.",
+      "prompt": "Given an `int n`, write Java that builds the string `\"0,1,2,...,n-1\"` (no trailing comma) in a variable `s`, using a `StringBuilder` instead of repeated `+` on a `String`.",
       "language": "java",
       "starter": "",
       "checks": [
@@ -95,7 +95,7 @@
         }
       ],
       "model": "StringBuilder sb = new StringBuilder();\nfor (int i = 0; i < n; i++) {\n  if (i > 0) sb.append(',');\n  sb.append(i);\n}\nString s = sb.toString();",
-      "explanation": "Using s += i in a loop creates a new String each iteration, which is O(n squared) in total. String.join or Collectors.joining are the stream alternatives; StringBuffer is the synchronized, slower older sibling."
+      "explanation": "Using `s += i` in a loop creates a new `String` each iteration, which is O(n squared) in total. `String.join` or `Collectors.joining` are the stream alternatives; `StringBuffer` is the synchronized, slower older sibling."
     },
     {
       "id": "why-string-immutable",
@@ -116,30 +116,30 @@
         "volatile",
         "length"
       ],
-      "explanation": "The pool lives in the heap since Java 7. Immutability is a design choice enforced by a final class with private final fields, not by the final keyword on a variable."
+      "explanation": "The pool lives in the heap since Java 7. Immutability is a design choice enforced by a `final` class with private `final` fields, not by the `final` keyword on a variable."
     },
     {
       "id": "final-reference",
       "concept": "Immutability",
       "type": "truefalse",
       "difficulty": 1,
-      "prompt": "Declaring a variable final in Java (final List<String> names = new ArrayList<>();) makes the list it refers to immutable.",
+      "prompt": "Declaring a variable `final` in Java (`final List<String> names = new ArrayList<>();`) makes the list it refers to immutable.",
       "options": [
         {
           "id": "a",
           "text": "True",
-          "why": "final only fixes the reference."
+          "why": "`final` only fixes the reference."
         },
         {
           "id": "b",
           "text": "False",
-          "why": "Correct: you can still call names.add(...); final prevents reassigning the variable, not mutating the object."
+          "why": "Correct: you can still call `names.add(...)`; `final` prevents reassigning the variable, not mutating the object."
         }
       ],
       "correct": [
         "b"
       ],
-      "explanation": "For real immutability use List.of / Collections.unmodifiableList (a view) or List.copyOf (a copy)."
+      "explanation": "For real immutability use `List.of` / `Collections.unmodifiableList` (a view) or `List.copyOf` (a copy)."
     },
     {
       "id": "immutable-class-recipe",
@@ -150,12 +150,12 @@
       "options": [
         {
           "id": "a",
-          "text": "Declare the class final (or make constructors private) so subclasses cannot add mutability.",
+          "text": "Declare the class `final` (or make constructors private) so subclasses cannot add mutability.",
           "why": "A subclass could otherwise override getters or add mutable state."
         },
         {
           "id": "b",
-          "text": "Make all fields private and final.",
+          "text": "Make all fields private and `final`.",
           "why": "The core of immutability: fields set once in the constructor."
         },
         {
@@ -165,17 +165,17 @@
         },
         {
           "id": "d",
-          "text": "Copy mutable inputs and outputs, such as a Date or List, defensively.",
+          "text": "Copy mutable inputs and outputs, such as a `Date` or `List`, defensively.",
           "why": "Otherwise callers keep a handle on the internal state."
         },
         {
           "id": "e",
-          "text": "Implement Serializable.",
+          "text": "Implement `Serializable`.",
           "why": "Unrelated to immutability and it adds extra concerns."
         },
         {
           "id": "f",
-          "text": "Mark every getter synchronized.",
+          "text": "Mark every getter `synchronized`.",
           "why": "Unneeded: nothing changes after construction, so there are no races."
         }
       ],
@@ -185,7 +185,7 @@
         "c",
         "d"
       ],
-      "explanation": "Records automate most of this, but remember they are only shallowly immutable: a record with a List component is only immutable if you copy the list with List.copyOf."
+      "explanation": "Records automate most of this, but remember they are only shallowly immutable: a record with a `List` component is only immutable if you copy the list with `List.copyOf`."
     },
     {
       "id": "jvm-memory",
@@ -226,7 +226,7 @@
         },
         {
           "id": "r",
-          "text": "Class metadata stored in native memory (replaced PermGen in Java 8)"
+          "text": "Class metadata stored in native memory (replaced `PermGen` in Java 8)"
         },
         {
           "id": "s",
@@ -278,7 +278,7 @@
       "options": [
         {
           "id": "a",
-          "text": "A static Map used as a cache with no eviction or size bound.",
+          "text": "A `static Map` used as a cache with no eviction or size bound.",
           "why": "It lives as long as the class, so entries are always reachable."
         },
         {
@@ -288,8 +288,8 @@
         },
         {
           "id": "c",
-          "text": "ThreadLocal values never removed in a pooled thread.",
-          "why": "Pool threads live forever, so their ThreadLocal map keeps the values."
+          "text": "`ThreadLocal` values never removed in a pooled thread.",
+          "why": "Pool threads live forever, so their `ThreadLocal` map keeps the values."
         },
         {
           "id": "d",
@@ -307,16 +307,16 @@
         "b",
         "c"
       ],
-      "explanation": "Diagnose with a heap dump (jmap, VisualVM, Eclipse MAT): look for the dominator tree and the GC roots keeping the objects alive."
+      "explanation": "Diagnose with a heap dump (`jmap`, VisualVM, Eclipse MAT): look for the dominator tree and the GC roots keeping the objects alive."
     },
     {
       "id": "gc-cycle",
       "concept": "Heap, stack and GC",
       "type": "integer",
       "difficulty": 3,
-      "prompt": "class Node { Node next; }\nNode a = new Node(), b = new Node(), c = new Node();\na.next = b; b.next = c; c.next = b;\nb = null; c = null;\na.next = null;\nAfter this code, how many of the three Node objects are eligible for garbage collection?",
+      "prompt": "```java\nclass Node {\n    Node next;\n}\nNode a = new Node(), b = new Node(), c = new Node();\na.next = b;\nb.next = c;\nc.next = b;\nb = null;\nc = null;\na.next = null;\n```\n\nAfter this code, how many of the three `Node` objects are eligible for garbage collection?",
       "answer": 2,
-      "explanation": "The variable a still references the first node, so it stays alive. After a.next = null nothing reaches b or c; their mutual cycle does not keep them reachable, so both are eligible: 2. Java uses reachability from GC roots, not reference counting."
+      "explanation": "The variable `a` still references the first node, so it stays alive. After `a.next = null` nothing reaches b or c; their mutual cycle does not keep them reachable, so both are eligible: 2. Java uses reachability from GC roots, not reference counting."
     },
     {
       "id": "stack-heap",
@@ -335,40 +335,40 @@
         "c": "R is true.",
         "d": "A is true (escape analysis can sometimes avoid heap allocation, but the language model is as stated)."
       },
-      "explanation": "Each thread has its own stack (StackOverflowError when too deep); the heap is shared (OutOfMemoryError when full)."
+      "explanation": "Each thread has its own stack (`StackOverflowError` when too deep); the heap is shared (`OutOfMemoryError` when full)."
     },
     {
       "id": "concat-precedence",
       "concept": "String pool",
       "type": "single",
       "difficulty": 3,
-      "prompt": "What does this Java statement print?\n\nSystem.out.println(1 + 2 + \"x\" + 1 + 2);\n\nWhat is printed?",
+      "prompt": "What does this Java statement print?\n\n```java\nSystem.out.println(1 + 2 + \"x\" + 1 + 2);\n```\n\nWhat is printed?",
       "options": [
         {
           "id": "a",
-          "text": "3x12, because 1 + 2 is added before any String appears",
-          "why": "Correct: + is evaluated left to right, so 1 + 2 is integer addition (3) before the first String appears; after that every + is concatenation."
+          "text": "`3x12, because 1 + 2 is added before any String appears`",
+          "why": "Correct: `+` is evaluated left to right, so `1 + 2` is integer addition (3) before the first `String` appears; after that every `+` is concatenation."
         },
         {
           "id": "b",
-          "text": "12x12, because every + here is string concatenation",
-          "why": "Wrong: this treats every + as concatenation, but the first operands are both ints and are added numerically."
+          "text": "`12x12, because every + here is string concatenation`",
+          "why": "Wrong: this treats every `+` as concatenation, but the first operands are both ints and are added numerically."
         },
         {
           "id": "c",
-          "text": "3x3, because the trailing 1 + 2 is added numerically",
-          "why": "Wrong: once the left operand is a String, the trailing 1 + 2 is not added; each digit is appended as text."
+          "text": "`3x3, because the trailing 1 + 2 is added numerically`",
+          "why": "Wrong: once the left operand is a `String`, the trailing `1 + 2` is not added; each digit is appended as text."
         },
         {
           "id": "d",
-          "text": "Compile error, because int and String cannot be added",
-          "why": "Wrong: the + operator converts non-String operands to text when the other operand is a String."
+          "text": "`Compile error, because int and String cannot be added`",
+          "why": "Wrong: the `+` operator converts non-`String` operands to text when the other operand is a `String`."
         }
       ],
       "correct": [
         "a"
       ],
-      "explanation": "Precedence and associativity decide where numeric addition stops and concatenation starts. Also \"\" + 'a' + 1 gives \"a1\" but 'a' + 1 + \"\" gives \"98\". Verified by running it."
+      "explanation": "Precedence and associativity decide where numeric addition stops and concatenation starts. Also `\"\" + 'a' + 1` gives `\"a1\"` but `'a' + 1 + \"\"` gives `\"98\"`. Verified by running it."
     },
     {
       "id": "java-reference-types",
@@ -383,15 +383,15 @@
         },
         {
           "id": "b",
-          "text": "SoftReference"
+          "text": "`SoftReference`"
         },
         {
           "id": "c",
-          "text": "WeakReference"
+          "text": "`WeakReference`"
         },
         {
           "id": "d",
-          "text": "PhantomReference"
+          "text": "`PhantomReference`"
         }
       ],
       "right": [
@@ -405,11 +405,11 @@
         },
         {
           "id": "r",
-          "text": "Cleared at the next GC once the object has no strong or soft references, as WeakHashMap keys use"
+          "text": "Cleared at the next GC once the object has no strong or soft references, as `WeakHashMap` keys use"
         },
         {
           "id": "s",
-          "text": "get() always returns null; it is enqueued after the object is finalised, for cleanup actions"
+          "text": "`get()` always returns `null`; it is enqueued after the object is finalised, for cleanup actions"
         },
         {
           "id": "t",
@@ -422,7 +422,7 @@
         "c": "r",
         "d": "s"
       },
-      "explanation": "Soft for caches, weak for canonicalising maps and listener registries, phantom (or java.lang.ref.Cleaner) for post-mortem cleanup. The fifth right item is invented."
+      "explanation": "Soft for caches, weak for canonicalising maps and listener registries, phantom (or `java.lang.ref.Cleaner`) for post-mortem cleanup. The fifth right item is invented."
     },
     {
       "id": "system-gc",
@@ -430,8 +430,8 @@
       "type": "assertion",
       "difficulty": 2,
       "prompt": "Read the assertion (A) and the reason (R), then choose the option that fits.",
-      "assertion": "Calling System.gc() guarantees that all unreachable objects are collected immediately.",
-      "reason": "System.gc() is only a hint, and the JVM is free to ignore it.",
+      "assertion": "Calling `System.gc()` guarantees that all unreachable objects are collected immediately.",
+      "reason": "`System.gc()` is only a hint, and the JVM is free to ignore it.",
       "correct": [
         "d"
       ],
@@ -441,73 +441,73 @@
         "c": "This option says A is true and R is false, which does not match: A is false because the call is merely a request; R is true.",
         "d": "Correct: A is false because the call is merely a request; R is true."
       },
-      "explanation": "Never rely on System.gc() for correctness or tune around it; use the right collector and heap settings instead."
+      "explanation": "Never rely on `System.gc()` for correctness or tune around it; use the right collector and heap settings instead."
     },
     {
       "id": "array-clone-shallow",
       "concept": "Immutability",
       "type": "single",
       "difficulty": 3,
-      "prompt": "What does this Java code print?\n\nint[][] a = {{1}, {2}};\nint[][] b = a.clone();\na[0][0] = 9;\nSystem.out.println(b[0][0]);\n\nWhat is the output?",
+      "prompt": "What does this Java code print?\n\n```java\nint[][] a = {{1}, {2}};\nint[][] b = a.clone();\na[0][0] = 9;\nSystem.out.println(b[0][0]);\n```\n\nWhat is the output?",
       "options": [
         {
           "id": "a",
-          "text": "9, as clone copies the outer array only",
-          "why": "Correct: clone is shallow; both outer arrays hold the same inner arrays."
+          "text": "`9, as clone copies the outer array only`",
+          "why": "Correct: `clone` is shallow; both outer arrays hold the same inner arrays."
         },
         {
           "id": "b",
-          "text": "1, because clone makes a full deep copy of every nested array",
-          "why": "Array clone never copies the nested arrays."
+          "text": "`1, because clone makes a full deep copy of every nested array`",
+          "why": "Array `clone` never copies the nested arrays."
         },
         {
           "id": "c",
-          "text": "0, because the clone is a zero-initialised array of the same shape",
-          "why": "The clone copies the references, not default values."
+          "text": "`0, because the clone is a zero-initialised array of the same shape`",
+          "why": "The `clone` copies the references, not default values."
         },
         {
           "id": "d",
-          "text": "ArrayStoreException",
-          "why": "That exception relates to storing the wrong element type, not to clone."
+          "text": "`ArrayStoreException`",
+          "why": "That exception relates to storing the wrong element type, not to `clone`."
         }
       ],
       "correct": [
         "a"
       ],
-      "explanation": "Copy nested structures yourself (loop, Arrays.copyOf per row, or streams) when you need independence."
+      "explanation": "Copy nested structures yourself (loop, `Arrays.copyOf` per row, or streams) when you need independence."
     },
     {
       "id": "string-methods-return",
       "concept": "Mutable vs immutable strings",
       "type": "single",
       "difficulty": 2,
-      "prompt": "What does this Java code print?\n\nString s = \"hi\";\ns.toUpperCase();\ns += \"!\";\nSystem.out.println(s);\n\nWhat is the output?",
+      "prompt": "What does this Java code print?\n\n```java\nString s = \"hi\";\ns.toUpperCase();\ns += \"!\";\nSystem.out.println(s);\n```\n\nWhat is the output?",
       "options": [
         {
           "id": "a",
-          "text": "hi!, as the new string is discarded",
-          "why": "Correct: String methods never change the receiver; the result must be assigned."
+          "text": "`hi!, as the new string is discarded`",
+          "why": "Correct: `String` methods never change the receiver; the result must be assigned."
         },
         {
           "id": "b",
-          "text": "HI!, since toUpperCase changes the original string in place",
-          "why": "Strings are immutable, so s is untouched."
+          "text": "`HI!, since toUpperCase changes the original string in place`",
+          "why": "Strings are immutable, so `s` is untouched."
         },
         {
           "id": "c",
-          "text": "HI, because the += assignment replaces the whole value of s",
-          "why": "The += appends to the original lowercase s."
+          "text": "`HI, because the += assignment replaces the whole value of s`",
+          "why": "The `+=` appends to the original lowercase `s`."
         },
         {
           "id": "d",
-          "text": "Compile error, since the result of toUpperCase is unused and dropped",
+          "text": "`Compile error, since the result of toUpperCase is unused and dropped`",
           "why": "Ignoring a return value is legal Java."
         }
       ],
       "correct": [
         "a"
       ],
-      "explanation": "Every String \"mutation\" returns a new object, which is why immutability is safe for sharing and caching."
+      "explanation": "Every `String` \"mutation\" returns a new object, which is why immutability is safe for sharing and caching."
     }
   ]
 }

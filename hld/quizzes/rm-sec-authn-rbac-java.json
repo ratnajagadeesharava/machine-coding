@@ -16,7 +16,7 @@
       "concept": "Spring Security",
       "type": "code",
       "difficulty": 2,
-      "prompt": "In a Spring Boot 3 SecurityFilterChain bean method taking HttpSecurity http, require authentication for every request and configure the app as an OAuth2 resource server that validates JWTs with default settings.",
+      "prompt": "In a Spring Boot 3 `SecurityFilterChain` bean method taking `HttpSecurity http`, require authentication for every request and configure the app as an OAuth2 resource server that validates JWTs with default settings.",
       "language": "java",
       "checks": [
         {
@@ -37,14 +37,14 @@
         }
       ],
       "model": "http.authorizeHttpRequests(a -> a.anyRequest().authenticated())\n    .oauth2ResourceServer(o -> o.jwt(Customizer.withDefaults()));\nreturn http.build();",
-      "explanation": "Add spring.security.oauth2.resourceserver.jwt.issuer-uri (or jwk-set-uri) so the decoder can fetch keys. The BearerTokenAuthenticationFilter in the chain extracts and validates the token."
+      "explanation": "Add `spring.security.oauth2.resourceserver.jwt.issuer-uri` (or `jwk-set-uri`) so the decoder can fetch keys. The `BearerTokenAuthenticationFilter` in the chain extracts and validates the token."
     },
     {
       "id": "issuer-yaml",
       "concept": "Spring Security",
       "type": "code",
       "difficulty": 1,
-      "prompt": "Write the application.yml fragment that points a Spring Boot resource server at the issuer https://auth.example.com so it discovers the signing keys.",
+      "prompt": "Write the `application.yml` fragment that points a Spring Boot resource server at the issuer `https://auth.example.com` so it discovers the signing keys.",
       "language": "yaml",
       "starter": "spring:\n",
       "checks": [
@@ -58,14 +58,14 @@
         }
       ],
       "model": "spring:\n  security:\n    oauth2:\n      resourceserver:\n        jwt:\n          issuer-uri: https://auth.example.com",
-      "explanation": "With issuer-uri Boot reads the provider metadata at startup (or lazily) to find the JWK set and adds an issuer validator. jwk-set-uri alone skips the issuer check."
+      "explanation": "With `issuer-uri` Boot reads the provider metadata at startup (or lazily) to find the JWK set and adds an issuer validator. `jwk-set-uri` alone skips the issuer check."
     },
     {
       "id": "jwt-authorities",
       "concept": "Authorities and roles",
       "type": "code",
       "difficulty": 3,
-      "prompt": "Write the JwtAuthenticationConverter bean method body that reads authorities from the JWT claim \"roles\" and prefixes each with \"ROLE_\" instead of the default SCOPE_.",
+      "prompt": "Write the `JwtAuthenticationConverter` bean method body that reads authorities from the JWT claim `\"roles\"` and prefixes each with `\"ROLE_\"` instead of the default `SCOPE_`.",
       "language": "java",
       "starter": "JwtGrantedAuthoritiesConverter granted = new JwtGrantedAuthoritiesConverter();\n",
       "checks": [
@@ -83,14 +83,14 @@
         }
       ],
       "model": "granted.setAuthoritiesClaimName(\"roles\");\ngranted.setAuthorityPrefix(\"ROLE_\");\nJwtAuthenticationConverter converter = new JwtAuthenticationConverter();\nconverter.setJwtGrantedAuthoritiesConverter(granted);\nreturn converter;",
-      "explanation": "By default the converter maps the scope or scp claim to SCOPE_xxx authorities. After the change hasRole(\"ADMIN\") matches because it checks the authority ROLE_ADMIN. Register it with o.jwt(j -> j.jwtAuthenticationConverter(converter))."
+      "explanation": "By default the converter maps the `scope` or `scp` claim to SCOPE_xxx authorities. After the change `hasRole(\"ADMIN\")` matches because it checks the authority `ROLE_ADMIN`. Register it with `o.jwt(j -> j.jwtAuthenticationConverter(converter))`."
     },
     {
       "id": "stateless-session",
       "concept": "Spring Security",
       "type": "code",
       "difficulty": 2,
-      "prompt": "In a SecurityFilterChain, configure Spring Security so it never creates an HTTP session, using the lambda DSL on the HttpSecurity variable http.",
+      "prompt": "In a `SecurityFilterChain`, configure Spring Security so it never creates an HTTP session, using the lambda DSL on the `HttpSecurity` variable `http`.",
       "language": "java",
       "checks": [
         {
@@ -110,7 +110,7 @@
       "concept": "Password storage",
       "type": "code",
       "difficulty": 1,
-      "prompt": "Create a BCryptPasswordEncoder with strength 12, hash the String raw into hash, and then store the boolean result of checking raw against hash in ok.",
+      "prompt": "Create a `BCryptPasswordEncoder` with strength 12, hash the `String raw` into `hash`, and then store the boolean result of checking `raw` against `hash` in `ok`.",
       "language": "java",
       "checks": [
         {
@@ -127,14 +127,14 @@
         }
       ],
       "model": "PasswordEncoder encoder = new BCryptPasswordEncoder(12);\nString hash = encoder.encode(raw);\nboolean ok = encoder.matches(raw, hash);",
-      "explanation": "Never compare hashes with equals: matches() re-hashes using the salt stored inside the hash. PasswordEncoderFactories.createDelegatingPasswordEncoder() prefixes {bcrypt} and lets you migrate algorithms later; Argon2PasswordEncoder is also available."
+      "explanation": "Never compare hashes with equals: `matches()` re-hashes using the salt stored inside the hash. `PasswordEncoderFactories.createDelegatingPasswordEncoder()` prefixes `{bcrypt}` and lets you migrate algorithms later; `Argon2PasswordEncoder` is also available."
     },
     {
       "id": "preauthorize",
       "concept": "Method security",
       "type": "code",
       "difficulty": 2,
-      "prompt": "Annotate a Spring service method Order getOrder(String ownerId, long id) so it runs only for users with the ADMIN role or when ownerId equals the authenticated user's name. Write the annotation line.",
+      "prompt": "Annotate a Spring service method `Order getOrder(String ownerId, long id)` so it runs only for users with the `ADMIN` role or when `ownerId` equals the authenticated user's name. Write the annotation line.",
       "language": "java",
       "checks": [
         {
@@ -155,7 +155,7 @@
         }
       ],
       "model": "@PreAuthorize(\"hasRole('ADMIN') or #ownerId == authentication.name\")",
-      "explanation": "hasRole adds the ROLE_ prefix, so hasRole('ADMIN') matches the authority ROLE_ADMIN. The annotation only works when @EnableMethodSecurity is present and the bean is called through its Spring proxy, so self-invocation bypasses it."
+      "explanation": "hasRole adds the ROLE_ prefix, so `hasRole('ADMIN')` matches the authority `ROLE_ADMIN`. The annotation only works when `@EnableMethodSecurity` is present and the bean is called through its Spring proxy, so self-invocation bypasses it."
     },
     {
       "id": "method-security",
@@ -166,19 +166,19 @@
       "left": [
         {
           "id": "l1",
-          "text": "@PreAuthorize"
+          "text": "`@PreAuthorize`"
         },
         {
           "id": "l2",
-          "text": "@PostAuthorize"
+          "text": "`@PostAuthorize`"
         },
         {
           "id": "l3",
-          "text": "@PreFilter"
+          "text": "`@PreFilter`"
         },
         {
           "id": "l4",
-          "text": "@PostFilter"
+          "text": "`@PostFilter`"
         }
       ],
       "right": [
@@ -188,7 +188,7 @@
         },
         {
           "id": "r2",
-          "text": "Evaluates an expression after the method, with access to returnObject"
+          "text": "Evaluates an expression after the method, with access to `returnObject`"
         },
         {
           "id": "r3",
@@ -209,7 +209,7 @@
         "l3": "r3",
         "l4": "r4"
       },
-      "explanation": "@Secured and @RolesAllowed take simple role lists without expressions. All need @EnableMethodSecurity (or the matching attribute) and go through proxies."
+      "explanation": "`@Secured` and `@RolesAllowed` take simple role lists without expressions. All need `@EnableMethodSecurity` (or the matching attribute) and go through proxies."
     },
     {
       "id": "method-security-enable",
@@ -217,8 +217,8 @@
       "type": "assertion",
       "difficulty": 2,
       "prompt": "Read the assertion A and the reason R, then choose the correct relationship between them.",
-      "assertion": "@PreAuthorize annotations are silently ignored unless method security is enabled, for example with @EnableMethodSecurity.",
-      "reason": "Spring Security expressions can refer to method arguments by name, such as #ownerId.",
+      "assertion": "`@PreAuthorize` annotations are silently ignored unless method security is enabled, for example with `@EnableMethodSecurity`.",
+      "reason": "Spring Security expressions can refer to method arguments by name, such as `#ownerId`.",
       "correct": [
         "b"
       ],
@@ -236,8 +236,8 @@
       "type": "assertion",
       "difficulty": 3,
       "prompt": "Read the assertion A and the reason R, then choose the correct relationship between them.",
-      "assertion": "If requestMatchers(\"/api/**\").permitAll() is declared before requestMatchers(\"/api/admin/**\").hasRole(\"ADMIN\"), the admin endpoints stay open.",
-      "reason": "authorizeHttpRequests evaluates the rules in declaration order and the first matching rule decides.",
+      "assertion": "If `requestMatchers(\"/api/**\").permitAll()` is declared before `requestMatchers(\"/api/admin/**\").hasRole(\"ADMIN\")`, the admin endpoints stay open.",
+      "reason": "`authorizeHttpRequests` evaluates the rules in declaration order and the first matching rule decides.",
       "correct": [
         "a"
       ],
@@ -247,7 +247,7 @@
         "c": "Not this one: A is true while R is false does not describe this pair; check the truth of R again.",
         "d": "Not this one: A is false while R is true does not describe this pair; check the truth of A again."
       },
-      "explanation": "Declare the most specific rules first and anyRequest() last. A test per protected route prevents this class of mistake."
+      "explanation": "Declare the most specific rules first and `anyRequest()` last. A test per protected route prevents this class of mistake."
     },
     {
       "id": "csrf-default",
@@ -266,7 +266,7 @@
         "c": "Correct: A is true. R is false: cookies are exactly what CSRF abuses.",
         "d": "Not this one: A is false while R is true does not describe this pair; check the truth of A again."
       },
-      "explanation": "Stateless bearer-token APIs often disable it deliberately with http.csrf(c -> c.disable()), but cookie-based sessions must keep it."
+      "explanation": "Stateless bearer-token APIs often disable it deliberately with `http.csrf(c -> c.disable())`, but cookie-based sessions must keep it."
     },
     {
       "id": "audience-check",
@@ -274,8 +274,8 @@
       "type": "assertion",
       "difficulty": 3,
       "prompt": "Read the assertion A and the reason R, then choose the correct relationship between them.",
-      "assertion": "A Spring resource server configured only with an issuer-uri automatically rejects tokens whose aud does not name this application.",
-      "reason": "The default JWT validators check the issuer and the exp and nbf timestamps.",
+      "assertion": "A Spring resource server configured only with an `issuer-uri` automatically rejects tokens whose `aud` does not name this application.",
+      "reason": "The default JWT validators check the issuer and the `exp` and `nbf` timestamps.",
       "correct": [
         "d"
       ],
@@ -285,7 +285,7 @@
         "c": "Not this one: A is true while R is false does not describe this pair; check the truth of R again.",
         "d": "Correct: A is false: no audience validator is registered by default. R is true."
       },
-      "explanation": "Add a custom OAuth2TokenValidator<Jwt> that checks aud and combine it with the defaults in a DelegatingOAuth2TokenValidator set on the NimbusJwtDecoder."
+      "explanation": "Add a custom `OAuth2TokenValidator<Jwt>` that checks `aud` and combine it with the defaults in a `DelegatingOAuth2TokenValidator` set on the `NimbusJwtDecoder`."
     },
     {
       "id": "entry-point",
@@ -302,11 +302,11 @@
         {
           "id": "b",
           "text": "200 with an anonymous user and an empty result for every endpoint.",
-          "why": "The anyRequest().authenticated() rule rejects anonymous callers."
+          "why": "The `anyRequest().authenticated()` rule rejects anonymous callers."
         },
         {
           "id": "c",
-          "text": "401 with a WWW-Authenticate: Bearer header.",
+          "text": "401 with a `WWW-Authenticate: Bearer` header.",
           "why": "Correct: the authentication entry point reports missing credentials."
         },
         {
@@ -318,7 +318,7 @@
       "correct": [
         "c"
       ],
-      "explanation": "Invalid or expired tokens also get 401 (with error details in WWW-Authenticate). An authenticated caller lacking authority gets 403 from the AccessDeniedHandler."
+      "explanation": "Invalid or expired tokens also get 401 (with error details in `WWW-Authenticate`). An authenticated caller lacking authority gets 403 from the `AccessDeniedHandler`."
     },
     {
       "id": "authority-fill",
@@ -339,34 +339,34 @@
         "PERM_",
         "@EnableWebSecurity"
       ],
-      "explanation": "hasAuthority('SCOPE_read') matches a token with scope \"read\". Keep roles for coarse grants and scopes for what a client app may do on behalf of a user."
+      "explanation": "`hasAuthority('SCOPE_read')` matches a token with `scope` \"read\". Keep roles for coarse grants and scopes for what a client app may do on behalf of a user."
     },
     {
       "id": "bcrypt-default",
       "concept": "Password storage",
       "type": "integer",
       "difficulty": 2,
-      "prompt": "new BCryptPasswordEncoder() uses a default strength (log rounds) of 10. How many key-expansion iterations is that?",
+      "prompt": "`new BCryptPasswordEncoder()` uses a default strength (log rounds) of 10. How many key-expansion iterations is that?",
       "answer": 1024,
       "unit": "iterations",
-      "explanation": "The work factor is 2^strength, so 2^10 = 1,024. Strength 12 would be four times slower: 4,096 iterations. Pick the highest cost your login latency budget allows."
+      "explanation": "The work factor is `2^strength`, so `2^10` = 1,024. Strength 12 would be four times slower: 4,096 iterations. Pick the highest cost your login latency budget allows."
     },
     {
       "id": "clock-skew",
       "concept": "JWT validation",
       "type": "integer",
       "difficulty": 3,
-      "prompt": "Spring Security's JwtTimestampValidator allows a default clock skew of 60 seconds. A token expired 45 seconds ago on the server clock. For how many more seconds (counting from now) is it still accepted?",
+      "prompt": "Spring Security's `JwtTimestampValidator` allows a default clock skew of 60 seconds. A token expired 45 seconds ago on the server clock. For how many more seconds (counting from now) is it still accepted?",
       "answer": 15,
       "unit": "seconds",
-      "explanation": "The token is accepted until exp + 60 s. It expired 45 s ago, so 60 - 45 = 15 seconds remain. Skew tolerates drift between servers, so keep it small."
+      "explanation": "The token is accepted until `exp` + 60 s. It expired 45 s ago, so 60 - 45 = 15 seconds remain. Skew tolerates drift between servers, so keep it small."
     },
     {
       "id": "query-params",
       "concept": "SQL injection",
       "type": "truefalse",
       "difficulty": 2,
-      "prompt": "True or false: a Spring Data @Query that uses a named parameter such as :email binds the value as data rather than splicing it into the query text.",
+      "prompt": "True or false: a Spring Data `@Query` that uses a named parameter such as `:email` binds the value as data rather than splicing it into the query text.",
       "options": [
         {
           "id": "a",
@@ -389,7 +389,7 @@
       "concept": "SQL injection",
       "type": "code",
       "difficulty": 2,
-      "prompt": "This code is injectable: String sql = \"SELECT * FROM users WHERE email = '\" + email + \"'\"; Statement st = conn.createStatement(); ResultSet rs = st.executeQuery(sql); Rewrite it with a PreparedStatement and a bound parameter.",
+      "prompt": "This code is injectable:\n\n```java\nString sql = \"SELECT * FROM users WHERE email = '\" + email + \"'\";\nStatement st = conn.createStatement();\nResultSet rs = st.executeQuery(sql);\n```\n\nRewrite it with a `PreparedStatement` and a bound parameter.",
       "language": "java",
       "checks": [
         {
@@ -417,7 +417,7 @@
       "concept": "CORS",
       "type": "code",
       "difficulty": 3,
-      "prompt": "Write the Java that builds a CorsConfiguration allowing only the origin https://app.example.com and the methods GET and POST, and registers it for \"/**\" on a UrlBasedCorsConfigurationSource named source.",
+      "prompt": "Write the Java that builds a `CorsConfiguration` allowing only the origin `https://app.example.com` and the methods `GET` and `POST`, and registers it for `\"/**\"` on a `UrlBasedCorsConfigurationSource` named `source`.",
       "language": "java",
       "checks": [
         {
@@ -434,14 +434,14 @@
         }
       ],
       "model": "CorsConfiguration config = new CorsConfiguration();\nconfig.setAllowedOrigins(List.of(\"https://app.example.com\"));\nconfig.setAllowedMethods(List.of(\"GET\", \"POST\"));\nUrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();\nsource.registerCorsConfiguration(\"/**\", config);",
-      "explanation": "Expose the source as a CorsConfigurationSource bean and call http.cors(Customizer.withDefaults()) so the CorsFilter runs before authentication. Avoid \"*\" origins together with allowCredentials(true)."
+      "explanation": "Expose the source as a `CorsConfigurationSource` bean and call `http.cors(Customizer.withDefaults())` so the `CorsFilter` runs before authentication. Avoid `\"*\"` origins together with `allowCredentials(true)`."
     },
     {
       "id": "delegating-encoder",
       "concept": "Password storage",
       "type": "single",
       "difficulty": 2,
-      "prompt": "Why does the DelegatingPasswordEncoder store hashes with a prefix such as {bcrypt}?",
+      "prompt": "Why does the `DelegatingPasswordEncoder` store hashes with a prefix such as `{bcrypt}`?",
       "options": [
         {
           "id": "a",
@@ -467,7 +467,7 @@
       "correct": [
         "a"
       ],
-      "explanation": "With upgradeEncoding you can re-hash a password with the current default after a successful login, migrating users gradually."
+      "explanation": "With `upgradeEncoding` you can re-hash a password with the current default after a successful login, migrating users gradually."
     }
   ]
 }

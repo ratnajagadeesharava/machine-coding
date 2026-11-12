@@ -79,10 +79,10 @@
       "concept": "Sliding window",
       "type": "integer",
       "difficulty": 2,
-      "prompt": "This longest-substring-without-repeats loop sets left = last[c] + 1 whenever c was seen before (it forgets max(left, ...)). What does it return for \"abba\", whose correct answer is 2?",
+      "prompt": "This longest-substring-without-repeats loop sets `left = last[c] + 1` whenever `c` was seen before (it forgets `max(left, ...)`). What does it return for `\"abba\"`, whose correct answer is 2?",
       "answer": 3,
       "tolerance": 0,
-      "explanation": "Walk it: a, b give length 2; the second b moves left to 2; the final a was last seen at 0, so left jumps back to 1 and the window \"bba\" looks like length 3. The max(left, ...) keeps left from moving backwards."
+      "explanation": "Walk it: a, b give length 2; the second b moves left to 2; the final a was last seen at 0, so left jumps back to 1 and the window `\"bba\"` looks like length 3. The `max(left, ...)` keeps left from moving backwards."
     },
     {
       "id": "window-linear",
@@ -187,7 +187,7 @@
       "concept": "Monotonic stack",
       "type": "integer",
       "difficulty": 3,
-      "prompt": "What is the area of the largest rectangle in the histogram with bar heights [2, 1, 5, 6, 2, 3]?",
+      "prompt": "What is the area of the largest rectangle in the histogram with bar heights `[2, 1, 5, 6, 2, 3]`?",
       "answer": 10,
       "tolerance": 0,
       "explanation": "Bars 5 and 6 side by side give height 5 and width 2, so 10. The alternatives are smaller: height 2 across four bars is 8, height 1 across six bars is 6. A monotonic increasing stack finds it in O(n)."
@@ -197,7 +197,7 @@
       "concept": "Two pointers",
       "type": "integer",
       "difficulty": 2,
-      "prompt": "What is the total water trapped by the elevation map [0, 1, 0, 2, 1, 0, 1, 3, 2, 1, 2, 1]?",
+      "prompt": "What is the total water trapped by the elevation map `[0, 1, 0, 2, 1, 0, 1, 3, 2, 1, 2, 1]`?",
       "answer": 6,
       "tolerance": 0,
       "explanation": "Each cell holds min(max to its left, max to its right) minus its own height; summing gives 6. Two pointers computes it in O(n) time and O(1) space.",
@@ -208,10 +208,10 @@
       "concept": "Sliding window",
       "type": "integer",
       "difficulty": 3,
-      "prompt": "What is the length of the shortest substring of s = \"ADOBECODEBANC\" that contains every letter of t = \"ABC\" (with multiplicity)?",
+      "prompt": "What is the length of the shortest substring of `s = \"ADOBECODEBANC\"` that contains every letter of `t = \"ABC\"` (with multiplicity)?",
       "answer": 4,
       "tolerance": 0,
-      "explanation": "The window \"BANC\" has length 4. Expand the right edge until all of t is covered, then shrink the left edge while it stays covered.",
+      "explanation": "The window `\"BANC\"` has length 4. Expand the right edge until all of t is covered, then shrink the left edge while it stays covered.",
       "unit": "characters"
     },
     {
@@ -222,7 +222,7 @@
       "prompt": "In the worst case, how many midpoints are examined to find or rule out a value in a sorted array of 1,000,000 elements, with standard binary search making one probe per iteration?",
       "answer": 20,
       "tolerance": 0,
-      "explanation": "Each probe halves the range, and 2^19 = 524,288 < 1,000,000 <= 2^20 - 1 = 1,048,575 gives at most 20 probes: floor(log2 n) + 1.",
+      "explanation": "Each probe halves the range, and `2^19 = 524,288 < 1,000,000 <= 2^20 - 1 = 1,048,575` gives at most 20 probes: `floor(log2 n) + 1`.",
       "unit": "probes"
     },
     {
@@ -263,11 +263,11 @@
       "concept": "Binary search",
       "type": "single",
       "difficulty": 3,
-      "prompt": "When searching a rotated sorted array without duplicates, such as [4,5,6,7,0,1,2], how do you decide which half is sorted at each step?",
+      "prompt": "When searching a rotated sorted array without duplicates, such as `[4,5,6,7,0,1,2]`, how do you decide which half is sorted at each step?",
       "options": [
         {
           "id": "a",
-          "text": "Compare a[mid] with the target only, ignoring a[lo] and a[hi].",
+          "text": "Compare `a[mid]` with the target only, ignoring `a[lo]` and `a[hi]`.",
           "why": "Without the endpoints you cannot tell which side the target lies on."
         },
         {
@@ -282,7 +282,7 @@
         },
         {
           "id": "d",
-          "text": "If a[lo] <= a[mid] the left half is sorted, else the right.",
+          "text": "If `a[lo] <= a[mid]` the left half is sorted, else the right.",
           "why": "Correct: one half of any split is always in order, and this comparison tells you which."
         }
       ],
@@ -296,7 +296,7 @@
       "concept": "Stack",
       "type": "single",
       "difficulty": 2,
-      "prompt": "To support push, pop, top and getMin all in O(1), what should a min-stack store?",
+      "prompt": "To support `push, pop, top and getMin` all in O(1), what should a min-stack store?",
       "options": [
         {
           "id": "a",
@@ -315,7 +315,7 @@
         },
         {
           "id": "d",
-          "text": "A min-heap kept alongside the stack and polled whenever getMin is called.",
+          "text": "A min-heap kept alongside the stack and polled whenever `getMin` is called.",
           "why": "Polling a heap removes the minimum and costs O(log n)."
         }
       ],
@@ -329,7 +329,7 @@
       "concept": "Binary search",
       "type": "code",
       "difficulty": 2,
-      "prompt": "Write pseudocode that returns the first index i with a[i] >= x in a sorted array a (the length of a if there is none), using a half-open range [lo, hi).",
+      "prompt": "Write pseudocode that returns the first index i with `a[i] >= x` in a sorted array `a` (the length of a if there is none), using a half-open range `[lo, hi)`.",
       "language": "pseudocode",
       "starter": "function lowerBound(a, x):\n    ",
       "checks": [

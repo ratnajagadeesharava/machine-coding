@@ -16,7 +16,7 @@
       "concept": "Request validation (FastAPI)",
       "type": "integer",
       "difficulty": 2,
-      "prompt": "A FastAPI route takes body UserIn with name: str = Field(min_length=2), age: int = Field(ge=18) and password: str (required). A client posts {\"name\": \"b\", \"age\": 10}. How many entries are in the 422 response's detail list?",
+      "prompt": "A FastAPI route takes body `UserIn` with `name: str = Field(min_length=2)`, `age: int = Field(ge=18)` and `password: str` (required). A client posts `{\"name\": \"b\", \"age\": 10}`. How many entries are in the 422 response's `detail` list?",
       "answer": 3,
       "tolerance": 0,
       "explanation": "Pydantic collects all errors rather than stopping at the first: name too short, age below 18, and password missing. One entry each."
@@ -26,23 +26,23 @@
       "concept": "Request validation (FastAPI)",
       "type": "integer",
       "difficulty": 3,
-      "prompt": "A FastAPI route takes a body model Order with items: list[Item], where Item has qty: int = Field(ge=1). A client posts {\"items\": [{\"qty\": 0}, {\"qty\": -1}, {\"qty\": 3}]}. How many entries are in the 422 response's detail list?",
+      "prompt": "A FastAPI route takes a body model `Order` with `items: list[Item]`, where `Item` has `qty: int = Field(ge=1)`. A client posts `{\"items\": [{\"qty\": 0}, {\"qty\": -1}, {\"qty\": 3}]}`. How many entries are in the 422 response's `detail` list?",
       "answer": 2,
       "tolerance": 0,
       "unit": "entries",
-      "explanation": "Pydantic validates every list element and reports the two failures (items.0.qty and items.1.qty) with their locations; the valid third item adds nothing. Verified by running the route with TestClient."
+      "explanation": "Pydantic validates every list element and reports the two failures (`items.0.qty` and `items.1.qty`) with their locations; the valid third item adds nothing. Verified by running the route with `TestClient`."
     },
     {
       "id": "route-order-trap",
       "concept": "REST routing (FastAPI)",
       "type": "single",
       "difficulty": 3,
-      "prompt": "These routes are declared in this order: @app.get(\"/users/{uid}\") def get(uid: int) and then @app.get(\"/users/me\") def me(). What does GET /users/me return?",
+      "prompt": "These routes are declared in this order: `@app.get(\"/users/{uid}\")` `def get(uid: int)` and then `@app.get(\"/users/me\")` `def me()`. What does `GET /users/me` return?",
       "options": [
         {
           "id": "a",
-          "text": "422 with an int parsing error on uid.",
-          "why": "Routes match in declaration order, so /users/{uid} captures 'me' and int validation fails."
+          "text": "422 with an `int` parsing error on `uid`.",
+          "why": "Routes match in declaration order, so `/users/{uid}` captures 'me' and `int` validation fails."
         },
         {
           "id": "b",
@@ -63,14 +63,14 @@
       "correct": [
         "a"
       ],
-      "explanation": "Declare fixed paths (/users/me) before parameterised ones (/users/{uid}). Verified by running the app."
+      "explanation": "Declare fixed paths (`/users/me`) before parameterised ones (`/users/{uid}`). Verified by running the app."
     },
     {
       "id": "pydantic-validator",
       "concept": "Request validation (FastAPI)",
       "type": "code",
       "difficulty": 2,
-      "prompt": "Write a Pydantic v2 model SignupIn with email: str and password: str (at least 8 characters, using Field). Add a field_validator on email that raises ValueError unless it contains '@' and otherwise returns it lower-cased.",
+      "prompt": "Write a Pydantic v2 model `SignupIn` with `email: str` and `password: str` (at least 8 characters, using `Field`). Add a `field_validator` on email that raises `ValueError` unless it contains `'@'` and otherwise returns it lower-cased.",
       "language": "python",
       "starter": "from pydantic import BaseModel, Field, field_validator\n",
       "checks": [
@@ -92,14 +92,14 @@
         }
       ],
       "model": "class SignupIn(BaseModel):\n    email: str\n    password: str = Field(min_length=8)\n\n    @field_validator(\"email\")\n    @classmethod\n    def check_email(cls, v):\n        if \"@\" not in v:\n            raise ValueError(\"invalid email\")\n        return v.lower()",
-      "explanation": "Pydantic v2 uses field_validator (v1 used validator). A ValueError in a validator becomes a 422 entry in FastAPI. Annotated types such as EmailStr (needs email-validator) are an alternative."
+      "explanation": "Pydantic v2 uses `field_validator` (v1 used `validator`). A `ValueError` in a `validator` becomes a 422 entry in FastAPI. Annotated types such as `EmailStr` (needs `email-validator`) are an alternative."
     },
     {
       "id": "fastapi-exception-handler",
       "concept": "Error handling (FastAPI)",
       "type": "code",
       "difficulty": 2,
-      "prompt": "A custom exception class OutOfStock(Exception) exists. Register a FastAPI handler so it produces HTTP 409 with JSON {\"error\": \"out_of_stock\"}.",
+      "prompt": "A custom exception class `OutOfStock(Exception)` exists. Register a FastAPI handler so it produces HTTP 409 with JSON `{\"error\": \"out_of_stock\"}`.",
       "language": "python",
       "starter": "from fastapi.responses import JSONResponse\n",
       "checks": [
@@ -117,7 +117,7 @@
         }
       ],
       "model": "@app.exception_handler(OutOfStock)\nasync def out_of_stock_handler(request, exc):\n    return JSONResponse(status_code=409, content={\"error\": \"out_of_stock\"})",
-      "explanation": "Handlers receive the request and the exception. For built-in errors you can override RequestValidationError or HTTPException handlers the same way."
+      "explanation": "Handlers receive the request and the exception. For built-in errors you can override `RequestValidationError` or `HTTPException` handlers the same way."
     },
     {
       "id": "path-param-422",
@@ -125,7 +125,7 @@
       "type": "assertion",
       "difficulty": 1,
       "prompt": "Judge the assertion and the reason.",
-      "assertion": "FastAPI answers 422 when a path parameter declared as int receives the text abc.",
+      "assertion": "FastAPI answers 422 when a path parameter declared as `int` receives the text `abc`.",
       "reason": "FastAPI is built on top of Starlette.",
       "correct": [
         "b"
@@ -136,7 +136,7 @@
         "c": "Wrong: R is true.",
         "d": "Wrong: A is true; the detail has type int_parsing."
       },
-      "explanation": "FastAPI validates path, query, header and body values against type hints and returns 422 with a detail array on failure."
+      "explanation": "FastAPI validates path, query, header and body values against type hints and returns 422 with a `detail` array on failure."
     },
     {
       "id": "response-model-filter",
@@ -144,8 +144,8 @@
       "type": "assertion",
       "difficulty": 2,
       "prompt": "Judge the assertion and the reason.",
-      "assertion": "A FastAPI route with response_model=UserOut will not leak a password field returned by the function.",
-      "reason": "response_model only affects the OpenAPI docs and never changes the response body.",
+      "assertion": "A FastAPI route with `response_model=UserOut` will not leak a `password` field returned by the function.",
+      "reason": "`response_model` only affects the OpenAPI docs and never changes the response body.",
       "correct": [
         "c"
       ],
@@ -155,28 +155,28 @@
         "c": "Correct: A is true because the return value is filtered and serialised through UserOut; R is false because filtering is real.",
         "d": "Wrong: A is true."
       },
-      "explanation": "response_model validates and filters the output, so extra fields are dropped. Keep separate input and output models so internal fields never reach the client."
+      "explanation": "`response_model` validates and filters the output, so extra fields are dropped. Keep separate input and output models so internal fields never reach the client."
     },
     {
       "id": "endpoint-output",
       "concept": "Response model",
       "type": "single",
       "difficulty": 3,
-      "prompt": "Given @app.post(\"/users\", response_model=UserOut) def mk(u: UserIn): return u, where UserIn has name (stripped and title-cased by a validator), age and password, and UserOut has only name and age. A client posts {\"name\": \" bo \", \"age\": 20, \"password\": \"x\"}. What comes back?",
+      "prompt": "Given `@app.post(\"/users\", response_model=UserOut)` `def mk(u: UserIn): return u`, where `UserIn` has `name` (stripped and title-cased by a validator), age and `password`, and `UserOut` has only `name` and `age`. A client posts `{\"name\": \" bo \", \"age\": 20, \"password\": \"x\"}`. What comes back?",
       "options": [
         {
           "id": "a",
           "text": "Status 200 with {\"name\": \"Bo\", \"age\": 20}.",
-          "why": "The validator ran on input and the filter dropped password on output."
+          "why": "The validator ran on input and the filter dropped `password` on output."
         },
         {
           "id": "b",
-          "text": "Status 201 with {\"name\": \"bo\", \"age\": 20, \"password\": \"x\"} echoed back to the client.",
-          "why": "Default status is 200 and password is filtered out."
+          "text": "Status 201 with {\"name\": \"bo\", \"age\": 20, \"`password`\": \"x\"} echoed back to the client.",
+          "why": "Default status is 200 and `password` is filtered out."
         },
         {
           "id": "c",
-          "text": "Status 422 because the returned object is not a UserOut.",
+          "text": "Status 422 because the returned object is not a `UserOut`.",
           "why": "FastAPI converts the returned object via the response model."
         },
         {
@@ -188,7 +188,7 @@
       "correct": [
         "a"
       ],
-      "explanation": "Verified by running it. POST gives 200 unless status_code=201 is declared."
+      "explanation": "Verified by running it. POST gives 200 unless `status_code=201` is declared."
     },
     {
       "id": "fastapi-error-codes",
@@ -209,17 +209,17 @@
         },
         {
           "id": "c",
-          "text": "A POST to a path that only has GET gives 405.",
+          "text": "A `POST` to a path that only has `GET` gives 405.",
           "why": "The path matches but the method does not, so Method Not Allowed."
         },
         {
           "id": "d",
-          "text": "raise HTTPException(404, \"nope\") gives JSON {\"detail\": \"nope\"}.",
+          "text": "`raise HTTPException(404, \"nope\")` gives JSON `{\"detail\": \"nope\"}`.",
           "why": "The default handler serialises detail as JSON."
         },
         {
           "id": "e",
-          "text": "An unhandled ValueError in the route gives 400.",
+          "text": "An unhandled `ValueError` in the route gives 400.",
           "why": "Unhandled exceptions become a 500 Internal Server Error."
         },
         {
@@ -234,7 +234,7 @@
         "c",
         "d"
       ],
-      "explanation": "Verified by running the app. Customise with exception_handler for HTTPException, RequestValidationError or your own types."
+      "explanation": "Verified by running the app. Customise with `exception_handler` for `HTTPException`, `RequestValidationError` or your own types."
     },
     {
       "id": "code-extra-forbid",
@@ -242,7 +242,7 @@
       "type": "code",
       "difficulty": 2,
       "language": "python",
-      "prompt": "Write a Pydantic v2 model ProfileIn with a field nickname: str that rejects any request body containing fields it does not declare, so FastAPI answers 422 for them.",
+      "prompt": "Write a Pydantic v2 model `ProfileIn` with a field `nickname: str` that rejects any request body containing fields it does not declare, so FastAPI answers 422 for them.",
       "starter": "class ProfileIn(BaseModel):\n    ",
       "checks": [
         {
@@ -259,7 +259,7 @@
         }
       ],
       "model": "class ProfileIn(BaseModel):\n    model_config = ConfigDict(extra=\"forbid\")\n    nickname: str",
-      "explanation": "Pydantic v2 uses model_config (v1 used an inner class Config). The error type is extra_forbidden. The value \"ignore\" is the default and \"allow\" stores the extras on the model."
+      "explanation": "Pydantic v2 uses `model_config` (v1 used an inner class `Config`). The error type is `extra_forbidden`. The value `\"ignore\"` is the default and `\"allow\"` stores the extras on the model."
     },
     {
       "id": "pydantic-v2-names",
@@ -270,53 +270,53 @@
       "left": [
         {
           "id": "a",
-          "text": "model.dict()"
+          "text": "`model.dict()`"
         },
         {
           "id": "b",
-          "text": "Model.parse_obj(data)"
+          "text": "`Model.parse_obj(data)`"
         },
         {
           "id": "c",
-          "text": "@validator(\"email\")"
+          "text": "`@validator(\"email\")`"
         },
         {
           "id": "d",
-          "text": "Config.orm_mode = True"
+          "text": "`Config.orm_mode = True`"
         },
         {
           "id": "e",
-          "text": "model.json()"
+          "text": "`model.json()`"
         }
       ],
       "right": [
         {
           "id": "p",
-          "text": "model.model_dump()"
+          "text": "`model.model_dump()`"
         },
         {
           "id": "q",
-          "text": "Model.model_validate(data)"
+          "text": "`Model.model_validate(data)`"
         },
         {
           "id": "r",
-          "text": "@field_validator(\"email\")"
+          "text": "`@field_validator(\"email\")`"
         },
         {
           "id": "s",
-          "text": "model_config = ConfigDict(from_attributes=True)"
+          "text": "`model_config = ConfigDict(from_attributes=True)`"
         },
         {
           "id": "t",
-          "text": "model.model_dump_json()"
+          "text": "`model.model_dump_json()`"
         },
         {
           "id": "u",
-          "text": "model.to_dict()"
+          "text": "`model.to_dict()`"
         },
         {
           "id": "v",
-          "text": "@root_validator"
+          "text": "`@root_validator`"
         }
       ],
       "pairs": {
@@ -326,47 +326,47 @@
         "d": "s",
         "e": "t"
       },
-      "explanation": "Pydantic v2 prefixes the instance and class API with model_ and moves configuration into model_config. The v1 names still exist as deprecated aliases but emit warnings, and pre-2.0 tutorials still use them."
+      "explanation": "Pydantic v2 prefixes the instance and class API with `model_` and moves configuration into `model_config`. The v1 names still exist as deprecated aliases but emit warnings, and pre-2.0 tutorials still use them."
     },
     {
       "id": "unknown-body-fields",
       "concept": "Request validation (FastAPI)",
       "type": "single",
       "difficulty": 2,
-      "prompt": "A client posts {\"name\": \"Ann\", \"role\": \"admin\"} to a route whose Pydantic v2 request model declares only name. With default settings, what happens to the unknown role field?",
+      "prompt": "A client posts `{\"name\": \"Ann\", \"role\": \"admin\"}` to a route whose Pydantic v2 request model declares only `name`. With default settings, what happens to the unknown `role` field?",
       "options": [
         {
           "id": "a",
-          "text": "The request fails with 422 because role is not declared.",
-          "why": "422 for extras needs extra=\"forbid\" on the model."
+          "text": "The request fails with 422 because `role` is not declared.",
+          "why": "422 for extras needs `extra=\"forbid\"` on the model."
         },
         {
           "id": "b",
           "text": "It is silently ignored and the request succeeds.",
-          "why": "Correct: Pydantic v2 ignores extra input by default (extra=\"ignore\")."
+          "why": "Correct: Pydantic v2 ignores extra input by default (`extra=\"ignore\"`)."
         },
         {
           "id": "c",
           "text": "The field is stored on the model instance as an extra attribute.",
-          "why": "That is extra=\"allow\"; it is not the default."
+          "why": "That is `extra=\"allow\"`; it is not the default."
         },
         {
           "id": "d",
-          "text": "FastAPI answers 400 Bad Request listing the extra field.",
-          "why": "FastAPI validation failures use 422, and extras are not failures by default."
+          "text": "`FastAPI` answers 400 Bad Request listing the extra field.",
+          "why": "`FastAPI` validation failures use 422, and extras are not failures by default."
         }
       ],
       "correct": [
         "b"
       ],
-      "explanation": "Strictness is opt-in: model_config = ConfigDict(extra=\"forbid\"). Ignoring extras is also why passing request data straight into ORM objects invites mass assignment; copy fields explicitly."
+      "explanation": "Strictness is opt-in: `model_config = ConfigDict(extra=\"forbid\")`. Ignoring extras is also why passing request data straight into ORM objects invites mass assignment; copy fields explicitly."
     },
     {
       "id": "create-route-201",
       "concept": "REST endpoints (FastAPI)",
       "type": "code",
       "difficulty": 1,
-      "prompt": "Write a FastAPI POST /users route named create that takes a body model UserIn, returns UserOut through response_model, answers status 201, and returns service.create(body).",
+      "prompt": "Write a FastAPI `POST /users` route named `create` that takes a body model `UserIn`, returns `UserOut` through `response_model`, answers status 201, and returns `service.create(body)`.",
       "language": "python",
       "checks": [
         {
@@ -387,7 +387,7 @@
         }
       ],
       "model": "@app.post(\"/users\", status_code=201, response_model=UserOut)\ndef create(body: UserIn):\n    return service.create(body)",
-      "explanation": "Set a Location header through a Response parameter if the client needs the new URL. Without status_code the default for POST is 200."
+      "explanation": "Set a `Location` header through a `Response` parameter if the client needs the new URL. Without `status_code` the default for `POST` is 200."
     },
     {
       "id": "param-sources",
@@ -398,19 +398,19 @@
       "left": [
         {
           "id": "l1",
-          "text": "user_id: int, when the path is /users/{user_id}"
+          "text": "`user_id: int`, when the path is `/users/{user_id}`"
         },
         {
           "id": "l2",
-          "text": "limit: int = 10, not part of the path"
+          "text": "`limit: int = 10`, not part of the path"
         },
         {
           "id": "l3",
-          "text": "body: UserIn, a Pydantic model"
+          "text": "`body: UserIn`, a Pydantic model"
         },
         {
           "id": "l4",
-          "text": "x_token: str = Header()"
+          "text": "`x_token: str = Header()`"
         }
       ],
       "right": [
@@ -428,11 +428,11 @@
         },
         {
           "id": "r4",
-          "text": "The X-Token request header"
+          "text": "The `X-Token` request header"
         },
         {
           "id": "r5",
-          "text": "A cookie named x_token"
+          "text": "A cookie named `x_token`"
         },
         {
           "id": "r6",
@@ -445,14 +445,14 @@
         "l3": "r3",
         "l4": "r4"
       },
-      "explanation": "FastAPI infers the source from the signature: names found in the path are path parameters, scalar types are query parameters, models are bodies. Header() converts underscores to hyphens."
+      "explanation": "FastAPI infers the source from the signature: names found in the path are path parameters, scalar types are query parameters, models are bodies. `Header()` converts underscores to hyphens."
     },
     {
       "id": "header-underscore",
       "concept": "REST routing (FastAPI)",
       "type": "truefalse",
       "difficulty": 2,
-      "prompt": "True or false: a parameter declared as x_token: str = Header() reads the request header X-Token (underscores converted to hyphens by default).",
+      "prompt": "True or false: a parameter declared as `x_token: str = Header()` reads the request header `X-Token` (underscores converted to hyphens by default).",
       "options": [
         {
           "id": "a",
@@ -468,7 +468,7 @@
       "correct": [
         "a"
       ],
-      "explanation": "Set convert_underscores=False only if you really need a header name that contains underscores."
+      "explanation": "Set `convert_underscores=False` only if you really need a header name that contains underscores."
     },
     {
       "id": "validation-status-fastapi",
@@ -491,7 +491,7 @@
       "correct": [
         "b"
       ],
-      "explanation": "Override the RequestValidationError handler if your API contract says 400. The detail entries carry loc, msg and type fields."
+      "explanation": "Override the `RequestValidationError` handler if your API contract says 400. The detail entries carry `loc`, `msg` and `type` fields."
     },
     {
       "id": "plain-str-accepts-empty",
@@ -499,8 +499,8 @@
       "type": "assertion",
       "difficulty": 2,
       "prompt": "Judge the assertion and the reason.",
-      "assertion": "A Pydantic field declared only as name: str accepts the empty string.",
-      "reason": "A bare str annotation requires a string value but puts no constraint on its length.",
+      "assertion": "A Pydantic field declared only as `name: str` accepts the empty string.",
+      "reason": "A bare `str` annotation requires a string value but puts no constraint on its length.",
       "correct": [
         "a"
       ],
@@ -510,7 +510,7 @@
         "c": "Wrong: R is true.",
         "d": "Wrong: A is true."
       },
-      "explanation": "Add Field(min_length=1) or a constrained type (Annotated[str, StringConstraints(min_length=1, strip_whitespace=True)]) to reject blank values."
+      "explanation": "Add `Field(min_length=1)` or a constrained type (`Annotated[str, StringConstraints(min_length=1, strip_whitespace=True)]`) to reject blank values."
     }
   ]
 }

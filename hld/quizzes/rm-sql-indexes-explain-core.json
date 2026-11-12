@@ -42,7 +42,7 @@
       "right": [
         {
           "id": "p",
-          "text": "Equality, range and ORDER BY on one or more columns"
+          "text": "Equality, range and `ORDER BY` on one or more columns"
         },
         {
           "id": "q",
@@ -50,7 +50,7 @@
         },
         {
           "id": "r",
-          "text": "Containment and search on jsonb, arrays and full-text (@>, @@)"
+          "text": "Containment and search on jsonb, arrays and full-text (`@>`, `@@`)"
         },
         {
           "id": "s",
@@ -62,7 +62,7 @@
         },
         {
           "id": "u",
-          "text": "Substring search with LIKE '%abc%' with no extension"
+          "text": "Substring search with `LIKE '%abc%'` with no extension"
         }
       ],
       "pairs": {
@@ -72,14 +72,14 @@
         "d": "s",
         "e": "t"
       },
-      "explanation": "B-tree is the default and covers most OLTP needs. GIN is an inverted index (value -> rows). BRIN stores min/max per block range, so it only helps when physical order correlates with the column. A trigram GIN (pg_trgm) is needed for %abc% searches."
+      "explanation": "B-tree is the default and covers most OLTP needs. GIN is an inverted index (value -> rows). BRIN stores min/max per block range, so it only helps when physical order correlates with the column. A trigram GIN (`pg_trgm`) is needed for `%abc%` searches."
     },
     {
       "id": "leftmost-prefix-count",
       "concept": "Composite indexes",
       "type": "integer",
       "difficulty": 2,
-      "prompt": "A B-tree index exists on (a, b, c). Under the classic leftmost-prefix rule, for how many of these WHERE clauses can the index seek on the leading column a? (1) a = 1; (2) b = 2; (3) a = 1 AND b = 2; (4) a = 1 AND c = 3; (5) b = 2 AND c = 3; (6) a = 1 AND b = 2 AND c = 3.",
+      "prompt": "A B-tree index exists on `(a, b, c)`. Under the classic leftmost-prefix rule, for how many of these WHERE clauses can the index seek on the leading column `a`? `(1) a = 1; (2) b = 2; (3) a = 1 AND b = 2; (4) a = 1 AND c = 3; (5) b = 2 AND c = 3; (6) a = 1 AND b = 2 AND c = 3`.",
       "answer": 4,
       "explanation": "Clauses 1, 3, 4 and 6 constrain a, so the tree can be descended directly (in 4 only a narrows the range; c is just a filter inside it). Clauses 2 and 5 lack the leading column and, at best, scan the whole index.",
       "unit": "clauses"
@@ -89,7 +89,7 @@
       "concept": "Partial indexes",
       "type": "integer",
       "difficulty": 2,
-      "prompt": "Table orders has 1,000,000 rows and 2% of them have status = 'pending'. How many entries does CREATE INDEX ON orders (created_at) WHERE status = 'pending' contain?",
+      "prompt": "Table `orders` has 1,000,000 rows and 2% of them have `status = 'pending'`. How many entries does\n\n```sql\nCREATE INDEX ON orders (created_at) WHERE status = 'pending'\n```\n\ncontain?",
       "answer": 20000,
       "explanation": "A partial index stores entries only for rows that satisfy its predicate: 2% of 1,000,000 = 20,000. It is smaller, cheaper to maintain and cacheable, but the query must repeat (or imply) the predicate to use it.",
       "unit": "entries"
@@ -99,7 +99,7 @@
       "concept": "EXPLAIN",
       "type": "integer",
       "difficulty": 3,
-      "prompt": "A table occupies 1,000 pages and holds 100,000 rows. With the default planner constants (seq_page_cost = 1.0, cpu_tuple_cost = 0.01, cpu_operator_cost = 0.0025), what total cost does EXPLAIN show for a Seq Scan with a WHERE filter that applies one comparison operator to every row?",
+      "prompt": "A table occupies 1,000 pages and holds 100,000 rows. With the default planner constants (`seq_page_cost = 1.0`, `cpu_tuple_cost = 0.01`, `cpu_operator_cost = 0.0025`), what total cost does `EXPLAIN` show for a `Seq Scan` with a `WHERE` filter that applies one comparison operator to every row?",
       "answer": 2250,
       "explanation": "Cost = pages * 1.0 + rows * 0.01 + rows * 0.0025 = 1000 + 1000 + 250 = 2250. Checked on PostgreSQL: a 1,137-page, 100,000-row table shows cost 2137.00 unfiltered and 2387.00 with one filter operator. Costs are unitless planner estimates, not milliseconds.",
       "unit": "cost units"
@@ -110,7 +110,7 @@
       "type": "assertion",
       "difficulty": 2,
       "prompt": "Read the assertion (A) and the reason (R), then choose the option that fits.",
-      "assertion": "An index on (customer_id, created_at) serves WHERE customer_id = ? ORDER BY created_at DESC LIMIT 10 without a separate sort step.",
+      "assertion": "An index on `(customer_id, created_at)` serves `WHERE customer_id = ? ORDER BY created_at DESC LIMIT 10` without a separate sort step.",
       "reason": "Entries with the same customer_id are stored in created_at order, and a B-tree can be scanned backwards.",
       "correct": [
         "a"
@@ -121,7 +121,7 @@
         "c": "R is true, so this option wrongly calls it false.",
         "d": "A is true, so this option wrongly calls it false."
       },
-      "explanation": "EXPLAIN shows \"Index Scan Backward using ... Index Cond: (customer_id = 5)\" under a Limit node. Put equality columns first, then the sort column."
+      "explanation": "`EXPLAIN` shows \"`Index Scan Backward using ... Index Cond: (customer_id = 5)`\" under a Limit node. Put equality columns first, then the sort column."
     },
     {
       "id": "low-selectivity",
@@ -129,7 +129,7 @@
       "type": "assertion",
       "difficulty": 3,
       "prompt": "Read the assertion (A) and the reason (R), then choose the option that fits.",
-      "assertion": "A B-tree index on status always speeds up WHERE status = 'done' when 98% of the rows have that value.",
+      "assertion": "A B-tree index on `status` always speeds up `WHERE status = 'done'` when 98% of the rows have that value.",
       "reason": "The planner compares estimated costs and chooses a sequential scan when a query reads a large fraction of the table.",
       "correct": [
         "d"
@@ -140,7 +140,7 @@
         "c": "R is true, so this option wrongly calls it false.",
         "d": "Correct: A is false because reading 98% of the rows through an index (random page access) is slower than a sequential scan; R is true."
       },
-      "explanation": "On a 100,000-row test table the planner chose Seq Scan for status = 'done' (98% of rows) but an index scan for the rare status = 'pending'. Low-cardinality columns are poor stand-alone B-tree keys; consider a partial index on the rare value."
+      "explanation": "On a 100,000-row test table the planner chose `Seq Scan` for `status = 'done'` (98% of rows) but an index scan for the rare `status = 'pending'`. Low-cardinality columns are poor stand-alone B-tree keys; consider a partial index on the rare value."
     },
     {
       "id": "expression-index",
@@ -148,18 +148,18 @@
       "type": "assertion",
       "difficulty": 2,
       "prompt": "Read the assertion (A) and the reason (R), then choose the option that fits.",
-      "assertion": "WHERE lower(email) = 'ana@example.com' cannot use a plain B-tree index on the column email.",
-      "reason": "An expression index on lower(email) can serve that predicate.",
+      "assertion": "`WHERE lower(email) = 'ana@example.com'` cannot use a plain B-tree index on the column `email`.",
+      "reason": "An expression index on `lower(email)` can serve that predicate.",
       "correct": [
         "b"
       ],
       "whys": {
         "a": "R is a fix for the problem, not the cause of the limitation in A.",
-        "b": "Correct: both are true; A holds because the index stores email, not lower(email), and R is the remedy.",
+        "b": "Correct: both are true; A holds because the index stores email, not `lower(email)`, and R is the remedy.",
         "c": "R is true, so this option wrongly calls it false.",
         "d": "A is true, so this option wrongly calls it false."
       },
-      "explanation": "Checked on PostgreSQL: Seq Scan before CREATE INDEX ON users (lower(email)), Index Scan after. Alternatives: citext, or normalise the value when storing it."
+      "explanation": "Checked on PostgreSQL: `Seq Scan` before `CREATE INDEX ON users (lower(email))`, `Index Scan` after. Alternatives: `citext`, or normalise the value when storing it."
     },
     {
       "id": "covering-fill",
@@ -181,14 +181,14 @@
         "WHERE",
         "free-space"
       ],
-      "explanation": "Included columns are not part of the search key, so they cannot be used for seeking or ordering, but they avoid heap fetches. \"Heap Fetches: N\" in EXPLAIN ANALYZE shows how often the visibility map did not help."
+      "explanation": "Included columns are not part of the search key, so they cannot be used for seeking or ordering, but they avoid heap fetches. \"`Heap Fetches: N`\" in `EXPLAIN ANALYZE` shows how often the visibility map did not help."
     },
     {
       "id": "code-composite-index",
       "concept": "Composite indexes",
       "type": "code",
       "difficulty": 2,
-      "prompt": "Table orders(id, tenant_id, status, created_at, total). The hot query is WHERE tenant_id = ? AND status = ? ORDER BY created_at DESC LIMIT 20. Write the CREATE INDEX statement that serves it with no extra sort.",
+      "prompt": "Table `orders(id, tenant_id, status, created_at, total)`. The hot query is `WHERE tenant_id = ? AND status = ? ORDER BY created_at DESC LIMIT 20`. Write the `CREATE INDEX` statement that serves it with no extra sort.",
       "language": "sql",
       "checks": [
         {
@@ -201,14 +201,14 @@
         }
       ],
       "model": "CREATE INDEX orders_tenant_status_created\n  ON orders (tenant_id, status, created_at DESC);",
-      "explanation": "Equality columns first (in either order), range/sort column last. created_at DESC is optional because a B-tree can be scanned backwards."
+      "explanation": "Equality columns first (in either order), range/sort column last. `created_at DESC` is optional because a B-tree can be scanned backwards."
     },
     {
       "id": "code-partial-index",
       "concept": "Partial indexes",
       "type": "code",
       "difficulty": 2,
-      "prompt": "Table orders(id, status, created_at). Only about 2% of the rows are 'pending' and a job polls them ordered by creation time. Write the statement that creates a partial index on created_at covering only pending rows.",
+      "prompt": "Table `orders(id, status, created_at)`. Only about 2% of the rows are `'pending'` and a job polls them ordered by creation time. Write the statement that creates a partial index on `created_at` covering only pending rows.",
       "language": "sql",
       "checks": [
         {
@@ -221,14 +221,14 @@
         }
       ],
       "model": "CREATE INDEX orders_pending_created\n  ON orders (created_at)\n  WHERE status = 'pending';",
-      "explanation": "The polling query must contain status = 'pending' for the planner to prove the partial index applies. Same trick: CREATE UNIQUE INDEX ... WHERE deleted_at IS NULL for soft deletes."
+      "explanation": "The polling query must contain `status = 'pending'` for the planner to prove the partial index applies. Same trick: `CREATE UNIQUE INDEX ... WHERE deleted_at IS NULL` for soft deletes."
     },
     {
       "id": "code-gin-jsonb",
       "concept": "GIN and JSONB",
       "type": "code",
       "difficulty": 2,
-      "prompt": "Table orders has a jsonb column attrs. Write the statement that creates a GIN index on it, then a query selecting the orders whose attrs contain {\"tag\": \"vip\"} in a way that index can serve.",
+      "prompt": "Table `orders` has a `jsonb` column `attrs`. Write the statement that creates a GIN index on it, then a query selecting the orders whose `attrs` contain `{\"tag\": \"vip\"}` in a way that index can serve.",
       "language": "sql",
       "checks": [
         {
@@ -241,14 +241,14 @@
         }
       ],
       "model": "CREATE INDEX orders_attrs_gin ON orders USING gin (attrs);\nSELECT * FROM orders WHERE attrs @> '{\"tag\": \"vip\"}';",
-      "explanation": "The default jsonb_ops class supports @>, ?, ?| and ?&. jsonb_path_ops is smaller and faster for @> only. ->> equality (attrs->>'tag' = 'vip') needs an expression B-tree index instead. Checked on PostgreSQL: Bitmap Index Scan on the GIN index."
+      "explanation": "The default `jsonb_ops` class supports `@>, ?, ?| and ?&`. `jsonb_path_ops` is smaller and faster for `@>` only. `->>` equality (`attrs->>'tag' = 'vip'`) needs an expression B-tree index instead. Checked on PostgreSQL: `Bitmap Index Scan` on the GIN index."
     },
     {
       "id": "non-sargable-cast",
       "concept": "EXPLAIN",
       "type": "single",
       "difficulty": 2,
-      "prompt": "An index on orders(customer_id, created_at) exists. EXPLAIN SELECT * FROM orders WHERE customer_id::text = '5' shows \"Seq Scan on orders  (cost=0.00..2887.00 rows=500 width=54)  Filter: ((customer_id)::text = '5'::text)\". Why was the index not used?",
+      "prompt": "An index on `orders(customer_id, created_at)` exists.\n\n```sql\nEXPLAIN SELECT * FROM orders WHERE customer_id::text = '5'\n```\n\nshows\n\n```text\n\"Seq Scan on orders  (cost=0.00..2887.00 rows=500 width=54)\n  Filter: ((customer_id)::text = '5'::text)\".\n```\n\nWhy was the index not used?",
       "options": [
         {
           "id": "a",
@@ -262,69 +262,69 @@
         },
         {
           "id": "c",
-          "text": "A composite index is only usable when every one of its columns appears in the WHERE clause of the query.",
+          "text": "A composite index is only usable when every one of its columns appears in the `WHERE` clause of the query.",
           "why": "A leading-column condition is enough; the other columns can be omitted."
         },
         {
           "id": "d",
-          "text": "Casts to text need enable_indexscan to be switched on for that session.",
-          "why": "enable_indexscan is on by default and unrelated to the cast."
+          "text": "Casts to text need `enable_indexscan` to be switched on for that session.",
+          "why": "`enable_indexscan` is on by default and unrelated to the cast."
         }
       ],
       "correct": [
         "a"
       ],
-      "explanation": "Same family of traps: WHERE date(created_at) = ..., WHERE col + 1 = ..., implicit casts caused by mismatched parameter types, and LIKE with a leading wildcard."
+      "explanation": "Same family of traps: `WHERE` date(created_at) = ..., `WHERE` col + 1 = ..., implicit casts caused by mismatched parameter types, and `LIKE` with a leading wildcard."
     },
     {
       "id": "estimate-vs-actual",
       "concept": "EXPLAIN",
       "type": "single",
       "difficulty": 3,
-      "prompt": "EXPLAIN ANALYZE shows \"Seq Scan on orders (cost=0.00..2387.00 rows=10 width=54) (actual time=0.02..18.4 rows=48210 loops=1)  Filter: (status = 'done'::text)  Rows Removed by Filter: 51790\". What does the gap between rows=10 and rows=48210 most likely mean, and what do you try first?",
+      "prompt": "`EXPLAIN ANALYZE` shows\n\n```text\n\"Seq Scan on orders (cost=0.00..2387.00 rows=10 width=54) (actual time=0.02..18.4 rows=48210 loops=1)\n  Filter: (status = 'done'::text)\n  Rows Removed by Filter: 51790\".\n```\n\nWhat does the gap between `rows=10` and `rows=48210` most likely mean, and what do you try first?",
       "options": [
         {
           "id": "a",
-          "text": "Statistics are stale or missing; run ANALYZE and check autovacuum.",
+          "text": "Statistics are stale or missing; run `ANALYZE` and check autovacuum.",
           "why": "Right: a 4,800x misestimate leads to bad join orders and scan choices."
         },
         {
           "id": "b",
-          "text": "The index on status is corrupt, so run REINDEX immediately to repair it and force its use.",
+          "text": "The index on status is corrupt, so run `REINDEX` immediately to repair it and force its use.",
           "why": "The plan does not use an index, and nothing in it hints at corruption."
         },
         {
           "id": "c",
-          "text": "work_mem is too low; raise it so the scan returns more rows.",
-          "why": "work_mem affects sorts and hashes, not row estimates."
+          "text": "`work_mem` is too low; raise it so the scan returns more rows.",
+          "why": "`work_mem` affects sorts and hashes, not row estimates."
         },
         {
           "id": "d",
-          "text": "The table is bloated; VACUUM FULL will fix the estimate.",
+          "text": "The table is bloated; `VACUUM FULL` will fix the estimate.",
           "why": "Bloat changes page counts, not the selectivity estimate for a column."
         }
       ],
       "correct": [
         "a"
       ],
-      "explanation": "Always compare estimated and actual rows per node. If ANALYZE does not help, look at correlated columns (CREATE STATISTICS) or a higher statistics target for skewed columns."
+      "explanation": "Always compare estimated and actual rows per node. If `ANALYZE` does not help, look at correlated columns (`CREATE STATISTICS`) or a higher statistics target for skewed columns."
     },
     {
       "id": "explain-analyze-facts",
       "concept": "EXPLAIN",
       "type": "multi",
       "difficulty": 2,
-      "prompt": "Select all true statements about EXPLAIN and EXPLAIN ANALYZE in PostgreSQL.",
+      "prompt": "Select all true statements about `EXPLAIN` and `EXPLAIN ANALYZE` in PostgreSQL.",
       "options": [
         {
           "id": "a",
-          "text": "EXPLAIN ANALYZE actually executes the statement, so wrap INSERT, UPDATE or DELETE in BEGIN ... ROLLBACK.",
+          "text": "`EXPLAIN ANALYZE` actually executes the statement, so wrap `INSERT`, `UPDATE` or `DELETE` in `BEGIN ... ROLLBACK`.",
           "why": "Right: otherwise the data change really happens."
         },
         {
           "id": "b",
           "text": "Cost numbers are unitless planner estimates, not milliseconds.",
-          "why": "Right: use actual time from ANALYZE for real durations."
+          "why": "Right: use actual time from `ANALYZE` for real durations."
         },
         {
           "id": "c",
@@ -333,8 +333,8 @@
         },
         {
           "id": "d",
-          "text": "Plain EXPLAIN runs the query and reports real timings.",
-          "why": "Plain EXPLAIN only plans; it needs ANALYZE to execute."
+          "text": "Plain `EXPLAIN` runs the query and reports real timings.",
+          "why": "Plain `EXPLAIN` only plans; it needs `ANALYZE` to execute."
         },
         {
           "id": "e",
@@ -347,14 +347,14 @@
         "b",
         "c"
       ],
-      "explanation": "Add BUFFERS to see shared hit/read counts: it shows whether a query is CPU-bound or I/O-bound."
+      "explanation": "Add `BUFFERS` to see shared hit/read counts: it shows whether a query is CPU-bound or I/O-bound."
     },
     {
       "id": "null-in-btree",
       "concept": "Index selection",
       "type": "truefalse",
       "difficulty": 2,
-      "prompt": "In PostgreSQL a B-tree index stores entries for NULL values, so WHERE col IS NULL can use the index.",
+      "prompt": "In PostgreSQL a B-tree index stores entries for `NULL` values, so `WHERE col IS NULL` can use the index.",
       "options": [
         {
           "id": "a",
@@ -364,13 +364,13 @@
         {
           "id": "b",
           "text": "False",
-          "why": "It can: NULLs are indexed in PostgreSQL, so IS NULL can use a B-tree index."
+          "why": "It can: NULLs are indexed in PostgreSQL, so `IS NULL` can use a B-tree index."
         }
       ],
       "correct": [
         "a"
       ],
-      "explanation": "Oracle differs: a single-column B-tree does not index rows whose key is entirely NULL, so IS NULL cannot use it there (a composite index with a non-null column, or a function-based index, works around it). Checked on PostgreSQL: a Bitmap Index Scan was used for IS NULL."
+      "explanation": "Oracle differs: a single-column B-tree does not index rows whose key is entirely `NULL`, so `IS NULL` cannot use it there (a composite index with a non-null column, or a function-based index, works around it). Checked on PostgreSQL: a `Bitmap Index Scan` was used for `IS NULL`."
     },
     {
       "id": "like-prefix-index",
@@ -378,25 +378,25 @@
       "type": "assertion",
       "difficulty": 3,
       "prompt": "Read the assertion (A) and the reason (R), then choose the option that fits.",
-      "assertion": "In a database whose default collation is not C, a plain B-tree index on a text column cannot serve WHERE col LIKE 'abc%'.",
-      "reason": "An index created with the text_pattern_ops operator class compares strings character by character and can serve left-anchored LIKE patterns.",
+      "assertion": "In a database whose default collation is not C, a plain B-tree index on a text column cannot serve `WHERE col LIKE 'abc%'`.",
+      "reason": "An index created with the `text_pattern_ops` operator class compares strings character by character and can serve left-anchored `LIKE` patterns.",
       "correct": [
         "b"
       ],
       "whys": {
         "a": "R does not explain A: A is about the default operator class following locale sort rules, while R merely names the fix.",
         "b": "Correct: both are true, but R is the remedy, not the reason. Locale-aware ordering is why the default index cannot turn a prefix match into a range.",
-        "c": "R is true (text_pattern_ops exists for exactly this), so calling it false is wrong.",
-        "d": "A is true on locale collations (verified: Seq Scan on 100,000 rows, Index Only Scan after text_pattern_ops), so calling it false is wrong."
+        "c": "R is true (`text_pattern_ops` exists for exactly this), so calling it false is wrong.",
+        "d": "A is true on locale collations (verified: `Seq Scan` on 100,000 rows, `Index Only Scan` after `text_pattern_ops`), so calling it false is wrong."
       },
-      "explanation": "Checked on PostgreSQL 16: with an en_US-style collation, LIKE 'abc%' did a Seq Scan on a plain index; after CREATE INDEX ... (x text_pattern_ops) the planner used Index Cond x ~>=~ 'abc' AND x ~<~ 'abd'. A database created with the C collation, or a trigram GIN index (pg_trgm), are alternatives; %abc% still needs trigrams."
+      "explanation": "Checked on PostgreSQL 16: with an en_US-style collation, `LIKE 'abc%'` did a `Seq Scan` on a plain index; after `CREATE INDEX ... (x text_pattern_ops)` the planner used `Index Cond x ~>=~ 'abc' AND x ~<~ 'abd'`. A database created with the C collation, or a trigram GIN index (`pg_trgm`), are alternatives; `%abc%` still needs trigrams."
     },
     {
       "id": "code-btree-vs-trgm",
       "concept": "Index types",
       "type": "code",
       "difficulty": 3,
-      "prompt": "Table products(id, name text). Write the statements that let WHERE name ILIKE '%shoe%' use an index in PostgreSQL (assume you may install extensions).",
+      "prompt": "Table `products(id, name text)`. Write the statements that let `WHERE name ILIKE '%shoe%'` use an index in PostgreSQL (assume you may install extensions).",
       "language": "sql",
       "checks": [
         {
@@ -409,7 +409,7 @@
         }
       ],
       "model": "CREATE EXTENSION IF NOT EXISTS pg_trgm;\nCREATE INDEX products_name_trgm ON products USING gin (name gin_trgm_ops);",
-      "explanation": "A B-tree cannot help with a leading wildcard because the match is not a prefix. pg_trgm splits strings into three-character grams; the GIN index supports LIKE, ILIKE and regex searches. GiST with gist_trgm_ops also works and additionally supports nearest-neighbour similarity ordering."
+      "explanation": "A B-tree cannot help with a leading wildcard because the match is not a prefix. `pg_trgm` splits strings into three-character grams; the GIN index supports `LIKE`, `ILIKE` and regex searches. GiST with `gist_trgm_ops` also works and additionally supports nearest-neighbour similarity ordering."
     }
   ]
 }

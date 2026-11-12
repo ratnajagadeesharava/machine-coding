@@ -16,7 +16,7 @@
       "concept": "SQL guard",
       "type": "code",
       "difficulty": 3,
-      "prompt": "Using sqlglot, write is_select_only(sql) -> bool for LLM-generated PostgreSQL. Return True only if the text parses into exactly one statement whose root node is a SELECT (exp.Select). Return False on a parse error.",
+      "prompt": "Using sqlglot, write is_select_only(sql) -> bool for LLM-generated PostgreSQL. Return True only if the text parses into exactly one statement whose root node is a SELECT (`exp.Select`). Return False on a parse error.",
       "language": "python",
       "starter": "import sqlglot\nfrom sqlglot import exp\n\ndef is_select_only(sql: str) -> bool:\n    ",
       "checks": [
@@ -38,24 +38,24 @@
         }
       ],
       "model": "def is_select_only(sql: str) -> bool:\n    try:\n        trees = sqlglot.parse(sql, read=\"postgres\")\n    except sqlglot.errors.SqlglotError:\n        return False\n    return len(trees) == 1 and isinstance(trees[0], exp.Select)",
-      "explanation": "Catch SqlglotError (the base class): unterminated strings raise TokenError, which is not a ParseError, so catching only ParseError would let it escape. Verified with sqlglot: 'SELECT 1; DROP TABLE t' parses to [Select, Drop], a WITH query parses to one Select, UNION parses to Union, and an empty string gives [None]. Other solutions pass (parse_one plus a check for extra statements, or walking the tree for Insert/Delete/Drop nodes). Real systems add more: in PostgreSQL SELECT ... INTO still parses as a Select but creates a table, so also use a read-only database role, a statement timeout and a LIMIT."
+      "explanation": "Catch `SqlglotError` (the base class): unterminated strings raise `TokenError`, which is not a `ParseError`, so catching only `ParseError` would let it escape. Verified with sqlglot: `'SELECT 1; DROP TABLE t'` parses to `[Select, Drop]`, a WITH query parses to one Select, UNION parses to Union, and an empty string gives `[None]`. Other solutions pass (`parse_one` plus a check for extra statements, or walking the tree for Insert/Delete/Drop nodes). Real systems add more: in PostgreSQL SELECT ... INTO still parses as a Select but creates a table, so also use a read-only database role, a statement timeout and a LIMIT."
     },
     {
       "id": "guard-count",
       "concept": "SQL guard",
       "type": "integer",
       "difficulty": 3,
-      "prompt": "A guard built on sqlglot accepts SQL only if it parses into exactly one statement whose root node is a plain Select. Of these five inputs, how many pass: (1) SELECT 1; (2) SELECT 1; DROP TABLE t; (3) WITH x AS (SELECT 1) SELECT * FROM x; (4) SELECT 1 UNION SELECT 2; (5) DELETE FROM t?",
+      "prompt": "A guard built on sqlglot accepts SQL only if it parses into exactly one statement whose root node is a plain `Select`. Of these five inputs, how many pass: (1) `SELECT 1;` (2) `SELECT 1; DROP TABLE t;` (3) `WITH x AS (SELECT 1) SELECT * FROM x;` (4) `SELECT 1 UNION SELECT 2;` (5) `DELETE FROM t`?",
       "answer": 2,
       "unit": "inputs",
-      "explanation": "Inputs 1 and 3 pass (a WITH clause hangs off the Select node). Input 2 parses to two statements (Select and Drop), input 4 to a Union root, and input 5 to a Delete; I confirmed each with sqlglot.parse. Union is a common false rejection, so a production guard usually allows set operations explicitly."
+      "explanation": "Inputs 1 and 3 pass (a WITH clause hangs off the Select node). Input 2 parses to two statements (Select and Drop), input 4 to a Union root, and input 5 to a Delete; I confirmed each with `sqlglot.parse`. Union is a common false rejection, so a production guard usually allows set operations explicitly."
     },
     {
       "id": "pydantic-args",
       "concept": "Schema validation",
       "type": "code",
       "difficulty": 2,
-      "prompt": "Write a Pydantic v2 model RefundArgs for an LLM tool call: order_id is a string that must match ORD- followed by exactly six digits, and amount is a float greater than 0 and at most 500.",
+      "prompt": "Write a Pydantic v2 model RefundArgs for an LLM tool call: `order_id` is a string that must match ORD- followed by exactly six digits, and amount is a float greater than 0 and at most 500.",
       "language": "python",
       "starter": "from pydantic import BaseModel, Field\n",
       "checks": [
@@ -81,14 +81,14 @@
         }
       ],
       "model": "class RefundArgs(BaseModel):\n    order_id: str = Field(pattern=r\"^ORD-\\d{6}$\")\n    amount: float = Field(gt=0, le=500)",
-      "explanation": "In Pydantic v1 the argument was regex=. A field_validator or Annotated constraints also pass. Validate model output against this before the tool runs; reject, do not coerce silently."
+      "explanation": "In Pydantic v1 the argument was regex=. A `field_validator` or Annotated constraints also pass. Validate model output against this before the tool runs; reject, do not coerce silently."
     },
     {
       "id": "retry-loop",
       "concept": "Validate and retry",
       "type": "code",
       "difficulty": 2,
-      "prompt": "Write generate_valid(prompt, max_attempts=3). It calls llm(prompt + error_hint) to get JSON text, validates it with Answer.model_validate_json(text) (Pydantic), and returns the model. On a ValidationError it feeds the error text into the next attempt. After max_attempts failures it raises RuntimeError.",
+      "prompt": "Write generate_valid(prompt, `max_attempts`=3). It calls llm(prompt + error_hint) to get JSON text, validates it with Answer.model_validate_json(text) (Pydantic), and returns the model. On a `ValidationError` it feeds the error text into the next attempt. After `max_attempts` failures it raises `RuntimeError`.",
       "language": "python",
       "starter": "from pydantic import ValidationError\n\ndef generate_valid(prompt, max_attempts=3):\n    ",
       "checks": [
@@ -121,7 +121,7 @@
       "concept": "Idempotent actions",
       "type": "code",
       "difficulty": 3,
-      "prompt": "Write process_payment(key, amount) in Python. RESULTS is a module-level dict. If key is already in RESULTS return the stored result; otherwise call charge(amount), store the outcome under key and return it.",
+      "prompt": "Write `process_payment(key, amount)` in Python. `RESULTS` is a module-level dict. If `key` is already in `RESULTS` return the stored `result;` otherwise call `charge(amount)`, store the outcome under `key` and return it.",
       "language": "python",
       "starter": "RESULTS = {}\n\ndef process_payment(key, amount):\n    ",
       "checks": [
@@ -179,9 +179,9 @@
       "concept": "Schema validation",
       "type": "integer",
       "difficulty": 2,
-      "prompt": "RefundArgs requires order_id to match ^ORD-\\d{6}$ and amount to be greater than 0 and at most 500. How many errors does the ValidationError report for RefundArgs.model_validate({'order_id': 'ORD-12', 'amount': 600})?",
+      "prompt": "`RefundArgs` requires `order_id` to match `^ORD-\\d{6}$` and `amount` to be greater than 0 and at most 500. How many errors does the `ValidationError` report for `RefundArgs.model_validate({'order_id': 'ORD-12', 'amount': 600})`?",
       "answer": 2,
-      "explanation": "Pydantic v2 collects every failing field in one ValidationError: the bad order_id pattern and the amount above 500, so error_count() is 2 (I ran it). Feeding all errors back to the model at once lets it fix everything in one retry.",
+      "explanation": "Pydantic v2 collects every failing field in one `ValidationError`: the bad `order_id` pattern and the amount above 500, so `error_count()` is 2 (I ran it). Feeding all errors back to the model at once lets it fix everything in one retry.",
       "unit": "errors"
     },
     {
@@ -208,7 +208,7 @@
       "concept": "SQL guard",
       "type": "truefalse",
       "difficulty": 3,
-      "prompt": "True or false: a sqlglot check that the single parsed statement is an exp.Select is enough to guarantee that an LLM-generated PostgreSQL query cannot change data.",
+      "prompt": "True or false: a sqlglot check that the single parsed statement is an `exp.Select` is enough to guarantee that an LLM-generated PostgreSQL query cannot change data.",
       "options": [
         {
           "id": "a",
@@ -218,7 +218,7 @@
         {
           "id": "b",
           "text": "False",
-          "why": "Right: SELECT * INTO new_t FROM t still parses to a Select (I ran it) yet creates a table, and functions such as pg_sleep run inside plain SELECTs."
+          "why": "Right: `SELECT * INTO new_t FROM t` still parses to a Select (I ran it) yet creates a table, and functions such as `pg_sleep` run inside plain SELECTs."
         }
       ],
       "correct": [
@@ -231,7 +231,7 @@
       "concept": "SQL guard",
       "type": "matrix",
       "difficulty": 2,
-      "prompt": "Match each input to the type of the root node sqlglot.parse returns for PostgreSQL.",
+      "prompt": "Match each input to the type of the root node `sqlglot.parse` returns for PostgreSQL.",
       "left": [
         {
           "id": "a",
@@ -253,23 +253,23 @@
       "right": [
         {
           "id": "p",
-          "text": "exp.Select"
+          "text": "`exp.Select`"
         },
         {
           "id": "q",
-          "text": "exp.Union"
+          "text": "`exp.Union`"
         },
         {
           "id": "r",
-          "text": "exp.Delete"
+          "text": "`exp.Delete`"
         },
         {
           "id": "s",
-          "text": "exp.Drop"
+          "text": "`exp.Drop`"
         },
         {
           "id": "t",
-          "text": "exp.Insert"
+          "text": "`exp.Insert`"
         }
       ],
       "pairs": {
@@ -278,40 +278,40 @@
         "c": "r",
         "d": "s"
       },
-      "explanation": "I printed the types with sqlglot.parse(sql, read='postgres'). A guard that checks only for Select rejects the Union by accident; list the node types you accept."
+      "explanation": "I printed the types with `sqlglot.parse`(sql, read='postgres'). A guard that checks only for Select rejects the Union by accident; list the node types you accept."
     },
     {
       "id": "sqlglot-except",
       "concept": "SQL guard",
       "type": "single",
       "difficulty": 3,
-      "prompt": "Which exception should is_select_only catch around sqlglot.parse so that every unparseable input returns False?",
+      "prompt": "Which exception should is_select_only catch around `sqlglot.parse` so that every unparseable input returns False?",
       "options": [
         {
           "id": "a",
-          "text": "sqlglot.errors.SqlglotError, the common base class.",
-          "why": "Right: both ParseError and TokenError derive from it."
+          "text": "`sqlglot.errors`.`SqlglotError`, the common base class.",
+          "why": "Right: both `ParseError` and `TokenError` derive from it."
         },
         {
           "id": "b",
-          "text": "sqlglot.errors.ParseError only, since parsing is what failed.",
-          "why": "An unterminated string raises TokenError, which is not a ParseError and would escape."
+          "text": "`sqlglot.errors`.`ParseError` only, since parsing is what failed.",
+          "why": "An unterminated string raises `TokenError`, which is not a `ParseError` and would escape."
         },
         {
           "id": "c",
-          "text": "ValueError, because malformed text is a value problem.",
-          "why": "sqlglot's errors do not derive from ValueError, so this would not catch them."
+          "text": "`ValueError`, because malformed text is a value problem.",
+          "why": "sqlglot's errors do not derive from `ValueError`, so this would not catch them."
         },
         {
           "id": "d",
-          "text": "KeyError, since the parser looks the keyword up in a table.",
-          "why": "Lookups inside the parser are internal; the public failures are SqlglotError subclasses."
+          "text": "`KeyError`, since the parser looks the keyword up in a table.",
+          "why": "Lookups inside the parser are internal; the public failures are `SqlglotError` subclasses."
         }
       ],
       "correct": [
         "a"
       ],
-      "explanation": "I ran sqlglot.parse(\"SELECT 'abc\", read='postgres') and it raised TokenError, whose parents are SqlglotError and Exception. Catching the base class turns every tokenising or parsing failure into a clean rejection."
+      "explanation": "I ran `sqlglot.parse`(\"SELECT 'abc\", read='postgres') and it raised `TokenError`, whose parents are `SqlglotError` and Exception. Catching the base class turns every tokenising or parsing failure into a clean rejection."
     },
     {
       "id": "pydantic-vocab",
@@ -332,7 +332,7 @@
         "parse_obj",
         "ValueError"
       ],
-      "explanation": "Pydantic v2 reports every failing field in one ValidationError, so feed all of them back to the model in a single retry."
+      "explanation": "Pydantic v2 reports every failing field in one `ValidationError`, so feed all of them back to the model in a single retry."
     }
   ]
 }

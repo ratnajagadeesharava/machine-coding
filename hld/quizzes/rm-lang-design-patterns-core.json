@@ -109,7 +109,7 @@
       "difficulty": 2,
       "prompt": "Read the assertion (A) and the reason (R), then choose the option that fits.",
       "assertion": "Abstract Factory is the right pattern when a program must create families of related objects that are meant to be used together, such as widgets for one UI theme.",
-      "reason": "Factory Method defers the choice of the concrete class to a subclass.",
+      "reason": "`Factory Method` defers the choice of the concrete class to a subclass.",
       "correct": [
         "b"
       ],
@@ -119,7 +119,7 @@
         "c": "Not chosen: R is a true statement about Factory Method.",
         "d": "Not chosen: A is true, because creating consistent product families is the stated intent of Abstract Factory."
       },
-      "explanation": "Remember: Factory Method = one product, subclass decides; Abstract Factory = a family of products from one factory object; Builder = step-by-step construction."
+      "explanation": "Remember: `Factory Method` = one product, subclass decides; Abstract Factory = a family of products from one factory object; Builder = step-by-step construction."
     },
     {
       "id": "proxy-pattern",
@@ -226,7 +226,7 @@
         },
         {
           "id": "u",
-          "text": "Every class must be declared final"
+          "text": "Every class must be declared `final`"
         }
       ],
       "pairs": {
@@ -236,7 +236,7 @@
         "d": "s",
         "e": "t"
       },
-      "explanation": "A rectangle/square subclass that breaks setWidth is the usual Liskov example; constructor injection is the usual way to apply Dependency Inversion."
+      "explanation": "A rectangle/square subclass that breaks `setWidth` is the usual Liskov example; constructor injection is the usual way to apply Dependency Inversion."
     },
     {
       "id": "undo-stack-size",
@@ -290,7 +290,7 @@
       "concept": "Pattern selection",
       "type": "single",
       "difficulty": 2,
-      "prompt": "A legacy component exposes fetchAll(), but your code is written against a Repository interface that declares list(). You want to reuse the legacy component without changing it. Which pattern fits?",
+      "prompt": "A legacy component exposes `fetchAll()`, but your code is written against a `Repository` interface that declares `list()`. You want to reuse the legacy component without changing it. Which pattern fits?",
       "options": [
         {
           "id": "a",
@@ -396,7 +396,7 @@
       "concept": "Command",
       "type": "code",
       "difficulty": 2,
-      "prompt": "Write pseudocode for undo() in an editor that keeps a stack named history of executed commands and a stack named redo: it must reverse the most recent command and make it available for redo.",
+      "prompt": "Write pseudocode for `undo()` in an editor that keeps a stack named `history` of executed commands and a stack named `redo`: it must reverse the most recent command and make it available for `redo`.",
       "language": "pseudocode",
       "checks": [
         {
@@ -413,7 +413,7 @@
         }
       ],
       "model": "undo():\n  if history is empty: return\n  cmd = history.pop()\n  cmd.undo()\n  redo.push(cmd)",
-      "explanation": "Redo does the reverse: pop from redo, execute, push to history. Executing a brand-new command clears the redo stack."
+      "explanation": "Redo does the reverse: pop from `redo`, execute, push to `history`. Executing a brand-new command clears the `redo` stack."
     }
   ]
 }

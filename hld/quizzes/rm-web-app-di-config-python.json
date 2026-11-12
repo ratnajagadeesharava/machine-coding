@@ -16,7 +16,7 @@
       "concept": "Dependency injection (FastAPI)",
       "type": "code",
       "difficulty": 2,
-      "prompt": "In FastAPI, write a GET route /users/{user_id} named read_user that receives a db session from a dependency get_db via Depends and declares response_model=UserOut. Return db.get_user(user_id).",
+      "prompt": "In FastAPI, write a GET route `/users/{user_id}` named `read_user` that receives a db session from a dependency `get_db` via `Depends` and declares `response_model=UserOut`. Return `db.get_user(user_id)`.",
       "language": "python",
       "starter": "",
       "checks": [
@@ -34,50 +34,50 @@
         }
       ],
       "model": "@app.get(\"/users/{user_id}\", response_model=UserOut)\ndef read_user(user_id: int, db=Depends(get_db)):\n    return db.get_user(user_id)",
-      "explanation": "Depends(callable) makes FastAPI call get_db per request and pass the result in. async def and Annotated[Session, Depends(get_db)] are equally valid forms."
+      "explanation": "`Depends(callable)` makes FastAPI call `get_db` per request and pass the result in. `async def` and `Annotated[Session, Depends(get_db)]` are equally valid forms."
     },
     {
       "id": "dependency-overrides",
       "concept": "Dependency overrides",
       "type": "single",
       "difficulty": 2,
-      "prompt": "How do you replace the real get_db dependency with a fake in a FastAPI test?",
+      "prompt": "How do you replace the real `get_db` dependency with a fake in a FastAPI test?",
       "options": [
         {
           "id": "a",
-          "text": "Assign app.dependency_overrides[get_db] = fake_get_db.",
+          "text": "Assign `app.dependency_overrides[get_db] = fake_get_db`.",
           "why": "The override dict is keyed by the original callable and is the documented way."
         },
         {
           "id": "b",
-          "text": "Use unittest.mock.patch on the Depends class itself, then call the client.",
-          "why": "Depends is evaluated at import time in the signature; patching it later does nothing."
+          "text": "Use `unittest.mock.patch` on the `Depends` class itself, then call the client.",
+          "why": "`Depends` is evaluated at import time in the signature; patching it later does nothing."
         },
         {
           "id": "c",
-          "text": "Restart the app with an environment variable named GET_DB.",
+          "text": "Restart the app with an environment variable named `GET_DB`.",
           "why": "FastAPI has no such lookup; dependencies are resolved from callables."
         },
         {
           "id": "d",
-          "text": "Pass the fake through TestClient(app, db=fake).",
-          "why": "TestClient does not accept dependency arguments."
+          "text": "Pass the fake through `TestClient(app, db=fake)`.",
+          "why": "`TestClient` does not accept dependency arguments."
         }
       ],
       "correct": [
         "a"
       ],
-      "explanation": "Remember to clear app.dependency_overrides after the test (a fixture with yield). The key must be the exact function object used in Depends()."
+      "explanation": "Remember to clear `app.dependency_overrides` after the test (a fixture with `yield`). The key must be the exact function object used in `Depends()`."
     },
     {
       "id": "depends-cache",
       "concept": "Dependency caching",
       "type": "integer",
       "difficulty": 3,
-      "prompt": "A route has two sub-dependencies a() and b(); both declare Depends(get_conn). The route itself also declares conn = Depends(get_conn, use_cache=False). With default settings, how many times does get_conn run for one request?",
+      "prompt": "A route has two sub-dependencies `a()` and `b();` both declare `Depends(get_conn)`. The route itself also declares `conn = Depends(get_conn, use_cache=False)`. With default settings, how many times does `get_conn` run for one request?",
       "answer": 2,
       "tolerance": 0,
-      "explanation": "Within one request FastAPI caches a dependency result, so a() and b() share one get_conn call. use_cache=False forces a separate call, giving 2.",
+      "explanation": "Within one request FastAPI caches a dependency result, so a() and b() share one `get_conn` call. `use_cache=False` forces a separate call, giving 2.",
       "unit": "calls"
     },
     {
@@ -85,16 +85,16 @@
       "concept": "Config and secrets",
       "type": "single",
       "difficulty": 2,
-      "prompt": "APP_DB_URL is set both as an OS environment variable and in the .env file read by a pydantic-settings BaseSettings (env_prefix='APP_'). Nothing is passed to the constructor. Which value does db_url get?",
+      "prompt": "`APP_DB_URL` is set both as an OS environment variable and in the `.env` file read by a `pydantic-settings` `BaseSettings` (`env_prefix='APP_'`). Nothing is passed to the constructor. Which value does `db_url` get?",
       "options": [
         {
           "id": "a",
-          "text": "The OS environment variable; it outranks .env.",
-          "why": "Environment variables outrank the dotenv file in pydantic-settings."
+          "text": "The OS environment variable; it outranks `.env`.",
+          "why": "Environment variables outrank the dotenv file in `pydantic-settings`."
         },
         {
           "id": "b",
-          "text": "The .env file value, because it is more specific.",
+          "text": "The `.env` file value, because it is more specific.",
           "why": "Dotenv sits below real environment variables in the priority order."
         },
         {
@@ -111,7 +111,7 @@
       "correct": [
         "a"
       ],
-      "explanation": "Priority (highest first): init arguments, environment variables, .env, secrets directory, field defaults. Verified by running it."
+      "explanation": "Priority (highest first): init arguments, environment variables, `.env`, secrets directory, field defaults. Verified by running it."
     },
     {
       "id": "lifespan-per-worker",
@@ -119,8 +119,8 @@
       "type": "assertion",
       "difficulty": 3,
       "prompt": "Judge the assertion and the reason.",
-      "assertion": "FastAPI lifespan startup code runs once per worker process before it accepts requests.",
-      "reason": "A uvicorn deployment with four workers executes the lifespan startup only once for all workers.",
+      "assertion": "FastAPI `lifespan` startup code runs once per worker process before it accepts requests.",
+      "reason": "A `uvicorn` deployment with four workers executes the `lifespan` startup only once for all workers.",
       "correct": [
         "c"
       ],
@@ -130,14 +130,14 @@
         "c": "Correct: each worker is a separate process with its own app and lifespan run, so 4 workers means 4 startups (4 pools, 4 caches).",
         "d": "Wrong: A is true."
       },
-      "explanation": "Per-process startup matters for connection pools (size them as workers x pool size) and for one-off work such as migrations, which belongs in a deploy step, not lifespan."
+      "explanation": "Per-process startup matters for connection pools (size them as workers x pool size) and for one-off work such as migrations, which belongs in a deploy step, not `lifespan`."
     },
     {
       "id": "lifespan-handler",
       "concept": "App startup (FastAPI)",
       "type": "code",
       "difficulty": 2,
-      "prompt": "Write a FastAPI lifespan handler: an async context manager lifespan(app) that creates app.state.pool = await create_pool() on startup and awaits app.state.pool.close() on shutdown, then pass it to FastAPI.",
+      "prompt": "Write a FastAPI lifespan handler: an async context manager `lifespan(app)` that creates `app.state.pool = await create_pool()` on startup and awaits `app.state.pool.close()` on shutdown, then pass it to FastAPI.",
       "language": "python",
       "starter": "from contextlib import asynccontextmanager\nfrom fastapi import FastAPI\n",
       "checks": [
@@ -159,14 +159,14 @@
         }
       ],
       "model": "@asynccontextmanager\nasync def lifespan(app):\n    app.state.pool = await create_pool()\n    yield\n    await app.state.pool.close()\n\napp = FastAPI(lifespan=lifespan)",
-      "explanation": "Lifespan replaces the deprecated on_event startup/shutdown hooks. Use try/finally around yield if shutdown must run even on error."
+      "explanation": "Lifespan replaces the deprecated `on_event` startup/shutdown hooks. Use `try/finally` around `yield` if shutdown must run even on error."
     },
     {
       "id": "yield-dependency",
       "concept": "Dependencies with yield",
       "type": "code",
       "difficulty": 2,
-      "prompt": "Write a FastAPI dependency get_db that creates a session with SessionLocal(), yields it to the route, and always closes it afterwards, even if the route raises.",
+      "prompt": "Write a FastAPI dependency `get_db` that creates a session with `SessionLocal()`, yields it to the route, and always closes it afterwards, even if the route raises.",
       "language": "python",
       "checks": [
         {
@@ -187,14 +187,14 @@
         }
       ],
       "model": "def get_db():\n    db = SessionLocal()\n    try:\n        yield db\n    finally:\n        db.close()",
-      "explanation": "Code after yield is the teardown; the try/finally makes it run even when the route fails. A with SessionLocal() as db: yield db block is an equivalent spelling."
+      "explanation": "Code after `yield` is the teardown; the `try/finally` makes it run even when the route fails. A `with SessionLocal() as db: yield db` block is an equivalent spelling."
     },
     {
       "id": "settings-class",
       "concept": "Config and secrets",
       "type": "code",
       "difficulty": 2,
-      "prompt": "Write a pydantic-settings class Settings that reads variables with the prefix APP_ (env_prefix) from the environment and from a .env file, with database_url: str (required) and debug: bool = False.",
+      "prompt": "Write a pydantic-settings class `Settings` that reads variables with the prefix `APP_` (`env_prefix`) from the environment and from a `.env` file, with `database_url: str` (required) and `debug: bool = False`.",
       "language": "python",
       "checks": [
         {
@@ -215,7 +215,7 @@
         }
       ],
       "model": "class Settings(BaseSettings):\n    model_config = SettingsConfigDict(env_prefix=\"APP_\", env_file=\".env\")\n\n    database_url: str\n    debug: bool = False",
-      "explanation": "APP_DATABASE_URL then binds to database_url (verified by running it). A missing required value raises a ValidationError at startup, which is the fail-fast behaviour you want. Wrap Settings() in an lru_cache function so it is built once.",
+      "explanation": "`APP_DATABASE_URL` then binds to `database_url` (verified by running it). A missing required value raises a `ValidationError` at startup, which is the fail-fast behaviour you want. Wrap `Settings()` in an `lru_cache` function so it is built once.",
       "starter": "from pydantic_settings import BaseSettings, SettingsConfigDict\n"
     },
     {
@@ -238,7 +238,7 @@
         "str",
         "model_dump"
       ],
-      "explanation": "SecretStr prints as ********. model_dump() would still expose the value in some cases, so ship secrets through get_secret_value() only at the point of use."
+      "explanation": "`SecretStr` prints as `********`. `model_dump()` would still expose the value in some cases, so ship secrets through `get_secret_value()` only at the point of use."
     },
     {
       "id": "fastapi-constructs",
@@ -249,19 +249,19 @@
       "left": [
         {
           "id": "l1",
-          "text": "Depends(get_db)"
+          "text": "`Depends(get_db)`"
         },
         {
           "id": "l2",
-          "text": "lifespan function"
+          "text": "`lifespan` function"
         },
         {
           "id": "l3",
-          "text": "app.dependency_overrides"
+          "text": "`app.dependency_overrides`"
         },
         {
           "id": "l4",
-          "text": "app.state"
+          "text": "`app.state`"
         }
       ],
       "right": [
@@ -296,7 +296,7 @@
         "l3": "r3",
         "l4": "r4"
       },
-      "explanation": "The first three answer \"how do I wire things\": dependencies for per-request objects, lifespan for process-wide resources, overrides for testing. BackgroundTasks and exception handlers are separate features."
+      "explanation": "The first three answer \"how do I wire things\": dependencies for per-request objects, `lifespan` for process-wide resources, overrides for testing. `BackgroundTasks` and exception handlers are separate features."
     },
     {
       "id": "lru-cache-settings",
@@ -304,8 +304,8 @@
       "type": "assertion",
       "difficulty": 2,
       "prompt": "Judge the assertion and the reason.",
-      "assertion": "Decorating a get_settings() function with functools.lru_cache means the Settings object is built once per process.",
-      "reason": "lru_cache returns the stored result when a function is called again with the same arguments.",
+      "assertion": "Decorating a `get_settings()` function with `functools.lru_cache` means the `Settings` object is built once per process.",
+      "reason": "`lru_cache` returns the stored result when a function is called again with the same arguments.",
       "correct": [
         "a"
       ],
@@ -315,7 +315,7 @@
         "c": "Wrong: R is true.",
         "d": "Wrong: A is true."
       },
-      "explanation": "Combine with Depends(get_settings) so tests can override it, and call get_settings.cache_clear() when a test changes environment variables."
+      "explanation": "Combine with `Depends(get_settings)` so tests can override it, and call `get_settings.cache_clear()` when a test changes environment variables."
     },
     {
       "id": "annotated-depends",
@@ -323,8 +323,8 @@
       "type": "assertion",
       "difficulty": 2,
       "prompt": "Judge the assertion and the reason.",
-      "assertion": "db: Annotated[Session, Depends(get_db)] and db: Session = Depends(get_db) resolve the dependency identically at runtime.",
-      "reason": "Annotated lets a dependency declaration be stored in a reusable type alias.",
+      "assertion": "`db: Annotated[Session, Depends(get_db)]` and `db: Session = Depends(get_db)` resolve the dependency identically at runtime.",
+      "reason": "`Annotated` lets a dependency declaration be stored in a reusable type alias.",
       "correct": [
         "b"
       ],
@@ -334,7 +334,7 @@
         "c": "Wrong: R is true.",
         "d": "Wrong: A is true."
       },
-      "explanation": "Annotated also keeps default values free for real defaults and works better with type checkers. Define DbDep = Annotated[Session, Depends(get_db)] once and reuse it."
+      "explanation": "`Annotated` also keeps default values free for real defaults and works better with type checkers. Define `DbDep = Annotated[Session, Depends(get_db)]` once and reuse it."
     },
     {
       "id": "dependency-at-import",
@@ -343,7 +343,7 @@
       "difficulty": 3,
       "prompt": "Judge the assertion and the reason.",
       "assertion": "FastAPI calls a dependency function once, when the module is imported, and reuses its result for every request.",
-      "reason": "Dependencies are declared in the signature of the route, which is evaluated at import time.",
+      "reason": "Dependencies are declared in the signature of the route, which is evaluated at `import` time.",
       "correct": [
         "d"
       ],
@@ -353,25 +353,25 @@
         "c": "Wrong: A is false.",
         "d": "Correct: the declaration Depends(get_db) is created at import time, but the dependency function is called anew for each request (and cached only within one request)."
       },
-      "explanation": "For an object that must live for the whole process, create it in lifespan and store it on app.state, or wrap the factory in lru_cache."
+      "explanation": "For an object that must live for the whole process, create it in `lifespan` and store it on `app.state`, or wrap the factory in `lru_cache`."
     },
     {
       "id": "workers-memory",
       "concept": "App startup (FastAPI)",
       "type": "integer",
       "difficulty": 3,
-      "prompt": "A lifespan startup handler loads a 200 MB lookup table into memory. The service runs with 4 uvicorn worker processes on one machine. Roughly how many MB of memory do the tables occupy in total?",
+      "prompt": "A `lifespan` startup handler loads a 200 MB lookup table into memory. The service runs with 4 uvicorn worker processes on one machine. Roughly how many MB of memory do the tables occupy in total?",
       "answer": 800,
       "tolerance": 0,
       "unit": "MB",
-      "explanation": "Each worker is a separate process with its own application and lifespan run, so every worker holds its own copy: 4 x 200 = 800 MB. Shared read-only data needs shared memory, a memory-mapped file or an external cache such as Redis."
+      "explanation": "Each worker is a separate process with its own application and `lifespan` run, so every worker holds its own copy: 4 x 200 = 800 MB. Shared read-only data needs shared memory, a memory-mapped file or an external cache such as Redis."
     },
     {
       "id": "override-in-test",
       "concept": "Dependency overrides",
       "type": "code",
       "difficulty": 2,
-      "prompt": "Write the test setup lines that replace get_db with fake_get_db for a FastAPI app, create a TestClient named client, and clear all overrides again after the test.",
+      "prompt": "Write the test setup lines that replace `get_db` with `fake_get_db` for a FastAPI app, create a `TestClient` named `client`, and clear all overrides again after the test.",
       "language": "python",
       "checks": [
         {
@@ -388,7 +388,7 @@
         }
       ],
       "model": "app.dependency_overrides[get_db] = fake_get_db\nclient = TestClient(app)\n# ... run the test ...\napp.dependency_overrides.clear()",
-      "explanation": "Put the clear() call in a pytest fixture after yield so it runs even when the test fails. The override key must be the exact function object used in Depends().",
+      "explanation": "Put the `clear()` call in a pytest fixture after `yield` so it runs even when the test fails. The override key must be the exact function object used in `Depends()`.",
       "starter": "from fastapi.testclient import TestClient\n"
     }
   ]

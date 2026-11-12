@@ -29,7 +29,7 @@
       "prompt": "You want to cover all 16 Amazon Leadership Principles, and each story can credibly cover at most 3 distinct principles. What is the minimum number of stories?",
       "answer": 6,
       "unit": "stories",
-      "explanation": "ceil(16 / 3) = 6. In practice prepare 8 to 10 so you can pick a different story for a repeat question in the same loop."
+      "explanation": "`ceil(16 / 3)` = 6. In practice prepare 8 to 10 so you can pick a different story for a repeat question in the same loop."
     },
     {
       "id": "ask-question",

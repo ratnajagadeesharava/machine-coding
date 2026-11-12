@@ -96,17 +96,17 @@
         "l3": "r3",
         "l4": "r4"
       },
-      "explanation": "Counters feed rate(); gauges are sampled snapshots; histograms let you compute percentiles; spans belong to tracing, not metrics."
+      "explanation": "Counters feed `rate()`; gauges are sampled snapshots; histograms let you compute percentiles; spans belong to tracing, not metrics."
     },
     {
       "id": "series-count",
       "concept": "Metric cardinality",
       "type": "integer",
       "difficulty": 2,
-      "prompt": "A counter http_requests_total has labels method (4 values), status (5 values) and route (25 values). Assume every combination occurs. Prometheus scrapes 10 instances and attaches an instance label to each series. How many time series does this one metric create?",
+      "prompt": "A counter `http_requests_total` has labels `method` (4 values), `status` (5 values) and `route` (25 values). Assume every combination occurs. Prometheus scrapes 10 instances and attaches an `instance` label to each series. How many time series does this one metric create?",
       "answer": 5000,
       "unit": "series",
-      "explanation": "4 x 5 x 25 = 500 combinations per instance, times 10 instances = 5,000. Adding a user_id label with 1,000 values would multiply that to 5,000,000, which is why unbounded ids never belong in labels."
+      "explanation": "4 x 5 x 25 = 500 combinations per instance, times 10 instances = 5,000. Adding a `user_id` label with 1,000 values would multiply that to 5,000,000, which is why unbounded ids never belong in labels."
     },
     {
       "id": "histogram-agg",
@@ -125,7 +125,7 @@
         "c": "Not this one: A is true while R is false does not describe this pair; check the truth of R again.",
         "d": "Not this one: A is false while R is true does not describe this pair; check the truth of A again."
       },
-      "explanation": "Bucket counters add across instances, then histogram_quantile estimates the percentile. Precomputed summary quantiles cannot be averaged into a correct fleet quantile."
+      "explanation": "Bucket counters add across instances, then `histogram_quantile` estimates the percentile. Precomputed summary quantiles cannot be averaged into a correct fleet quantile."
     },
     {
       "id": "traceparent",
@@ -133,8 +133,8 @@
       "type": "assertion",
       "difficulty": 2,
       "prompt": "Read the assertion A and the reason R, then choose the correct relationship between them.",
-      "assertion": "The W3C traceparent header lets a trace continue across services written in different languages.",
-      "reason": "The traceparent header is understood only by one vendor's agent and is ignored by other SDKs.",
+      "assertion": "The W3C `traceparent` header lets a trace continue across services written in different languages.",
+      "reason": "The `traceparent` header is understood only by one vendor's agent and is ignored by other SDKs.",
       "correct": [
         "c"
       ],
@@ -144,7 +144,7 @@
         "c": "Correct: A is true because the format is a vendor-neutral standard. R is false: any compliant library can read it.",
         "d": "Not this one: A is false while R is true does not describe this pair; check the truth of A again."
       },
-      "explanation": "traceparent carries version, trace id, parent span id and flags. That is the whole point of a standard."
+      "explanation": "`traceparent` carries version, trace id, parent span id and flags. That is the whole point of a standard."
     },
     {
       "id": "log-bodies",
@@ -152,7 +152,7 @@
       "type": "assertion",
       "difficulty": 2,
       "prompt": "Read the assertion A and the reason R, then choose the correct relationship between them.",
-      "assertion": "Logging complete request and response bodies at INFO is a safe default for debugging.",
+      "assertion": "Logging complete request and response bodies at `INFO` is a safe default for debugging.",
       "reason": "Logs are routinely shipped to shared platforms that many engineers and vendors can read.",
       "correct": [
         "d"
@@ -171,8 +171,8 @@
       "type": "assertion",
       "difficulty": 2,
       "prompt": "Read the assertion A and the reason R, then choose the correct relationship between them.",
-      "assertion": "In PromQL you should chart rate(http_requests_total[5m]) rather than the raw counter value.",
-      "reason": "rate() compensates for counter resets, such as when a process restarts and its counter drops back to zero.",
+      "assertion": "In PromQL you should chart `rate(http_requests_total[5m])` rather than the raw counter value.",
+      "reason": "`rate()` compensates for counter resets, such as when a process restarts and its counter drops back to zero.",
       "correct": [
         "a"
       ],
@@ -182,7 +182,7 @@
         "c": "Not this one: A is true while R is false does not describe this pair; check the truth of R again.",
         "d": "Not this one: A is false while R is true does not describe this pair; check the truth of A again."
       },
-      "explanation": "Apply rate() to each series first and then sum (sum(rate(x[5m]))), never rate(sum(x)): summing raw counters hides resets and breaks the result."
+      "explanation": "Apply `rate()` to each series first and then sum (`sum(rate(x[5m]))`), never `rate(sum(x))`: summing raw counters hides resets and breaks the result."
     },
     {
       "id": "log-practice",
@@ -193,7 +193,7 @@
       "options": [
         {
           "id": "a",
-          "text": "Emit structured JSON lines with a requestId field.",
+          "text": "Emit structured JSON lines with a `requestId` field.",
           "why": "Correct: structured, correlated lines can be filtered and joined."
         },
         {
@@ -208,7 +208,7 @@
         },
         {
           "id": "d",
-          "text": "Log the full Authorization header to help debugging.",
+          "text": "Log the full `Authorization` header to help debugging.",
           "why": "Credentials in logs leak to everyone with log access."
         },
         {
@@ -252,27 +252,27 @@
       "concept": "Metrics",
       "type": "single",
       "difficulty": 3,
-      "prompt": "Each of 40 instances exposes a classic Prometheus histogram http_request_duration_seconds. Which query gives the fleet-wide p95 over 5 minutes?",
+      "prompt": "Each of 40 instances exposes a classic Prometheus histogram `http_request_duration_seconds`. Which query gives the fleet-wide p95 over 5 minutes?",
       "options": [
         {
           "id": "a",
-          "text": "avg(http_request_duration_seconds{quantile=\"0.95\"})",
+          "text": "`avg(http_request_duration_seconds{quantile=\"0.95\"})`",
           "why": "A classic histogram has no quantile label, and averaging quantiles is wrong anyway."
         },
         {
           "id": "b",
-          "text": "histogram_quantile(0.95, sum by (le) (rate(http_request_duration_seconds_bucket[5m])))",
+          "text": "`histogram_quantile(0.95, sum by (le) (rate(http_request_duration_seconds_bucket[5m])))`",
           "why": "Correct: sum the bucket rates across instances by le, then take the quantile."
         },
         {
           "id": "c",
-          "text": "sum(http_request_duration_seconds_sum) / sum(http_request_duration_seconds_count)",
+          "text": "`sum(http_request_duration_seconds_sum) / sum(http_request_duration_seconds_count)`",
           "why": "That is the mean latency, not the 95th percentile."
         },
         {
           "id": "d",
-          "text": "histogram_quantile(0.95, sum(rate(http_request_duration_seconds_bucket[5m])))",
-          "why": "Dropping the by (le) grouping removes the bucket boundaries the function needs."
+          "text": "`histogram_quantile(0.95, sum(rate(http_request_duration_seconds_bucket[5m])))`",
+          "why": "Dropping the `by (le)` grouping removes the bucket boundaries the function needs."
         }
       ],
       "correct": [
@@ -294,7 +294,7 @@
         },
         {
           "id": "b",
-          "text": "The route template, such as /orders/{id}.",
+          "text": "The route template, such as `/orders/{id}`.",
           "why": "Correct: a small bounded set of values per service."
         },
         {
@@ -318,7 +318,7 @@
       "concept": "Metrics",
       "type": "code",
       "difficulty": 2,
-      "prompt": "Write the PromQL query that shows requests per second over the last 5 minutes for http_requests_total, summed per route label.",
+      "prompt": "Write the PromQL query that shows requests per second over the last 5 minutes for `http_requests_total`, summed per `route` label.",
       "language": "promql",
       "checks": [
         {
@@ -331,17 +331,17 @@
         }
       ],
       "model": "sum by (route) (rate(http_requests_total[5m]))",
-      "explanation": "The by clause may also come after the parenthesis: sum(rate(http_requests_total[5m])) by (route). Apply rate() before sum, as the counter resets can only be handled per series."
+      "explanation": "The by clause may also come after the parenthesis: `sum(rate(http_requests_total[5m])) by (route)`. Apply `rate()` before sum, as the counter resets can only be handled per series."
     },
     {
       "id": "traceparent-length",
       "concept": "Distributed tracing",
       "type": "integer",
       "difficulty": 3,
-      "prompt": "A W3C traceparent value has the form version-traceid-parentid-flags, written in lowercase hex: 2 characters for the version, 32 for the trace id, 16 for the parent id and 2 for the flags, joined by hyphens. How many characters long is the whole header value?",
+      "prompt": "A W3C `traceparent` value has the form `version-traceid-parentid-flags`, written in lowercase hex: 2 characters for the version, 32 for the trace id, 16 for the parent id and 2 for the flags, joined by hyphens. How many characters long is the whole header value?",
       "answer": 55,
       "unit": "characters",
-      "explanation": "2 + 32 + 16 + 2 = 52 hex characters plus 3 hyphens = 55. Example: 00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01."
+      "explanation": "2 + 32 + 16 + 2 = 52 hex characters plus 3 hyphens = 55. Example: `00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01`."
     },
     {
       "id": "otel-parts",
@@ -370,7 +370,7 @@
       "concept": "Logging practice",
       "type": "integer",
       "difficulty": 2,
-      "prompt": "A service handles 1,000 requests per second and writes 2 log lines of 500 bytes per request. How many decimal gigabytes of log are written per day (one decimal place; 1 GB = 10^9 bytes)?",
+      "prompt": "A service handles 1,000 requests per second and writes 2 log lines of 500 bytes per request. How many decimal gigabytes of log are written per day (one decimal place`; 1 GB = 10^9 bytes`)?",
       "answer": 86.4,
       "tolerance": 0.1,
       "unit": "GB/day",

@@ -20,27 +20,27 @@
       "left": [
         {
           "id": "a",
-          "text": "ROW_NUMBER()"
+          "text": "`ROW_NUMBER()`"
         },
         {
           "id": "b",
-          "text": "RANK()"
+          "text": "`RANK()`"
         },
         {
           "id": "c",
-          "text": "DENSE_RANK()"
+          "text": "`DENSE_RANK()`"
         },
         {
           "id": "d",
-          "text": "LAG(amount)"
+          "text": "`LAG(amount)`"
         },
         {
           "id": "e",
-          "text": "SUM(amount) OVER (ORDER BY paid_on)"
+          "text": "`SUM(amount) OVER (ORDER BY paid_on)`"
         },
         {
           "id": "f",
-          "text": "NTILE(4)"
+          "text": "`NTILE(4)`"
         }
       ],
       "right": [
@@ -81,16 +81,16 @@
         "e": "t",
         "f": "u"
       },
-      "explanation": "Window functions keep every input row; GROUP BY collapses them. ROW_NUMBER is the right tool for \"exactly N per group\" and for de-duplication, DENSE_RANK for \"Nth highest value\"."
+      "explanation": "Window functions keep every input row; `GROUP BY` collapses them. `ROW_NUMBER` is the right tool for \"exactly N per group\" and for de-duplication, `DENSE_RANK` for \"Nth highest value\"."
     },
     {
       "id": "top2-row-number",
       "concept": "Top N per group",
       "type": "integer",
       "difficulty": 2,
-      "prompt": "Salaries by department: dept 1 has 150, 120, 120; dept 2 has 100, 90, 90; dept 3 has 80; exactly one employee has no department (NULL) and earns 70. A query wraps ROW_NUMBER() OVER (PARTITION BY dept_id ORDER BY salary DESC) AS rn in a subquery and keeps rn <= 2. How many rows does it return, given that NULL forms its own partition?",
+      "prompt": "Salaries by department:\n\n```text\ndept 1 has 150, 120, 120;\ndept 2 has 100, 90, 90;\ndept 3 has 80;\nexactly one employee has no department (NULL) and earns 70.\n```\n\nA query wraps `ROW_NUMBER() OVER (PARTITION BY dept_id ORDER BY salary DESC) AS rn` in a subquery and keeps `rn <= 2`. How many rows does it return, given that `NULL` forms its own partition?",
       "answer": 6,
-      "explanation": "2 + 2 + 1 + 1 = 6. ROW_NUMBER never ties, so each partition contributes at most 2 rows. With RANK() or DENSE_RANK() the tied 120s and 90s would all qualify and the result would be 8 rows. Verified on PostgreSQL.",
+      "explanation": "2 + 2 + 1 + 1 = 6. `ROW_NUMBER` never ties, so each partition contributes at most 2 rows. With `RANK()` or `DENSE_RANK()` the tied 120s and 90s would all qualify and the result would be 8 rows. Verified on PostgreSQL.",
       "unit": "rows"
     },
     {
@@ -98,9 +98,9 @@
       "concept": "Gaps and islands",
       "type": "integer",
       "difficulty": 3,
-      "prompt": "A table holds the ids 1, 2, 3, 7, 8, 10. The query groups rows by id - ROW_NUMBER() OVER (ORDER BY id) to find runs of consecutive ids (\"islands\"). How many islands (groups) does it return?",
+      "prompt": "A table holds the ids 1, 2, 3, 7, 8, 10. The query groups rows by `id - ROW_NUMBER() OVER (ORDER BY id)` to find runs of consecutive ids (\"islands\"). How many islands (groups) does it return?",
       "answer": 3,
-      "explanation": "id - row_number is constant inside a run: 0,0,0 for 1-3, then 3,3 for 7-8, then 4 for 10. So the islands are 1-3, 7-8 and 10 = 3 groups; the gaps are 4-6 and 9. Verified on PostgreSQL.",
+      "explanation": "`id - row_number` is constant inside a run: 0,0,0 for 1-3, then 3,3 for 7-8, then 4 for 10. So the islands are 1-3, 7-8 and 10 = 3 groups; the gaps are 4-6 and 9. Verified on PostgreSQL.",
       "unit": "islands"
     },
     {
@@ -108,9 +108,9 @@
       "concept": "Recursive CTE",
       "type": "integer",
       "difficulty": 2,
-      "prompt": "What does this query return? WITH RECURSIVE n(i) AS (SELECT 1 UNION ALL SELECT i + 1 FROM n WHERE i < 5) SELECT SUM(i) FROM n.",
+      "prompt": "What does this query return? `WITH RECURSIVE n(i) AS (SELECT 1 UNION ALL SELECT i + 1 FROM n WHERE i < 5) SELECT SUM(i) FROM n`.",
       "answer": 15,
-      "explanation": "The anchor emits 1; each iteration adds i + 1 until i reaches 5, so n holds 1..5 and the sum is 15. The WHERE in the recursive part is the termination condition; without it the query would loop forever."
+      "explanation": "The anchor emits 1; each iteration adds i + 1 until i reaches 5, so n holds 1..5 and the sum is 15. The `WHERE` in the recursive part is the termination condition; without it the query would loop forever."
     },
     {
       "id": "window-in-where",
@@ -118,18 +118,18 @@
       "type": "assertion",
       "difficulty": 2,
       "prompt": "Read the assertion (A) and the reason (R), then choose the option that fits.",
-      "assertion": "A window function cannot appear directly in a WHERE clause; to filter on ROW_NUMBER() you wrap the query in a subquery or CTE.",
-      "reason": "WHERE is evaluated before window functions are computed.",
+      "assertion": "A window function cannot appear directly in a `WHERE clause;` to filter on `ROW_NUMBER()` you wrap the query in a subquery or CTE.",
+      "reason": "`WHERE` is evaluated before window functions are computed.",
       "correct": [
         "a"
       ],
       "whys": {
-        "a": "Correct: the logical order (FROM, WHERE, GROUP BY, HAVING, window functions, SELECT) explains the restriction.",
+        "a": "Correct: the logical order (FROM, `WHERE`, `GROUP BY`, `HAVING`, window functions, `SELECT`) explains the restriction.",
         "b": "R is the reason for A, so it does explain it.",
         "c": "R is true, so this option wrongly calls it false.",
         "d": "A is true, so this option wrongly calls it false."
       },
-      "explanation": "Some engines offer QUALIFY (Snowflake, BigQuery, Teradata) to filter on window results directly; PostgreSQL, MySQL and Oracle need the wrapper."
+      "explanation": "Some engines offer `QUALIFY` (Snowflake, BigQuery, Teradata) to filter on window results directly; PostgreSQL, MySQL and Oracle need the wrapper."
     },
     {
       "id": "default-frame",
@@ -137,18 +137,18 @@
       "type": "assertion",
       "difficulty": 3,
       "prompt": "Read the assertion (A) and the reason (R), then choose the option that fits.",
-      "assertion": "SUM(amount) OVER (ORDER BY paid_on) yields a running total.",
-      "reason": "When ORDER BY is present, the default frame is ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW.",
+      "assertion": "`SUM(amount) OVER (ORDER BY paid_on)` yields a running total.",
+      "reason": "When `ORDER BY` is present, the default frame is `ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW`.",
       "correct": [
         "c"
       ],
       "whys": {
         "a": "R is false, so it cannot explain A.",
         "b": "R is false, so this option wrongly calls both statements true.",
-        "c": "Correct: A is true; R is false because the default frame is RANGE ... CURRENT ROW, which includes all peer rows with the same ORDER BY value.",
+        "c": "Correct: A is true; R is false because the default frame is `RANGE ... CURRENT ROW`, which includes all peer rows with the same `ORDER BY` value.",
         "d": "A is true, so this option wrongly calls it false."
       },
-      "explanation": "With duplicate paid_on values every peer gets the same running total under RANGE. Write ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW (or add a unique tie-breaker) for a strict row-by-row total."
+      "explanation": "With duplicate paid_on values every peer gets the same running total under `RANGE`. Write `ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW` (or add a unique tie-breaker) for a strict row-by-row total."
     },
     {
       "id": "row-number-ties",
@@ -156,18 +156,18 @@
       "type": "assertion",
       "difficulty": 3,
       "prompt": "Read the assertion (A) and the reason (R), then choose the option that fits.",
-      "assertion": "A top-2-per-department query that uses ROW_NUMBER() can drop an employee who ties for second place.",
-      "reason": "RANK() gives tied rows the same rank and leaves a gap after them.",
+      "assertion": "A top-2-per-department query that uses `ROW_NUMBER()` can drop an employee who ties for second place.",
+      "reason": "`RANK()` gives tied rows the same rank and leaves a gap after them.",
       "correct": [
         "b"
       ],
       "whys": {
-        "a": "R describes a different function and does not explain why ROW_NUMBER drops a tied row.",
-        "b": "Correct: both are true, but A is caused by ROW_NUMBER giving ties distinct numbers, not by RANK behaviour.",
+        "a": "R describes a different function and does not explain why `ROW_NUMBER` drops a tied row.",
+        "b": "Correct: both are true, but A is caused by `ROW_NUMBER` giving ties distinct numbers, not by RANK behaviour.",
         "c": "R is true, so this option wrongly calls it false.",
         "d": "A is true, so this option wrongly calls it false."
       },
-      "explanation": "Decide the business rule first: \"exactly N rows\" (ROW_NUMBER, add a deterministic tie-breaker), or \"all rows with one of the top N values\" (DENSE_RANK)."
+      "explanation": "Decide the business rule first: \"exactly N rows\" (`ROW_NUMBER`, add a deterministic tie-breaker), or \"all rows with one of the top N values\" (`DENSE_RANK`)."
     },
     {
       "id": "recursive-keyword",
@@ -175,8 +175,8 @@
       "type": "assertion",
       "difficulty": 2,
       "prompt": "Read the assertion (A) and the reason (R), then choose the option that fits.",
-      "assertion": "The RECURSIVE keyword after WITH is required for recursive CTEs in every major SQL database.",
-      "reason": "A recursive CTE combines an anchor query and a recursive query that refers to the CTE itself, joined by UNION or UNION ALL.",
+      "assertion": "The `RECURSIVE` keyword after `WITH` is required for recursive CTEs in every major SQL database.",
+      "reason": "A recursive CTE combines an anchor query and a recursive query that refers to the CTE itself, joined by `UNION` or `UNION ALL`.",
       "correct": [
         "d"
       ],
@@ -184,7 +184,7 @@
         "a": "A is false, so both-true options are wrong.",
         "b": "A is false, so both-true options are wrong.",
         "c": "R is true, so this option wrongly calls it false.",
-        "d": "Correct: PostgreSQL, MySQL and SQLite require WITH RECURSIVE, but SQL Server and Oracle accept recursion without the keyword; R is true."
+        "d": "Correct: PostgreSQL, MySQL and SQLite require `WITH RECURSIVE`, but SQL Server and Oracle accept recursion without the keyword; R is true."
       },
       "explanation": "Recursive CTEs walk hierarchies (org charts, categories) and generate series. Add a depth or cycle guard on graphs that may contain cycles."
     },
@@ -210,14 +210,14 @@
         "LEAD",
         "NTILE"
       ],
-      "explanation": "LEAD is the mirror image of LAG. LAG(x, 1, 0) supplies a default instead of NULL for the first row."
+      "explanation": "`LEAD` is the mirror image of `LAG`. `LAG(x, 1, 0)` supplies a default instead of `NULL` for the first row."
     },
     {
       "id": "code-top2-per-dept",
       "concept": "Top N per group",
       "type": "code",
       "difficulty": 2,
-      "prompt": "Table employees(id, name, dept_id, salary). Using a window function, return id, name, dept_id and salary of the 2 highest-paid employees in each department (ties may be broken arbitrarily).",
+      "prompt": "Table `employees(id, name, dept_id, salary)`. Using a window function, return `id`, `name`, `dept_id` and `salary` of the 2 highest-paid employees in each department (ties may be broken arbitrarily).",
       "language": "sql",
       "checks": [
         {
@@ -238,14 +238,14 @@
         }
       ],
       "model": "SELECT id, name, dept_id, salary\nFROM (SELECT *, ROW_NUMBER() OVER (PARTITION BY dept_id ORDER BY salary DESC) AS rn\n      FROM employees) t\nWHERE rn <= 2;",
-      "explanation": "A LATERAL join with ORDER BY salary DESC LIMIT 2 per department is another valid PostgreSQL solution. The window version is the portable interview answer. Verified on PostgreSQL."
+      "explanation": "A `LATERAL` join with `ORDER BY salary DESC LIMIT 2` per department is another valid PostgreSQL solution. The window version is the portable interview answer. Verified on PostgreSQL."
     },
     {
       "id": "code-running-total",
       "concept": "Window functions",
       "type": "code",
       "difficulty": 2,
-      "prompt": "Table payments(id, paid_on, amount). Return paid_on, amount and a column running_total holding the cumulative sum of amount ordered by paid_on.",
+      "prompt": "Table `payments(id, paid_on, amount)`. Return `paid_on`, `amount` and a column `running_total` holding the cumulative sum of `amount` ordered by `paid_on`.",
       "language": "sql",
       "checks": [
         {
@@ -262,14 +262,14 @@
         }
       ],
       "model": "SELECT paid_on, amount,\n       SUM(amount) OVER (ORDER BY paid_on) AS running_total\nFROM payments;",
-      "explanation": "For amounts 10, 5, 20, 15 on four distinct days the totals are 10, 15, 35, 50. Add ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW if dates can repeat."
+      "explanation": "For amounts 10, 5, 20, 15 on four distinct days the totals are 10, 15, 35, 50. Add `ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW` if dates can repeat."
     },
     {
       "id": "code-pivot-case",
       "concept": "Conditional aggregation",
       "type": "code",
       "difficulty": 3,
-      "prompt": "Table sales(region, quarter, amount). Return one row per region with columns q1 and q2 holding the total amount for quarter 1 and quarter 2 (use conditional aggregation, not a pivot extension).",
+      "prompt": "Table `sales(region, quarter, amount)`. Return one row per region with columns `q1` and `q2` holding the total amount for quarter 1 and quarter 2 (use conditional aggregation, not a pivot extension).",
       "language": "sql",
       "checks": [
         {
@@ -290,14 +290,14 @@
         }
       ],
       "model": "SELECT region,\n       SUM(CASE WHEN quarter = 1 THEN amount ELSE 0 END) AS q1,\n       SUM(CASE WHEN quarter = 2 THEN amount ELSE 0 END) AS q2\nFROM sales\nGROUP BY region;",
-      "explanation": "SUM(amount) FILTER (WHERE quarter = 1) is the PostgreSQL spelling. Without ELSE 0 a region with no data in a quarter shows NULL instead of 0. Verified on PostgreSQL."
+      "explanation": "`SUM(amount) FILTER (WHERE quarter = 1)` is the PostgreSQL spelling. Without `ELSE 0` a region with no data in a quarter shows `NULL` instead of 0. Verified on PostgreSQL."
     },
     {
       "id": "code-recursive-reports",
       "concept": "Recursive CTE",
       "type": "code",
       "difficulty": 3,
-      "prompt": "Table employees(id, name, manager_id). Write a recursive CTE that returns the id and name of every employee who reports to employee 1 directly or indirectly (you may include employee 1 itself).",
+      "prompt": "Table `employees(id, name, manager_id)`. Write a recursive CTE that returns the `id` and `name` of every employee who reports to employee 1 directly or indirectly (you may include employee 1 itself).",
       "language": "sql",
       "checks": [
         {
@@ -318,47 +318,47 @@
         }
       ],
       "model": "WITH RECURSIVE reports AS (\n  SELECT id, name FROM employees WHERE id = 1\n  UNION ALL\n  SELECT e.id, e.name FROM employees e JOIN reports r ON e.manager_id = r.id\n)\nSELECT id, name FROM reports;",
-      "explanation": "On the sample org (8 employees, three levels) the result is all 8 rows including employee 1. Use UNION instead of UNION ALL to stop cycles in graph data."
+      "explanation": "On the sample org (8 employees, three levels) the result is all 8 rows including employee 1. Use `UNION` instead of `UNION ALL` to stop cycles in graph data."
     },
     {
       "id": "delete-duplicates",
       "concept": "De-duplication",
       "type": "single",
       "difficulty": 3,
-      "prompt": "Table users(id, email) contains duplicate emails. Which statement deletes the extra copies while keeping the lowest id of each email?",
+      "prompt": "Table `users(id, email)` contains duplicate emails. Which statement deletes the extra copies while keeping the lowest id of each email?",
       "options": [
         {
           "id": "a",
-          "text": "DELETE FROM users WHERE id IN (SELECT id FROM (SELECT id, ROW_NUMBER() OVER (PARTITION BY email ORDER BY id) rn FROM users) t WHERE rn > 1)",
+          "text": "`DELETE FROM users WHERE id IN (SELECT id FROM (SELECT id, ROW_NUMBER() OVER (PARTITION BY email ORDER BY id) rn FROM users) t WHERE rn > 1)`",
           "why": "Right: rn = 1 is the survivor of each email, every other copy is deleted."
         },
         {
           "id": "b",
-          "text": "DELETE FROM users WHERE email IN (SELECT email FROM users GROUP BY email HAVING COUNT(*) > 1) AND id IS NOT NULL",
+          "text": "`DELETE FROM users WHERE email IN (SELECT email FROM users GROUP BY email HAVING COUNT(*) > 1) AND id IS NOT NULL`",
           "why": "This deletes every copy of a duplicated email, including the one to keep."
         },
         {
           "id": "c",
-          "text": "DELETE FROM users GROUP BY email HAVING COUNT(*) > 1 ORDER BY id OFFSET 1",
-          "why": "DELETE has no GROUP BY, HAVING or OFFSET clause; it is a syntax error."
+          "text": "`DELETE FROM users GROUP BY email HAVING COUNT(*) > 1 ORDER BY id OFFSET 1`",
+          "why": "`DELETE` has no `GROUP BY`, `HAVING` or `OFFSET` clause; it is a syntax error."
         },
         {
           "id": "d",
-          "text": "DELETE FROM users WHERE email IN (SELECT email FROM users GROUP BY email HAVING COUNT(*) > 1) AND id <> (SELECT MIN(id) FROM users) AND email IS NOT NULL",
+          "text": "`DELETE FROM users WHERE email IN (SELECT email FROM users GROUP BY email HAVING COUNT(*) > 1) AND id <> (SELECT MIN(id) FROM users) AND email IS NOT NULL`",
           "why": "The global MIN(id) spares only one row in the table, not one per email."
         }
       ],
       "correct": [
         "a"
       ],
-      "explanation": "Alternative: DELETE ... WHERE id NOT IN (SELECT MIN(id) FROM users GROUP BY email). Test it with SELECT before running a DELETE. Verified on PostgreSQL (3 rows deleted from 6)."
+      "explanation": "Alternative: `DELETE ... WHERE id NOT IN (SELECT MIN(id) FROM users GROUP BY email)`. Test it with `SELECT` before running a `DELETE`. Verified on PostgreSQL (3 rows deleted from 6)."
     },
     {
       "id": "cte-materialized",
       "concept": "Recursive CTE",
       "type": "truefalse",
       "difficulty": 3,
-      "prompt": "In PostgreSQL 12 and later, a non-recursive WITH query is always materialised once as a temporary result before the main query runs.",
+      "prompt": "In PostgreSQL 12 and later, a non-recursive `WITH` query is always materialised once as a temporary result before the main query runs.",
       "options": [
         {
           "id": "a",
@@ -368,13 +368,13 @@
         {
           "id": "b",
           "text": "False",
-          "why": "Right: since PostgreSQL 12 such a CTE may be inlined into the outer query; use AS MATERIALIZED to force the old behaviour."
+          "why": "Right: since PostgreSQL 12 such a CTE may be inlined into the outer query; use `AS MATERIALIZED` to force the old behaviour."
         }
       ],
       "correct": [
         "b"
       ],
-      "explanation": "Before 12 a CTE was an optimisation fence. Now you choose with AS MATERIALIZED / AS NOT MATERIALIZED; recursive and data-modifying CTEs are always materialised."
+      "explanation": "Before 12 a CTE was an optimisation fence. Now you choose with `AS MATERIALIZED` / `AS NOT MATERIALIZED`; recursive and data-modifying CTEs are always materialised."
     },
     {
       "id": "window-facts",
@@ -385,28 +385,28 @@
       "options": [
         {
           "id": "a",
-          "text": "LAG returns NULL for the first row of a partition unless a default value is given as the third argument.",
-          "why": "Right: LAG(x, 1, 0) returns 0 instead."
+          "text": "`LAG` returns `NULL` for the first row of a partition unless a default value is given as the third argument.",
+          "why": "Right: `LAG(x, 1, 0)` returns 0 instead."
         },
         {
           "id": "b",
-          "text": "Window functions run after GROUP BY, so RANK() OVER (ORDER BY SUM(x)) is valid in a grouped query.",
+          "text": "Window functions run after `GROUP BY`, so `RANK() OVER (ORDER BY SUM(x))` is valid in a grouped query.",
           "why": "Right: the aggregate is computed first and then ranked."
         },
         {
           "id": "c",
-          "text": "PARTITION BY restarts the window for each group without collapsing the rows.",
+          "text": "`PARTITION BY` restarts the window for each group without collapsing the rows.",
           "why": "Right: every input row stays in the output."
         },
         {
           "id": "d",
-          "text": "ROWS and RANGE frames behave identically when the ORDER BY values contain ties.",
-          "why": "RANGE treats tied peers as one unit, ROWS counts physical rows."
+          "text": "`ROWS` and `RANGE` frames behave identically when the `ORDER BY` values contain ties.",
+          "why": "`RANGE` treats tied peers as one unit, `ROWS` counts physical rows."
         },
         {
           "id": "e",
-          "text": "A window function may be placed in the HAVING clause.",
-          "why": "HAVING runs before window functions are evaluated; wrap in a subquery."
+          "text": "A window function may be placed in the `HAVING` clause.",
+          "why": "`HAVING` runs before window functions are evaluated; wrap in a subquery."
         }
       ],
       "correct": [
@@ -414,14 +414,14 @@
         "b",
         "c"
       ],
-      "explanation": "Typical follow-up: \"difference from the previous day\" is amount - LAG(amount) OVER (ORDER BY day); \"percent of group total\" is amount / SUM(amount) OVER (PARTITION BY group)."
+      "explanation": "Typical follow-up: \"difference from the previous day\" is `amount - LAG(amount) OVER (ORDER BY day)`; \"percent of group total\" is `amount / SUM(amount) OVER (PARTITION BY group)`."
     },
     {
       "id": "code-gaps-islands",
       "concept": "Gaps and islands",
       "type": "code",
       "difficulty": 3,
-      "prompt": "Table logins(d date) holds one row per distinct login day. Write a query that returns the first day, last day and length in days of every run of consecutive days, using the date minus ROW_NUMBER trick.",
+      "prompt": "Table `logins(d date)` holds one row per distinct login day. Write a query that returns the first day, last day and length in days of every run of consecutive days, using the date minus `ROW_NUMBER` trick.",
       "language": "sql",
       "checks": [
         {
@@ -442,14 +442,14 @@
         }
       ],
       "model": "SELECT MIN(d) AS first_day, MAX(d) AS last_day, COUNT(*) AS days\nFROM (SELECT d, d - (ROW_NUMBER() OVER (ORDER BY d))::int AS grp\n      FROM logins) t\nGROUP BY grp\nORDER BY first_day;",
-      "explanation": "Inside a run of consecutive days the date and the row number grow together, so their difference is constant (in PostgreSQL date - integer gives a date). Verified on PostgreSQL with days Jan 1-3, 7-8 and 10: three islands of length 3, 2 and 1. Filter HAVING COUNT(*) >= 3 for the usual 'three consecutive days' question. The LAG-based alternative flags a new island when the gap is more than one day and takes a running SUM of the flags."
+      "explanation": "Inside a run of consecutive days the date and the row number grow together, so their difference is constant (in PostgreSQL `date - integer` gives a date). Verified on PostgreSQL with days Jan 1-3, 7-8 and 10: three islands of length 3, 2 and 1. Filter `HAVING COUNT(*) >= 3` for the usual 'three consecutive days' question. The `LAG`-based alternative flags a new island when the gap is more than one day and takes a running SUM of the flags."
     },
     {
       "id": "moving-average-value",
       "concept": "Window frames",
       "type": "integer",
       "difficulty": 2,
-      "prompt": "Rows ordered by day hold the values 10, 20, 30, 40, 50. What does AVG(v) OVER (ORDER BY day ROWS BETWEEN 2 PRECEDING AND CURRENT ROW) return for the fifth row?",
+      "prompt": "Rows ordered by day hold the values 10, 20, 30, 40, 50. What does `AVG(v) OVER (ORDER BY day ROWS BETWEEN 2 PRECEDING AND CURRENT ROW)` return for the fifth row?",
       "answer": 40,
       "explanation": "The frame for row 5 holds rows 3, 4 and 5 (30, 40, 50), whose average is 40. For rows 1 and 2 the frame is shorter (averages 10 and 15) because there are not two preceding rows. Verified on PostgreSQL. This is the standard 3-day moving average."
     },
@@ -458,7 +458,7 @@
       "concept": "Window functions",
       "type": "code",
       "difficulty": 2,
-      "prompt": "Table sales(day, amount) has one row per day. Return day, amount and a column change holding the amount minus the previous day's amount (NULL for the first day).",
+      "prompt": "Table `sales(day, amount)` has one row per day. Return `day`, `amount` and a column `change` holding the amount minus the previous day's amount (`NULL` for the first day).",
       "language": "sql",
       "checks": [
         {
@@ -475,7 +475,7 @@
         }
       ],
       "model": "SELECT day, amount,\n       amount - LAG(amount) OVER (ORDER BY day) AS change\nFROM sales;",
-      "explanation": "LAG returns NULL for the first row, so the subtraction is NULL there too (verified on PostgreSQL). If days can be missing, a LAG over rows is not 'the previous calendar day': join to a generated calendar first. CHANGE is not reserved in PostgreSQL, but quote it if your engine objects."
+      "explanation": "`LAG` returns `NULL` for the first row, so the subtraction is `NULL` there too (verified on PostgreSQL). If days can be missing, a `LAG` over rows is not 'the previous calendar day': join to a generated calendar first. `CHANGE` is not reserved in PostgreSQL, but quote it if your engine objects."
     }
   ]
 }

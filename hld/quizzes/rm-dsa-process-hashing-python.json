@@ -16,7 +16,7 @@
       "concept": "Two sum family",
       "type": "code",
       "difficulty": 2,
-      "prompt": "Write a Python function two_sum(nums, target) that returns the indices of two different elements adding up to target in one pass using a dict (assume exactly one answer exists).",
+      "prompt": "Write a Python function `two_sum(nums, target)` that returns the indices of two different elements adding up to target in one pass using a `dict` (assume exactly one answer exists).",
       "language": "python",
       "starter": "def two_sum(nums, target):\n    ",
       "checks": [
@@ -42,14 +42,14 @@
         }
       ],
       "model": "def two_sum(nums, target):\n    seen = {}\n    for i, x in enumerate(nums):\n        if target - x in seen:\n            return [seen[target - x], i]\n        seen[x] = i\n    return []",
-      "explanation": "Check the dict before inserting the current element, otherwise [3, 2, 4] with target 6 pairs index 0 with itself. Other correct solutions (a get call, a fill-first pass) also pass."
+      "explanation": "Check the dict before inserting the current element, otherwise `[3, 2, 4]` with `target 6` pairs index 0 with itself. Other correct solutions (a `get` call, a fill-first pass) also pass."
     },
     {
       "id": "group-anagrams",
       "concept": "Hashing patterns",
       "type": "code",
       "difficulty": 2,
-      "prompt": "Write a Python function group_anagrams(strs) that returns the words grouped so that anagrams share a group. Use a dictionary keyed by the sorted letters.",
+      "prompt": "Write a Python function `group_anagrams(strs)` that returns the words grouped so that anagrams share a group. Use a dictionary keyed by the sorted letters.",
       "language": "python",
       "starter": "def group_anagrams(strs):\n    ",
       "checks": [
@@ -82,7 +82,7 @@
       "concept": "Hashing patterns",
       "type": "code",
       "difficulty": 2,
-      "prompt": "Write a Python function longest_consecutive(nums) returning the length of the longest run of consecutive integers (like 3,4,5,6) present in an unsorted list, in O(n) expected time using a set.",
+      "prompt": "Write a Python function `longest_consecutive(nums)` returning the length of the longest run of consecutive integers (like `3,4,5,6`) present in an unsorted list, in O(n) expected time using a `set`.",
       "language": "python",
       "starter": "def longest_consecutive(nums):\n    ",
       "checks": [
@@ -111,7 +111,7 @@
       "concept": "Prefix sums",
       "type": "code",
       "difficulty": 3,
-      "prompt": "Write a Python function subarray_sum(nums, k) that counts the contiguous subarrays whose sum equals k. The list may contain negative numbers, so aim for O(n) with a dict of prefix-sum counts.",
+      "prompt": "Write a Python function `subarray_sum(nums, k)` that counts the contiguous subarrays whose sum equals `k`. The list may contain negative numbers, so aim for O(n) with a `dict` of prefix-sum counts.",
       "language": "python",
       "starter": "def subarray_sum(nums, k):\n    ",
       "checks": [
@@ -137,7 +137,7 @@
         }
       ],
       "model": "from collections import defaultdict\n\ndef subarray_sum(nums, k):\n    seen = defaultdict(int)\n    seen[0] = 1\n    prefix = count = 0\n    for x in nums:\n        prefix += x\n        count += seen[prefix - k]\n        seen[prefix] += 1\n    return count",
-      "explanation": "Because values can be negative a sliding window does not work. Counting before recording the current prefix keeps a zero-length subarray from being counted. With a defaultdict, reading seen[prefix - k] inserts a zero entry; seen.get(prefix - k, 0) avoids that."
+      "explanation": "Because values can be negative a sliding window does not work. Counting before recording the current prefix keeps a zero-length subarray from being counted. With a `defaultdict`, reading `seen[prefix - k]` inserts a zero entry; `seen.get(prefix - k, 0)` avoids that."
     },
     {
       "id": "dict-api",
@@ -148,23 +148,23 @@
       "left": [
         {
           "id": "a",
-          "text": "d.get(k, 0)"
+          "text": "`d.get(k, 0)`"
         },
         {
           "id": "b",
-          "text": "d.setdefault(k, [])"
+          "text": "`d.setdefault(k, [])`"
         },
         {
           "id": "c",
-          "text": "Counter(words)"
+          "text": "`Counter(words)`"
         },
         {
           "id": "d",
-          "text": "defaultdict(list)"
+          "text": "`defaultdict(list)`"
         },
         {
           "id": "e",
-          "text": "d.pop(k, None)"
+          "text": "`d.pop(k, None)`"
         }
       ],
       "right": [
@@ -186,7 +186,7 @@
         },
         {
           "id": "t",
-          "text": "Removes the key if present and returns its value, or None when it is missing"
+          "text": "Removes the key if present and returns its value, or `None` when it is missing"
         },
         {
           "id": "u",
@@ -200,7 +200,7 @@
         "d": "s",
         "e": "t"
       },
-      "explanation": "get avoids a KeyError, setdefault and defaultdict build multi-maps, Counter counts, and pop with a default never raises."
+      "explanation": "`get` avoids a `KeyError`, `setdefault` and `defaultdict` build multi-maps, `Counter` counts, and `pop` with a default never raises."
     },
     {
       "id": "count-idioms",
@@ -222,17 +222,17 @@
         "sorted",
         "deque"
       ],
-      "explanation": "Counter and defaultdict remove the \"if key not in d\" boilerplate. most_common(k) uses a heap internally when k is given."
+      "explanation": "`Counter` and `defaultdict` remove the \"`if key not in d`\" boilerplate. `most_common(k)` uses a heap internally when k is given."
     },
     {
       "id": "equal-keys",
       "concept": "Hashing patterns",
       "type": "integer",
       "difficulty": 2,
-      "prompt": "How many keys does the dict {1: \"a\", True: \"b\", 1.0: \"c\"} contain after it is built?",
+      "prompt": "How many keys does the dict `{1: \"a\", True: \"b\", 1.0: \"c\"}` contain after it is built?",
       "answer": 1,
       "tolerance": 0,
-      "explanation": "The values 1, True and 1.0 are equal and have the same hash, so they are the same key; the later values overwrite the stored value but the first key object stays. I ran it: len is 1. Bring this up when a key mixes bool and int.",
+      "explanation": "The values `1, True and 1.0` are equal and have the same hash, so they are the same key; the later values overwrite the stored value but the first key object stays. I ran it: `len` is 1. Bring this up when a key mixes bool and int.",
       "unit": "keys"
     },
     {
@@ -241,7 +241,7 @@
       "type": "assertion",
       "difficulty": 3,
       "prompt": "Evaluate the assertion and the reason.",
-      "assertion": "A dict-based two sum is guaranteed O(n) time even in the worst case.",
+      "assertion": "A `dict`-based two sum is guaranteed O(n) time even in the worst case.",
       "reason": "Dict lookups and inserts take O(1) time on average.",
       "correct": [
         "d"
@@ -260,7 +260,7 @@
       "type": "assertion",
       "difficulty": 3,
       "prompt": "Evaluate the assertion and the reason.",
-      "assertion": "Grouping anagrams with the key \"\".join(sorted(word)) costs O(n * k log k) for n words of length k.",
+      "assertion": "Grouping anagrams with the key `\"\".join(sorted(word))` costs O(n * k log k) for n words of length k.",
       "reason": "Sorting the k characters of one word takes O(k) time.",
       "correct": [
         "c"
@@ -271,7 +271,7 @@
         "c": "Correct: A is true (n sorts of cost k log k) but comparison sorting k characters takes O(k log k), not O(k).",
         "d": "A is true, so d is wrong."
       },
-      "explanation": "The alternative key is a 26-count tuple, giving O(n * k) for lowercase words. Mention both."
+      "explanation": "The alternative key is a `26-count tuple`, giving O(n * k) for lowercase words. Mention both."
     },
     {
       "id": "list-key",
@@ -279,8 +279,8 @@
       "type": "assertion",
       "difficulty": 2,
       "prompt": "Evaluate the assertion and the reason.",
-      "assertion": "A list cannot be used as a dict key, but a tuple of the same numbers can.",
-      "reason": "Lists are mutable and therefore unhashable, while a tuple of hashable items is immutable and hashable.",
+      "assertion": "A `list` cannot be used as a dict key, but a `tuple` of the same numbers can.",
+      "reason": "Lists are mutable and therefore unhashable, while a `tuple` of hashable items is immutable and hashable.",
       "correct": [
         "a"
       ],
@@ -290,24 +290,24 @@
         "c": "R is true, so c is wrong.",
         "d": "A is true, so d is wrong."
       },
-      "explanation": "Convert a list to a tuple (or a string) before using it as a key or putting it in a set. A tuple that contains a list is still unhashable."
+      "explanation": "Convert a list to a `tuple` (or a string) before using it as a key or putting it in a set. A tuple that contains a list is still unhashable."
     },
     {
       "id": "two-sum-bug",
       "concept": "Two sum family",
       "type": "single",
       "difficulty": 2,
-      "prompt": "This Python two sum inserts first and then checks: for i, x in enumerate(nums): seen[x] = i; if target - x in seen: return [seen[target - x], i]. What does it return for nums = [3, 2, 4], target = 6?",
+      "prompt": "This Python two sum inserts first and then checks: `for i, x in enumerate(nums): seen[x] = i; if target - x in seen: return [seen[target - x], i]`. What does it return for `nums = [3, 2, 4]`, `target = 6`?",
       "options": [
         {
           "id": "a",
-          "text": "[0, 0], pairing the first 3 with itself",
-          "why": "Correct: after storing 3 at index 0 the lookup of 6 - 3 finds index 0 straight away."
+          "text": "`[0, 0], pairing the first 3 with itself`",
+          "why": "Correct: after storing `3` at index 0 the lookup of 6 - 3 finds index 0 straight away."
         },
         {
           "id": "b",
-          "text": "[1, 2], the correct pair of the values 2 and 4",
-          "why": "That needs the check to run before the insert; this order never gets there."
+          "text": "`[1, 2], the correct pair of the values 2 and 4`",
+          "why": "That needs the `check` to run before the insert; this order never gets there."
         },
         {
           "id": "c",
@@ -316,26 +316,26 @@
         },
         {
           "id": "d",
-          "text": "A KeyError raised on the very first iteration",
-          "why": "The code tests with in before indexing, so a missing key is never read."
+          "text": "A `KeyError` raised on the very first iteration",
+          "why": "The code tests with `in` before indexing, so a missing key is never read."
         }
       ],
       "correct": [
         "a"
       ],
-      "explanation": "Look up the complement before storing the current value. This is the classic \"use the same element twice\" bug. I ran it: the result is [0, 0]."
+      "explanation": "Look up the complement before storing the current value. This is the classic \"use the same element twice\" bug. I ran it: the result is `[0, 0]`."
     },
     {
       "id": "counter-most-common",
       "concept": "Top-K frequent",
       "type": "truefalse",
       "difficulty": 2,
-      "prompt": "Python's Counter.most_common(k) is implemented with a heap, so selecting the top k of n distinct keys costs about O(n log k) rather than a full sort.",
+      "prompt": "Python's `Counter.most_common(k)` is implemented with a heap, so selecting the top k of n distinct keys costs about O(n log k) rather than a full sort.",
       "options": [
         {
           "id": "a",
           "text": "True",
-          "why": "Correct: with an argument it uses heapq.nlargest; without one it sorts everything."
+          "why": "Correct: with an argument it uses `heapq.nlargest`; without one it sorts everything."
         },
         {
           "id": "b",
@@ -346,14 +346,14 @@
       "correct": [
         "a"
       ],
-      "explanation": "Top-K frequent: count with a dict (O(n)), then a size-k heap (O(n log k)) or bucket sort by frequency (O(n))."
+      "explanation": "Top-K frequent: count with a `dict` (O(n)), then a size-k heap (O(n log k)) or bucket sort by frequency (O(n))."
     },
     {
       "id": "dict-facts",
       "concept": "Dictionary API",
       "type": "multi",
       "difficulty": 2,
-      "prompt": "Which statements about Python dict are true? Select all that apply.",
+      "prompt": "Which statements about Python `dict` are true? Select all that apply.",
       "options": [
         {
           "id": "a",
@@ -367,8 +367,8 @@
         },
         {
           "id": "c",
-          "text": "d[k] on a missing key returns None.",
-          "why": "False: it raises KeyError; use d.get(k) for None."
+          "text": "`d[k]` on a missing key returns `None`.",
+          "why": "False: it raises `KeyError`; use `d.get(k)` for None."
         },
         {
           "id": "d",

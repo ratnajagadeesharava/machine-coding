@@ -16,7 +16,7 @@
       "concept": "Circuit breaker",
       "type": "code",
       "difficulty": 2,
-      "prompt": "Annotate getStock(String sku) so calls go through a Resilience4j circuit breaker named \"inventory\" and fall back to a method named stockFallback when the call fails or the circuit is open.",
+      "prompt": "Annotate `getStock(String sku)` so calls go through a Resilience4j circuit breaker named `\"inventory\"` and fall back to a method named `stockFallback` when the call fails or the circuit is open.",
       "language": "java",
       "checks": [
         {
@@ -33,14 +33,14 @@
         }
       ],
       "model": "@CircuitBreaker(name = \"inventory\", fallbackMethod = \"stockFallback\")\npublic Stock getStock(String sku) { return client.fetch(sku); }",
-      "explanation": "The fallback must be in the same class with the same parameters plus an optional exception argument, e.g. stockFallback(String sku, Throwable t). Calls must cross the Spring proxy, so self-invocation does not trigger the breaker."
+      "explanation": "The fallback must be in the same class with the same parameters plus an optional exception argument, e.g. `stockFallback(String sku, Throwable t)`. Calls must cross the Spring proxy, so self-invocation does not trigger the breaker."
     },
     {
       "id": "resilience4j-yaml",
       "concept": "Circuit breaker",
       "type": "code",
       "difficulty": 3,
-      "prompt": "Write the application.yml for a Resilience4j circuit breaker instance named inventory with a sliding window of 10 calls, a 50 percent failure-rate threshold, and 30 seconds in the open state before half-open.",
+      "prompt": "Write the `application.yml` for a Resilience4j circuit breaker instance named `inventory` with a sliding window of 10 calls, a 50 percent failure-rate threshold, and 30 seconds in the open state before half-open.",
       "language": "yaml",
       "starter": "resilience4j:\n",
       "checks": [
@@ -62,14 +62,14 @@
         }
       ],
       "model": "resilience4j:\n  circuitbreaker:\n    instances:\n      inventory:\n        slidingWindowSize: 10\n        failureRateThreshold: 50\n        waitDurationInOpenState: 30s",
-      "explanation": "Spring Boot relaxed binding accepts both camelCase and kebab-case keys. Add permittedNumberOfCallsInHalfOpenState and slowCallDurationThreshold to also trip on latency."
+      "explanation": "Spring Boot relaxed binding accepts both camelCase and kebab-case keys. Add `permittedNumberOfCallsInHalfOpenState` and `slowCallDurationThreshold` to also trip on latency."
     },
     {
       "id": "r4j-exceptions-yaml",
       "concept": "Circuit breaker",
       "type": "code",
       "difficulty": 3,
-      "prompt": "Extend the Resilience4j circuit breaker instance inventory in application.yml so that only java.io.IOException counts as a failure and com.example.NotFoundException is ignored (counted as neither success nor failure).",
+      "prompt": "Extend the Resilience4j circuit breaker instance `inventory` in `application.yml` so that only `java.io.IOException` counts as a failure and `com.example.NotFoundException` is ignored (counted as neither success nor failure).",
       "language": "yaml",
       "starter": "resilience4j:\n  circuitbreaker:\n    instances:\n      inventory:\n",
       "checks": [
@@ -83,14 +83,14 @@
         }
       ],
       "model": "resilience4j:\n  circuitbreaker:\n    instances:\n      inventory:\n        recordExceptions:\n          - java.io.IOException\n        ignoreExceptions:\n          - com.example.NotFoundException",
-      "explanation": "A 404-style business exception is not a sign of an unhealthy dependency, so ignoring it keeps it from skewing the failure rate. Without recordExceptions every exception counts as a failure (except the ignored ones)."
+      "explanation": "A 404-style business exception is not a sign of an unhealthy dependency, so ignoring it keeps it from skewing the failure rate. Without `recordExceptions` every exception counts as a failure (except the ignored ones)."
     },
     {
       "id": "r4j-retry-yaml",
       "concept": "Retry",
       "type": "code",
       "difficulty": 3,
-      "prompt": "Write the application.yml for a Resilience4j retry instance named inventory with at most 4 attempts, a first wait of 200 ms, and exponential back-off with multiplier 2.",
+      "prompt": "Write the `application.yml` for a Resilience4j retry instance named `inventory` with at most 4 attempts, a first wait of 200 ms, and exponential back-off with multiplier 2.",
       "language": "yaml",
       "starter": "resilience4j:\n",
       "checks": [
@@ -116,14 +116,14 @@
         }
       ],
       "model": "resilience4j:\n  retry:\n    instances:\n      inventory:\n        maxAttempts: 4\n        waitDuration: 200ms\n        enableExponentialBackoff: true\n        exponentialBackoffMultiplier: 2",
-      "explanation": "maxAttempts includes the first call. Add enableRandomizedWait (with randomizedWaitFactor) for jitter and retryExceptions to restrict what is retried. Use @Retry(name = \"inventory\") on the method."
+      "explanation": "`maxAttempts` includes the first call. Add `enableRandomizedWait` (with `randomizedWaitFactor`) for jitter and `retryExceptions` to restrict what is retried. Use `@Retry(name = \"inventory\")` on the method."
     },
     {
       "id": "r4j-ratelimiter-yaml",
       "concept": "Rate limiting",
       "type": "code",
       "difficulty": 2,
-      "prompt": "Write the application.yml for a Resilience4j rate limiter instance named search that allows 10 calls per 1 second period and does not wait for a permit (rejects immediately).",
+      "prompt": "Write the `application.yml` for a Resilience4j rate limiter instance named `search` that allows 10 calls per 1 second period and does not wait for a permit (rejects immediately).",
       "language": "yaml",
       "starter": "resilience4j:\n",
       "checks": [
@@ -145,7 +145,7 @@
         }
       ],
       "model": "resilience4j:\n  ratelimiter:\n    instances:\n      search:\n        limitForPeriod: 10\n        limitRefreshPeriod: 1s\n        timeoutDuration: 0",
-      "explanation": "With timeoutDuration 0 a call that finds no permit fails at once with RequestNotPermitted, which you would map to HTTP 429. A positive timeout makes callers wait for a permit instead."
+      "explanation": "With `timeoutDuration` 0 a call that finds no permit fails at once with `RequestNotPermitted`, which you would map to HTTP 429. A positive timeout makes callers wait for a permit instead."
     },
     {
       "id": "r4j-modules",
@@ -156,7 +156,7 @@
       "left": [
         {
           "id": "l1",
-          "text": "CircuitBreaker"
+          "text": "`CircuitBreaker`"
         },
         {
           "id": "l2",
@@ -164,15 +164,15 @@
         },
         {
           "id": "l3",
-          "text": "RateLimiter"
+          "text": "`RateLimiter`"
         },
         {
           "id": "l4",
-          "text": "Bulkhead"
+          "text": "`Bulkhead`"
         },
         {
           "id": "l5",
-          "text": "TimeLimiter"
+          "text": "`TimeLimiter`"
         }
       ],
       "right": [
@@ -208,7 +208,7 @@
         "l4": "r4",
         "l5": "r5"
       },
-      "explanation": "Decorators compose. With the Spring Boot aspects the default order is Retry outside CircuitBreaker outside RateLimiter outside TimeLimiter outside Bulkhead."
+      "explanation": "Decorators compose. With the Spring Boot aspects the default order is Retry outside `CircuitBreaker` outside `RateLimiter` outside `TimeLimiter` outside `Bulkhead`."
     },
     {
       "id": "r4j-aspect-order",
@@ -219,23 +219,23 @@
       "options": [
         {
           "id": "a",
-          "text": "Bulkhead",
-          "why": "Bulkhead is the innermost decorator by default."
+          "text": "`Bulkhead`",
+          "why": "`Bulkhead` is the innermost decorator by default."
         },
         {
           "id": "b",
-          "text": "Retry",
-          "why": "Correct: Retry wraps CircuitBreaker, RateLimiter, TimeLimiter and Bulkhead."
+          "text": "`Retry`",
+          "why": "Correct: Retry wraps `CircuitBreaker`, `RateLimiter`, `TimeLimiter` and `Bulkhead`."
         },
         {
           "id": "c",
-          "text": "CircuitBreaker",
+          "text": "`CircuitBreaker`",
           "why": "The breaker sits inside Retry, so each attempt is judged separately."
         },
         {
           "id": "d",
-          "text": "TimeLimiter",
-          "why": "TimeLimiter sits inside the rate limiter and breaker, near the bottom."
+          "text": "`TimeLimiter`",
+          "why": "`TimeLimiter` sits inside the rate limiter and breaker, near the bottom."
         }
       ],
       "correct": [
@@ -248,17 +248,17 @@
       "concept": "Circuit breaker",
       "type": "integer",
       "difficulty": 2,
-      "prompt": "A Resilience4j breaker has slidingWindowSize = 10, minimumNumberOfCalls = 5 and failureRateThreshold = 50. The first calls all fail. After how many recorded calls can the breaker first open?",
+      "prompt": "A Resilience4j breaker has `slidingWindowSize = 10`, `minimumNumberOfCalls = 5` and `failureRateThreshold = 50`. The first calls all fail. After how many recorded calls can the breaker first open?",
       "answer": 5,
       "unit": "calls",
-      "explanation": "Below minimumNumberOfCalls the failure rate is not evaluated, so the breaker stays CLOSED for calls 1 to 4. On the 5th recorded call the rate is 5 of 5 = 100 percent, which is at least 50, so it opens."
+      "explanation": "Below `minimumNumberOfCalls` the failure rate is not evaluated, so the breaker stays CLOSED for calls 1 to 4. On the 5th recorded call the rate is 5 of 5 = 100 percent, which is at least 50, so it opens."
     },
     {
       "id": "r4j-half-open",
       "concept": "Circuit breaker",
       "type": "integer",
       "difficulty": 3,
-      "prompt": "A Resilience4j breaker is HALF_OPEN with permittedNumberOfCallsInHalfOpenState = 4 and failureRateThreshold = 50. After the 4 trial calls, what is the largest number of failed trials for which the breaker still returns to CLOSED?",
+      "prompt": "A Resilience4j breaker is HALF_OPEN with `permittedNumberOfCallsInHalfOpenState = 4` and `failureRateThreshold = 50`. After the 4 trial calls, what is the largest number of failed trials for which the breaker still returns to CLOSED?",
       "answer": 1,
       "unit": "failures",
       "explanation": "The breaker opens when the failure rate is greater than or equal to the threshold. 1 of 4 is 25 percent (closes), 2 of 4 is 50 percent (reopens), so at most 1."
@@ -269,7 +269,7 @@
       "type": "assertion",
       "difficulty": 2,
       "prompt": "Read the assertion A and the reason R, then choose the correct relationship between them.",
-      "assertion": "A Resilience4j @CircuitBreaker annotation has no effect when the annotated method is called with this.getStock(sku) from another method of the same class.",
+      "assertion": "A Resilience4j `@CircuitBreaker` annotation has no effect when the annotated method is called with `this.getStock(sku)` from another method of the same class.",
       "reason": "Spring applies the annotation through a proxy, and a call on this bypasses the proxy.",
       "correct": [
         "a"
@@ -280,7 +280,7 @@
         "c": "Not this one: A is true while R is false does not describe this pair; check the truth of R again.",
         "d": "Not this one: A is false while R is true does not describe this pair; check the truth of A again."
       },
-      "explanation": "Move the annotated method to another bean, inject the bean, or use the programmatic CircuitBreaker API (circuitBreaker.executeSupplier)."
+      "explanation": "Move the annotated method to another bean, inject the bean, or use the programmatic `CircuitBreaker` API (`circuitBreaker.executeSupplier`)."
     },
     {
       "id": "r4j-fallback-open",
@@ -288,7 +288,7 @@
       "type": "assertion",
       "difficulty": 3,
       "prompt": "Read the assertion A and the reason R, then choose the correct relationship between them.",
-      "assertion": "A fallbackMethod declared on @CircuitBreaker is also invoked when the circuit is open and the call is rejected.",
+      "assertion": "A `fallbackMethod` declared on `@CircuitBreaker` is also invoked when the circuit is open and the call is rejected.",
       "reason": "The fallback only runs for exceptions thrown by the business method itself, never for exceptions raised by the breaker.",
       "correct": [
         "c"
@@ -299,7 +299,7 @@
         "c": "Correct: A is true: a rejected call raises CallNotPermittedException and the fallback can handle it. R is false.",
         "d": "Not this one: A is false while R is true does not describe this pair; check the truth of A again."
       },
-      "explanation": "Declare a fallback overload for CallNotPermittedException if you want to treat a rejection differently from a real failure, for example by serving stale data."
+      "explanation": "Declare a fallback overload for `CallNotPermittedException` if you want to treat a rejection differently from a real failure, for example by serving stale data."
     },
     {
       "id": "r4j-timelimiter",
@@ -307,8 +307,8 @@
       "type": "assertion",
       "difficulty": 3,
       "prompt": "Read the assertion A and the reason R, then choose the correct relationship between them.",
-      "assertion": "A Resilience4j @TimeLimiter can enforce a timeout on a plain synchronous method that returns String.",
-      "reason": "The TimeLimiter works by cancelling a Future or other asynchronous result when time runs out.",
+      "assertion": "A Resilience4j `@TimeLimiter` can enforce a timeout on a plain synchronous method that returns `String`.",
+      "reason": "The `TimeLimiter` works by cancelling a `Future` or other asynchronous result when time runs out.",
       "correct": [
         "d"
       ],
@@ -318,7 +318,7 @@
         "c": "Not this one: A is true while R is false does not describe this pair; check the truth of R again.",
         "d": "Correct: A is false: with the annotation the method must return a CompletableFuture or a reactive type. R is true and is the reason."
       },
-      "explanation": "For blocking code put a timeout on the HTTP client itself, or run the call in an executor and return its CompletableFuture."
+      "explanation": "For blocking code put a timeout on the HTTP client itself, or run the call in an executor and return its `CompletableFuture`."
     },
     {
       "id": "r4j-relaxed-binding",
@@ -326,7 +326,7 @@
       "type": "assertion",
       "difficulty": 2,
       "prompt": "Read the assertion A and the reason R, then choose the correct relationship between them.",
-      "assertion": "An ignoreExceptions entry in a Resilience4j breaker counts the ignored exception as neither a success nor a failure.",
+      "assertion": "An `ignoreExceptions` entry in a Resilience4j breaker counts the ignored exception as neither a success nor a failure.",
       "reason": "Spring Boot relaxed binding accepts both camelCase and kebab-case property keys.",
       "correct": [
         "b"
@@ -344,7 +344,7 @@
       "concept": "Timeouts",
       "type": "code",
       "difficulty": 2,
-      "prompt": "Create a RestClient whose underlying SimpleClientHttpRequestFactory has a connect timeout of 2 seconds and a read timeout of 5 seconds.",
+      "prompt": "Create a `RestClient` whose underlying `SimpleClientHttpRequestFactory` has a connect timeout of 2 seconds and a read timeout of 5 seconds.",
       "language": "java",
       "starter": "SimpleClientHttpRequestFactory factory = new SimpleClientHttpRequestFactory();\n",
       "checks": [
@@ -362,14 +362,14 @@
         }
       ],
       "model": "factory.setConnectTimeout(2000);\nfactory.setReadTimeout(5000);\nRestClient client = RestClient.builder().requestFactory(factory).build();",
-      "explanation": "The JDK and most HTTP libraries default to no read timeout. With WebClient use .timeout(Duration.ofSeconds(5)) on the Mono plus Reactor Netty responseTimeout and CONNECT_TIMEOUT_MILLIS options. Boot 3.4+ also has spring.http.client.connect-timeout and read-timeout properties."
+      "explanation": "The JDK and most HTTP libraries default to no read timeout. With `WebClient` use .timeout(`Duration.ofSeconds(5)`) on the Mono plus Reactor Netty `responseTimeout` and `CONNECT_TIMEOUT_MILLIS` options. Boot 3.4+ also has `spring.http.client.connect-timeout` and `read-timeout` properties."
     },
     {
       "id": "spring-retryable",
       "concept": "Retry",
       "type": "code",
       "difficulty": 2,
-      "prompt": "Annotate a method fetchStock with Spring Retry so it runs at most 4 attempts in total on IOException, starting with a 200 ms delay that doubles each time.",
+      "prompt": "Annotate a method `fetchStock` with Spring Retry so it runs at most 4 attempts in total on `IOException`, starting with a 200 ms delay that doubles each time.",
       "language": "java",
       "checks": [
         {
@@ -390,17 +390,17 @@
         }
       ],
       "model": "@Retryable(retryFor = IOException.class, maxAttempts = 4, backoff = @Backoff(delay = 200, multiplier = 2))\npublic Stock fetchStock(String sku) throws IOException { ... }",
-      "explanation": "In Spring Retry, maxAttempts counts the original call (default 3). Needs @EnableRetry and a call through the Spring proxy (self-invocation bypasses it). Older versions spelled retryFor as include or value. Resilience4j @Retry(name = \"x\") is an equally valid answer in a Resilience4j project."
+      "explanation": "In Spring Retry, `maxAttempts` counts the original call (default 3). Needs `@EnableRetry` and a call through the Spring proxy (self-invocation bypasses it). Older versions spelled `retryFor` as include or value. Resilience4j `@Retry`(name = \"x\") is an equally valid answer in a Resilience4j project."
     },
     {
       "id": "spring7-retry",
       "concept": "Retry",
       "type": "integer",
       "difficulty": 3,
-      "prompt": "Spring Framework 7's built-in @Retryable (org.springframework.resilience.annotation) is configured with maxRetries = 4. In the worst case, how many times is the method invoked in total?",
+      "prompt": "Spring Framework 7's built-in `@Retryable` (`org.springframework.resilience.annotation`) is configured with `maxRetries = 4`. In the worst case, how many times is the method invoked in total?",
       "answer": 5,
       "unit": "invocations",
-      "explanation": "maxRetries counts retries after the initial call, so 1 + 4 = 5 invocations. Spring Retry's maxAttempts = 4 would have meant 4 invocations in total, a classic off-by-one when migrating."
+      "explanation": "`maxRetries` counts retries after the initial call, so 1 + 4 = 5 invocations. Spring Retry's `maxAttempts` = 4 would have meant 4 invocations in total, a classic off-by-one when migrating."
     },
     {
       "id": "slow-call-rate",
@@ -412,7 +412,7 @@
         {
           "id": "a",
           "text": "True",
-          "why": "Correct: slowCallRateThreshold and slowCallDurationThreshold count slow calls toward opening."
+          "why": "Correct: `slowCallRateThreshold` and `slowCallDurationThreshold` count slow calls toward opening."
         },
         {
           "id": "b",
@@ -423,33 +423,33 @@
       "correct": [
         "a"
       ],
-      "explanation": "Configure slowCallDurationThreshold (for example 2s) and slowCallRateThreshold (for example 80). A call still must complete (or be cut off by a timeout) to be measured."
+      "explanation": "Configure `slowCallDurationThreshold` (for example 2s) and `slowCallRateThreshold` (for example 80). A call still must complete (or be cut off by a timeout) to be measured."
     },
     {
       "id": "fallback-signature",
       "concept": "Resilience4j",
       "type": "single",
       "difficulty": 2,
-      "prompt": "Which signature is a valid fallback for @CircuitBreaker(name = \"inventory\", fallbackMethod = \"stockFallback\") on Stock getStock(String sku)?",
+      "prompt": "Which signature is a valid fallback for `@CircuitBreaker(name = \"inventory\", fallbackMethod = \"stockFallback\")` on `Stock getStock(String sku)`?",
       "options": [
         {
           "id": "a",
-          "text": "Stock stockFallback(String sku, Throwable t) in the same class.",
+          "text": "`Stock stockFallback(String sku, Throwable t)` in the same class.",
           "why": "Correct: same parameters plus an optional exception, same return type."
         },
         {
           "id": "b",
-          "text": "void stockFallback() in any other class.",
+          "text": "`void stockFallback()` in any other class.",
           "why": "The fallback must return the same type and live in the same class."
         },
         {
           "id": "c",
-          "text": "Stock stockFallback(int sku) in the same class.",
+          "text": "Stock `stockFallback(int sku)` in the same class.",
           "why": "Parameter types must match the original method."
         },
         {
           "id": "d",
-          "text": "String stockFallback(String sku, Throwable t) in the same class.",
+          "text": "`String stockFallback(String sku, Throwable t)` in the same class.",
           "why": "The return type must be compatible with Stock, not String."
         }
       ],

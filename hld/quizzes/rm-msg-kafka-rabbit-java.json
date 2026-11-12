@@ -16,7 +16,7 @@
       "concept": "Spring for Kafka",
       "type": "code",
       "difficulty": 2,
-      "prompt": "Write a Spring for Apache Kafka listener method onOrder(String payload) that consumes the topic \"orders\" as consumer group \"billing\".",
+      "prompt": "Write a Spring for Apache Kafka listener method `onOrder(String payload)` that consumes the topic `\"orders\"` as consumer group `\"billing\"`.",
       "language": "java",
       "checks": [
         {
@@ -37,14 +37,14 @@
         }
       ],
       "model": "@KafkaListener(topics = \"orders\", groupId = \"billing\")\npublic void onOrder(String payload) { process(payload); }",
-      "explanation": "The RabbitMQ equivalent is @RabbitListener(queues = \"orders\"). With Kafka the group id decides who shares the partitions; two groups each receive every record."
+      "explanation": "The RabbitMQ equivalent is `@RabbitListener(queues = \"orders\")`. With Kafka the group id decides who shares the partitions; two groups each receive every record."
     },
     {
       "id": "rabbit-listener",
       "concept": "Spring AMQP",
       "type": "code",
       "difficulty": 1,
-      "prompt": "Write a Spring AMQP listener method onOrder(String body) that consumes messages from the RabbitMQ queue \"orders\".",
+      "prompt": "Write a Spring AMQP listener method `onOrder(String body)` that consumes messages from the RabbitMQ queue `\"orders\"`.",
       "language": "java",
       "checks": [
         {
@@ -68,7 +68,7 @@
       "concept": "Spring AMQP",
       "type": "single",
       "difficulty": 3,
-      "prompt": "A @RabbitListener throws an IllegalStateException for a message that can never be processed. Spring AMQP and its Boot auto-configuration are on defaults. What happens to the message?",
+      "prompt": "A `@RabbitListener` throws an `IllegalStateException` for a message that can never be processed. Spring AMQP and its Boot auto-configuration are on defaults. What happens to the message?",
       "options": [
         {
           "id": "a",
@@ -83,7 +83,7 @@
         {
           "id": "c",
           "text": "It is rejected and requeued, then redelivered again and again.",
-          "why": "Correct: defaultRequeueRejected is true, so a business exception requeues the message."
+          "why": "Correct: `defaultRequeueRejected` is true, so a business exception requeues the message."
         },
         {
           "id": "d",
@@ -94,14 +94,14 @@
       "correct": [
         "c"
       ],
-      "explanation": "Break the loop by throwing AmqpRejectAndDontRequeueException, setting spring.rabbitmq.listener.simple.default-requeue-rejected=false, or enabling listener retry with a recoverer. Add a dead-letter exchange so rejected messages are kept. Conversion failures are treated as fatal and are not requeued."
+      "explanation": "Break the loop by throwing `AmqpRejectAndDontRequeueException`, setting `spring.rabbitmq.listener.simple.default-requeue-rejected=false`, or enabling listener retry with a recoverer. Add a dead-letter exchange so rejected messages are kept. Conversion failures are treated as fatal and are not requeued."
     },
     {
       "id": "manual-ack",
       "concept": "Spring for Kafka",
       "type": "code",
       "difficulty": 3,
-      "prompt": "Write a @KafkaListener method onPayment(String payload, Acknowledgment ack) for topic \"payments\" that processes the payload and then acknowledges the record, assuming the container uses AckMode.MANUAL.",
+      "prompt": "Write a `@KafkaListener` method `onPayment(String payload, Acknowledgment ack)` for topic `\"payments\"` that processes the payload and then acknowledges the record, assuming the container uses `AckMode.MANUAL`.",
       "language": "java",
       "checks": [
         {
@@ -118,30 +118,30 @@
         }
       ],
       "model": "@KafkaListener(topics = \"payments\", groupId = \"ledger\")\npublic void onPayment(String payload, Acknowledgment ack) {\n    process(payload);\n    ack.acknowledge();\n}",
-      "explanation": "Acknowledging after processing gives at-least-once. Set spring.kafka.listener.ack-mode=manual (or manual_immediate) for the Acknowledgment argument to be supplied. If process throws, the error handler decides on retry or dead lettering and the offset is not committed."
+      "explanation": "Acknowledging after processing gives at-least-once. Set `spring.kafka.listener.ack-mode=manual` (or `manual_immediate`) for the `Acknowledgment` argument to be supplied. If process throws, the error handler decides on retry or dead lettering and the offset is not committed."
     },
     {
       "id": "ack-modes",
       "concept": "Spring for Kafka",
       "type": "matrix",
       "difficulty": 2,
-      "prompt": "Match each Spring Kafka AckMode with when the offsets are committed.",
+      "prompt": "Match each Spring Kafka `AckMode` with when the offsets are committed.",
       "left": [
         {
           "id": "l1",
-          "text": "RECORD"
+          "text": "`RECORD`"
         },
         {
           "id": "l2",
-          "text": "BATCH (default)"
+          "text": "`BATCH` (default)"
         },
         {
           "id": "l3",
-          "text": "MANUAL"
+          "text": "`MANUAL`"
         },
         {
           "id": "l4",
-          "text": "MANUAL_IMMEDIATE"
+          "text": "`MANUAL_IMMEDIATE`"
         }
       ],
       "right": [
@@ -155,11 +155,11 @@
         },
         {
           "id": "r3",
-          "text": "After the listener calls acknowledge(), batched like BATCH"
+          "text": "After the listener calls `acknowledge()`, batched like `BATCH`"
         },
         {
           "id": "r4",
-          "text": "Immediately when the listener calls acknowledge()"
+          "text": "Immediately when the listener calls `acknowledge()`"
         },
         {
           "id": "r5",
@@ -172,14 +172,14 @@
         "l3": "r3",
         "l4": "r4"
       },
-      "explanation": "RECORD gives the most commits and the fewest duplicates after a crash; BATCH is the cheapest. MANUAL modes let you commit only after an external side effect succeeds."
+      "explanation": "`RECORD` gives the most commits and the fewest duplicates after a crash; `BATCH` is the cheapest. `MANUAL` modes let you commit only after an external side effect succeeds."
     },
     {
       "id": "dlt-handler",
       "concept": "Dead-letter topics",
       "type": "code",
       "difficulty": 3,
-      "prompt": "Write a Spring Kafka bean method errorHandler(KafkaTemplate<Object, Object> template) returning a DefaultErrorHandler that publishes failed records to a dead-letter topic with DeadLetterPublishingRecoverer and retries 3 times, 1 second apart, using a FixedBackOff.",
+      "prompt": "Write a Spring Kafka bean method `errorHandler(KafkaTemplate<Object, Object> template)` returning a `DefaultErrorHandler` that publishes failed records to a dead-letter topic with `DeadLetterPublishingRecoverer` and retries 3 times, 1 second apart, using a `FixedBackOff`.",
       "language": "java",
       "starter": "@Bean\nDefaultErrorHandler errorHandler(KafkaTemplate<Object, Object> template) {\n",
       "checks": [
@@ -197,24 +197,24 @@
         }
       ],
       "model": "    return new DefaultErrorHandler(new DeadLetterPublishingRecoverer(template), new FixedBackOff(1000L, 3));\n}",
-      "explanation": "The recoverer publishes to <topic>.DLT by default. FixedBackOff(interval, maxAttempts) counts retries after the first delivery, so 3 means 4 deliveries in total. ExponentialBackOffWithMaxRetries is another valid way to add backoff, and DefaultErrorHandler treats some exceptions (such as deserialisation errors) as not retryable."
+      "explanation": "The recoverer publishes to `<topic>.DLT` by default. `FixedBackOff(interval, maxAttempts)` counts retries after the first delivery, so 3 means 4 deliveries in total. `ExponentialBackOffWithMaxRetries` is another valid way to add backoff, and `DefaultErrorHandler` treats some exceptions (such as deserialisation errors) as not retryable."
     },
     {
       "id": "dlt-deliveries",
       "concept": "Dead-letter topics",
       "type": "integer",
       "difficulty": 2,
-      "prompt": "A DefaultErrorHandler is configured with new FixedBackOff(1000L, 3). In the worst case, how many times is the listener invoked for one failing record before the record is recovered (sent to the dead-letter topic)?",
+      "prompt": "A `DefaultErrorHandler` is configured with `new FixedBackOff(1000L, 3)`. In the worst case, how many times is the listener invoked for one failing record before the record is recovered (sent to the dead-letter topic)?",
       "answer": 4,
       "unit": "invocations",
-      "explanation": "The first delivery plus 3 retries = 4 invocations. The second FixedBackOff argument is the maximum number of retries, not the total attempts."
+      "explanation": "The first delivery plus 3 retries = 4 invocations. The second `FixedBackOff` argument is the maximum number of retries, not the total `attempts`."
     },
     {
       "id": "retryable-topic",
       "concept": "Non-blocking retries",
       "type": "code",
       "difficulty": 3,
-      "prompt": "Add the annotation to a @KafkaListener method so that failures are retried through retry topics with 4 attempts in total and an exponential back-off starting at 1000 ms with multiplier 2.0, without blocking the main topic.",
+      "prompt": "Add the annotation to a `@KafkaListener` method so that failures are retried through retry topics with 4 `attempts` in total and an exponential back-off starting at 1000 ms with multiplier 2.0, without blocking the main topic.",
       "language": "java",
       "checks": [
         {
@@ -235,7 +235,7 @@
         }
       ],
       "model": "@RetryableTopic(attempts = \"4\", backoff = @Backoff(delay = 1000, multiplier = 2.0))\n@KafkaListener(topics = \"orders\")",
-      "explanation": "Spring Kafka creates orders-retry-0, orders-retry-1 ... and a -dlt topic, so a slow retry never blocks other records on the main topic. The cost is that ordering across the retried record and later records is lost. attempts is a String in the annotation."
+      "explanation": "Spring Kafka creates `orders-retry-0`, `orders-retry-1` ... and a `-dlt` topic, so a slow retry never blocks other records on the main topic. The cost is that ordering across the retried record and later records is lost. `attempts` is a `String` in the annotation."
     },
     {
       "id": "error-deserializer",
@@ -243,8 +243,8 @@
       "type": "assertion",
       "difficulty": 3,
       "prompt": "Read the assertion A and the reason R, then choose the correct relationship between them.",
-      "assertion": "A record with an undeserialisable payload can keep a Spring Kafka consumer failing in a loop unless the value deserializer is wrapped in an ErrorHandlingDeserializer.",
-      "reason": "The poll() call throws while deserialising the bad record, before the listener or its error handler is ever invoked for it.",
+      "assertion": "A record with an undeserialisable payload can keep a Spring Kafka consumer failing in a loop unless the value deserializer is wrapped in an `ErrorHandlingDeserializer`.",
+      "reason": "The `poll()` call throws while deserialising the bad record, before the listener or its error handler is ever invoked for it.",
       "correct": [
         "a"
       ],
@@ -254,7 +254,7 @@
         "c": "Not this one: A is true while R is false does not describe this pair; check the truth of R again.",
         "d": "Not this one: A is false while R is true does not describe this pair; check the truth of A again."
       },
-      "explanation": "ErrorHandlingDeserializer captures the failure and passes it to the container as a header, so DefaultErrorHandler can dead-letter it. Configure the delegate through spring.deserializer.value.delegate.class."
+      "explanation": "`ErrorHandlingDeserializer` captures the failure and passes it to the container as a header, so `DefaultErrorHandler` can dead-letter it. Configure the delegate through `spring.deserializer.value.delegate.class`."
     },
     {
       "id": "listener-transaction",
@@ -262,7 +262,7 @@
       "type": "assertion",
       "difficulty": 3,
       "prompt": "Read the assertion A and the reason R, then choose the correct relationship between them.",
-      "assertion": "A @Transactional @KafkaListener method makes the database write and the offset commit one atomic unit.",
+      "assertion": "A `@Transactional` `@KafkaListener` method makes the database write and the offset commit one atomic unit.",
       "reason": "Offsets are stored in a Kafka topic, which is a separate system from the relational database.",
       "correct": [
         "d"
@@ -281,7 +281,7 @@
       "type": "assertion",
       "difficulty": 3,
       "prompt": "Read the assertion A and the reason R, then choose the correct relationship between them.",
-      "assertion": "A RabbitMQ queue declared with x-dead-letter-exchange re-routes messages that a Spring AMQP listener rejects without requeue.",
+      "assertion": "A RabbitMQ queue declared with `x-dead-letter-exchange` re-routes messages that a Spring AMQP listener rejects without requeue.",
       "reason": "The dead-letter exchange feature only works for stream queues, not for classic or quorum queues.",
       "correct": [
         "c"
@@ -292,7 +292,7 @@
         "c": "Correct: A is true for classic and quorum queues. R is false.",
         "d": "Not this one: A is false while R is true does not describe this pair; check the truth of A again."
       },
-      "explanation": "Declare the DLX and dead-letter queue as beans (QueueBuilder.durable(\"orders\").deadLetterExchange(\"orders.dlx\")). The x-death header carries the reason and count."
+      "explanation": "Declare the DLX and dead-letter queue as beans (`QueueBuilder.durable(\"orders\").deadLetterExchange(\"orders.dlx\")`). The `x-death` header carries the reason and count."
     },
     {
       "id": "key-ordering",
@@ -301,7 +301,7 @@
       "difficulty": 2,
       "prompt": "Read the assertion A and the reason R, then choose the correct relationship between them.",
       "assertion": "Sending every event with the order id as the record key keeps the events of one order in order for its consumers.",
-      "reason": "Kafka stores consumer offsets in an internal topic called __consumer_offsets.",
+      "reason": "Kafka stores consumer offsets in an internal topic called `__consumer_offsets`.",
       "correct": [
         "b"
       ],
@@ -311,19 +311,19 @@
         "c": "Not this one: A is true while R is false does not describe this pair; check the truth of R again.",
         "d": "Not this one: A is false while R is true does not describe this pair; check the truth of A again."
       },
-      "explanation": "KafkaTemplate.send(\"orders\", orderId, payload) hashes the key to a partition, and one partition is read by one group member in order."
+      "explanation": "`KafkaTemplate.send(\"orders\", orderId, payload)` hashes the key to a partition, and one partition is read by one group member in order."
     },
     {
       "id": "tx-send",
       "concept": "Outbox pattern",
       "type": "truefalse",
       "difficulty": 2,
-      "prompt": "True or false: calling kafkaTemplate.send(...) inside a @Transactional service method makes the Kafka publish roll back if the database transaction later rolls back.",
+      "prompt": "True or false: calling `kafkaTemplate.send(...)` inside a `@Transactional` service method makes the Kafka publish roll back if the database transaction later rolls back.",
       "options": [
         {
           "id": "a",
           "text": "True",
-          "why": "KafkaTemplate sends through the Kafka client, which is not enlisted in a JDBC transaction by default."
+          "why": "`KafkaTemplate` sends through the Kafka client, which is not enlisted in a JDBC transaction by default."
         },
         {
           "id": "b",
@@ -334,14 +334,14 @@
       "correct": [
         "b"
       ],
-      "explanation": "Use the transactional outbox: insert an event row in the same database transaction and publish it from a relay, or from log-based capture. Alternatively write an AFTER_COMMIT TransactionalEventListener, which still loses the event if the process dies after commit."
+      "explanation": "Use the transactional outbox: insert an event row in the same database transaction and publish it from a relay, or from log-based capture. Alternatively write an `AFTER_COMMIT` `TransactionalEventListener`, which still loses the event if the process dies after commit."
     },
     {
       "id": "outbox-service",
       "concept": "Outbox pattern",
       "type": "code",
       "difficulty": 3,
-      "prompt": "Inside a @Transactional method placeOrder(Order o) that has OrderRepository orders and OutboxRepository outbox, write the two lines that save the order and save a new OutboxEvent(\"OrderCreated\", o.getId()) so both commit atomically.",
+      "prompt": "Inside a `@Transactional` method `placeOrder(Order o)` that has `OrderRepository orders` and `OutboxRepository outbox`, write the two lines that save the order and save a `new OutboxEvent(\"OrderCreated\", o.getId())` so both commit atomically.",
       "language": "java",
       "starter": "@Transactional\npublic void placeOrder(Order o) {\n",
       "checks": [
@@ -359,14 +359,14 @@
         }
       ],
       "model": "    orders.save(o);\n    outbox.save(new OutboxEvent(\"OrderCreated\", o.getId()));\n}",
-      "explanation": "Both rows commit or roll back together. A relay (a scheduled poller using FOR UPDATE SKIP LOCKED, or Debezium) publishes the outbox rows afterwards, giving at-least-once delivery."
+      "explanation": "Both rows commit or roll back together. A relay (a scheduled poller using `FOR UPDATE SKIP LOCKED`, or Debezium) publishes the outbox rows afterwards, giving at-least-once delivery."
     },
     {
       "id": "jdbc-dedup",
       "concept": "Idempotent consumers",
       "type": "code",
       "difficulty": 3,
-      "prompt": "With a JdbcTemplate named jdbc and a String id, write the Java statement that inserts id into processed_messages(message_id) with ON CONFLICT DO NOTHING, storing the affected row count in an int named rows, then returns from the method when the message was already seen.",
+      "prompt": "With a `JdbcTemplate` named `jdbc` and a `String id`, write the Java statement that inserts `id` into `processed_messages(message_id)` with `ON CONFLICT DO NOTHING`, storing the affected row count in an `int` named `rows`, then returns from the method when the message was already seen.",
       "language": "java",
       "checks": [
         {
@@ -387,14 +387,14 @@
         }
       ],
       "model": "int rows = jdbc.update(\"INSERT INTO processed_messages (message_id) VALUES (?) ON CONFLICT (message_id) DO NOTHING\", id);\nif (rows == 0) return;",
-      "explanation": "Run this in the same transaction as the business effect. The unique key turns an at-least-once delivery into effectively-once processing. Catching DuplicateKeyException is the alternative when you use a plain INSERT."
+      "explanation": "Run this in the same transaction as the business effect. The unique key turns an at-least-once delivery into effectively-once processing. Catching `DuplicateKeyException` is the alternative when you use a plain INSERT."
     },
     {
       "id": "listener-concurrency",
       "concept": "Spring for Kafka",
       "type": "integer",
       "difficulty": 2,
-      "prompt": "A topic has 6 partitions. Two application instances run a @KafkaListener with concurrency = 4 in the same consumer group. How many container threads are actually assigned partitions across both instances?",
+      "prompt": "A topic has 6 partitions. Two application instances run a `@KafkaListener` with `concurrency = 4` in the same consumer group. How many container threads are actually assigned partitions across both instances?",
       "answer": 6,
       "unit": "threads",
       "explanation": "The two instances start 8 consumer threads, but 6 partitions can feed only 6 of them. The other 2 sit idle until a rebalance gives them work."
@@ -404,7 +404,7 @@
       "concept": "Producer settings",
       "type": "code",
       "difficulty": 2,
-      "prompt": "Write the application.yml fragment that makes the Spring Boot Kafka producer wait for all in-sync replicas (acks all) and enables idempotence through the pass-through properties map.",
+      "prompt": "Write the `application.yml` fragment that makes the Spring Boot Kafka producer wait for all in-sync replicas (`acks` all) and enables idempotence through the pass-through properties map.",
       "language": "yaml",
       "starter": "spring:\n  kafka:\n    producer:\n",
       "checks": [
@@ -422,7 +422,7 @@
         }
       ],
       "model": "spring:\n  kafka:\n    producer:\n      acks: all\n      properties:\n        enable.idempotence: true",
-      "explanation": "Idempotence needs acks=all and keeps per-partition order with retries. Since Kafka 3.0 clients both are the default, but stating them makes the intent explicit and survives configuration overrides."
+      "explanation": "Idempotence needs `acks=all` and keeps per-partition order with retries. Since Kafka 3.0 clients both are the default, but stating them makes the intent explicit and survives configuration overrides."
     },
     {
       "id": "consumer-fill",
@@ -443,18 +443,18 @@
         "group-id",
         "read_uncommitted"
       ],
-      "explanation": "The container commits according to its ack mode, so leaving client auto-commit on would add a second, uncoordinated commit path. auto-offset-reset only applies when the group has no valid committed offset."
+      "explanation": "The container commits according to its ack mode, so leaving client auto-commit on would add a second, uncoordinated commit path. `auto-offset-reset` only applies when the group has no valid committed offset."
     },
     {
       "id": "send-failure",
       "concept": "Producer settings",
       "type": "single",
       "difficulty": 2,
-      "prompt": "How can code using KafkaTemplate find out that a send(...) eventually failed after the client exhausted its retries?",
+      "prompt": "How can code using `KafkaTemplate` find out that a `send(...)` eventually failed after the client exhausted its retries?",
       "options": [
         {
           "id": "a",
-          "text": "Handle the CompletableFuture returned by send, or block on get().",
+          "text": "Handle the `CompletableFuture` returned by send, or block on `get()`.",
           "why": "Correct: the future completes exceptionally when delivery fails."
         },
         {
@@ -476,7 +476,7 @@
       "correct": [
         "a"
       ],
-      "explanation": "A fire-and-forget send silently loses failures. Also set delivery.timeout.ms and log or dead-letter from the callback. In Spring Kafka 3 the return type is CompletableFuture<SendResult>."
+      "explanation": "A fire-and-forget send silently loses failures. Also set `delivery.timeout.ms` and log or dead-letter from the callback. In Spring Kafka 3 the return type is `CompletableFuture<SendResult>`."
     }
   ]
 }

@@ -16,7 +16,7 @@
       "concept": "Two pointers",
       "type": "code",
       "difficulty": 2,
-      "prompt": "Write a Java method int maxArea(int[] h) for \"container with most water\": the bars at indices l and r hold min(h[l], h[r]) * (r - l) water. Use two pointers starting at both ends.",
+      "prompt": "Write a Java method `int maxArea(int[] h)` for \"container with most water\": the bars at indices `l` and `r` hold `min(h[l], h[r]) * (r - l)` water. Use two pointers starting at both ends.",
       "language": "java",
       "starter": "static int maxArea(int[] h) {\n  \n}",
       "checks": [
@@ -49,7 +49,7 @@
       "concept": "Binary search",
       "type": "code",
       "difficulty": 2,
-      "prompt": "Write a Java method int lowerBound(int[] a, int x) returning the first index i with a[i] >= x in a sorted array (a.length if none). Use a half-open range [lo, hi).",
+      "prompt": "Write a Java method `int lowerBound(int[] a, int x)` returning the first index i with `a[i] >= x` in a sorted array (`a.length` if none). Use a half-open range `[lo, hi)`.",
       "language": "java",
       "starter": "static int lowerBound(int[] a, int x) {\n  \n}",
       "checks": [
@@ -82,7 +82,7 @@
       "concept": "Sliding window",
       "type": "code",
       "difficulty": 2,
-      "prompt": "Write a Java method int lengthOfLongestSubstring(String s) returning the length of the longest substring without repeating characters, using a sliding window and an int[128] of last-seen positions.",
+      "prompt": "Write a Java method `int lengthOfLongestSubstring(String s)` returning the length of the longest substring without repeating characters, using a sliding window and an `int[128]` of last-seen positions.",
       "language": "java",
       "starter": "static int lengthOfLongestSubstring(String s) {\n  \n}",
       "checks": [
@@ -108,14 +108,14 @@
         }
       ],
       "model": "static int lengthOfLongestSubstring(String s) {\n  int[] last = new int[128];\n  Arrays.fill(last, -1);\n  int left = 0, best = 0;\n  for (int right = 0; right < s.length(); right++) {\n    char c = s.charAt(right);\n    left = Math.max(left, last[c] + 1);\n    last[c] = right;\n    best = Math.max(best, right - left + 1);\n  }\n  return best;\n}",
-      "explanation": "The Math.max(left, ...) is the part people forget: for \"abba\" the second a must not drag the left edge backwards. A HashMap<Character, Integer> version is equally correct."
+      "explanation": "The `Math.max(left, ...)` is the part people forget: for `\"abba\"` the second a must not drag the left edge backwards. A `HashMap<Character, Integer>` version is equally correct."
     },
     {
       "id": "sliding-max",
       "concept": "Monotonic deque",
       "type": "code",
       "difficulty": 3,
-      "prompt": "Write a Java method int[] slidingMax(int[] nums, int k) returning the maximum of every window of size k in O(n), using an ArrayDeque of indices.",
+      "prompt": "Write a Java method `int[] slidingMax(int[] nums, int k)` returning the maximum of every window of size k in O(n), using an `ArrayDeque` of indices.",
       "language": "java",
       "starter": "static int[] slidingMax(int[] nums, int k) {\n  \n}",
       "checks": [
@@ -152,23 +152,23 @@
       "left": [
         {
           "id": "a",
-          "text": "deque.push(x)"
+          "text": "`deque.push(x)`"
         },
         {
           "id": "b",
-          "text": "deque.offer(x)"
+          "text": "`deque.offer(x)`"
         },
         {
           "id": "c",
-          "text": "deque.pop()"
+          "text": "`deque.pop()`"
         },
         {
           "id": "d",
-          "text": "deque.peekLast()"
+          "text": "`deque.peekLast()`"
         },
         {
           "id": "e",
-          "text": "deque.pollFirst()"
+          "text": "`deque.pollFirst()`"
         }
       ],
       "right": [
@@ -186,11 +186,11 @@
         },
         {
           "id": "s",
-          "text": "Reads the back without removing it, returning null if empty"
+          "text": "Reads the back without removing it, returning `null` if empty"
         },
         {
           "id": "t",
-          "text": "Removes and returns the front, returning null if empty"
+          "text": "Removes and returns the front, returning `null` if empty"
         },
         {
           "id": "u",
@@ -204,17 +204,17 @@
         "d": "s",
         "e": "t"
       },
-      "explanation": "The name families matter: push/pop/peek work on the front, offer/poll/peek on the queue ends, and the \"poll\" and \"peek\" forms return null while \"pop\" and \"remove\" throw."
+      "explanation": "The name families matter: `push/pop/peek` work on the front, `offer/poll/peek` on the queue ends, and the \"poll\" and \"peek\" forms return null while \"pop\" and \"remove\" throw."
     },
     {
       "id": "binary-search-neg",
       "concept": "Binary search",
       "type": "integer",
       "difficulty": 2,
-      "prompt": "What does Arrays.binarySearch(new int[]{1, 3, 5, 7}, 4) return?",
+      "prompt": "What does `Arrays.binarySearch(new int[]{1, 3, 5, 7}, 4)` return?",
       "answer": -3,
       "tolerance": 0,
-      "explanation": "For a missing key it returns -(insertion point) - 1. The insertion point of 4 is index 2 (before 5), so the result is -3. Test the return value with < 0, never with == -1."
+      "explanation": "For a missing key it returns `-(insertion point) - 1`. The insertion point of 4 is index 2 (before 5), so the result is `-3`. Test the return value with `< 0`, never with `== -1`."
     },
     {
       "id": "mid-overflow",
@@ -222,8 +222,8 @@
       "type": "assertion",
       "difficulty": 2,
       "prompt": "Evaluate the assertion and the reason.",
-      "assertion": "In Java, int mid = (lo + hi) / 2 can produce a negative mid for very large arrays.",
-      "reason": "Java int arithmetic wraps around silently when the sum exceeds Integer.MAX_VALUE.",
+      "assertion": "In Java, `int mid = (lo + hi) / 2` can produce a negative mid for very large arrays.",
+      "reason": "Java `int` arithmetic wraps around silently when the sum exceeds `Integer.MAX_VALUE`.",
       "correct": [
         "a"
       ],
@@ -233,7 +233,7 @@
         "c": "R is true, so c is wrong.",
         "d": "A is true, so d is wrong."
       },
-      "explanation": "I ran it: with lo = 1,500,000,000 and hi = 2,000,000,000 the naive form gives -397483648 while the safe forms give 1,750,000,000. The bug was famously present in the JDK binary search for years."
+      "explanation": "I ran it: with `lo = 1,500,000,000` and `hi = 2,000,000,000` the naive form gives `-397483648` while the safe forms give `1,750,000,000`. The bug was famously present in the JDK binary search for years."
     },
     {
       "id": "arraydeque-speed",
@@ -241,8 +241,8 @@
       "type": "assertion",
       "difficulty": 3,
       "prompt": "Evaluate the assertion and the reason.",
-      "assertion": "Used as a queue, ArrayDeque is usually faster than LinkedList.",
-      "reason": "ArrayDeque allocates a node object with prev and next pointers for every element.",
+      "assertion": "Used as a queue, `ArrayDeque` is usually faster than `LinkedList`.",
+      "reason": "`ArrayDeque` allocates a node object with prev and next pointers for every element.",
       "correct": [
         "c"
       ],
@@ -252,7 +252,7 @@
         "c": "Correct: A is true (the Javadoc says so), but ArrayDeque stores elements in a resizable circular array, not in per-element nodes; the node-per-element design is LinkedList.",
         "d": "A is true, so d is wrong."
       },
-      "explanation": "The array layout gives better cache locality and no per-element allocation. ArrayDeque rejects null elements; LinkedList accepts them."
+      "explanation": "The array layout gives better cache locality and no per-element allocation. `ArrayDeque` rejects null elements; `LinkedList` accepts them."
     },
     {
       "id": "stack-fill",
@@ -281,58 +281,58 @@
       "concept": "Stack and deque",
       "type": "truefalse",
       "difficulty": 1,
-      "prompt": "In modern Java code, java.util.Stack is the recommended class for a stack; ArrayDeque is only for queues.",
+      "prompt": "In modern Java code, `java.util.Stack` is the recommended class for a `stack;` `ArrayDeque` is only for queues.",
       "options": [
         {
           "id": "a",
           "text": "True",
-          "why": "java.util.Stack is a legacy Vector-based class with synchronised methods."
+          "why": "`java.util.Stack` is a legacy `Vector`-based class with synchronised methods."
         },
         {
           "id": "b",
           "text": "False",
-          "why": "Correct: the Javadoc recommends Deque implementations such as ArrayDeque for stack operations."
+          "why": "Correct: the Javadoc recommends Deque implementations such as `ArrayDeque` for stack operations."
         }
       ],
       "correct": [
         "b"
       ],
-      "explanation": "Stack extends Vector and synchronises every call. Prefer Deque<Integer> st = new ArrayDeque<>()."
+      "explanation": "`Stack` extends `Vector` and synchronises every call. Prefer `Deque<Integer> st = new ArrayDeque<>()`."
     },
     {
       "id": "deque-null",
       "concept": "Stack and deque",
       "type": "truefalse",
       "difficulty": 2,
-      "prompt": "ArrayDeque does not accept null elements, so adding null throws a NullPointerException.",
+      "prompt": "`ArrayDeque` does not accept `null` elements, so adding null throws a `NullPointerException`.",
       "options": [
         {
           "id": "a",
           "text": "True",
-          "why": "Correct: null is reserved as the \"empty\" return value of poll and peek, so it is rejected on insertion."
+          "why": "Correct: `null` is reserved as the \"empty\" return value of `poll` and `peek`, so it is rejected on insertion."
         },
         {
           "id": "b",
           "text": "False",
-          "why": "It does throw; the check exists so poll() == null can mean empty."
+          "why": "It does throw; the check exists so `poll() == null` can mean empty."
         }
       ],
       "correct": [
         "a"
       ],
-      "explanation": "LinkedList and ArrayList accept null; ArrayDeque and PriorityQueue do not. I ran add(null) on an ArrayDeque and got the exception."
+      "explanation": "`LinkedList` and `ArrayList` accept null; `ArrayDeque` and `PriorityQueue` do not. I ran `add(null)` on an ArrayDeque and got the exception."
     },
     {
       "id": "bs-bug",
       "concept": "Binary search",
       "type": "single",
       "difficulty": 2,
-      "prompt": "A Java loop reads while (lo <= hi) { int mid = (lo + hi) / 2; if (a[mid] < target) lo = mid; else hi = mid - 1; }. Which situation makes it loop forever?",
+      "prompt": "A Java loop reads `while (lo <= hi) { int mid = (lo + hi) / 2; if (a[mid] < target) lo = mid; else hi = mid - 1; }`. Which situation makes it loop forever?",
       "options": [
         {
           "id": "a",
-          "text": "a[mid] < target while mid == lo, e.g. lo = 0, hi = 1",
-          "why": "Correct: lo = mid leaves lo unchanged, so the range never shrinks."
+          "text": "`a[mid] < target` while `mid == lo`, e.g. `lo = 0, hi = 1`",
+          "why": "Correct: `lo = mid` leaves lo unchanged, so the range never shrinks."
         },
         {
           "id": "b",
@@ -342,25 +342,25 @@
         {
           "id": "c",
           "text": "The target is smaller than every element in the whole array",
-          "why": "hi keeps decreasing until it drops below lo, so the loop exits."
+          "why": "`hi` keeps decreasing until it drops below `lo`, so the loop exits."
         },
         {
           "id": "d",
           "text": "The array length happens to be an odd number of elements",
-          "why": "Parity does not matter; the update rule for lo does."
+          "why": "Parity does not matter; the update rule for `lo` does."
         }
       ],
       "correct": [
         "a"
       ],
-      "explanation": "Use lo = mid + 1 for the \"go right\" branch (or switch to the half-open template). Always check that every branch shrinks the range."
+      "explanation": "Use `lo = mid + 1` for the \"go right\" branch (or switch to the half-open template). Always check that every branch shrinks the range."
     },
     {
       "id": "binary-search-api",
       "concept": "Binary search",
       "type": "multi",
       "difficulty": 2,
-      "prompt": "Which statements about Arrays.binarySearch and Collections.binarySearch are true? Select all that apply.",
+      "prompt": "Which statements about `Arrays.binarySearch` and `Collections.binarySearch` are true? Select all that apply.",
       "options": [
         {
           "id": "a",
@@ -374,12 +374,12 @@
         },
         {
           "id": "c",
-          "text": "A missing key always returns -1.",
-          "why": "False: it returns -(insertion point) - 1, which is -1 only when the insertion point is 0."
+          "text": "A missing key always returns `-1`.",
+          "why": "False: it returns `-(insertion point) - 1`, which is `-1` only when the insertion point is 0."
         },
         {
           "id": "d",
-          "text": "On a LinkedList, Collections.binarySearch still makes O(n) link traversals.",
+          "text": "On a `LinkedList`, `Collections.binarySearch` still makes O(n) link traversals.",
           "why": "Correct: it uses an iterator-based search, so only the comparisons are O(log n)."
         }
       ],
@@ -388,7 +388,7 @@
         "b",
         "d"
       ],
-      "explanation": "Use lowerBound-style loops when you need the first or last match, and remember the negative return encoding."
+      "explanation": "Use `lowerBound`-style loops when you need the first or last match, and remember the negative return encoding."
     }
   ]
 }

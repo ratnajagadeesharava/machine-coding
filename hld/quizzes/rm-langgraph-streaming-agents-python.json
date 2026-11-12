@@ -16,9 +16,9 @@
       "concept": "Subgraphs",
       "type": "integer",
       "difficulty": 3,
-      "prompt": "Parent and subgraph share the key x declared as Annotated[list, operator.add]. The parent node p1 returns {'x': ['p1']}, then the subgraph node sub runs; inside, node s1 returns {'x': ['s1']}. The parent started with x = []. How many items are in x at the end?",
+      "prompt": "Parent and subgraph share the key `x` declared as `Annotated[list, operator.add]`. The parent node `p1` returns `{'x': ['p1']}`, then the subgraph node `sub` `runs;` inside, node `s1` returns `{'x': ['s1']}`. The parent started with `x = []`. How many items are in `x` at the end?",
       "answer": 3,
-      "explanation": "The subgraph receives x = ['p1'], appends 's1' and returns its full state ['p1', 's1']; the parent's add reducer then appends that to ['p1'], giving ['p1', 'p1', 's1']: 3 items. I ran it. Fix by giving the subgraph its own state schema or an overwrite/dedupe reducer.",
+      "explanation": "The subgraph receives x = `['p1']`, appends 's1' and returns its full state `['p1', 's1']`; the parent's add reducer then appends that to `['p1']`, giving `['p1', 'p1', 's1']`: 3 items. I ran it. Fix by giving the subgraph its own state schema or an overwrite/dedupe reducer.",
       "unit": "items"
     },
     {
@@ -26,9 +26,9 @@
       "concept": "Copilot graph",
       "type": "integer",
       "difficulty": 2,
-      "prompt": "Reference design used in this roadmap, an 11-node copilot graph: guard_in (input policy check, no LLM), router (LLM classifier), retrieve (vector search), grade_docs (LLM relevance check), tool_agent (LLM with bind_tools), tools (ToolNode), approval (human interrupt), sql_gen (LLM text-to-SQL), sql_validate (code check), sql_exec (read-only run), respond (LLM answer, streamed). A tool question takes exactly one tool round with no approval: guard_in, router, tool_agent, tools, tool_agent, respond. How many LLM calls does it make?",
+      "prompt": "Reference design used in this roadmap, an 11-node copilot graph: `guard_in` (input policy check, no LLM), router (LLM classifier), retrieve (vector search), `grade_docs` (LLM relevance check), `tool_agent` (LLM with `bind_tools`), tools (`ToolNode`), approval (human interrupt), `sql_gen` (LLM text-to-SQL), `sql_validate` (code check), `sql_exec` (read-only run), respond (LLM answer, streamed). A tool question takes exactly one tool round with no approval: `guard_in`, router, `tool_agent`, tools, `tool_agent`, respond. How many LLM calls does it make?",
       "answer": 4,
-      "explanation": "LLM nodes on that path: router (1), tool_agent twice (2 and 3: one to request the tool and one after the result) and respond (4). guard_in, tools are not LLM nodes. Count LLM calls to estimate cost and latency per path.",
+      "explanation": "LLM nodes on that path: router (1), `tool_agent` twice (2 and 3: one to request the tool and one after the result) and respond (4). `guard_in`, tools are not LLM nodes. Count LLM calls to estimate cost and latency per path.",
       "unit": "LLM calls"
     },
     {
@@ -36,9 +36,9 @@
       "concept": "Copilot graph",
       "type": "integer",
       "difficulty": 3,
-      "prompt": "Reference design used in this roadmap, an 11-node copilot graph: guard_in (input policy check, no LLM), router (LLM classifier), retrieve (vector search), grade_docs (LLM relevance check), tool_agent (LLM with bind_tools), tools (ToolNode), approval (human interrupt), sql_gen (LLM text-to-SQL), sql_validate (code check), sql_exec (read-only run), respond (LLM answer, streamed). A data question generates SQL, and sql_validate rejects the first two attempts and routes back to sql_gen each time; the third attempt passes and executes. How many LLM calls are made in total?",
+      "prompt": "Reference design used in this roadmap, an 11-node copilot graph: `guard_in` (input policy check, no LLM), `router` (LLM classifier), `retrieve` (vector search), `grade_docs` (LLM relevance check), `tool_agent` (LLM with `bind_tools`), `tools` (`ToolNode`), `approval` (human interrupt), `sql_gen` (LLM text-to-SQL), `sql_validate` (code check), `sql_exec` (read-only run), `respond` (LLM answer, streamed). A data question generates SQL, and `sql_validate` rejects the first two attempts and routes back to `sql_gen` `each time;` the third attempt passes and executes. How many LLM calls are made in total?",
       "answer": 5,
-      "explanation": "router (1) + sql_gen three times (3) + respond (1) = 5. sql_validate and sql_exec are plain code. Cap the regeneration loop with a counter in state so a stubborn failure does not run forever.",
+      "explanation": "router (1) + `sql_gen` three times (3) + respond (1) = 5. `sql_validate` and `sql_exec` are plain code. Cap the regeneration loop with a counter in state so a stubborn failure does not run forever.",
       "unit": "LLM calls"
     },
     {
@@ -47,7 +47,7 @@
       "type": "assertion",
       "difficulty": 3,
       "prompt": "Assertion and reason: read both statements and choose the right option.",
-      "assertion": "A subgraph that shares an operator.add list key with its parent can make entries appear twice in the parent state.",
+      "assertion": "A subgraph that shares an `operator.add` list key with its parent can make entries appear twice in the parent state.",
       "reason": "The subgraph returns its whole state for the shared key, and the parent's reducer appends it to what the parent already holds.",
       "correct": [
         "a"
@@ -58,7 +58,7 @@
         "c": "R is true, so c is wrong.",
         "d": "A is true, so d is wrong."
       },
-      "explanation": "Options: transform state at the boundary (call the subgraph inside a node and return only new items), use a separate schema in the subgraph, or use an id-based reducer like add_messages."
+      "explanation": "Options: transform state at the boundary (call the subgraph inside a node and return only new items), use a separate schema in the subgraph, or use an id-based reducer like `add_messages`."
     },
     {
       "id": "values-vs-updates",
@@ -66,8 +66,8 @@
       "type": "assertion",
       "difficulty": 2,
       "prompt": "Assertion and reason: read both statements and choose the right option.",
-      "assertion": "stream_mode='values' emits the full state after every step, so its payload grows as the state grows.",
-      "reason": "stream_mode='updates' emits only the changes that each node returned, keyed by node name.",
+      "assertion": "`stream_mode`='values' emits the full state after every step, so its payload grows as the state grows.",
+      "reason": "`stream_mode`='updates' emits only the changes that each node returned, keyed by node name.",
       "correct": [
         "b"
       ],
@@ -85,7 +85,7 @@
       "type": "assertion",
       "difficulty": 2,
       "prompt": "Assertion and reason: read both statements and choose the right option.",
-      "assertion": "In the supervisor pattern, the supervisor node can pick the next worker with Command(goto=worker_name).",
+      "assertion": "In the supervisor pattern, the supervisor node can pick the next worker with `Command(goto=worker_name)`.",
       "reason": "Workers can never hand control back to the supervisor once they have run.",
       "correct": [
         "c"
@@ -104,8 +104,8 @@
       "type": "assertion",
       "difficulty": 2,
       "prompt": "Assertion and reason: read both statements and choose the right option.",
-      "assertion": "stream_mode='messages' emits one item each time a node finishes.",
-      "reason": "stream_mode='messages' emits LLM token chunks together with metadata such as langgraph_node.",
+      "assertion": "`stream_mode='messages'` emits one item each time a node finishes.",
+      "reason": "`stream_mode='messages'` emits LLM token chunks together with metadata such as `langgraph_node`.",
       "correct": [
         "d"
       ],
@@ -115,14 +115,14 @@
         "c": "R is true, so c is wrong.",
         "d": "A is false: per-node-completion is the updates mode; R is true and describes messages mode, which I confirmed by running."
       },
-      "explanation": "In messages mode you receive (message_chunk, metadata) tuples; filter on metadata['langgraph_node'] to show only the final answer node, not router or SQL generation tokens."
+      "explanation": "In messages mode you receive `(message_chunk, metadata)` tuples; filter on `metadata['langgraph_node']` to show only the final answer node, not router or SQL generation tokens."
     },
     {
       "id": "stream-modes-map",
       "concept": "Streaming modes",
       "type": "matrix",
       "difficulty": 2,
-      "prompt": "Match each stream_mode value with what it emits.",
+      "prompt": "Match each `stream_mode` value with what it emits.",
       "left": [
         {
           "id": "a",
@@ -178,7 +178,7 @@
         "d": "s",
         "e": "t"
       },
-      "explanation": "Passing a list of modes returns (mode, chunk) tuples. The final output alone is simply invoke()."
+      "explanation": "Passing a list of modes returns (mode, chunk) tuples. The final output alone is simply `invoke()`."
     },
     {
       "id": "copilot-node-roles",
@@ -189,15 +189,15 @@
       "left": [
         {
           "id": "a",
-          "text": "guard_in"
+          "text": "`guard_in`"
         },
         {
           "id": "b",
-          "text": "grade_docs"
+          "text": "`grade_docs`"
         },
         {
           "id": "c",
-          "text": "sql_validate"
+          "text": "`sql_validate`"
         },
         {
           "id": "d",
@@ -223,11 +223,11 @@
         },
         {
           "id": "s",
-          "text": "Pauses with interrupt() until a human approves a risky action"
+          "text": "Pauses with `interrupt()` until a human approves a risky action"
         },
         {
           "id": "t",
-          "text": "Executes the tool calls requested by the model (ToolNode)"
+          "text": "Executes the tool calls requested by the model (`ToolNode`)"
         },
         {
           "id": "u",
@@ -241,7 +241,7 @@
         "d": "s",
         "e": "t"
       },
-      "explanation": "The other nodes: router (classifies the intent), retrieve (vector search), tool_agent (LLM with bound tools), sql_gen, sql_exec (read-only execution with timeout) and respond (final answer, the node whose tokens you stream)."
+      "explanation": "The other nodes: router (classifies the intent), retrieve (vector search), `tool_agent` (LLM with bound tools), `sql_gen`, `sql_exec` (read-only execution with timeout) and respond (final answer, the node whose tokens you stream)."
     },
     {
       "id": "copilot-edges",
@@ -263,7 +263,7 @@
         "approval",
         "retrieve"
       ],
-      "explanation": "Drawing it from memory: guard_in -> router -> {retrieve -> grade_docs | tool_agent <-> tools (via approval for risky calls) | sql_gen -> sql_validate -> sql_exec} -> respond -> END."
+      "explanation": "Drawing it from memory: `guard_in` -> router -> {retrieve -> `grade_docs` | `tool_agent` <-> tools (via approval for risky calls) | `sql_gen` -> `sql_validate` -> `sql_exec`} -> respond -> END."
     },
     {
       "id": "stream-mode-words",
@@ -312,14 +312,14 @@
         }
       ],
       "model": "for chunk, meta in app.stream(inputs, cfg, stream_mode=\"messages\"):\n    if meta[\"langgraph_node\"] == \"respond\":\n        print(chunk.content, end=\"\")",
-      "explanation": "meta.get('langgraph_node') works equally if you adapt the check by comparing to 'respond'; the regex also accepts the subscript form. Without the filter you would stream router and SQL-generation tokens to the user."
+      "explanation": "`meta.get`('`langgraph_node`') works equally if you adapt the check by comparing to 'respond'; the regex also accepts the subscript form. Without the filter you would stream router and SQL-generation tokens to the user."
     },
     {
       "id": "send-fan-out",
       "concept": "Send fan-out",
       "type": "code",
       "difficulty": 3,
-      "prompt": "Write a routing function fan_out(state) for add_conditional_edges that sends every item in state['items'] to the node 'work' in parallel, as a separate task whose input is {'item': item}.",
+      "prompt": "Write a routing function `fan_out(state)` for `add_conditional_edges` that sends every item in `state['items']` to the node `'work'` in parallel, as a separate task whose input is `{'item': item}`.",
       "language": "python",
       "checks": [
         {
@@ -344,7 +344,7 @@
         }
       ],
       "model": "def fan_out(state):\n    return [Send(\"work\", {\"item\": it}) for it in state[\"items\"]]",
-      "explanation": "This is LangGraph's map-reduce pattern; give the collected key a reducer such as operator.add. I ran an equivalent graph and each item was processed by its own task.",
+      "explanation": "This is LangGraph's map-reduce pattern; give the collected key a reducer such as `operator.add`. I ran an equivalent graph and each item was processed by its own task.",
       "starter": "from langgraph.types import Send\n"
     },
     {
@@ -352,7 +352,7 @@
       "concept": "Subgraphs",
       "type": "code",
       "difficulty": 2,
-      "prompt": "A compiled graph sql_sub exists. Add it as a node named sql_agent to the builder g, wire START -> sql_agent -> END and compile it into app.",
+      "prompt": "A compiled graph `sql_sub` exists. Add it as a node named sql_agent to the builder g, wire START -> sql_agent -> END and compile it into app.",
       "language": "python",
       "checks": [
         {
@@ -373,7 +373,7 @@
         }
       ],
       "model": "g.add_node(\"sql_agent\", sql_sub)\ng.add_edge(START, \"sql_agent\")\ng.add_edge(\"sql_agent\", END)\napp = g.compile()",
-      "explanation": "A compiled graph is a runnable, so it can be a node directly when schemas share keys. Otherwise call sql_sub.invoke inside a wrapper function to map state in and out."
+      "explanation": "A compiled graph is a runnable, so it can be a node directly when schemas share keys. Otherwise call `sql_sub`.invoke inside a wrapper function to map state in and out."
     },
     {
       "id": "draw-mermaid",
@@ -397,18 +397,18 @@
         }
       ],
       "model": "print(app.get_graph().draw_mermaid())",
-      "explanation": "draw_mermaid_png() renders an image. Declare destinations (Command return types or add_node destinations) so Command-routed edges show up in the picture."
+      "explanation": "`draw_mermaid_png`() renders an image. Declare destinations (Command return types or `add_node` destinations) so Command-routed edges show up in the picture."
     },
     {
       "id": "copilot-approval-position",
       "concept": "Copilot graph",
       "type": "single",
       "difficulty": 3,
-      "prompt": "Reference design used in this roadmap, an 11-node copilot graph: guard_in (input policy check, no LLM), router (LLM classifier), retrieve (vector search), grade_docs (LLM relevance check), tool_agent (LLM with bind_tools), tools (ToolNode), approval (human interrupt), sql_gen (LLM text-to-SQL), sql_validate (code check), sql_exec (read-only run), respond (LLM answer, streamed). Where must the approval node sit for a risky write tool such as sending an email?",
+      "prompt": "Reference design used in this roadmap, an 11-node copilot graph: `guard_in` (input policy check, no LLM), router (LLM classifier), retrieve (vector search), `grade_docs` (LLM relevance check), `tool_agent` (LLM with `bind_tools`), tools (`ToolNode`), approval (human interrupt), `sql_gen` (LLM text-to-SQL), `sql_validate` (code check), `sql_exec` (read-only run), respond (LLM answer, streamed). Where must the approval node sit for a risky write tool such as sending an email?",
       "options": [
         {
           "id": "a",
-          "text": "Between tool_agent and tools, so the call runs only after a human resumes the graph.",
+          "text": "Between `tool_agent` and tools, so the call runs only after a human resumes the graph.",
           "why": "Right: the interrupt sits before the side effect, and the checkpointer keeps the pending call."
         },
         {
@@ -418,7 +418,7 @@
         },
         {
           "id": "c",
-          "text": "Inside guard_in, which approves or rejects every user message before the graph even starts.",
+          "text": "Inside `guard_in`, which approves or rejects every user message before the graph even starts.",
           "why": "Approving messages is not approving actions; the dangerous call is generated later by the model."
         },
         {
@@ -430,14 +430,14 @@
       "correct": [
         "a"
       ],
-      "explanation": "Human approval gates the action, not the chat. Pair it with idempotent tools and an audit entry; the node restarts after resume, so avoid side effects before interrupt()."
+      "explanation": "Human approval gates the action, not the chat. Pair it with idempotent tools and an audit entry; the node restarts after resume, so avoid side effects before `interrupt()`."
     },
     {
       "id": "custom-stream-writer",
       "concept": "Streaming modes",
       "type": "code",
       "difficulty": 2,
-      "prompt": "Inside a node work(state), emit the custom progress event {'progress': 'half'} with LangGraph's stream writer and return no state change. Then show how the caller of the compiled graph app (variables inputs and cfg exist) receives only those custom events.",
+      "prompt": "Inside a node `work(state)`, emit the custom progress event `{'progress': 'half'}` with LangGraph's stream writer and return no state change. Then show how the caller of the compiled graph `app` (variables `inputs` and `cfg` exist) receives only those custom events.",
       "language": "python",
       "starter": "from langgraph.config import get_stream_writer\n",
       "checks": [
@@ -459,7 +459,7 @@
         }
       ],
       "model": "def work(state):\n    writer = get_stream_writer()\n    writer({\"progress\": \"half\"})\n    return {}\n\nfor event in app.stream(inputs, cfg, stream_mode=\"custom\"):\n    print(event)",
-      "explanation": "get_stream_writer() returns a callable that pushes any payload into the custom stream (I ran it with stream_mode=['custom','updates'] and got both). Use it for progress bars and long-running tool status, separate from token streaming."
+      "explanation": "`get_stream_writer()` returns a callable that pushes any payload into the custom stream (I ran it with `stream_mode=['custom','updates']` and got both). Use it for progress bars and long-running tool status, separate from token streaming."
     }
   ]
 }

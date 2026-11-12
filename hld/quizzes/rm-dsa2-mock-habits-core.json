@@ -26,7 +26,7 @@
       "concept": "Complexity intuition",
       "type": "integer",
       "difficulty": 2,
-      "prompt": "The input has n = 10^5 elements and your idea is O(n^2). Assuming about 10^8 simple operations per second, roughly how many seconds will it take?",
+      "prompt": "The input has `n = 10^5` elements and your idea is O(n^2). Assuming about 10^8 simple operations per second, roughly how many seconds will it take?",
       "explanation": "n^2 = 10^10 operations, divided by 10^8 per second is 100 seconds, far too slow. An n of 10^5 signals you need O(n log n) or O(n). The 10^8 rate is a rule of thumb, not a guarantee.",
       "answer": 100,
       "unit": "seconds"
@@ -37,7 +37,7 @@
       "type": "integer",
       "difficulty": 2,
       "prompt": "Using log base 2, roughly how many millions of basic steps does an O(n log n) algorithm take for n = 10^6 (treat the constant as 1)?",
-      "explanation": "log2(10^6) is about 19.9, so n log n is about 2 * 10^7 steps, a fraction of a second at 10^8 simple operations per second. This is why n up to 10^6 usually allows O(n log n) but not O(n^2).",
+      "explanation": "`log2(10^6)` is about 19.9, so n log n is about 2 * 10^7 steps, a fraction of a second at 10^8 simple operations per second. This is why n up to 10^6 usually allows O(n log n) but not O(n^2).",
       "answer": 20,
       "tolerance": 1,
       "unit": "million steps"
@@ -113,8 +113,8 @@
       "concept": "Complexity intuition",
       "type": "single",
       "difficulty": 2,
-      "prompt": "A problem states n <= 2 * 10^5. What does that most strongly suggest about the target time complexity?",
-      "explanation": "n <= 20 suggests bitmask or backtracking, n <= 10^3 to 10^4 allows O(n^2), n up to 10^5-10^6 needs O(n log n) or O(n).",
+      "prompt": "A problem states `n <= 2 * 10^5`. What does that most strongly suggest about the target time complexity?",
+      "explanation": "`n <= 20` suggests bitmask or backtracking, n <= 10^3 to 10^4 allows O(n^2), n up to 10^5-10^6 needs O(n log n) or O(n).",
       "options": [
         {
           "id": "a",
@@ -146,7 +146,7 @@
       "concept": "Test cases",
       "type": "multi",
       "difficulty": 2,
-      "prompt": "You wrote merge(intervals) for merging overlapping closed intervals. Select all that apply: which inputs belong in your own test cases?",
+      "prompt": "You wrote `merge(intervals)` for merging overlapping closed intervals. Select all that apply: which inputs belong in your own test cases?",
       "explanation": "Good habit: empty/minimum, single element, boundaries, duplicates, already sorted vs reversed, and one tiny case you can verify by hand.",
       "options": [
         {
@@ -156,17 +156,17 @@
         },
         {
           "id": "b",
-          "text": "Touching intervals such as [1,2] and [2,3].",
+          "text": "Touching intervals such as `[1,2]` and `[2,3]`.",
           "why": "Correct: it checks the boundary of your overlap condition."
         },
         {
           "id": "c",
-          "text": "A nested interval such as [1,10] and [2,3].",
+          "text": "A nested interval such as `[1,10]` and `[2,3]`.",
           "why": "Correct: it catches code that shrinks the end instead of taking the max."
         },
         {
           "id": "d",
-          "text": "Unsorted input such as [[8,10],[1,3],[2,6]].",
+          "text": "Unsorted input such as `[[8,10],[1,3],[2,6]]`.",
           "why": "Correct: it verifies that the sort step exists and works."
         },
         {
@@ -290,7 +290,7 @@
       "prompt": "At the start of a timed problem.",
       "explanation": "Ask about size, ranges, duplicates, ordering and output format.",
       "assertion": "Asking clarifying questions before you code is expected by interviewers.",
-      "reason": "Constraints such as n <= 10^5 suggest which complexity is intended.",
+      "reason": "Constraints such as `n <= 10^5` suggest which complexity is intended.",
       "correct": [
         "b"
       ],
@@ -344,8 +344,8 @@
       "concept": "Test cases",
       "type": "code",
       "difficulty": 2,
-      "prompt": "Write three assert statements (pseudocode is fine) for merge(intervals), which returns a list of [start, end] pairs: an empty input, touching intervals [1,2] and [2,3], and a nested pair [1,10] and [2,3].",
-      "explanation": "Pick expected values you can verify by hand. Input order matters in the touching case: [2,3] first would test the sort as well. Plain asserts are fine in an interview; a test framework is not expected.",
+      "prompt": "Write three `assert` statements (pseudocode is fine) for `merge(intervals)`, which returns a list of `[start, end]` pairs: an empty input, touching intervals `[1,2]` and `[2,3]`, and a nested pair `[1,10]` and `[2,3]`.",
+      "explanation": "Pick expected values you can verify by hand. Input order matters in the touching case: [2,3] first would test the sort as well. Plain `assert`s are fine in an interview; a test framework is not expected.",
       "language": "pseudocode",
       "starter": "// merge(intervals) is already written\n",
       "checks": [

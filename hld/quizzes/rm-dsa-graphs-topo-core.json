@@ -79,10 +79,10 @@
       "concept": "Multi-source BFS",
       "type": "integer",
       "difficulty": 2,
-      "prompt": "In the grid [[2,1,1],[1,1,0],[0,1,1]], 2 is a rotten orange, 1 is fresh, 0 is empty. Each minute, rot spreads to the 4 neighbours of every rotten orange. How many minutes until no fresh orange remains?",
+      "prompt": "In the grid `[[2,1,1],[1,1,0],[0,1,1]]`, `2` is a rotten orange, `1` is fresh, `0` is empty. Each minute, rot spreads to the 4 neighbours of every rotten orange. How many minutes until no fresh orange remains?",
       "answer": 4,
       "tolerance": 0,
-      "explanation": "Minute 1 rots (0,1) and (1,0); minute 2 rots (0,2) and (1,1); minute 3 rots (2,1); minute 4 rots (2,2). That is the BFS depth from the single source.",
+      "explanation": "Minute 1 rots `(0,1)` and `(1,0)`; minute 2 rots `(0,2)` and `(1,1)`; minute 3 rots `(2,1)`; minute 4 rots `(2,2)`. That is the BFS depth from the single source.",
       "unit": "minutes"
     },
     {
@@ -199,7 +199,7 @@
       "concept": "Topological sort",
       "type": "integer",
       "difficulty": 3,
-      "prompt": "Edges: 0->1, 1->2, 2->1, 2->3 (4 nodes). Kahn's algorithm starts with the nodes of in-degree 0. How many nodes does it leave unprocessed when it finishes?",
+      "prompt": "Edges: `0->1, 1->2, 2->1, 2->3` (4 nodes). Kahn's algorithm starts with the nodes of in-degree 0. How many nodes does it leave unprocessed when it finishes?",
       "answer": 3,
       "tolerance": 0,
       "explanation": "Only node 0 has in-degree 0. Removing it lowers node 1 from 2 to 1, which is not zero, so the algorithm stops with nodes 1, 2 and 3 unprocessed. Nodes 1 and 2 form the cycle; node 3 is stuck behind it.",
@@ -210,10 +210,10 @@
       "concept": "Topological sort",
       "type": "integer",
       "difficulty": 2,
-      "prompt": "A DAG has edges 0->1, 0->2, 1->3, 2->3. How many different valid topological orders does it have?",
+      "prompt": "A DAG has edges `0->1, 0->2, 1->3, 2->3`. How many different valid topological orders does it have?",
       "answer": 2,
       "tolerance": 0,
-      "explanation": "Node 0 must come first and 3 last; nodes 1 and 2 can appear in either order: 0,1,2,3 and 0,2,1,3.",
+      "explanation": "Node 0 must come first and 3 last; nodes 1 and 2 can appear in either order: `0,1,2,3` and `0,2,1,3`.",
       "unit": "orders"
     },
     {
@@ -289,10 +289,10 @@
       "concept": "Shortest path in implicit graphs",
       "type": "integer",
       "difficulty": 2,
-      "prompt": "Word ladder: change one letter per step, every intermediate word must be in the list [hot, dot, dog, lot, log, cog]. How many words are in the shortest sequence from \"hit\" to \"cog\", counting both ends?",
+      "prompt": "Word ladder: change one letter per step, every intermediate word must be in the list `[hot, dot, dog, lot, log, cog]`. How many words are in the shortest sequence from `\"hit\"` to `\"cog\"`, counting both ends?",
       "answer": 5,
       "tolerance": 0,
-      "explanation": "hit -> hot -> dot -> dog -> cog (or via lot and log) has 5 words. Treat every word as a node and every one-letter change as an edge, then run BFS.",
+      "explanation": "`hit -> hot -> dot -> dog -> cog` (or via lot and log) has 5 words. Treat every word as a node and every one-letter change as an edge, then run BFS.",
       "unit": "words"
     },
     {
@@ -389,7 +389,7 @@
       "concept": "Shortest path in implicit graphs",
       "type": "code",
       "difficulty": 2,
-      "prompt": "Write pseudocode for bfsDistance(adj, start, goal), which returns the fewest edges from start to goal in an unweighted graph given as an adjacency list, or -1 if goal is unreachable.",
+      "prompt": "Write pseudocode for `bfsDistance(adj, start, goal)`, which returns the fewest edges from start to goal in an unweighted graph given as an adjacency list, or `-1` if goal is unreachable.",
       "language": "pseudocode",
       "starter": "function bfsDistance(adj, start, goal):\n    ",
       "checks": [

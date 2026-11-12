@@ -306,7 +306,7 @@
       "concept": "Multi-tenancy",
       "type": "single",
       "difficulty": 3,
-      "prompt": "In a shared-schema multi-tenant database, a developer forgets a tenant_id filter in one query and leaks data. What is the best structural defence?",
+      "prompt": "In a shared-schema multi-tenant database, a developer forgets a `tenant_id` filter in one query and leaks data. What is the best structural defence?",
       "options": [
         {
           "id": "a",
@@ -320,7 +320,7 @@
         },
         {
           "id": "c",
-          "text": "Encrypt the tenant_id column so that other tenants cannot read the values in it.",
+          "text": "Encrypt the `tenant_id` column so that other tenants cannot read the values in it.",
           "why": "Encrypting the id does not stop a query from returning other tenants' rows."
         },
         {
@@ -461,7 +461,7 @@
       "concept": "SDKs and reliability",
       "type": "code",
       "difficulty": 3,
-      "prompt": "Write pseudocode for call_with_retry(send, max_attempts). send() returns a response with an integer status. Return the response unless the status is 429 or at least 500; in that case wait 2^attempt seconds and try again. After max_attempts attempts raise an error.",
+      "prompt": "Write pseudocode for `call_with_retry(send, max_attempts)`. `send()` returns a response with an integer status. Return the response unless the status is 429 or at least `500;` in that case wait `2^attempt` seconds and try again. After `max_attempts` attempts raise an error.",
       "language": "pseudocode",
       "checks": [
         {

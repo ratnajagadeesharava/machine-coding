@@ -16,8 +16,8 @@
       "concept": "Union-find implementation",
       "type": "code",
       "difficulty": 2,
-      "prompt": "Write a Java class UnionFind with int[] parent and int[] rank, a constructor UnionFind(int n), int find(int x) with path compression, and boolean union(int a, int b) that uses union by rank and returns false if a and b are already connected.",
-      "explanation": "The boolean return is what makes Redundant Connection and cycle detection a one-liner. Iterative path halving (parent[x] = parent[parent[x]]) is an equally good find. Recursion depth is fine with union by rank because trees stay O(log n) tall.",
+      "prompt": "Write a Java class `UnionFind` with `int[] parent` and `int[] rank`, a constructor `UnionFind(int n)`, `int find(int x)` with path compression, and `boolean union(int a, int b)` that uses union by rank and returns false if a and b are already connected.",
+      "explanation": "The boolean return is what makes Redundant Connection and cycle detection a one-liner. Iterative path halving (`parent[x] = parent[parent[x]]`) is an equally good find. Recursion depth is fine with union by rank because trees stay O(log n) tall.",
       "language": "java",
       "starter": "class UnionFind {\n  \n}",
       "checks": [
@@ -45,8 +45,8 @@
       "concept": "Longest prefix match",
       "type": "code",
       "difficulty": 3,
-      "prompt": "A binary trie node is class Node { Node[] ch = new Node[2]; String hop; } where hop is non-null if a route ends here. Write String lookup(Node root, int ip) that returns the next hop of the longest matching prefix (or null), reading the 32 address bits from the most significant bit.",
-      "explanation": "The trick is to keep walking after the first match and remember the deepest one. Do not stop at the first node with a hop. The last check handles /32 routes. With /0, /8, /16 and /24 routes, 10.1.3.7 returns the /16 hop.",
+      "prompt": "A binary trie node is\n\n```java\nclass Node {\n    Node[] ch = new Node[2];\n    String hop;\n}\n```\n\nwhere `hop` is non-null if a route ends here. Write `String lookup(Node root, int ip)` that returns the next hop of the longest matching prefix (or null), reading the 32 address bits from the most significant bit.",
+      "explanation": "The trick is to keep walking after the first match and remember the deepest one. Do not stop at the first node with a hop. The last check handles /32 routes. With /0, /8, /16 and /24 routes, `10.1.3.7` returns the /16 hop.",
       "language": "java",
       "starter": "static String lookup(Node root, int ip) {\n  \n}",
       "checks": [
@@ -74,8 +74,8 @@
       "concept": "Trie structure",
       "type": "code",
       "difficulty": 2,
-      "prompt": "Write a Java class Trie for lowercase words with a nested Node class holding Node[] next = new Node[26] and boolean end. Implement void insert(String w) and boolean search(String w); search must return true only for complete inserted words, not mere prefixes.",
-      "explanation": "The end flag separates search(\"car\") from startsWith(\"ca\"). A HashMap<Character, Node> children map is equivalent and handles any alphabet. Insert and search are O(L).",
+      "prompt": "Write a Java class `Trie` for lowercase words with a nested `Node` class holding `Node[] next = new Node[26]` and `boolean end`. Implement `void insert(String w)` and `boolean search(String w);` `search` must return true only for complete inserted words, not mere prefixes.",
+      "explanation": "The `end` flag separates `search(\"car\")` from `startsWith(\"ca\")`. A `HashMap<Character, Node>` children map is equivalent and handles any alphabet. Insert and search are O(L).",
       "language": "java",
       "starter": "class Trie {\n  static class Node { Node[] next = new Node[26]; boolean end; }\n  Node root = new Node();\n  \n}",
       "checks": [
@@ -103,8 +103,8 @@
       "concept": "Bit extraction",
       "type": "integer",
       "difficulty": 2,
-      "prompt": "The IPv4 address 10.1.3.7 is held in a Java int as 0x0A010307. What does the expression (ip >>> 8) & 0xFF evaluate to?",
-      "explanation": "Shifting right by 8 drops the last octet (7); masking with 0xFF keeps the next 8 bits, which are the third octet, 3. >>> avoids sign extension for addresses of 128.0.0.0 and above.",
+      "prompt": "The IPv4 address `10.1.3.7` is held in a Java `int` as `0x0A010307`. What does the expression `(ip >>> 8) & 0xFF` evaluate to?",
+      "explanation": "Shifting right by 8 drops the last octet (7); masking with `0xFF` keeps the next 8 bits, which are the third octet, 3. `>>>` avoids sign extension for addresses of 128.0.0.0 and above.",
       "answer": 3,
       "unit": "octet"
     },
@@ -113,8 +113,8 @@
       "concept": "Trie memory",
       "type": "integer",
       "difficulty": 3,
-      "prompt": "Insert car, cart, cat, dog and do into an empty trie whose nodes each hold a Node[26] array. Counting the root, how many array slots (references) are allocated in total?",
-      "explanation": "Shared prefixes give 8 nodes plus the root = 9 nodes; each owns a Node[26] with 26 reference slots, so 9 * 26 = 234, though only 8 of them are non-null. This is why sparse alphabets favour map-based children.",
+      "prompt": "Insert car, cart, cat, dog and do into an empty trie whose nodes each hold a `Node[26]` array. Counting the root, how many array slots (references) are allocated in total?",
+      "explanation": "Shared prefixes give 8 nodes plus the root = 9 nodes; each owns a `Node[26]` with 26 reference slots, so 9 * 26 = 234, though only 8 of them are non-null. This is why sparse alphabets favour map-based children.",
       "answer": 234,
       "unit": "slots"
     },
@@ -124,26 +124,26 @@
       "type": "single",
       "difficulty": 3,
       "prompt": "You build a Java trie for autocompleting search terms in many languages (a huge, sparse alphabet). How should each node store its children?",
-      "explanation": "Node[26] gives O(1) indexed access for a small known alphabet such as lowercase letters; HashMap children win for Unicode.",
+      "explanation": "`Node[26]` gives O(1) indexed access for a small known alphabet such as lowercase letters; `HashMap` children win for Unicode.",
       "options": [
         {
           "id": "a",
-          "text": "A fixed Node[65536] array per node, because arrays always beat maps on speed and memory.",
+          "text": "A fixed `Node[65536]` array per node, because arrays always beat maps on speed and memory.",
           "why": "Every node would carry 65536 mostly empty slots, wasting memory."
         },
         {
           "id": "b",
-          "text": "A sorted ArrayList scanned linearly at every node.",
+          "text": "A sorted `ArrayList` scanned linearly at every node.",
           "why": "Scanning a long list at each level slows lookups far beyond O(L)."
         },
         {
           "id": "c",
-          "text": "A HashMap<Character, Node>, since most characters never occur at a node.",
+          "text": "A `HashMap<Character, Node>`, since most characters never occur at a node.",
           "why": "Correct: memory grows with the children that exist, not with the alphabet size."
         },
         {
           "id": "d",
-          "text": "A single global HashMap from full word to Node.",
+          "text": "A single global `HashMap` from full word to `Node`.",
           "why": "That loses the shared-prefix structure and the prefix queries a trie exists for."
         }
       ],
@@ -156,27 +156,27 @@
       "concept": "Trie structure",
       "type": "single",
       "difficulty": 1,
-      "prompt": "Inside a Java trie for lowercase words, which expression turns the char ch into a child index from 0 to 25?",
-      "explanation": "Characters are numeric in Java, so subtraction works directly. Validate the input alphabet, or you get ArrayIndexOutOfBoundsException.",
+      "prompt": "Inside a Java trie for lowercase words, which expression turns the `char` `ch` into a child index from 0 to 25?",
+      "explanation": "Characters are numeric in Java, so subtraction works directly. Validate the input alphabet, or you get `ArrayIndexOutOfBoundsException`.",
       "options": [
         {
           "id": "a",
-          "text": "ch - 'a'",
-          "why": "Correct: char arithmetic gives 0 for 'a' through 25 for 'z'."
+          "text": "`ch - 'a'`",
+          "why": "Correct: char arithmetic gives 0 for `'a'` through 25 for `'z'`."
         },
         {
           "id": "b",
           "text": "ch",
-          "why": "The raw code of 'a' is 97, which is outside a 26-slot array."
+          "why": "The raw code of `'a'` is 97, which is outside a 26-slot array."
         },
         {
           "id": "c",
-          "text": "ch - 'a' + 1",
+          "text": "`ch - 'a' + 1`",
           "why": "This gives 1 to 26, so the letter z lands outside a 26-slot array."
         },
         {
           "id": "d",
-          "text": "ch + 'a'",
+          "text": "`ch + 'a'`",
           "why": "Adding moves further above 26, so every index is out of bounds."
         }
       ],
@@ -189,10 +189,10 @@
       "concept": "Longest prefix match",
       "type": "assertion",
       "difficulty": 2,
-      "prompt": "The address 192.168.0.1 is stored in a Java int, which makes the value negative.",
-      "explanation": "Without the mask the two shifts differ: ip >> 31 is -1 for such an address while ip >>> 31 is 1. Use >>> when treating an int as unsigned.",
-      "assertion": "(ip >> 31) & 1 and (ip >>> 31) & 1 both give the top bit, 1, for this address.",
-      "reason": "Masking with & 1 keeps only the lowest bit, so the sign extension in the upper bits does not matter.",
+      "prompt": "The address `192.168.0.1` is stored in a Java `int`, which makes the value negative.",
+      "explanation": "Without the mask the two shifts differ: `ip >> 31` is -1 for such an address while `ip >>> 31` is 1. Use `>>>` when treating an int as unsigned.",
+      "assertion": "`(ip >> 31) & 1` and `(ip >>> 31) & 1` both give the top bit, 1, for this address.",
+      "reason": "Masking with `& 1` keeps only the lowest bit, so the sign extension in the upper bits does not matter.",
       "correct": [
         "a"
       ],
@@ -209,8 +209,8 @@
       "type": "assertion",
       "difficulty": 1,
       "prompt": "A union-find over nodes 0..n-1 in Java.",
-      "explanation": "Dense integer node ids make an int[] the fastest and smallest choice; for string-keyed nodes map them to ids first.",
-      "assertion": "The parent links are usually stored in an int[] indexed by node.",
+      "explanation": "Dense integer node ids make an `int[]` the fastest and smallest choice; for string-keyed nodes map them to ids first.",
+      "assertion": "The parent links are usually stored in an `int[]` indexed by node.",
       "reason": "Java arrays are objects allocated on the heap.",
       "correct": [
         "b"
@@ -229,7 +229,7 @@
       "difficulty": 3,
       "prompt": "Memory use of a trie that stores 3 words.",
       "explanation": "The array exists as soon as the node is created, so sparse tries waste memory; map-based children allocate per child instead.",
-      "assertion": "A trie node holding a Node[26] array allocates 26 reference slots even when it has a single child.",
+      "assertion": "A trie node holding a `Node[26]` array allocates 26 reference slots even when it has a single child.",
       "reason": "Java fills a new object array with empty strings until a child is assigned.",
       "correct": [
         "c"
@@ -246,10 +246,10 @@
       "concept": "Trie structure",
       "type": "assertion",
       "difficulty": 3,
-      "prompt": "A trie stores children in a HashMap<Character, Node> and lists the words below a prefix.",
-      "explanation": "If suggestions must come back in sorted order, store children in a TreeMap or sort them after collecting.",
-      "assertion": "Iterating the children of a HashMap<Character, Node> visits them in insertion order.",
-      "reason": "HashMap iteration order is unspecified; LinkedHashMap preserves insertion order and TreeMap sorts by key.",
+      "prompt": "A trie stores children in a `HashMap<Character, Node>` and lists the words below a prefix.",
+      "explanation": "If suggestions must come back in sorted order, store children in a `TreeMap` or sort them after collecting.",
+      "assertion": "Iterating the children of a `HashMap<Character, Node>` visits them in insertion order.",
+      "reason": "`HashMap` iteration order is unspecified`;` `LinkedHashMap` preserves insertion order and `TreeMap` sorts by key.",
       "correct": [
         "d"
       ],
@@ -265,7 +265,7 @@
       "concept": "Recursion depth",
       "type": "truefalse",
       "difficulty": 2,
-      "prompt": "True or false: a recursive find on a long parent chain of 100,000 nodes can throw StackOverflowError, which is one reason to prefer union by rank or an iterative find.",
+      "prompt": "True or false: a recursive find on a long parent chain of 100,000 nodes can throw `StackOverflowError`, which is one reason to prefer union by rank or an iterative find.",
       "explanation": "Union by rank keeps trees O(log n) tall, so recursion is safe there. Without it, write find iteratively (path halving) to be safe.",
       "options": [
         {
@@ -289,7 +289,7 @@
       "type": "matrix",
       "difficulty": 2,
       "prompt": "Match each requirement with the Java type that fits best.",
-      "explanation": "HashMap gives O(1) exact lookup; TreeMap gives floor and ceiling in O(log n); a fixed array suits a small alphabet; int[] parent is the union-find workhorse; Java has no built-in Bloom filter, but libraries provide one.",
+      "explanation": "`HashMap` gives O(1) exact lookup; `TreeMap` gives floor and ceiling in O(log n); a fixed array suits a small alphabet; `int[] parent` is the union-find workhorse; Java has no built-in Bloom filter, but libraries provide one.",
       "left": [
         {
           "id": "a",
@@ -315,11 +315,11 @@
       "right": [
         {
           "id": "p",
-          "text": "Node[26] array indexed by c - 'a'"
+          "text": "`Node[26]` array indexed by `c - 'a'`"
         },
         {
           "id": "q",
-          "text": "int[] parent array (union-find)"
+          "text": "`int[] parent` array (union-find)"
         },
         {
           "id": "r",
@@ -327,15 +327,15 @@
         },
         {
           "id": "s",
-          "text": "PriorityQueue"
+          "text": "`PriorityQueue`"
         },
         {
           "id": "t",
-          "text": "HashMap"
+          "text": "`HashMap`"
         },
         {
           "id": "u",
-          "text": "TreeMap"
+          "text": "`TreeMap`"
         }
       ],
       "pairs": {

@@ -16,7 +16,7 @@
       "concept": "MRR",
       "type": "integer",
       "difficulty": 2,
-      "prompt": "Query 1 returns [d4, d1, d7, d2, d9] and its relevant set is {d1, d2, d5}. Query 2 returns [d3, d8, d5, d6, d1] and its relevant set is {d3}. Query 3 returns [d2, d4, d6, d8, d0] and its relevant set is {d9}. Compute the Mean Reciprocal Rank over the three queries, multiplied by 100.",
+      "prompt": "Query 1 returns `[d4, d1, d7, d2, d9]` and its relevant set is `{d1, d2, d5}`. Query 2 returns `[d3, d8, d5, d6, d1]` and its relevant set is `{d3}`. Query 3 returns `[d2, d4, d6, d8, d0]` and its relevant set is `{d9}`. Compute the Mean Reciprocal Rank over the three queries, multiplied by 100.",
       "answer": 50,
       "explanation": "Reciprocal ranks: Query 1 first hit d1 at rank 2 gives 0.5; Query 2 hit at rank 1 gives 1; Query 3 never retrieves d9, so 0. MRR = (0.5 + 1 + 0)/3 = 0.5, i.e. 50."
     },
@@ -25,7 +25,7 @@
       "concept": "Precision and recall",
       "type": "integer",
       "difficulty": 1,
-      "prompt": "Query 1 returns [d4, d1, d7, d2, d9] and its relevant set is {d1, d2, d5}. What is precision@5 for this query, as a percentage?",
+      "prompt": "Query 1 returns `[d4, d1, d7, d2, d9]` and its relevant set is `{d1, d2, d5}`. What is precision@5 for this query, as a percentage?",
       "answer": 40,
       "unit": "%",
       "explanation": "Two of the five returned documents (d1 and d2) are relevant, so precision@5 = 2/5 = 40%. Recall@5 for the same query would be 2/3, because d5 was never retrieved."
@@ -35,10 +35,10 @@
       "concept": "nDCG",
       "type": "integer",
       "difficulty": 3,
-      "prompt": "A ranking has binary relevance [1, 0, 1] at positions 1, 2, 3 and the ideal ranking is [1, 1, 0]. With DCG = sum rel_i / log2(i + 1), compute nDCG@3 multiplied by 100, rounded to the nearest integer.",
+      "prompt": "A ranking has binary relevance `[1, 0, 1]` at positions 1, 2, 3 and the ideal ranking is [1, 1, 0]. With DCG = sum rel_i / log2(i + 1), compute nDCG@3 multiplied by 100, rounded to the nearest integer.",
       "answer": 92,
       "tolerance": 1,
-      "explanation": "DCG = 1/log2(2) + 0 + 1/log2(4) = 1 + 0.5 = 1.5. IDCG = 1 + 1/log2(3) = 1.631. nDCG = 1.5/1.631 = 0.92. The log discount punishes pushing a relevant document down."
+      "explanation": "DCG = 1/`log2(2)` + 0 + 1/`log2(4)` = 1 + 0.5 = 1.5. IDCG = 1 + 1/`log2(3)` = 1.631. nDCG = 1.5/1.631 = 0.92. The log discount punishes pushing a relevant document down."
     },
     {
       "id": "mrr-limit",

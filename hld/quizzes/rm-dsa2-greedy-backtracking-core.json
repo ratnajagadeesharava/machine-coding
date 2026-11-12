@@ -16,7 +16,7 @@
       "concept": "Activity selection",
       "type": "integer",
       "difficulty": 2,
-      "prompt": "Activities as (start, finish): (1,4), (3,5), (0,6), (5,7), (3,9), (5,9), (6,10), (8,11), (8,12), (2,14), (12,16). An activity may start exactly when another finishes. What is the maximum number of activities one person can attend?",
+      "prompt": "Activities as `(start, finish)`: (1,4), (3,5), (0,6), (5,7), (3,9), (5,9), (6,10), (8,11), (8,12), (2,14), (12,16). An activity may start exactly when another finishes. What is the maximum number of activities one person can attend?",
       "explanation": "Sort by finish and pick greedily: (1,4), (5,7), (8,11), (12,16) = 4. No schedule of 5 exists; the earliest-finish rule is optimal.",
       "answer": 4,
       "unit": "activities"
@@ -26,7 +26,7 @@
       "concept": "Gas station",
       "type": "integer",
       "difficulty": 3,
-      "prompt": "Gas station circuit: gas = [1, 2, 3, 4, 5] and cost = [3, 4, 5, 1, 2]. Station i gives gas[i] and the trip to the next station costs cost[i]. At which index (0-based) must you start to complete the circle?",
+      "prompt": "Gas station circuit: `gas = [1, 2, 3, 4, 5]` and `cost = [3, 4, 5, 1, 2]`. Station i gives `gas[i]` and the trip to the next station costs `cost[i]`. At which index (0-based) must you start to complete the circle?",
       "explanation": "Total gas 15 equals total cost 15, so a solution exists. Reset the start whenever the running tank goes negative: it fails at 0, 1, 2 and the start becomes 3. From 3 the tank runs 3, 6, 4, 2, 0 and never goes negative.",
       "answer": 3,
       "unit": "index"
@@ -36,8 +36,8 @@
       "concept": "Permutations",
       "type": "integer",
       "difficulty": 1,
-      "prompt": "How many distinct permutations does the multiset {A, A, B, C} have?",
-      "explanation": "4! / 2! = 24 / 2 = 12. A backtracking solution that sorts the input and skips equal neighbours (using a used[] array) produces exactly 12 leaves; a naive one produces 24 with duplicates.",
+      "prompt": "How many distinct permutations does the multiset `{A, A, B, C}` have?",
+      "explanation": "4! / 2! = 24 / 2 = 12. A backtracking solution that sorts the input and skips equal neighbours (using a `used[]` array) produces exactly 12 leaves; a naive one produces 24 with duplicates.",
       "answer": 12,
       "unit": "permutations"
     },
@@ -46,8 +46,8 @@
       "concept": "Combination sum",
       "type": "integer",
       "difficulty": 2,
-      "prompt": "Candidates [2, 3, 6, 7] (each may be reused any number of times) and target 7. How many distinct combinations sum to 7?",
-      "explanation": "[2,2,3] and [7] are the only two. Every other path either overshoots 7 or leaves a remainder of 1, which no candidate can fill. Sorting and breaking when a candidate exceeds the remainder prunes the search.",
+      "prompt": "Candidates `[2, 3, 6, 7]` (each may be reused any number of times) and target 7. How many distinct combinations sum to 7?",
+      "explanation": "`[2,2,3]` and `[7]` are the only two. Every other path either overshoots 7 or leaves a remainder of 1, which no candidate can fill. Sorting and breaking when a candidate exceeds the remainder prunes the search.",
       "answer": 2,
       "unit": "combinations"
     },
@@ -57,7 +57,7 @@
       "type": "integer",
       "difficulty": 2,
       "prompt": "How many distinct ways can 6 queens be placed on a 6 x 6 board so that none attacks another?",
-      "explanation": "The counts for n = 1..8 are 1, 0, 0, 2, 10, 4, 40, 92. Backtracking places one queen per row and prunes with sets for used columns and both diagonals (r - c and r + c), far less work than the n^n raw placements.",
+      "explanation": "The counts for n = 1..8 are 1, 0, 0, 2, 10, 4, 40, 92. Backtracking places one queen per row and prunes with sets for used columns and both diagonals (`r - c` and `r + c`), far less work than the n^n raw placements.",
       "answer": 4,
       "tolerance": 0,
       "unit": "solutions"
@@ -67,7 +67,7 @@
       "concept": "Greedy implementation",
       "type": "integer",
       "difficulty": 2,
-      "prompt": "For nums = [1, 2, 3, 4, 5], where nums[i] is the maximum jump length from index i, what is the minimum number of jumps to reach the last index?",
+      "prompt": "For `nums = [1, 2, 3, 4, 5]`, where `nums[i]` is the maximum jump length from index i, what is the minimum number of jumps to reach the last index?",
       "explanation": "0 -> 1 -> 3 -> 4 is 3 jumps. The O(n) greedy keeps the end of the current jump range and the farthest index reachable; each time you pass the range end you count one more jump.",
       "answer": 3,
       "tolerance": 0,
@@ -133,7 +133,7 @@
       "prompt": "Making change with the fewest coins.",
       "explanation": "Whether greedy works depends on the coin system. For arbitrary coins use DP.",
       "assertion": "Taking the largest coin that fits at each step gives the fewest coins for any coin system.",
-      "reason": "Largest-first is optimal for the coin system {1, 5, 10, 25}.",
+      "reason": "Largest-first is optimal for the coin system `{1, 5, 10, 25}`.",
       "correct": [
         "d"
       ],
@@ -151,7 +151,7 @@
       "difficulty": 3,
       "prompt": "In Combination Sum with reusable candidates.",
       "explanation": "The index controls which candidates remain available; the remaining value controls termination. Mixing these up is a common bug.",
-      "assertion": "Recursing with the same index i, not i + 1, lets a candidate be used again.",
+      "assertion": "Recursing with the same index `i`, not `i + 1`, lets a candidate be used again.",
       "reason": "Each recursive call subtracts the chosen candidate from the remaining target.",
       "correct": [
         "b"
@@ -168,7 +168,7 @@
       "concept": "Greedy implementation",
       "type": "assertion",
       "difficulty": 3,
-      "prompt": "Jump Game: can you reach the last index when nums[i] is the maximum jump from i?",
+      "prompt": "Jump Game: can you reach the last index when `nums[i]` is the maximum jump from i?",
       "explanation": "Backtracking or memoised DP also work but cost far more; the greedy keeps a single number, the farthest reachable index.",
       "assertion": "The farthest-reach greedy solves Jump Game in O(n) time.",
       "reason": "It explores every possible jump sequence with backtracking.",
@@ -230,7 +230,7 @@
         },
         {
           "id": "d",
-          "text": "Coin change for the arbitrary coin set {1, 5, 6, 9}.",
+          "text": "Coin change for the arbitrary coin set `{1, 5, 6, 9}`.",
           "why": "Largest-first gives 3 coins for 11 where 2 is possible."
         }
       ],
@@ -245,7 +245,7 @@
       "type": "fill",
       "difficulty": 3,
       "prompt": "Complete the rule for subsets of an array that may contain duplicates.",
-      "explanation": "Sorting groups equal values. Skipping a repeat only at the same recursion level (i > start) still allows [2,2] while removing a duplicate [2] branch. [1,2,2] yields 6 unique subsets instead of 8.",
+      "explanation": "Sorting groups equal values. Skipping a repeat only at the same recursion level (`i > start`) still allows `[2,2]` while removing a duplicate [2] branch. `[1,2,2]` yields 6 unique subsets instead of 8.",
       "text": "First {1} the array. In the loop, skip nums[i] when i > start and nums[i] == nums[{2}]. A set of n distinct items has {3} subsets.",
       "blanks": {
         "1": "sort",
@@ -330,7 +330,7 @@
         {
           "id": "a",
           "text": "Add \")\" first whenever possible, and \"(\" only when no \")\" fits.",
-          "why": "Closing first produces invalid prefixes such as \")(\" immediately."
+          "why": "Closing first produces invalid prefixes such as `\")(\"` immediately."
         },
         {
           "id": "b",
@@ -345,7 +345,7 @@
         {
           "id": "d",
           "text": "Allow \"(\" and \")\" equally, then drop results with unequal counts.",
-          "why": "Equal counts are not enough: \")(\" has equal counts but is invalid."
+          "why": "Equal counts are not enough: `\")(\"` has equal counts but is invalid."
         }
       ],
       "correct": [
@@ -357,7 +357,7 @@
       "concept": "Activity selection",
       "type": "code",
       "difficulty": 2,
-      "prompt": "Write pseudocode for the greedy that returns the maximum number of non-overlapping activities from a list of (start, finish) pairs, where an activity may start exactly when the previous one finishes.",
+      "prompt": "Write pseudocode for the greedy that returns the maximum number of non-overlapping activities from a list of `(start, finish)` pairs, where an activity may start exactly when the previous one finishes.",
       "explanation": "Sorting dominates, so the total is O(n log n). The >= test lets an activity start exactly when the previous one ends. The earliest-finish rule is justified by an exchange argument.",
       "language": "pseudocode",
       "starter": "",

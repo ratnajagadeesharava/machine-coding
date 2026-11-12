@@ -16,8 +16,8 @@
       "concept": "Coin change",
       "type": "code",
       "difficulty": 2,
-      "prompt": "Write a Java method int coinChange(int[] coins, int amount) that returns the minimum number of coins for the amount, or -1 if impossible. Use an int[] dp table.",
-      "explanation": "amount + 1 works as infinity because no valid answer exceeds amount coins; avoid Integer.MAX_VALUE + 1 overflow. Time O(amount * coins), space O(amount). A BFS over amounts is another valid solution. For {1,5,6,9} and 11 it gives 2, for {2} and 3 it gives -1.",
+      "prompt": "Write a Java method `int coinChange(int[] coins, int amount)` that returns the minimum number of coins for the amount, or -1 if impossible. Use an `int[] dp` table.",
+      "explanation": "`amount + 1` works as infinity because no valid answer exceeds amount coins; avoid `Integer.MAX_VALUE + 1` overflow. Time O(amount * coins), space O(amount). A BFS over amounts is another valid solution. For `{1,5,6,9}` and 11 it gives 2, for `{2}` and 3 it gives -1.",
       "language": "java",
       "starter": "static int coinChange(int[] coins, int amount) {\n  \n}",
       "checks": [
@@ -45,8 +45,8 @@
       "concept": "Longest common subsequence",
       "type": "code",
       "difficulty": 2,
-      "prompt": "Write a Java method int lcs(String a, String b) that returns the length of the longest common subsequence using an int[][] table of size (m + 1) x (n + 1).",
-      "explanation": "Java zero-fills the new table, which supplies the empty-prefix base case for free. Time and space O(m * n); two rolling int[] rows cut space to O(min(m, n)). For \"ABCBDAB\" and \"BDCABA\" the result is 4.",
+      "prompt": "Write a Java method `int lcs(String a, String b)` that returns the length of the longest common subsequence using an `int[][]` table of size (m + 1) x (n + 1).",
+      "explanation": "Java zero-fills the new table, which supplies the empty-prefix base case for free. Time and space O(m * n); two rolling `int[]` rows cut space to O(min(m, n)). For \"ABCBDAB\" and \"BDCABA\" the result is 4.",
       "language": "java",
       "starter": "static int lcs(String a, String b) {\n  \n}",
       "checks": [
@@ -74,8 +74,8 @@
       "concept": "0/1 knapsack",
       "type": "code",
       "difficulty": 3,
-      "prompt": "Write a Java method int knapsack(int[] wt, int[] val, int cap) for 0/1 knapsack using a single int[] dp of size cap + 1. Each item may be used at most once.",
-      "explanation": "The downward loop is what keeps each item single-use; looping upward would allow repeats (unbounded knapsack). Time O(n * cap), space O(cap). For weights {1,3,4}, values {15,20,30} and capacity 4 the answer is 35.",
+      "prompt": "Write a Java method `int knapsack(int[] wt, int[] val, int cap)` for 0/1 knapsack using a single `int[] dp` of size cap + 1. Each item may be used at most once.",
+      "explanation": "The downward loop is what keeps each item single-use; looping upward would allow repeats (unbounded knapsack). Time O(n * cap), space O(cap). For weights `{1,3,4}`, values `{15,20,30}` and capacity 4 the answer is 35.",
       "language": "java",
       "starter": "static int knapsack(int[] wt, int[] val, int cap) {\n  \n}",
       "checks": [
@@ -103,8 +103,8 @@
       "concept": "Integer overflow",
       "type": "integer",
       "difficulty": 2,
-      "prompt": "Using an int[] dp with dp[i] = dp[i-1] + dp[i-2], dp[0] = 0, dp[1] = 1, what is the smallest i for which the true Fibonacci number no longer fits in a Java int (above 2,147,483,647)?",
-      "explanation": "fib(46) = 1,836,311,903 still fits, but fib(47) = 2,971,215,073 exceeds Integer.MAX_VALUE and the int silently wraps to a negative value. Use long (good to fib(92)) or BigInteger.",
+      "prompt": "Using an `int[] dp` with `dp[i] = dp[i-1] + dp[i-2]`, `dp[0] = 0`, `dp[1] = 1`, what is the smallest i for which the true Fibonacci number no longer fits in a Java int (above 2,147,483,647)?",
+      "explanation": "fib(46) = 1,836,311,903 still fits, but fib(47) = 2,971,215,073 exceeds `Integer.MAX_VALUE` and the `int` silently wraps to a negative value. Use `long` (good to fib(92)) or BigInteger.",
       "answer": 47,
       "unit": "index"
     },
@@ -113,7 +113,7 @@
       "concept": "Table tracing",
       "type": "integer",
       "difficulty": 1,
-      "prompt": "For \"kitten\" and \"sitting\", the Java edit distance table is allocated as new int[7][8]. How many cells does it contain?",
+      "prompt": "For \"kitten\" and \"sitting\", the Java edit distance table is allocated as `new int[7][8]`. How many cells does it contain?",
       "explanation": "(m + 1) x (n + 1) = 7 x 8 = 56 cells, which include the empty-prefix row and column. Time and space are both proportional to this count.",
       "answer": 56,
       "unit": "cells"
@@ -124,27 +124,27 @@
       "type": "single",
       "difficulty": 2,
       "prompt": "You count monotone paths in a 20 x 20 grid, moving only right or down. The answer is C(38, 19), about 35 billion. Which element type should the dp table use?",
-      "explanation": "Counting DPs overflow quickly. Mention the modulus (often 10^9 + 7) or long/BigInteger as soon as counts can be large.",
+      "explanation": "Counting DPs overflow quickly. Mention the modulus (often 10^9 + 7) or `long`/`BigInteger` as soon as counts can be large.",
       "options": [
         {
           "id": "a",
-          "text": "long[][], because the count exceeds Integer.MAX_VALUE.",
-          "why": "Correct: 35 billion needs 64 bits, so int would wrap silently."
+          "text": "`long[][]`, because the count exceeds `Integer.MAX_VALUE`.",
+          "why": "Correct: 35 billion needs 64 bits, so `int` would wrap silently."
         },
         {
           "id": "b",
-          "text": "int[][], because Java int is large enough for any array index.",
+          "text": "`int[][]`, because Java `int` is large enough for any array index.",
           "why": "An index is small, but the values stored can be far larger than an int."
         },
         {
           "id": "c",
-          "text": "float[][], which holds values this large without wrapping.",
+          "text": "`float[][]`, which holds values this large without wrapping.",
           "why": "float loses exact integer precision above 2^24, corrupting the counts."
         },
         {
           "id": "d",
-          "text": "byte[][], to save memory, since each cell adds only two terms.",
-          "why": "Each term grows combinatorially; a byte overflows after 127."
+          "text": "`byte[][]`, to save memory, since each cell adds only two terms.",
+          "why": "Each term grows combinatorially; a `byte` overflows after 127."
         }
       ],
       "correct": [
@@ -156,28 +156,28 @@
       "concept": "Top-down versus bottom-up",
       "type": "single",
       "difficulty": 3,
-      "prompt": "A memoised recursive coinChange(amount) works for amount = 1000 but throws StackOverflowError for amount = 100000. What is the most robust fix?",
+      "prompt": "A memoised recursive `coinChange(amount)` works for amount = 1000 but throws `StackOverflowError` for amount = 100000. What is the most robust fix?",
       "explanation": "Running the work in a Thread with a larger stack size also works, but tabulation is the interview answer. Recursion depth equals the longest chain of sub-amounts.",
       "options": [
         {
           "id": "a",
-          "text": "Switch to a bottom-up int[] table, which needs no deep call stack.",
+          "text": "Switch to a bottom-up `int[]` table, which needs no deep call stack.",
           "why": "Correct: a loop fills the table in order, with constant stack usage."
         },
         {
           "id": "b",
-          "text": "Catch the StackOverflowError and retry with the same recursive method.",
+          "text": "Catch the `StackOverflowError` and retry with the same recursive method.",
           "why": "The retry hits the same depth limit, so it fails again."
         },
         {
           "id": "c",
-          "text": "Replace the int[] memo with a HashMap so the recursion is shallower.",
+          "text": "Replace the `int[]` memo with a `HashMap` so the recursion is shallower.",
           "why": "The container does not change how deep the recursion goes."
         },
         {
           "id": "d",
-          "text": "Declare the recursive method synchronized to enlarge its stack frame.",
-          "why": "synchronized adds locking and does nothing for stack depth."
+          "text": "Declare the recursive method `synchronized` to enlarge its stack frame.",
+          "why": "`synchronized` adds locking and does nothing for stack depth."
         }
       ],
       "correct": [
@@ -189,7 +189,7 @@
       "concept": "Top-down versus bottom-up",
       "type": "truefalse",
       "difficulty": 2,
-      "prompt": "True or false: in a memo array created with new int[n + 1], using 0 to mean 'not computed yet' is safe even when some states legitimately have the value 0.",
+      "prompt": "True or false: in a memo array created with `new int[n + 1]`, using 0 to mean 'not computed yet' is safe even when some states legitimately have the value 0.",
       "explanation": "Collisions with the sentinel do not break correctness but destroy the complexity bound, turning memoisation back into brute force.",
       "options": [
         {
@@ -200,7 +200,7 @@
         {
           "id": "b",
           "text": "False",
-          "why": "Correct: Java zero-fills new int arrays, so 0 collides with real zero results; use -1 via Arrays.fill, or an Integer[] with null."
+          "why": "Correct: Java zero-fills new int arrays, so 0 collides with real zero results; use `-1` via `Arrays.fill`, or an `Integer[]` with `null`."
         }
       ],
       "correct": [
@@ -212,10 +212,10 @@
       "concept": "Integer overflow",
       "type": "assertion",
       "difficulty": 3,
-      "prompt": "A coin change solution fills dp with Integer.MAX_VALUE as 'impossible' and computes dp[a - c] + 1 without checking.",
-      "explanation": "Use amount + 1 as infinity, or skip unreachable sub-amounts before adding.",
-      "assertion": "Using Integer.MAX_VALUE as the 'impossible' marker can corrupt the table.",
-      "reason": "Adding 1 to Integer.MAX_VALUE wraps around to Integer.MIN_VALUE.",
+      "prompt": "A coin change solution fills dp with `Integer.MAX_VALUE` as 'impossible' and computes `dp[a - c] + 1` without checking.",
+      "explanation": "Use `amount + 1` as infinity, or skip unreachable sub-amounts before adding.",
+      "assertion": "Using `Integer.MAX_VALUE` as the 'impossible' marker can corrupt the table.",
+      "reason": "Adding 1 to `Integer.MAX_VALUE` wraps around to `Integer.MIN_VALUE`.",
       "correct": [
         "a"
       ],
@@ -231,7 +231,7 @@
       "concept": "Table layout",
       "type": "assertion",
       "difficulty": 1,
-      "prompt": "A Java DP table is declared as int[][] dp = new int[m + 1][n + 1].",
+      "prompt": "A Java DP table is declared as `int[][] dp = new int[m + 1][n + 1]`.",
       "explanation": "Because rows are separate objects, you can swap two row references in O(1), the basis of rolling-row optimisation.",
       "assertion": "The statement allocates a rectangular table of (m + 1) x (n + 1) cells.",
       "reason": "A Java 2D array is an array whose elements are references to row arrays.",
@@ -251,7 +251,7 @@
       "type": "assertion",
       "difficulty": 3,
       "prompt": "In the single-array 0/1 knapsack the capacity loop runs from cap down to wt[i].",
-      "explanation": "Going downward means dp[w - wt] has not yet been updated for the current item.",
+      "explanation": "Going downward means `dp[w - wt]` has not yet been updated for the current item.",
       "assertion": "Running the capacity loop downward is required so that each item is used at most once.",
       "reason": "Java copies an array on assignment, so dp keeps the previous item's row.",
       "correct": [
@@ -269,10 +269,10 @@
       "concept": "Top-down versus bottom-up",
       "type": "assertion",
       "difficulty": 3,
-      "prompt": "Memoising a dense DP with a HashMap<Integer, Integer> instead of an int[].",
-      "explanation": "Use int[] (or long[]) when states are dense small integers; a map only pays off for sparse states.",
-      "assertion": "The HashMap version is faster than an int[] memo for dense state spaces.",
-      "reason": "Each put and get on a HashMap<Integer, Integer> boxes ints into Integer objects.",
+      "prompt": "Memoising a dense DP with a `HashMap`<Integer, Integer> instead of an `int[]`.",
+      "explanation": "Use `int[]` (or `long[]`) when states are dense small integers; a map only pays off for sparse states.",
+      "assertion": "The HashMap version is faster than an `int[]` memo for dense state spaces.",
+      "reason": "Each put and get on a `HashMap<Integer, Integer>` boxes ints into Integer objects.",
       "correct": [
         "d"
       ],
@@ -315,11 +315,11 @@
       "right": [
         {
           "id": "p",
-          "text": "A long[] table"
+          "text": "A `long[]` table"
         },
         {
           "id": "q",
-          "text": "Math.min or Math.max"
+          "text": "`Math.min` or `Math.max`"
         },
         {
           "id": "r",
@@ -331,11 +331,11 @@
         },
         {
           "id": "t",
-          "text": "Arrays.fill(dp, amount + 1)"
+          "text": "`Arrays.fill(dp, amount + 1)`"
         },
         {
           "id": "u",
-          "text": "new int[m + 1][n + 1]"
+          "text": "`new int[m + 1][n + 1]`"
         }
       ],
       "pairs": {
@@ -352,7 +352,7 @@
       "type": "fill",
       "difficulty": 1,
       "prompt": "Complete the Java setup for bottom-up coin change.",
-      "explanation": "The extra cell makes index amount valid; dp[0] = 0 because zero coins make amount 0; amount + 1 acts as infinity without overflow risk.",
+      "explanation": "The extra cell makes index amount valid; `dp[0] = 0` because zero coins make amount 0; `amount + 1` acts as infinity without overflow risk.",
       "text": "Allocate an int[] of size amount + {1}, set dp[0] = {2}, fill all other cells with {3}, then take the minimum over coins.",
       "blanks": {
         "1": "1",

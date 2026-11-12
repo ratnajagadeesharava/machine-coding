@@ -20,23 +20,23 @@
       "left": [
         {
           "id": "a",
-          "text": "SELECT ... FOR UPDATE"
+          "text": "`SELECT ... FOR UPDATE`"
         },
         {
           "id": "b",
-          "text": "SELECT ... FOR SHARE"
+          "text": "`SELECT ... FOR SHARE`"
         },
         {
           "id": "c",
-          "text": "NOWAIT"
+          "text": "`NOWAIT`"
         },
         {
           "id": "d",
-          "text": "SKIP LOCKED"
+          "text": "`SKIP LOCKED`"
         },
         {
           "id": "e",
-          "text": "pg_advisory_lock(key)"
+          "text": "`pg_advisory_lock(key)`"
         }
       ],
       "right": [
@@ -50,7 +50,7 @@
         },
         {
           "id": "r",
-          "text": "Raises an error (SQLSTATE 55P03) instead of waiting for a locked row"
+          "text": "Raises an error (`SQLSTATE 55P03`) instead of waiting for a locked row"
         },
         {
           "id": "s",
@@ -62,7 +62,7 @@
         },
         {
           "id": "u",
-          "text": "Locks the whole table in ACCESS EXCLUSIVE mode"
+          "text": "Locks the whole table in `ACCESS EXCLUSIVE` mode"
         }
       ],
       "pairs": {
@@ -72,16 +72,16 @@
         "d": "s",
         "e": "t"
       },
-      "explanation": "FOR UPDATE locks stay until the transaction ends. NOWAIT and SKIP LOCKED are modifiers that change what happens when a row is already locked. Advisory locks are cooperative: nothing in the schema enforces them."
+      "explanation": "`FOR UPDATE` locks stay until the transaction ends. `NOWAIT` and `SKIP LOCKED` are modifiers that change what happens when a row is already locked. Advisory locks are cooperative: nothing in the schema enforces them."
     },
     {
       "id": "deadlock-victims",
       "concept": "Deadlocks",
       "type": "integer",
       "difficulty": 1,
-      "prompt": "Transaction T1 locks row A and then requests row B; transaction T2 locks row B and then requests row A. When PostgreSQL detects this deadlock, how many of the two transactions does it abort?",
+      "prompt": "```text\nTransaction T1 locks row A and then requests row B;\ntransaction T2 locks row B and then requests row A.\n```\n\nWhen PostgreSQL detects this deadlock, how many of the two transactions does it abort?",
       "answer": 1,
-      "explanation": "The detector picks one participant (the one that ran the check) and aborts it with 40P01 deadlock_detected; the survivor continues once the victim releases its locks. The victim should be retried by the application.",
+      "explanation": "The detector picks one participant (the one that ran the check) and aborts it with `40P01` `deadlock_detected`; the survivor continues once the victim releases its locks. The victim should be retried by the application.",
       "unit": "transactions"
     },
     {
@@ -89,9 +89,9 @@
       "concept": "SKIP LOCKED queue",
       "type": "integer",
       "difficulty": 2,
-      "prompt": "A jobs table has 10 rows with status 'queued' (ids 1 to 10). Worker A holds FOR UPDATE row locks on ids 1, 2 and 3 in an open transaction. Worker B runs SELECT id FROM jobs WHERE status = 'queued' ORDER BY id LIMIT 10 FOR UPDATE SKIP LOCKED. How many rows does B get?",
+      "prompt": "A `jobs` table has 10 rows with status `'queued'` (ids 1 to 10). Worker A holds `FOR UPDATE` row locks on ids 1, 2 and 3 in an open transaction. Worker B runs `SELECT id FROM jobs WHERE status = 'queued' ORDER BY id LIMIT 10 FOR UPDATE SKIP LOCKED`. How many rows does B get?",
       "answer": 7,
-      "explanation": "B skips the three locked rows and locks ids 4 to 10, so 7 rows come back without waiting. (Verified on PostgreSQL.) Without SKIP LOCKED B would block on id 1; with NOWAIT it would fail with 55P03.",
+      "explanation": "B skips the three locked rows and locks ids 4 to 10, so 7 rows come back without waiting. (Verified on PostgreSQL.) Without `SKIP LOCKED` B would block on id 1; with `NOWAIT` it would fail with `55P03`.",
       "unit": "rows"
     },
     {
@@ -100,8 +100,8 @@
       "type": "assertion",
       "difficulty": 2,
       "prompt": "Read the assertion (A) and the reason (R), then choose the option that fits.",
-      "assertion": "A read-modify-write cycle that starts with SELECT ... FOR UPDATE cannot lose an update to another writer of that row.",
-      "reason": "FOR UPDATE takes a row lock that other writers and lockers must wait for until the transaction ends.",
+      "assertion": "A read-modify-write cycle that starts with `SELECT ... FOR UPDATE` cannot lose an update to another writer of that row.",
+      "reason": "`FOR UPDATE` takes a row lock that other writers and lockers must wait for until the transaction ends.",
       "correct": [
         "a"
       ],
@@ -139,7 +139,7 @@
       "difficulty": 3,
       "prompt": "Read the assertion (A) and the reason (R), then choose the option that fits.",
       "assertion": "Acquiring locks in the same order in every transaction prevents deadlocks between them.",
-      "reason": "PostgreSQL detects deadlocks automatically after deadlock_timeout and aborts one participant.",
+      "reason": "PostgreSQL detects deadlocks automatically after `deadlock_timeout` and aborts one participant.",
       "correct": [
         "b"
       ],
@@ -149,7 +149,7 @@
         "c": "R is true, so this option wrongly calls it false.",
         "d": "A is true, so this option wrongly calls it false."
       },
-      "explanation": "Practical rule: update rows in primary-key order (ORDER BY id ... FOR UPDATE), and lock parent before child tables in every code path."
+      "explanation": "Practical rule: update rows in primary-key order (`ORDER BY id ... FOR UPDATE`), and lock parent before child tables in every code path."
     },
     {
       "id": "select-blocks",
@@ -157,8 +157,8 @@
       "type": "assertion",
       "difficulty": 3,
       "prompt": "Read the assertion (A) and the reason (R), then choose the option that fits.",
-      "assertion": "While one transaction holds SELECT ... FOR UPDATE on a row, a plain SELECT of that row by another transaction waits.",
-      "reason": "FOR UPDATE conflicts with other FOR UPDATE locks and with UPDATE and DELETE on the same row.",
+      "assertion": "While one transaction holds `SELECT ... FOR UPDATE` on a row, a plain `SELECT` of that row by another transaction waits.",
+      "reason": "`FOR UPDATE` conflicts with other `FOR UPDATE` locks and with `UPDATE` and `DELETE` on the same row.",
       "correct": [
         "d"
       ],
@@ -166,7 +166,7 @@
         "a": "A is false, so both-true options are wrong.",
         "b": "A is false, so both-true options are wrong.",
         "c": "R is true, so this option wrongly calls it false.",
-        "d": "Correct: under MVCC a plain SELECT takes no row lock and reads the last committed version without waiting; R is true."
+        "d": "Correct: under MVCC a plain `SELECT` takes no row lock and reads the last committed version without waiting; R is true."
       },
       "explanation": "Only other lockers and writers wait. That is why a read replica or a plain read never blocks behind a hot row lock."
     },
@@ -192,14 +192,14 @@
         "30s",
         "SKIP LOCKED"
       ],
-      "explanation": "deadlock_timeout defaults to one second: the check is only started when a lock wait lasts that long. lock_timeout and statement_timeout are separate safety nets."
+      "explanation": "`deadlock_timeout` defaults to one second: the check is only started when a lock wait lasts that long. `lock_timeout` and `statement_timeout` are separate safety nets."
     },
     {
       "id": "code-skip-locked",
       "concept": "SKIP LOCKED queue",
       "type": "code",
       "difficulty": 2,
-      "prompt": "Table jobs(id, status, payload, created_at). Write the single statement a worker runs to claim the oldest 'queued' job so that concurrent workers never block each other and never take the same row.",
+      "prompt": "Table `jobs(id, status, payload, created_at)`. Write the single statement a worker runs to claim the oldest `'queued'` job so that concurrent workers never block each other and never take the same row.",
       "language": "sql",
       "checks": [
         {
@@ -227,7 +227,7 @@
       "concept": "Pessimistic locking",
       "type": "code",
       "difficulty": 2,
-      "prompt": "Inside a transaction on accounts(id, balance), write the statement that reads the balance of account 1 and locks that row so concurrent transactions cannot change it until this transaction ends.",
+      "prompt": "Inside a transaction on `accounts(id, balance)`, write the statement that reads the balance of account 1 and locks that row so concurrent transactions cannot change it until this transaction ends.",
       "language": "sql",
       "checks": [
         {
@@ -244,14 +244,14 @@
         }
       ],
       "model": "SELECT balance FROM accounts WHERE id = 1 FOR UPDATE;",
-      "explanation": "FOR NO KEY UPDATE is a weaker lock that does not block foreign-key checks from child inserts and is enough when you do not change key columns. Object-mapping libraries expose the same thing as a pessimistic write lock mode."
+      "explanation": "`FOR NO KEY UPDATE` is a weaker lock that does not block foreign-key checks from child inserts and is enough when you do not change key columns. Object-mapping libraries expose the same thing as a pessimistic write lock mode."
     },
     {
       "id": "code-optimistic-update",
       "concept": "Optimistic vs pessimistic",
       "type": "code",
       "difficulty": 3,
-      "prompt": "Table accounts(id, balance, version) is updated with optimistic locking. Write the UPDATE that sets balance to :new_balance for id :id only if the row still has version :version, and increments the version.",
+      "prompt": "Table `accounts(id, balance, version)` is updated with optimistic locking. Write the `UPDATE` that sets `balance` to `:new_balance` for `id` `:id` only if the row still has `version` `:version`, and increments the version.",
       "language": "sql",
       "checks": [
         {
@@ -279,22 +279,22 @@
       "options": [
         {
           "id": "a",
-          "text": "One atomic UPDATE ... SET qty = qty - 1 WHERE id = ? AND qty > 0, then check the row count.",
+          "text": "One atomic `UPDATE ... SET qty = qty - 1 WHERE id = ? AND qty > 0`, then check the row count.",
           "why": "Right: the row lock is held only for one statement and no retry loop is needed."
         },
         {
           "id": "b",
-          "text": "Read the stock, check it in application code and save with an @Version column, retrying on conflict.",
+          "text": "Read the stock, check it in application code and save with an `@Version` column, retrying on conflict.",
           "why": "Under heavy contention most attempts fail and retries thrash the row."
         },
         {
           "id": "c",
           "text": "Run all checkouts at SERIALIZABLE and let the database sort it out, with no retry logic.",
-          "why": "Many transactions would abort with 40001, and without retries those become errors."
+          "why": "Many transactions would abort with `40001`, and without retries those become errors."
         },
         {
           "id": "d",
-          "text": "SELECT the stock, check it in application code, then UPDATE it without any lock, since MVCC makes this safe.",
+          "text": "`SELECT` the stock, check it in application code, then `UPDATE` it without any lock, since MVCC makes this safe.",
           "why": "MVCC does not stop two transactions reading the same quantity; stock goes negative."
         }
       ],
@@ -322,7 +322,7 @@
         },
         {
           "id": "c",
-          "text": "Two transactions run SELECT ... FOR UPDATE on overlapping row sets but with different ORDER BY clauses.",
+          "text": "Two transactions run `SELECT ... FOR UPDATE` on overlapping row sets but with different `ORDER BY` clauses.",
           "why": "Right: different lock acquisition orders can form a cycle."
         },
         {
@@ -341,14 +341,14 @@
         "b",
         "c"
       ],
-      "explanation": "Fixes: consistent lock ordering, short transactions, lock_timeout, and retry on 40P01."
+      "explanation": "Fixes: consistent lock ordering, short transactions, `lock_timeout`, and retry on `40P01`."
     },
     {
       "id": "skip-locked-consistency",
       "concept": "SKIP LOCKED queue",
       "type": "truefalse",
       "difficulty": 3,
-      "prompt": "SELECT ... FOR UPDATE SKIP LOCKED gives every worker a consistent view of the whole queue.",
+      "prompt": "`SELECT ... FOR UPDATE SKIP LOCKED` gives every worker a consistent view of the whole queue.",
       "options": [
         {
           "id": "a",
@@ -371,7 +371,7 @@
       "concept": "Row locks",
       "type": "truefalse",
       "difficulty": 2,
-      "prompt": "A row lock taken by SELECT ... FOR UPDATE in PostgreSQL stays held until the surrounding transaction ends, even after the SELECT statement itself has finished.",
+      "prompt": "A row lock taken by `SELECT ... FOR UPDATE` in PostgreSQL stays held until the surrounding transaction ends, even after the `SELECT` statement itself has finished.",
       "options": [
         {
           "id": "a",

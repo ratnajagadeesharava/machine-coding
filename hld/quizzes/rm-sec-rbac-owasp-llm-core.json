@@ -89,7 +89,7 @@
       "concept": "Authorisation",
       "type": "single",
       "difficulty": 2,
-      "prompt": "GET /api/orders/123 returns an order belonging to another customer when a logged-in user simply changes the id. What is the right fix?",
+      "prompt": "`GET /api/orders/123` returns an order belonging to another customer when a logged-in user simply changes the id. What is the right fix?",
       "options": [
         {
           "id": "a",
@@ -115,14 +115,14 @@
       "correct": [
         "b"
       ],
-      "explanation": "BOLA (Broken Object Level Authorization) is API1 in the OWASP API Security Top 10. Enforce it in a shared layer, for example query by (id, owner) or a policy check, and test it with two accounts."
+      "explanation": "BOLA (Broken Object Level Authorization) is API1 in the OWASP API Security Top 10. Enforce it in a shared layer, for example query by `(id, owner)` or a policy check, and test it with two accounts."
     },
     {
       "id": "sql-prepare",
       "concept": "SQL injection",
       "type": "code",
       "difficulty": 2,
-      "prompt": "Write PostgreSQL statements that PREPARE a statement named find_user taking one text parameter and selecting from users where email equals that parameter, then EXECUTE it for 'a@example.com'.",
+      "prompt": "Write PostgreSQL statements that `PREPARE` a statement named `find_user` taking one text parameter and selecting from `users` where `email` equals that parameter, then `EXECUTE` it for `'a@example.com'`.",
       "language": "sql",
       "checks": [
         {
@@ -139,17 +139,17 @@
         }
       ],
       "model": "PREPARE find_user (text) AS SELECT * FROM users WHERE email = $1;\nEXECUTE find_user('a@example.com');",
-      "explanation": "The parameter is sent separately from the statement text, so a value like x' OR '1'='1 is just a string. Application drivers do the same with placeholders. Table and column names cannot be parameters: allowlist them."
+      "explanation": "The parameter is sent separately from the statement text, so a value like `x' OR '1'='1` is just a string. Application drivers do the same with placeholders. Table and column names cannot be parameters: allowlist them."
     },
     {
       "id": "sqli-rows",
       "concept": "SQL injection",
       "type": "integer",
       "difficulty": 2,
-      "prompt": "The users table has 7 rows. Code builds \"SELECT * FROM users WHERE name = '\" + input + \"'\" and the attacker sends the input x' OR '1'='1. How many rows come back?",
+      "prompt": "The `users` table has 7 rows. Code builds `\"SELECT * FROM users WHERE name = '\" + input + \"'\"` and the attacker sends the input `x' OR '1'='1`. How many rows come back?",
       "answer": 7,
       "unit": "rows",
-      "explanation": "The query becomes WHERE name = 'x' OR '1'='1', and the OR condition is true for every row, so all 7 return. The same trick with UNION or stacked statements can read other tables."
+      "explanation": "The query becomes `WHERE name = 'x' OR '1'='1'`, and the OR condition is true for every row, so all 7 return. The same trick with UNION or stacked statements can read other tables."
     },
     {
       "id": "bcrypt-cost",
@@ -159,7 +159,7 @@
       "prompt": "bcrypt's cost factor is a work exponent. How many key-expansion rounds does cost factor 12 perform?",
       "answer": 4096,
       "unit": "rounds",
-      "explanation": "The work is 2^cost, so 2^12 = 4096. Each +1 doubles the time, which lets you tune hashing speed as hardware improves."
+      "explanation": "The work is `2^cost`, so `2^12` = 4096. Each +1 doubles the time, which lets you tune hashing speed as hardware improves."
     },
     {
       "id": "password-hash",
@@ -236,7 +236,7 @@
       "options": [
         {
           "id": "a",
-          "text": "SameSite=Lax or Strict on the session cookie.",
+          "text": "`SameSite=Lax` or Strict on the session cookie.",
           "why": "Correct: the browser withholds the cookie on most cross-site requests."
         },
         {
@@ -256,7 +256,7 @@
         },
         {
           "id": "e",
-          "text": "Configuring CORS with Access-Control-Allow-Origin: *.",
+          "text": "Configuring CORS with `Access-Control-Allow-Origin: *`.",
           "why": "A wildcard does not stop forged form posts and weakens isolation."
         }
       ],
@@ -272,7 +272,7 @@
       "concept": "CSRF",
       "type": "truefalse",
       "difficulty": 3,
-      "prompt": "True or false: a stateless API that authenticates only with an Authorization: Bearer header (never cookies) is not vulnerable to classic CSRF.",
+      "prompt": "True or false: a stateless API that authenticates only with an `Authorization: Bearer` header (never cookies) is not vulnerable to classic CSRF.",
       "options": [
         {
           "id": "a",
@@ -311,7 +311,7 @@
       "correct": [
         "b"
       ],
-      "explanation": "Keep authentication and authorisation on the server. Avoid Access-Control-Allow-Origin: * together with credentials."
+      "explanation": "Keep authentication and authorisation on the server. Avoid `Access-Control-Allow-Origin: *` together with credentials."
     },
     {
       "id": "hsts-header",
@@ -335,7 +335,7 @@
         }
       ],
       "model": "Strict-Transport-Security: max-age=31536000; includeSubDomains",
-      "explanation": "HSTS is honoured only when delivered over HTTPS. Add preload only after you are sure every subdomain supports HTTPS. Content-Security-Policy and X-Content-Type-Options: nosniff are the other headers interviewers expect."
+      "explanation": "HSTS is honoured only when delivered over HTTPS. Add preload only after you are sure every subdomain supports HTTPS. `Content-Security-Policy` and `X-Content-Type-Options: nosniff` are the other headers interviewers expect."
     },
     {
       "id": "owasp-defences",
@@ -376,7 +376,7 @@
         "c": "Not this one: A is true while R is false does not describe this pair; check the truth of R again.",
         "d": "Not this one: A is false while R is true does not describe this pair; check the truth of A again."
       },
-      "explanation": "Choose the encoder for the context (HTML body, attribute, JavaScript, URL), and add a Content-Security-Policy as a second layer."
+      "explanation": "Choose the encoder for the context (HTML body, attribute, JavaScript, URL), and add a `Content-Security-Policy` as a second layer."
     },
     {
       "id": "injection-filter",
@@ -384,7 +384,7 @@
       "type": "assertion",
       "difficulty": 2,
       "prompt": "Read the assertion A and the reason R, then choose the correct relationship between them.",
-      "assertion": "Blocking the phrase \"ignore previous instructions\" fully prevents prompt injection.",
+      "assertion": "Blocking the phrase `\"ignore previous instructions\"` fully prevents prompt injection.",
       "reason": "Attackers can paraphrase, translate or encode their instructions.",
       "correct": [
         "d"
@@ -404,7 +404,7 @@
       "difficulty": 3,
       "prompt": "Read the assertion A and the reason R, then choose the correct relationship between them.",
       "assertion": "In a multi-tenant RAG app the tenant filter must be applied inside the vector search query.",
-      "reason": "If the system prompt says \"only reveal data for tenant A\", the model will reliably refuse to expose other tenants' documents.",
+      "reason": "If the system prompt says `\"only reveal data for tenant A\"`, the model will reliably refuse to expose other tenants' documents.",
       "correct": [
         "c"
       ],
@@ -460,19 +460,19 @@
       "left": [
         {
           "id": "l1",
-          "text": "LLM01:2025"
+          "text": "`LLM01:2025`"
         },
         {
           "id": "l2",
-          "text": "LLM02:2025"
+          "text": "`LLM02:2025`"
         },
         {
           "id": "l3",
-          "text": "LLM08:2025"
+          "text": "`LLM08:2025`"
         },
         {
           "id": "l4",
-          "text": "LLM10:2025"
+          "text": "`LLM10:2025`"
         }
       ],
       "right": [

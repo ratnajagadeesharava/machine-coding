@@ -16,10 +16,10 @@
       "concept": "Request validation (Spring)",
       "type": "integer",
       "difficulty": 2,
-      "prompt": "A Spring MVC controller takes @Valid @RequestBody CreateUserRequest. The JSON body violates a @NotBlank constraint and nothing else customises error handling. What HTTP status code does the client receive?",
+      "prompt": "A Spring MVC controller takes `@Valid @RequestBody CreateUserRequest`. The JSON body violates a `@NotBlank` constraint and nothing else customises error handling. What HTTP status code does the client receive?",
       "answer": 400,
       "tolerance": 0,
-      "explanation": "The resolver throws MethodArgumentNotValidException, which DefaultHandlerExceptionResolver turns into 400 Bad Request.",
+      "explanation": "The resolver throws `MethodArgumentNotValidException`, which `DefaultHandlerExceptionResolver` turns into 400 Bad Request.",
       "unit": "HTTP status"
     },
     {
@@ -27,7 +27,7 @@
       "concept": "Request validation (Spring)",
       "type": "integer",
       "difficulty": 2,
-      "prompt": "A request record is declared as CreateUser(@NotBlank String name, @Min(18) int age, @Email String email), and the controller parameter is annotated @Valid @RequestBody. A client posts {\"name\": \"\", \"age\": 10, \"email\": \"not-an-email\"}. How many constraint violations does the MethodArgumentNotValidException carry?",
+      "prompt": "A request record is declared as `CreateUser(@NotBlank String name, @Min(18) int age, @Email String email)`, and the controller parameter is annotated `@Valid @RequestBody`. A client posts `{\"name\": \"\", \"age\": 10, \"email\": \"not-an-email\"}`. How many constraint violations does the `MethodArgumentNotValidException` carry?",
       "answer": 3,
       "tolerance": 0,
       "unit": "violations",
@@ -38,7 +38,7 @@
       "concept": "REST endpoints (Spring)",
       "type": "code",
       "difficulty": 2,
-      "prompt": "Write a Spring @RestController method for POST /users. It takes a validated CreateUserRequest body, calls service.create(req) which returns a UserResponse, and answers 201 Created with that body.",
+      "prompt": "Write a Spring `@RestController` method for `POST /users`. It takes a validated `CreateUserRequest` body, calls `service.create(req)` which returns a `UserResponse`, and answers 201 Created with that body.",
       "language": "java",
       "starter": "@RestController\npublic class UserController {\n  private final UserService service;\n  // constructor omitted\n",
       "checks": [
@@ -56,18 +56,18 @@
         }
       ],
       "model": "@PostMapping(\"/users\")\npublic ResponseEntity<UserResponse> create(@Valid @RequestBody CreateUserRequest req) {\n  UserResponse out = service.create(req);\n  return ResponseEntity.status(HttpStatus.CREATED).body(out);\n}",
-      "explanation": "ResponseEntity.created(uri).body(out) is even better because it sets the Location header. @ResponseStatus(HttpStatus.CREATED) on the method is another valid way."
+      "explanation": "`ResponseEntity.created(uri).body(out)` is even better because it sets the `Location` header. `@ResponseStatus(HttpStatus.CREATED)` on the method is another valid way."
     },
     {
       "id": "spring-route-specificity",
       "concept": "REST routing (Spring)",
       "type": "single",
       "difficulty": 3,
-      "prompt": "A controller declares @GetMapping(\"/users/{id}\") first and @GetMapping(\"/users/me\") second. What does GET /users/me invoke?",
+      "prompt": "A controller declares `@GetMapping(\"/users/{id}\")` first and `@GetMapping(\"/users/me\")` second. What does `GET /users/me` invoke?",
       "options": [
         {
           "id": "a",
-          "text": "The /users/{id} handler with id = \"me\", and a 400 follows when it is converted to a number.",
+          "text": "The `/users/{id}` handler with `id = \"me\"`, and a 400 follows when it is converted to a number.",
           "why": "Pattern ranking happens before argument conversion, so the template never wins here."
         },
         {
@@ -82,7 +82,7 @@
         },
         {
           "id": "d",
-          "text": "The /users/me handler, because the more specific pattern ranks higher regardless of declaration order.",
+          "text": "The `/users/me` handler, because the more specific pattern ranks higher regardless of declaration order.",
           "why": "Correct: Spring MVC sorts matching patterns by specificity, so the literal path beats the template."
         }
       ],
@@ -96,7 +96,7 @@
       "concept": "Error handling (Spring)",
       "type": "code",
       "difficulty": 3,
-      "prompt": "Write a Spring global handler: a class annotated for all controllers with an @ExceptionHandler method for MethodArgumentNotValidException that returns a ProblemDetail with status 400 and the detail \"Validation failed\".",
+      "prompt": "Write a Spring global handler: a class annotated for all controllers with an `@ExceptionHandler` method for `MethodArgumentNotValidException` that returns a `ProblemDetail` with status 400 and the detail `\"Validation failed\"`.",
       "language": "java",
       "starter": "",
       "checks": [
@@ -114,7 +114,7 @@
         }
       ],
       "model": "@RestControllerAdvice\nclass ApiErrors {\n  @ExceptionHandler(MethodArgumentNotValidException.class)\n  ProblemDetail onInvalid(MethodArgumentNotValidException ex) {\n    return ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, \"Validation failed\");\n  }\n}",
-      "explanation": "ProblemDetail is Spring 6 / Boot 3's model of the RFC 9457 problem body (RFC 7807 before it was obsoleted), served as application/problem+json. Extending ResponseEntityExceptionHandler or setting spring.mvc.problemdetails.enabled=true are other common routes."
+      "explanation": "`ProblemDetail` is Spring 6 / Boot 3's model of the RFC 9457 problem body (RFC 7807 before it was obsoleted), served as `application/problem+json`. Extending `ResponseEntityExceptionHandler` or setting `spring.mvc.problemdetails.enabled=true` are other common routes."
     },
     {
       "id": "notnull-empty-string",
@@ -122,8 +122,8 @@
       "type": "assertion",
       "difficulty": 2,
       "prompt": "Judge the assertion and the reason.",
-      "assertion": "In Bean Validation, a String field annotated only with @NotNull accepts the empty string.",
-      "reason": "@NotNull checks only that the value is not null.",
+      "assertion": "In Bean Validation, a `String` field annotated only with `@NotNull` accepts the empty string.",
+      "reason": "`@NotNull` checks only that the value is not `null`.",
       "correct": [
         "a"
       ],
@@ -133,7 +133,7 @@
         "c": "Wrong: R is true.",
         "d": "Wrong: A is true."
       },
-      "explanation": "NotNull < NotEmpty < NotBlank. NotBlank also rejects whitespace-only strings and applies to CharSequence only. Also remember @Size(min=3) passes null."
+      "explanation": "`NotNull < NotEmpty < NotBlank`. `NotBlank` also rejects whitespace-only strings and applies to `CharSequence` only. Also remember `@Size(min=3)` passes `null`."
     },
     {
       "id": "body-validation-exception",
@@ -141,8 +141,8 @@
       "type": "assertion",
       "difficulty": 2,
       "prompt": "Judge the assertion and the reason.",
-      "assertion": "In Spring, a @Valid failure on a @RequestBody makes Spring throw ConstraintViolationException.",
-      "reason": "A @Valid failure on a @RequestBody makes Spring throw MethodArgumentNotValidException.",
+      "assertion": "In Spring, a `@Valid` failure on a `@RequestBody` makes Spring throw `ConstraintViolationException`.",
+      "reason": "A `@Valid` failure on a `@RequestBody` makes Spring throw `MethodArgumentNotValidException`.",
       "correct": [
         "d"
       ],
@@ -152,7 +152,7 @@
         "c": "Wrong: A is false.",
         "d": "Correct: body binding errors raise MethodArgumentNotValidException; ConstraintViolationException belongs to method-level validation (@Validated)."
       },
-      "explanation": "Handle MethodArgumentNotValidException for bodies and ConstraintViolationException (or HandlerMethodValidationException in Spring 6.1+) for parameters."
+      "explanation": "Handle `MethodArgumentNotValidException` for bodies and `ConstraintViolationException` (or `HandlerMethodValidationException` in Spring 6.1+) for parameters."
     },
     {
       "id": "binding-annotations",
@@ -173,7 +173,7 @@
         "@RequestHeader",
         "@ModelAttribute"
       ],
-      "explanation": "@RequestHeader reads headers and @ModelAttribute binds form fields."
+      "explanation": "`@RequestHeader` reads headers and `@ModelAttribute` binds form fields."
     },
     {
       "id": "validation-annotations",
@@ -184,23 +184,23 @@
       "left": [
         {
           "id": "l1",
-          "text": "@NotNull"
+          "text": "`@NotNull`"
         },
         {
           "id": "l2",
-          "text": "@NotEmpty"
+          "text": "`@NotEmpty`"
         },
         {
           "id": "l3",
-          "text": "@NotBlank"
+          "text": "`@NotBlank`"
         },
         {
           "id": "l4",
-          "text": "@Valid on a nested object field"
+          "text": "`@Valid` on a nested object field"
         },
         {
           "id": "l5",
-          "text": "@Validated on a controller class"
+          "text": "`@Validated` on a controller class"
         }
       ],
       "right": [
@@ -222,7 +222,7 @@
         },
         {
           "id": "r5",
-          "text": "Enables validation of method parameters such as @RequestParam"
+          "text": "Enables validation of method parameters such as `@RequestParam`"
         },
         {
           "id": "r6",
@@ -240,14 +240,14 @@
         "l4": "r4",
         "l5": "r5"
       },
-      "explanation": "The last two entries explain why query and path parameters raise ConstraintViolationException (or HandlerMethodValidationException in newer versions) while bodies raise MethodArgumentNotValidException."
+      "explanation": "The last two entries explain why query and path parameters raise `ConstraintViolationException` (or `HandlerMethodValidationException` in newer versions) while bodies raise `MethodArgumentNotValidException`."
     },
     {
       "id": "controller-advice-facts",
       "concept": "Error handling (Spring)",
       "type": "multi",
       "difficulty": 2,
-      "prompt": "Select all that apply: which statements about @RestControllerAdvice and @ExceptionHandler are correct?",
+      "prompt": "Select all that apply: which statements about `@RestControllerAdvice` and `@ExceptionHandler` are correct?",
       "options": [
         {
           "id": "a",
@@ -257,22 +257,22 @@
         {
           "id": "b",
           "text": "It also catches exceptions thrown inside Servlet filters.",
-          "why": "Filters run before DispatcherServlet, so the advice never sees their exceptions."
+          "why": "Filters run before `DispatcherServlet`, so the advice never sees their exceptions."
         },
         {
           "id": "c",
-          "text": "basePackages or annotations can narrow an advice class to some controllers.",
+          "text": "`basePackages` or annotations can narrow an advice class to some controllers.",
           "why": "The selector attributes limit which controllers the advice covers."
         },
         {
           "id": "d",
-          "text": "Every handler method must return a ResponseEntity.",
-          "why": "A body object, a ProblemDetail or void with @ResponseStatus are all accepted."
+          "text": "Every handler method must return a `ResponseEntity`.",
+          "why": "A body object, a `ProblemDetail` or void with `@ResponseStatus` are all accepted."
         },
         {
           "id": "e",
-          "text": "An exception class annotated with @ResponseStatus is turned into that status without a handler.",
-          "why": "ResponseStatusExceptionResolver reads the annotation."
+          "text": "An exception class annotated with `@ResponseStatus` is turned into that status without a handler.",
+          "why": "`ResponseStatusExceptionResolver` reads the annotation."
         },
         {
           "id": "f",
@@ -285,24 +285,24 @@
         "c",
         "e"
       ],
-      "explanation": "For errors thrown in filters, handle them in the filter itself or with an error controller. ProblemDetail gives a standard application/problem+json body."
+      "explanation": "For errors thrown in filters, handle them in the filter itself or with an error controller. `ProblemDetail` gives a standard `application/problem+json` body."
     },
     {
       "id": "unknown-body-fields",
       "concept": "Request validation (Spring)",
       "type": "single",
       "difficulty": 2,
-      "prompt": "A client posts {\"name\": \"Ann\", \"role\": \"admin\"} to an endpoint whose request record declares only name. With stock Spring Boot settings, what happens to the unknown role field?",
+      "prompt": "A client posts `{\"name\": \"Ann\", \"role\": \"admin\"}` to an endpoint whose request record declares only `name`. With stock Spring Boot settings, what happens to the unknown `role` field?",
       "options": [
         {
           "id": "a",
-          "text": "The request is rejected with 400 because role is not declared.",
+          "text": "The request is rejected with 400 because `role` is not declared.",
           "why": "Plain Jackson would fail, but Boot turns that behaviour off by default."
         },
         {
           "id": "b",
           "text": "It is silently ignored and the request succeeds.",
-          "why": "Correct: Boot disables FAIL_ON_UNKNOWN_PROPERTIES on its auto-configured ObjectMapper."
+          "why": "Correct: Boot disables `FAIL_ON_UNKNOWN_PROPERTIES` on its auto-configured `ObjectMapper`."
         },
         {
           "id": "c",
@@ -318,14 +318,14 @@
       "correct": [
         "b"
       ],
-      "explanation": "Strictness is opt-in: spring.jackson.deserialization.fail-on-unknown-properties=true, or @JsonIgnoreProperties(ignoreUnknown = false) on a class. Ignoring extras is also why binding request JSON straight into an entity invites mass assignment."
+      "explanation": "Strictness is opt-in: `spring.jackson.deserialization.fail-on-unknown-properties=true`, or `@JsonIgnoreProperties(ignoreUnknown = false)` on a class. Ignoring extras is also why binding request JSON straight into an entity invites mass assignment."
     },
     {
       "id": "bean-validation-record",
       "concept": "Request validation (Spring)",
       "type": "code",
       "difficulty": 1,
-      "prompt": "Write the Java record CreateUserRequest with a non-blank String name, a String email that must be a well-formed address, and an int age that is at least 18, using Bean Validation annotations.",
+      "prompt": "Write the Java `record` `CreateUserRequest` with a non-blank `String name`, a `String email` that must be a well-formed address, and an `int age` that is at least 18, using Bean Validation annotations.",
       "language": "java",
       "checks": [
         {
@@ -346,14 +346,14 @@
         }
       ],
       "model": "public record CreateUserRequest(\n    @NotBlank String name,\n    @Email String email,\n    @Min(18) int age) {}",
-      "explanation": "Constraints on record components are applied to the accessor and constructor parameter, so validation works when the body is bound with @Valid. @Positive or @Range-style alternatives are equally valid for age."
+      "explanation": "Constraints on `record` components are applied to the accessor and constructor parameter, so validation works when the body is bound with `@Valid`. `@Positive` or `@Range`-style alternatives are equally valid for age."
     },
     {
       "id": "response-status-404",
       "concept": "REST endpoints (Spring)",
       "type": "code",
       "difficulty": 2,
-      "prompt": "Write a Spring GET /users/{id} handler method named find that takes the id as a long path variable, calls service.find(id) returning a UserResponse or null, and answers 404 through ResponseStatusException when the result is null.",
+      "prompt": "Write a Spring `GET /users/{id}` handler method named `find` that takes the id as a `long` path variable, calls `service.find(id)` returning a `UserResponse` or `null`, and answers 404 through `ResponseStatusException` when the result is `null`.",
       "language": "java",
       "checks": [
         {
@@ -370,19 +370,19 @@
         }
       ],
       "model": "@GetMapping(\"/users/{id}\")\npublic UserResponse find(@PathVariable long id) {\n  UserResponse u = service.find(id);\n  if (u == null) throw new ResponseStatusException(HttpStatus.NOT_FOUND);\n  return u;\n}",
-      "explanation": "Returning Optional and mapping it with ResponseEntity.of(optional) is another idiom. Throwing a domain NotFoundException that a @RestControllerAdvice maps to 404 keeps controllers clean in larger applications."
+      "explanation": "Returning `Optional` and mapping it with `ResponseEntity.of(optional)` is another idiom. Throwing a domain `NotFoundException` that a `@RestControllerAdvice` maps to 404 keeps controllers clean in larger applications."
     },
     {
       "id": "path-variable-mismatch",
       "concept": "REST routing (Spring)",
       "type": "truefalse",
       "difficulty": 2,
-      "prompt": "True or false: if a handler declares @PathVariable long id and the client calls /users/abc, Spring answers 400 Bad Request by default.",
+      "prompt": "True or false: if a handler declares `@PathVariable long id` and the client calls `/users/abc`, Spring answers 400 Bad Request by default.",
       "options": [
         {
           "id": "a",
           "text": "True",
-          "why": "Correct: the failed conversion raises MethodArgumentTypeMismatchException, which becomes 400."
+          "why": "Correct: the failed conversion raises `MethodArgumentTypeMismatchException`, which becomes 400."
         },
         {
           "id": "b",
@@ -400,7 +400,7 @@
       "concept": "Request validation (Spring)",
       "type": "truefalse",
       "difficulty": 2,
-      "prompt": "True or false: by default, Spring MVC answers 422 Unprocessable Entity when a @Valid request body fails Bean Validation.",
+      "prompt": "True or false: by default, Spring MVC answers 422 Unprocessable Entity when a `@Valid` request body fails Bean Validation.",
       "options": [
         {
           "id": "a",
@@ -416,7 +416,7 @@
       "correct": [
         "b"
       ],
-      "explanation": "Teams that prefer 422 add an @ExceptionHandler for MethodArgumentNotValidException that sets that status. Both choices are defensible if consistent and documented."
+      "explanation": "Teams that prefer 422 add an `@ExceptionHandler` for `MethodArgumentNotValidException` that sets that status. Both choices are defensible if consistent and documented."
     },
     {
       "id": "entity-leak",

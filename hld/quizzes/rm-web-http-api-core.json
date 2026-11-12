@@ -76,7 +76,7 @@
         "l4": "r4",
         "l5": "r5"
       },
-      "explanation": "201 Created (with a Location header), 409 Conflict for state conflicts such as duplicates, 204 No Content, 403 Forbidden for authenticated-but-not-allowed and 401 Unauthorized for missing or bad credentials. 422 is for well-formed but semantically invalid bodies."
+      "explanation": "201 Created (with a `Location` header), 409 Conflict for state conflicts such as duplicates, 204 No Content, 403 Forbidden for authenticated-but-not-allowed and 401 Unauthorized for missing or bad credentials. 422 is for well-formed but semantically invalid bodies."
     },
     {
       "id": "status-matrix-2",
@@ -95,7 +95,7 @@
         },
         {
           "id": "l3",
-          "text": "If-Match ETag no longer matches (optimistic locking)"
+          "text": "`If-Match` ETag no longer matches (optimistic locking)"
         },
         {
           "id": "l4",
@@ -143,25 +143,25 @@
         "l4": "r4",
         "l5": "r5"
       },
-      "explanation": "202 Accepted, 429 Too Many Requests (with Retry-After), 412 Precondition Failed, 405 Method Not Allowed (with Allow), 410 Gone. 409 is for state conflicts and 415 for an unsupported Content-Type."
+      "explanation": "202 Accepted, 429 Too Many Requests (with `Retry-After`), 412 Precondition Failed, 405 Method Not Allowed (with `Allow`), 410 Gone. 409 is for state conflicts and 415 for an unsupported `Content-Type`."
     },
     {
       "id": "offset-math",
       "concept": "Pagination",
       "type": "integer",
       "difficulty": 1,
-      "prompt": "A list API takes zero-based page numbers and a page size, and translates them to SQL as OFFSET = page x size. A client asks for page 3 with size 20. How many rows does the database skip before returning the page?",
+      "prompt": "A list API takes zero-based page numbers and a page size, and translates them to SQL as `OFFSET = page x size`. A client asks for page 3 with size 20. How many rows does the database skip before returning the page?",
       "answer": 60,
       "tolerance": 0,
       "unit": "rows",
-      "explanation": "offset = 3 x 20 = 60, which is the fourth page. Off-by-one errors between zero-based and one-based page numbers are a classic bug, so document which one the API uses."
+      "explanation": "`offset = 3 x 20 = 60`, which is the fourth page. Off-by-one errors between zero-based and one-based page numbers are a classic bug, so document which one the API uses."
     },
     {
       "id": "keyset-sql",
       "concept": "Pagination",
       "type": "code",
       "difficulty": 3,
-      "prompt": "Table posts(id, created_at, title). Write SQL that returns the next page, newest first, after the cursor (:last_created_at, :last_id). Fetch 21 rows (page size 20 plus one to detect a next page) with a deterministic tiebreaker.",
+      "prompt": "Table `posts(id, created_at, title)`. Write SQL that returns the next page, newest first, after the cursor `(:last_created_at, :last_id)`. Fetch 21 rows (page size 20 plus one to detect a next page) with a deterministic tiebreaker.",
       "language": "sql",
       "starter": "SELECT ",
       "checks": [
@@ -179,7 +179,7 @@
         }
       ],
       "model": "SELECT id, created_at, title FROM posts\nWHERE (created_at, id) < (:last_created_at, :last_id)\nORDER BY created_at DESC, id DESC\nLIMIT 21;",
-      "explanation": "Keyset (cursor) pagination is stable under inserts and uses an index on (created_at, id). The expanded form created_at < :c OR (created_at = :c AND id < :i) is equally valid."
+      "explanation": "Keyset (cursor) pagination is stable under inserts and uses an index on `(created_at, id)`. The expanded form `created_at < :c OR (created_at = :c AND id < :i)` is equally valid."
     },
     {
       "id": "offset-deep-pages",
@@ -187,7 +187,7 @@
       "type": "assertion",
       "difficulty": 2,
       "prompt": "Judge the assertion and the reason.",
-      "assertion": "Offset pagination (LIMIT 20 OFFSET 100000) gets slower the deeper the client pages.",
+      "assertion": "Offset pagination (`LIMIT 20 OFFSET 100000`) gets slower the deeper the client pages.",
       "reason": "The database must walk past and discard all skipped rows before returning the page.",
       "correct": [
         "a"
@@ -198,7 +198,7 @@
         "c": "Wrong: R is true.",
         "d": "Wrong: A is true."
       },
-      "explanation": "Deep offsets are O(offset). Offsets also drift when rows are inserted or deleted between requests."
+      "explanation": "Deep offsets are `O(offset)`. Offsets also drift when rows are inserted or deleted between requests."
     },
     {
       "id": "cursor-opaque",
@@ -255,7 +255,7 @@
         "c": "Wrong: A is false; R is true.",
         "d": "Correct: a logged-in caller without permission gets 403 Forbidden. 401 is for missing or invalid credentials, which is exactly what R says."
       },
-      "explanation": "401 means \"who are you?\" (the server may add WWW-Authenticate); 403 means \"I know who you are, and you may not\". Some APIs return 404 instead of 403 to avoid revealing that a resource exists."
+      "explanation": "401 means \"who are you?\" (the server may add `WWW-Authenticate`); 403 means \"I know who you are, and you may not\". Some APIs return 404 instead of 403 to avoid revealing that a resource exists."
     },
     {
       "id": "backward-compatible",
@@ -281,12 +281,12 @@
         },
         {
           "id": "d",
-          "text": "Renaming a response field from fullName to name.",
-          "why": "Old clients that read fullName break."
+          "text": "Renaming a response field from `fullName` to `name`.",
+          "why": "Old clients that read `fullName` break."
         },
         {
           "id": "e",
-          "text": "Changing id from number to string.",
+          "text": "Changing `id` from number to string.",
           "why": "Typed clients fail to parse it."
         },
         {
@@ -321,24 +321,24 @@
         "Retry-After",
         "Warning"
       ],
-      "explanation": "Retry-After is for 429/503 and Warning is an obsolete caching header. Send these headers on old versions and log who still calls them before removal."
+      "explanation": "`Retry-After` is for 429/503 and `Warning` is an obsolete caching header. Send these headers on old versions and log who still calls them before removal."
     },
     {
       "id": "etag-304",
       "concept": "HTTP caching",
       "type": "single",
       "difficulty": 2,
-      "prompt": "A client re-requests GET /products/7 with If-None-Match set to the ETag it stored earlier, and the product has not changed. Which response is correct?",
+      "prompt": "A client re-requests `GET /products/7` with `If-None-Match` set to the `ETag` it stored earlier, and the product has not changed. Which response is correct?",
       "options": [
         {
           "id": "a",
           "text": "304 Not Modified with no body; the client reuses its cached copy.",
-          "why": "Correct: a matching If-None-Match on a GET gives 304, saving the transfer of the body."
+          "why": "Correct: a matching `If-None-Match` on a GET gives 304, saving the transfer of the body."
         },
         {
           "id": "b",
           "text": "412 Precondition Failed, because the client sent a precondition header at all.",
-          "why": "412 is for If-Match style preconditions on unsafe requests; a matching If-None-Match on GET gives 304."
+          "why": "412 is for `If-Match` style preconditions on unsafe requests; a matching `If-None-Match` on GET gives 304."
         },
         {
           "id": "c",
@@ -354,14 +354,14 @@
       "correct": [
         "a"
       ],
-      "explanation": "Conditional GET: If-None-Match + ETag gives 304 when unchanged. The mirror image for writes is If-Match, where a mismatch yields 412 and enables optimistic concurrency over HTTP."
+      "explanation": "Conditional GET: `If-None-Match` + `ETag` gives 304 when unchanged. The mirror image for writes is `If-Match`, where a mismatch yields 412 and enables optimistic concurrency over HTTP."
     },
     {
       "id": "mutation-serial",
       "concept": "GraphQL",
       "type": "integer",
       "difficulty": 3,
-      "prompt": "A GraphQL request contains three top-level mutation fields, m1, m2 and m3, and each resolver waits 100 ms on I/O. A spec-compliant server runs them one after another. Roughly how many milliseconds does the whole operation take?",
+      "prompt": "A GraphQL request contains three top-level mutation fields, `m1`, `m2` and `m3`, and each resolver waits 100 ms on I/O. A spec-compliant server runs them one after another. Roughly how many milliseconds does the whole operation take?",
       "answer": 300,
       "tolerance": 0,
       "explanation": "The GraphQL specification requires top-level mutation fields to execute serially, so 3 x 100 = 300 ms. Top-level query fields may run in parallel (about 100 ms). Serial order is what makes 'create then use' mutation lists predictable, and there is no rollback across them.",
@@ -372,10 +372,10 @@
       "concept": "GraphQL",
       "type": "integer",
       "difficulty": 3,
-      "prompt": "A GraphQL query lists 25 books and resolves author for each book. Each author resolver does its own SELECT, and the books list itself is one SELECT. How many SQL statements run in total?",
+      "prompt": "A GraphQL query lists 25 books and resolves `author` for each book. Each `author` resolver does its own `SELECT`, and the books list itself is one `SELECT`. How many SQL statements run in total?",
       "answer": 26,
       "tolerance": 0,
-      "explanation": "1 for the list plus 25 (one per book) is the N+1 problem. With a batching loader (the DataLoader pattern) the 25 author lookups collapse into one query, giving 2.",
+      "explanation": "1 for the list plus 25 (one per book) is the N+1 problem. With a batching loader (the `DataLoader` pattern) the 25 `author` lookups collapse into one query, giving 2.",
       "unit": "queries"
     },
     {
@@ -383,7 +383,7 @@
       "concept": "Idempotency",
       "type": "integer",
       "difficulty": 2,
-      "prompt": "A payments API stores the result of the first request for each Idempotency-Key and replays it for later requests with the same key. A client times out and sends the same POST with the same key 5 times in total. How many charges does the customer see?",
+      "prompt": "A payments API stores the result of the first request for each `Idempotency-Key` and replays it for later requests with the same key. A client times out and sends the same `POST` with the same key 5 times in total. How many charges does the customer see?",
       "answer": 1,
       "tolerance": 0,
       "unit": "charge",
@@ -394,7 +394,7 @@
       "concept": "Idempotency",
       "type": "code",
       "difficulty": 3,
-      "prompt": "Table idempotency_keys(key text primary key, response text). Write one PostgreSQL statement that records the key with its response only if the key is not already present, and silently does nothing when it is.",
+      "prompt": "Table `idempotency_keys(key text primary key, response text)`. Write one PostgreSQL statement that records the key with its response only if the key is not already present, and silently does nothing when it is.",
       "language": "sql",
       "checks": [
         {
@@ -411,7 +411,7 @@
         }
       ],
       "model": "INSERT INTO idempotency_keys (key, response)\nVALUES (:key, :response)\nON CONFLICT (key) DO NOTHING;",
-      "explanation": "The primary key makes the claim atomic: of two concurrent requests, exactly one insert succeeds (check the affected row count: 1 means \"you own this key\", 0 means \"replay the stored response\"). Other databases spell it INSERT IGNORE or MERGE.",
+      "explanation": "The primary key makes the claim atomic: of two concurrent requests, exactly one insert succeeds (check the affected row count: 1 means \"you own this key\", 0 means \"replay the stored response\"). Other databases spell it `INSERT IGNORE` or `MERGE`.",
       "starter": "INSERT INTO "
     },
     {
@@ -419,7 +419,7 @@
       "concept": "HTTP status codes",
       "type": "single",
       "difficulty": 2,
-      "prompt": "A client receives 429 Too Many Requests with the header Retry-After: 30. What is the best behaviour?",
+      "prompt": "A client receives 429 Too Many Requests with the header `Retry-After: 30`. What is the best behaviour?",
       "options": [
         {
           "id": "a",
@@ -429,7 +429,7 @@
         {
           "id": "b",
           "text": "Wait at least 30 seconds, then retry, adding jitter and a retry cap.",
-          "why": "Correct: Retry-After tells the client the earliest sensible moment; jitter avoids a thundering herd."
+          "why": "Correct: `Retry-After` tells the client the earliest sensible moment; jitter avoids a thundering herd."
         },
         {
           "id": "c",
@@ -445,14 +445,14 @@
       "correct": [
         "b"
       ],
-      "explanation": "Respect Retry-After, back off exponentially when it is absent, and cap the number of retries. Servers should also say which limit was hit."
+      "explanation": "Respect `Retry-After`, back off exponentially when it is absent, and cap the number of retries. Servers should also say which limit was hit."
     },
     {
       "id": "put-patch-semantics",
       "concept": "REST design",
       "type": "single",
       "difficulty": 2,
-      "prompt": "Which description of PUT versus PATCH on /users/7 matches HTTP semantics?",
+      "prompt": "Which description of PUT versus PATCH on `/users/7` matches HTTP semantics?",
       "options": [
         {
           "id": "a",
@@ -505,7 +505,7 @@
         {
           "id": "d",
           "text": "It always reports the exact total number of pages.",
-          "why": "A total needs a separate COUNT; the cursor alone does not give it."
+          "why": "A total needs a separate `COUNT`; the cursor alone does not give it."
         },
         {
           "id": "e",
@@ -514,7 +514,7 @@
         },
         {
           "id": "f",
-          "text": "It works well with any ORDER BY, even on unindexed columns.",
+          "text": "It works well with any `ORDER BY`, even on unindexed columns.",
           "why": "Without a supporting index the database still sorts or scans a lot."
         }
       ],
@@ -530,12 +530,12 @@
       "concept": "HTTP caching",
       "type": "single",
       "difficulty": 3,
-      "prompt": "A client sends PUT /documents/9 with If-Match: \"v4\", but the stored ETag is now \"v5\". Which response fits best?",
+      "prompt": "A client sends `PUT /documents/9` with `If-Match: \"v4\"`, but the stored `ETag` is now \"v5\". Which response fits best?",
       "options": [
         {
           "id": "a",
           "text": "412 Precondition Failed, and the client must re-fetch before editing again.",
-          "why": "Correct: If-Match turns the PUT into a compare-and-set; a mismatch yields 412."
+          "why": "Correct: `If-Match` turns the PUT into a compare-and-set; a mismatch yields 412."
         },
         {
           "id": "b",
@@ -545,7 +545,7 @@
         {
           "id": "c",
           "text": "200 OK, and the server overwrites the document anyway.",
-          "why": "That is the lost-update bug If-Match exists to prevent."
+          "why": "That is the lost-update bug `If-Match` exists to prevent."
         },
         {
           "id": "d",
@@ -556,7 +556,7 @@
       "correct": [
         "a"
       ],
-      "explanation": "This is optimistic concurrency over HTTP: ETag on read, If-Match on write. Some APIs use 409 Conflict instead, which is also defensible if documented."
+      "explanation": "This is optimistic concurrency over HTTP: `ETag` on read, `If-Match` on write. Some APIs use 409 Conflict instead, which is also defensible if documented."
     }
   ]
 }

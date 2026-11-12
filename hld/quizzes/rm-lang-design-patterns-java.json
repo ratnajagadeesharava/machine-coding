@@ -16,7 +16,7 @@
       "concept": "Singleton",
       "type": "code",
       "difficulty": 2,
-      "prompt": "Write a thread-safe, lazily initialised Java singleton class Config using the initialization-on-demand holder idiom (or an enum).",
+      "prompt": "Write a thread-safe, lazily initialised Java singleton class `Config` using the initialization-on-demand holder idiom (or an enum).",
       "language": "java",
       "starter": "",
       "checks": [
@@ -34,14 +34,14 @@
         }
       ],
       "model": "public final class Config {\n  private Config() {}\n  private static class Holder { static final Config INSTANCE = new Config(); }\n  public static Config getInstance() { return Holder.INSTANCE; }\n}",
-      "explanation": "The JVM initialises the Holder class lazily and exactly once, which makes it thread-safe without synchronization. enum Config { INSTANCE } is the Effective Java answer and also survives serialization and reflection. Double-checked locking needs a volatile field."
+      "explanation": "The JVM initialises the `Holder` class lazily and exactly once, which makes it thread-safe without synchronization. `enum Config { INSTANCE }` is the Effective Java answer and also survives serialization and reflection. Double-checked locking needs a `volatile` field."
     },
     {
       "id": "builder-pizza",
       "concept": "Builder",
       "type": "code",
       "difficulty": 2,
-      "prompt": "Write a Java class Pizza with a required int size and an optional boolean cheese, constructed through a nested static Builder class (fluent setters and a build() method).",
+      "prompt": "Write a Java class `Pizza` with a required `int size` and an optional `boolean cheese`, constructed through a nested static `Builder` class (fluent setters and a `build()` method).",
       "language": "java",
       "starter": "public class Pizza {\n",
       "checks": [
@@ -63,14 +63,14 @@
         }
       ],
       "model": "public class Pizza {\n  private final int size; private final boolean cheese;\n  private Pizza(Builder b) { size = b.size; cheese = b.cheese; }\n  public static class Builder {\n    private final int size; private boolean cheese;\n    public Builder(int size) { this.size = size; }\n    public Builder cheese(boolean c) { cheese = c; return this; }\n    public Pizza build() { return new Pizza(this); }\n  }\n}",
-      "explanation": "Builder avoids telescoping constructors and lets you validate in build(). A record plus a builder, or a generated builder, gives the same result."
+      "explanation": "`Builder` avoids telescoping constructors and lets you validate in `build()`. A record plus a builder, or a generated builder, gives the same result."
     },
     {
       "id": "observer-subject",
       "concept": "Observer",
       "type": "code",
       "difficulty": 2,
-      "prompt": "Write a Java class Subject with subscribe(Consumer<String>) and publish(String) so that publishing calls every subscriber with the message.",
+      "prompt": "Write a Java class `Subject` with `subscribe(Consumer<String>)` and `publish(String)` so that publishing calls every subscriber with the message.",
       "language": "java",
       "starter": "class Subject {\n",
       "checks": [
@@ -92,14 +92,14 @@
         }
       ],
       "model": "class Subject {\n  private final List<Consumer<String>> subs = new CopyOnWriteArrayList<>();\n  void subscribe(Consumer<String> c) { subs.add(c); }\n  void publish(String msg) { subs.forEach(c -> c.accept(msg)); }\n}",
-      "explanation": "CopyOnWriteArrayList lets a subscriber unsubscribe during notification; a plain ArrayList would throw ConcurrentModificationException then. An unsubscribe method avoids leaks."
+      "explanation": "`CopyOnWriteArrayList` lets a subscriber unsubscribe during notification; a plain `ArrayList` would throw `ConcurrentModificationException` then. An unsubscribe method avoids leaks."
     },
     {
       "id": "strategy-comparator",
       "concept": "Strategy",
       "type": "code",
       "difficulty": 1,
-      "prompt": "Given a List<String> words, write one Java statement that sorts it by string length by passing a Comparator strategy to the list.",
+      "prompt": "Given a `List<String> words`, write one Java statement that sorts it by string length by passing a `Comparator` strategy to the list.",
       "language": "java",
       "checks": [
         {
@@ -112,7 +112,7 @@
         }
       ],
       "model": "words.sort(Comparator.comparingInt(String::length));",
-      "explanation": "words.sort((a, b) -> a.length() - b.length()) works too; the Comparator is the interchangeable strategy."
+      "explanation": "`words.sort((a, b) -> a.length() - b.length())` works too; the `Comparator` is the interchangeable strategy."
     },
     {
       "id": "singleton-pitfalls",
@@ -128,7 +128,7 @@
         },
         {
           "id": "b",
-          "text": "Double-checked locking without a volatile field can publish a half-built object.",
+          "text": "Double-checked locking without a `volatile` field can publish a half-built object.",
           "why": "The classic broken variant before the Java 5 memory model fix."
         },
         {
@@ -139,11 +139,11 @@
         {
           "id": "d",
           "text": "Serialization or reflection can create a second instance unless guarded.",
-          "why": "readResolve or an enum singleton prevents this."
+          "why": "`readResolve` or an enum singleton prevents this."
         },
         {
           "id": "e",
-          "text": "A Java enum singleton can be duplicated through Constructor.newInstance.",
+          "text": "A Java enum singleton can be duplicated through `Constructor.newInstance`.",
           "why": "The JDK refuses to reflectively instantiate enum types."
         },
         {
@@ -166,7 +166,7 @@
       "type": "assertion",
       "difficulty": 3,
       "prompt": "Read the assertion (A) and the reason (R), then choose the option that fits.",
-      "assertion": "A Java enum with one constant is a safe way to implement a Singleton.",
+      "assertion": "A Java `enum` with one constant is a safe way to implement a Singleton.",
       "reason": "Enum types can implement interfaces.",
       "correct": [
         "b"
@@ -177,19 +177,19 @@
         "c": "R is true.",
         "d": "A is true; Effective Java recommends this approach."
       },
-      "explanation": "Limitation: the enum cannot extend another class, and it is eagerly loaded when the enum class initialises."
+      "explanation": "Limitation: the `enum` cannot extend another class, and it is eagerly loaded when the `enum` class initialises."
     },
     {
       "id": "decorator-io",
       "concept": "Decorator",
       "type": "single",
       "difficulty": 2,
-      "prompt": "In new BufferedInputStream(new FileInputStream(file)), which design pattern is BufferedInputStream an example of?",
+      "prompt": "In `new BufferedInputStream(new FileInputStream(file))`, which design pattern is `BufferedInputStream` an example of?",
       "options": [
         {
           "id": "a",
           "text": "Decorator",
-          "why": "Correct: it wraps another InputStream, implements the same abstraction and adds buffering."
+          "why": "Correct: it wraps another `InputStream`, implements the same abstraction and adds buffering."
         },
         {
           "id": "b",
@@ -210,50 +210,50 @@
       "correct": [
         "a"
       ],
-      "explanation": "The java.io readers and streams are the textbook decorator chain: each layer adds one capability."
+      "explanation": "The `java.io` readers and streams are the textbook decorator chain: each layer adds one capability."
     },
     {
       "id": "lambda-capture",
       "concept": "Lambdas and captures",
       "type": "single",
       "difficulty": 3,
-      "prompt": "What happens when this Java code is compiled?\n\nList<Runnable> tasks = new ArrayList<>();\nfor (int i = 0; i < 3; i++) {\n  tasks.add(() -> System.out.println(i));\n}\n\nWhat is the outcome?",
+      "prompt": "What happens when this Java code is compiled?\n\n```java\nList<Runnable> tasks = new ArrayList<>();\nfor (int i = 0; i < 3; i++) {\n    tasks.add(() -> System.out.println(i));\n}\n```\n\nWhat is the outcome?",
       "options": [
         {
           "id": "a",
-          "text": "Compile error: i must be final or effectively final",
+          "text": "`Compile error: i must be final or effectively final`",
           "why": "Correct: the loop variable changes each iteration, so a lambda cannot capture it."
         },
         {
           "id": "b",
-          "text": "It compiles and the tasks print 3, 3, 3",
+          "text": "It compiles and the tasks print `3, 3, 3`",
           "why": "That would be a late-binding bug; Java rejects the capture instead."
         },
         {
           "id": "c",
-          "text": "It compiles and the tasks print 0, 1, 2",
+          "text": "It compiles and the tasks print `0, 1, 2`",
           "why": "Capturing a changing local is not permitted, so there is no output to print."
         },
         {
           "id": "d",
-          "text": "It compiles but throws ConcurrentModificationException",
+          "text": "It compiles but throws `ConcurrentModificationException`",
           "why": "The list is not modified while it is iterated."
         }
       ],
       "correct": [
         "a"
       ],
-      "explanation": "Copy the value into a final local (final int n = i;) or use a stream such as IntStream.range."
+      "explanation": "Copy the value into a final local (`final int n = i;`) or use a stream such as `IntStream.range`."
     },
     {
       "id": "holder-instances",
       "concept": "Singleton",
       "type": "integer",
       "difficulty": 2,
-      "prompt": "A singleton Config is created with the initialization-on-demand holder idiom, and its constructor increments a static counter created. Three threads each call Config.getInstance() five times. What is the value of created at the end?",
+      "prompt": "A singleton `Config` is created with the initialization-on-demand holder idiom, and its constructor increments a static counter created. Three threads each call `Config.getInstance()` five times. What is the value of created at the end?",
       "answer": 1,
       "tolerance": 0,
-      "explanation": "The nested Holder class is initialised once, in a thread-safe way, by the class initialisation rules, so the constructor runs exactly once."
+      "explanation": "The nested `Holder` class is initialised once, in a thread-safe way, by the class initialisation rules, so the constructor runs exactly once."
     },
     {
       "id": "holder-fill",

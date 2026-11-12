@@ -107,22 +107,22 @@
       "concept": "Scheduled jobs",
       "type": "integer",
       "difficulty": 1,
-      "prompt": "A Unix cron entry reads \"30 2 * * 1-5\" (minute hour day-of-month month day-of-week, with 1-5 meaning Monday to Friday). How many times does it fire in one seven-day week?",
+      "prompt": "A Unix cron entry reads `\"30 2 * * 1-5\"` (minute hour day-of-month month day-of-week, with `1-5` meaning Monday to Friday). How many times does it fire in one seven-day week?",
       "answer": 5,
       "tolerance": 0,
       "unit": "runs",
-      "explanation": "It fires at 02:30 on each of the five weekdays: 5 runs. Unix cron has five fields; some schedulers add a leading seconds field, so always check the dialect."
+      "explanation": "It fires at `02:30` on each of the five weekdays: 5 runs. Unix cron has five fields; some schedulers add a leading seconds field, so always check the dialect."
     },
     {
       "id": "fixed-delay-count",
       "concept": "Scheduled jobs",
       "type": "integer",
       "difficulty": 2,
-      "prompt": "A job loop waits 2 seconds after each run finishes before starting the next run (fixed delay). Each run takes 3 seconds and the first run starts at t = 0 s on a single thread. How many runs have started by t = 62 s, counting the one at t = 0?",
+      "prompt": "A job loop waits 2 seconds after each run finishes before starting the next run (fixed delay). Each run takes 3 seconds and the first run starts at `t = 0 s` on a single thread. How many runs have started by `t = 62 s`, counting the one at `t = 0`?",
       "answer": 13,
       "tolerance": 0,
       "unit": "runs",
-      "explanation": "Each cycle is 3 + 2 = 5 s, so runs start at 0, 5, 10 ... 60: that is 13 starts. A fixed-rate schedule on one thread would instead start the next run as soon as a late one ends, never overlapping."
+      "explanation": "Each cycle is `3 + 2 = 5 s`, so runs start at 0, 5, 10 ... 60: that is 13 starts. A fixed-rate schedule on one thread would instead start the next run as soon as a late one ends, never overlapping."
     },
     {
       "id": "duplicate-runs",
@@ -140,7 +140,7 @@
       "concept": "Multi-instance jobs",
       "type": "code",
       "difficulty": 2,
-      "prompt": "Write the single Redis command that sets key lock:nightly to the value 1 only if the key does not exist, expiring after 300 seconds, so that only one instance runs the job.",
+      "prompt": "Write the single Redis command that sets key `lock:nightly` to the value `1` only if the key does not exist, expiring after 300 seconds, so that only one instance runs the job.",
       "language": "bash",
       "checks": [
         {
@@ -157,7 +157,7 @@
         }
       ],
       "model": "SET lock:nightly 1 NX EX 300",
-      "explanation": "SET with NX and EX is one atomic step, unlike SETNX followed by EXPIRE (a crash between them leaves a lock that never expires). The reply is OK for the winner and nil for everyone else. Choose a TTL longer than the job, or renew it."
+      "explanation": "`SET` with `NX` and `EX` is one atomic step, unlike `SETNX` followed by `EXPIRE` (a crash between them leaves a lock that never expires). The reply is `OK` for the winner and `nil` for everyone else. Choose a TTL longer than the job, or renew it."
     },
     {
       "id": "retry-executions",
@@ -369,14 +369,14 @@
         "id:",
         "a NUL byte"
       ],
-      "explanation": "The browser EventSource reconnects automatically and sends Last-Event-ID if the server set id: lines. Remember that proxies must not buffer the response."
+      "explanation": "The browser `EventSource` reconnects automatically and sends `Last-Event-ID` if the server set `id:` lines. Remember that proxies must not buffer the response."
     },
     {
       "id": "k8s-probes-yaml",
       "concept": "Health checks",
       "type": "code",
       "difficulty": 2,
-      "prompt": "Write the container probe section of a Kubernetes pod spec: a livenessProbe doing an HTTP GET on /live and a readinessProbe doing an HTTP GET on /ready, both on port 8080.",
+      "prompt": "Write the container probe section of a Kubernetes pod spec: a `livenessProbe` doing an HTTP GET on `/live` and a `readinessProbe` doing an HTTP GET on `/ready`, both on port `8080`.",
       "language": "yaml",
       "checks": [
         {
@@ -397,7 +397,7 @@
         }
       ],
       "model": "livenessProbe:\n  httpGet:\n    path: /live\n    port: 8080\nreadinessProbe:\n  httpGet:\n    path: /ready\n    port: 8080",
-      "explanation": "Real manifests also set initialDelaySeconds, periodSeconds and failureThreshold; a startupProbe is added for slow boots. The endpoint behind /live must not call the database."
+      "explanation": "Real manifests also set `initialDelaySeconds`, `periodSeconds` and `failureThreshold`; a `startupProbe` is added for slow boots. The endpoint behind `/live` must not call the database."
     }
   ]
 }

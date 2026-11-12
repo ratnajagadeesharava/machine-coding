@@ -17,8 +17,8 @@
       "type": "assertion",
       "difficulty": 2,
       "prompt": "Judge the assertion and the reason.",
-      "assertion": "FastAPI BackgroundTasks run after the response has been sent.",
-      "reason": "BackgroundTasks run in the same process as the web server, so they are lost if that process dies.",
+      "assertion": "FastAPI `BackgroundTasks` run after the response has been sent.",
+      "reason": "`BackgroundTasks` run in the same process as the web server, so they are lost if that process dies.",
       "correct": [
         "b"
       ],
@@ -35,7 +35,7 @@
       "concept": "Background jobs (FastAPI)",
       "type": "code",
       "difficulty": 2,
-      "prompt": "Write a FastAPI POST /signup handler signup(email: str, tasks: BackgroundTasks) that queues send_welcome_email(email) to run after the response and answers with status code 202.",
+      "prompt": "Write a FastAPI `POST /signup` handler `signup(email: str, tasks: BackgroundTasks)` that queues `send_welcome_email(email)` to run after the response and answers with status code 202.",
       "language": "python",
       "starter": "",
       "checks": [
@@ -53,7 +53,7 @@
         }
       ],
       "model": "@app.post(\"/signup\", status_code=202)\ndef signup(email: str, tasks: BackgroundTasks):\n    tasks.add_task(send_welcome_email, email)\n    return {\"status\": \"queued\"}",
-      "explanation": "The task function and args are passed separately to add_task. Both async and plain functions are accepted."
+      "explanation": "The task function and args are passed separately to `add_task`. Both async and plain functions are accepted."
     },
     {
       "id": "background-lost-on-restart",
@@ -61,8 +61,8 @@
       "type": "assertion",
       "difficulty": 2,
       "prompt": "Judge the assertion and the reason.",
-      "assertion": "A job added with FastAPI BackgroundTasks survives a restart of the server process.",
-      "reason": "BackgroundTasks run inside the same process as the web server.",
+      "assertion": "A job added with FastAPI `BackgroundTasks` survives a restart of the server process.",
+      "reason": "`BackgroundTasks` run inside the same process as the web server.",
       "correct": [
         "d"
       ],
@@ -98,7 +98,7 @@
       "concept": "Background jobs (Celery)",
       "type": "code",
       "difficulty": 3,
-      "prompt": "Write a Celery task send_email(self, to) bound to itself (bind=True), allowing at most 3 retries with a 10 second default delay. It calls deliver(to) and, if that raises ConnectionError, retries the task with the caught exception.",
+      "prompt": "Write a Celery task `send_email(self, to)` bound to itself (`bind=True`), allowing at most 3 retries with a 10 second default delay. It calls `deliver(to)` and, if that raises `ConnectionError`, retries the task with the caught exception.",
       "language": "python",
       "checks": [
         {
@@ -119,7 +119,7 @@
         }
       ],
       "model": "@celery.task(bind=True, max_retries=3, default_retry_delay=10)\ndef send_email(self, to):\n    try:\n        deliver(to)\n    except ConnectionError as exc:\n        raise self.retry(exc=exc)",
-      "explanation": "Verified with an eager Celery app: a task that always fails runs 4 times (the first call plus 3 retries). Raising self.retry (rather than just calling it) ends the current run immediately.",
+      "explanation": "Verified with an eager Celery app: a task that always fails runs 4 times (the first call plus 3 retries). Raising `self.retry` (rather than just calling it) ends the current run immediately.",
       "starter": "from celery import Celery\ncelery = Celery(\"jobs\")\n"
     },
     {
@@ -127,7 +127,7 @@
       "concept": "Background jobs (Celery)",
       "type": "integer",
       "difficulty": 2,
-      "prompt": "A Celery task declared with max_retries=3 always fails and calls self.retry(exc=exc) each time. It is published once. How many times does the task body run in total?",
+      "prompt": "A Celery task declared with `max_retries=3` always fails and calls `self.retry(exc=exc)` each time. It is published once. How many times does the task body run in total?",
       "answer": 4,
       "tolerance": 0,
       "unit": "executions",
@@ -138,7 +138,7 @@
       "concept": "Scheduled jobs (Celery)",
       "type": "code",
       "difficulty": 2,
-      "prompt": "Write a Celery beat schedule on celery.conf that runs the task \"tasks.cleanup\" every day at 02:00 using crontab, under the entry name \"nightly-cleanup\".",
+      "prompt": "Write a Celery beat schedule on `celery.conf` that runs the task `\"tasks.cleanup\"` every day at 02:00 using `crontab`, under the entry name `\"nightly-cleanup\"`.",
       "language": "python",
       "checks": [
         {
@@ -163,18 +163,18 @@
       "concept": "Multi-instance jobs",
       "type": "integer",
       "difficulty": 3,
-      "prompt": "A FastAPI service starts an in-process APScheduler with a nightly cron job inside its lifespan handler. It is deployed with 4 uvicorn worker processes on each of 2 machines. How many times does the job fire each night across the whole deployment?",
+      "prompt": "A FastAPI service starts an in-process `APScheduler` with a nightly cron job inside its `lifespan` handler. It is deployed with 4 `uvicorn` worker processes on each of 2 machines. How many times does the job fire each night across the whole deployment?",
       "answer": 8,
       "tolerance": 0,
       "unit": "runs",
-      "explanation": "Each worker process runs its own lifespan and therefore its own scheduler: 4 x 2 = 8 runs. Run the scheduler in one dedicated process, use a distributed lock, or move scheduling to Celery beat or a cluster cron job."
+      "explanation": "Each worker process runs its own `lifespan` and therefore its own scheduler: 4 x 2 = 8 runs. Run the scheduler in one dedicated process, use a distributed lock, or move scheduling to Celery beat or a cluster cron job."
     },
     {
       "id": "redis-job-lock",
       "concept": "Multi-instance jobs",
       "type": "code",
       "difficulty": 3,
-      "prompt": "Python with redis-py: at the start of a scheduled job, take a lock so only one instance runs it. Use the single atomic call that sets key lock:nightly only if it does not exist, expiring after 300 seconds, and return early if the lock was not acquired.",
+      "prompt": "Python with `redis-py`: at the start of a scheduled job, take a lock so only one instance runs it. Use the single atomic call that sets key `lock:nightly` only if it does not exist, expiring after 300 seconds, and return early if the lock was not acquired.",
       "language": "python",
       "starter": "import redis\nr = redis.Redis()\n",
       "checks": [
@@ -192,14 +192,14 @@
         }
       ],
       "model": "if not r.set(\"lock:nightly\", \"1\", nx=True, ex=300):\n    return  # another instance holds the lock\nrun_cleanup()",
-      "explanation": "SET NX EX is atomic, unlike SETNX followed by EXPIRE. Pick a TTL longer than the job, or renew it. A lock library such as redis-py's Lock adds renewal and ownership checks."
+      "explanation": "`SET NX EX` is atomic, unlike `SETNX` followed by `EXPIRE`. Pick a TTL longer than the job, or renew it. A lock library such as `redis-py`'s `Lock` adds renewal and ownership checks."
     },
     {
       "id": "fastapi-ready",
       "concept": "Health checks (FastAPI)",
       "type": "code",
       "difficulty": 2,
-      "prompt": "Write GET /health/ready for FastAPI. Call db_ping() (raises on failure); on success return {\"status\": \"ok\"}, on failure answer HTTP 503.",
+      "prompt": "Write `GET /health/ready` for FastAPI. Call `db_ping()` (raises on failure)`;` on success return `{\"status\": \"ok\"}`, on failure answer HTTP 503.",
       "language": "python",
       "starter": "from fastapi import HTTPException\n",
       "checks": [
@@ -217,7 +217,7 @@
         }
       ],
       "model": "@app.get(\"/health/ready\")\ndef ready():\n    try:\n        db_ping()\n    except Exception:\n        raise HTTPException(status_code=503, detail=\"db down\")\n    return {\"status\": \"ok\"}",
-      "explanation": "A JSONResponse(status_code=503) is equally fine. Keep readiness cheap and time-boxed."
+      "explanation": "A `JSONResponse(status_code=503)` is equally fine. Keep readiness cheap and time-boxed."
     },
     {
       "id": "fastapi-liveness-db",
@@ -228,7 +228,7 @@
       "options": [
         {
           "id": "a",
-          "text": "In /health/live, so pods that lose the database are restarted quickly.",
+          "text": "In `/health/live`, so pods that lose the database are restarted quickly.",
           "why": "A database outage would restart every pod and lengthen recovery."
         },
         {
@@ -238,7 +238,7 @@
         },
         {
           "id": "c",
-          "text": "In /health/ready only; /health/live just returns 200 if the process responds.",
+          "text": "In `/health/ready` only; `/health/live` just returns 200 if the process responds.",
           "why": "Correct: readiness failure removes the pod from traffic without killing it."
         },
         {
@@ -250,7 +250,7 @@
       "correct": [
         "c"
       ],
-      "explanation": "Keep both routes cheap and time-boxed (asyncio.wait_for around the ping) and let the orchestrator decide using readiness for traffic and liveness for deadlocks."
+      "explanation": "Keep both routes cheap and time-boxed (`asyncio.wait_for` around the ping) and let the orchestrator decide using readiness for traffic and liveness for deadlocks."
     },
     {
       "id": "secrets-practices",
@@ -266,22 +266,22 @@
         },
         {
           "id": "b",
-          "text": "Commit a .env file that contains production credentials.",
+          "text": "Commit a `.env` file that contains production credentials.",
           "why": "Anything in version-control history must be treated as compromised."
         },
         {
           "id": "c",
-          "text": "Use SecretStr in pydantic settings so values are masked in repr and logs.",
-          "why": "get_secret_value() is required to read the real value."
+          "text": "Use `SecretStr` in pydantic settings so values are masked in `repr` and logs.",
+          "why": "`get_secret_value()` is required to read the real value."
         },
         {
           "id": "d",
-          "text": "Print settings.model_dump() at startup to help debugging.",
+          "text": "Print `settings.model_dump()` at startup to help debugging.",
           "why": "That writes secret values into log aggregation."
         },
         {
           "id": "e",
-          "text": "Let BaseSettings fail at startup when a required variable is missing.",
+          "text": "Let `BaseSettings` fail at startup when a required variable is missing.",
           "why": "A crash at boot is cheaper than a failure on the first request."
         },
         {
@@ -302,7 +302,7 @@
       "concept": "Background jobs (Celery)",
       "type": "truefalse",
       "difficulty": 3,
-      "prompt": "True or false: with acks_late=True a Celery message is acknowledged only after the task finishes, so a worker crash mid-task leads to redelivery.",
+      "prompt": "True or false: with `acks_late=True` a Celery message is acknowledged only after the task finishes, so a worker crash mid-task leads to redelivery.",
       "options": [
         {
           "id": "a",

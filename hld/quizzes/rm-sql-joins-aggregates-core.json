@@ -20,23 +20,23 @@
       "left": [
         {
           "id": "a",
-          "text": "INNER JOIN"
+          "text": "`INNER JOIN`"
         },
         {
           "id": "b",
-          "text": "LEFT JOIN"
+          "text": "`LEFT JOIN`"
         },
         {
           "id": "c",
-          "text": "FULL OUTER JOIN"
+          "text": "`FULL OUTER JOIN`"
         },
         {
           "id": "d",
-          "text": "CROSS JOIN"
+          "text": "`CROSS JOIN`"
         },
         {
           "id": "e",
-          "text": "LEFT JOIN ... WHERE right.id IS NULL"
+          "text": "`LEFT JOIN ... WHERE right.id IS NULL`"
         },
         {
           "id": "f",
@@ -81,16 +81,16 @@
         "e": "t",
         "f": "u"
       },
-      "explanation": "Every outer join is \"inner join plus the unmatched rows\". The LEFT JOIN + IS NULL idiom is the anti-join; NOT EXISTS is its cleaner, NULL-safe cousin."
+      "explanation": "Every outer join is \"inner join plus the unmatched rows\". The `LEFT JOIN + IS NULL` idiom is the anti-join; `NOT EXISTS` is its cleaner, `NULL`-safe cousin."
     },
     {
       "id": "group-by-null-groups",
       "concept": "Aggregation",
       "type": "integer",
       "difficulty": 2,
-      "prompt": "Table employees has 8 rows whose dept_id values are 1, 1, 1, 2, 2, 2, 3 and NULL. How many rows does SELECT dept_id, COUNT(*) FROM employees GROUP BY dept_id return?",
+      "prompt": "Table `employees` has 8 rows whose `dept_id` values are 1, 1, 1, 2, 2, 2, 3 and `NULL`. How many rows does\n\n```sql\nSELECT dept_id, COUNT(*) FROM employees GROUP BY dept_id\n```\n\nreturn?",
       "answer": 4,
-      "explanation": "GROUP BY treats all NULLs as one group, so the groups are 1, 2, 3 and NULL. (Verified on PostgreSQL.) This differs from equality, where NULL = NULL is not true.",
+      "explanation": "`GROUP BY` treats all NULLs as one group, so the groups are 1, 2, 3 and `NULL`. (Verified on PostgreSQL.) This differs from equality, where `NULL = NULL` is not true.",
       "unit": "rows"
     },
     {
@@ -98,9 +98,9 @@
       "concept": "Aggregation",
       "type": "integer",
       "difficulty": 3,
-      "prompt": "departments has ids 1, 2, 3, 4 (id 4 is Legal); employees.dept_id values are 1, 1, 1, 2, 2, 2, 3 and NULL. For SELECT d.name, COUNT(*) FROM departments d LEFT JOIN employees e ON e.dept_id = d.id GROUP BY d.name, what count is shown next to Legal?",
+      "prompt": "```text\ndepartments has ids 1, 2, 3, 4 (id 4 is Legal);\nemployees.dept_id values are 1, 1, 1, 2, 2, 2, 3 and NULL.\n```\n\nFor `SELECT d.name, COUNT(*) FROM departments d LEFT JOIN employees e ON e.dept_id = d.id GROUP BY d.name`, what count is shown next to Legal?",
       "answer": 1,
-      "explanation": "The unmatched department still produces one null-extended row, and COUNT(*) counts rows, so Legal shows 1. COUNT(e.id) would show 0 because it ignores NULLs. Classic interview trap.",
+      "explanation": "The unmatched department still produces one null-extended row, and `COUNT(*)` counts rows, so Legal shows 1. `COUNT(e.id)` would show 0 because it ignores NULLs. Classic interview trap.",
       "unit": "count"
     },
     {
@@ -108,9 +108,9 @@
       "concept": "NULL semantics",
       "type": "integer",
       "difficulty": 3,
-      "prompt": "employees has ids 1 to 8 and manager_id values NULL, 1, 1, 1, 4, 4, 1, 7 (one row has no manager). How many rows does SELECT * FROM employees WHERE id NOT IN (SELECT manager_id FROM employees) return?",
+      "prompt": "`employees` has ids 1 to 8 and `manager_id` values `NULL`, 1, 1, 1, 4, 4, 1, 7 (one row has no manager). How many rows does\n\n```sql\nSELECT * FROM employees WHERE id NOT IN (SELECT manager_id FROM employees)\n```\n\nreturn?",
       "answer": 0,
-      "explanation": "NOT IN against a list that contains NULL can never be true: id <> NULL is unknown for every id that is not matched. The query returns 0 rows although employees 2, 3, 5, 6 and 8 manage nobody. NOT EXISTS (or filtering manager_id IS NOT NULL) returns the 5 non-managers.",
+      "explanation": "`NOT IN` against a list that contains `NULL` can never be true: `id <> NULL` is unknown for every id that is not matched. The query returns 0 rows although employees 2, 3, 5, 6 and 8 manage nobody. `NOT EXISTS` (or filtering `manager_id IS NOT NULL`) returns the 5 non-managers.",
       "unit": "rows"
     },
     {
@@ -119,8 +119,8 @@
       "type": "assertion",
       "difficulty": 1,
       "prompt": "Read the assertion (A) and the reason (R), then choose the option that fits.",
-      "assertion": "A condition such as COUNT(*) > 1 must be written in HAVING, not in WHERE.",
-      "reason": "WHERE is evaluated before GROUP BY, at a point where the aggregates do not exist yet.",
+      "assertion": "A condition such as `COUNT(*) > 1` must be written in `HAVING`, not in `WHERE`.",
+      "reason": "`WHERE` is evaluated before `GROUP BY`, at a point where the aggregates do not exist yet.",
       "correct": [
         "a"
       ],
@@ -130,7 +130,7 @@
         "c": "R is true, so this option wrongly calls it false.",
         "d": "A is true, so this option wrongly calls it false."
       },
-      "explanation": "Use WHERE to filter input rows (cheaper, can use indexes) and HAVING to filter groups. Row-level conditions placed in HAVING work but do more work."
+      "explanation": "Use `WHERE` to filter input rows (cheaper, can use indexes) and `HAVING` to filter groups. Row-level conditions placed in `HAVING` work but do more work."
     },
     {
       "id": "count-column-nulls",
@@ -138,8 +138,8 @@
       "type": "assertion",
       "difficulty": 2,
       "prompt": "Read the assertion (A) and the reason (R), then choose the option that fits.",
-      "assertion": "In a table of 8 employees where exactly one manager_id is NULL, COUNT(manager_id) returns 8.",
-      "reason": "COUNT(column) counts only the rows in which that column is not NULL.",
+      "assertion": "In a table of 8 employees where exactly one `manager_id` is `NULL`, `COUNT(manager_id)` returns 8.",
+      "reason": "COUNT(column) counts only the rows in which that column is not `NULL`.",
       "correct": [
         "d"
       ],
@@ -147,9 +147,9 @@
         "a": "A is false, so both-true options are wrong.",
         "b": "A is false, so both-true options are wrong.",
         "c": "R is true, so this option wrongly calls it false.",
-        "d": "Correct: COUNT(manager_id) is 7 here, while COUNT(*) is 8; R is true."
+        "d": "Correct: `COUNT(manager_id)` is 7 here, while `COUNT(*)` is 8; R is true."
       },
-      "explanation": "COUNT(*) counts rows, COUNT(col) counts non-NULL values, COUNT(DISTINCT col) counts distinct non-NULL values. All aggregates except COUNT(*) skip NULLs, and SUM over zero non-NULL rows is NULL."
+      "explanation": "`COUNT(*)` counts rows, `COUNT(col)` counts non-`NULL` values, `COUNT(DISTINCT col)` counts distinct non-`NULL` values. All aggregates except `COUNT(*)` skip NULLs, and SUM over zero non-`NULL` rows is `NULL`."
     },
     {
       "id": "not-exists-anti-join",
@@ -157,8 +157,8 @@
       "type": "assertion",
       "difficulty": 3,
       "prompt": "Read the assertion (A) and the reason (R), then choose the option that fits.",
-      "assertion": "NOT EXISTS gives the expected anti-join result even when the correlated column contains NULLs, unlike NOT IN.",
-      "reason": "PostgreSQL can execute NOT EXISTS as a hash anti join.",
+      "assertion": "`NOT EXISTS` gives the expected anti-join result even when the correlated column contains NULLs, unlike `NOT IN`.",
+      "reason": "PostgreSQL can execute `NOT EXISTS` as a hash anti join.",
       "correct": [
         "b"
       ],
@@ -168,14 +168,14 @@
         "c": "R is true, so this option wrongly calls it false.",
         "d": "A is true, so this option wrongly calls it false."
       },
-      "explanation": "NOT EXISTS only asks whether a matching row exists, so a NULL never poisons the result. NOT IN (subquery) returns no rows if the subquery yields any NULL."
+      "explanation": "`NOT EXISTS` only asks whether a matching row exists, so a `NULL` never poisons the result. `NOT IN (subquery)` returns no rows if the subquery yields any `NULL`."
     },
     {
       "id": "null-fill",
       "concept": "NULL semantics",
       "type": "fill",
       "difficulty": 1,
-      "prompt": "Complete the NULL rules by dragging the words into the blanks.",
+      "prompt": "Complete the `NULL` rules by dragging the words into the blanks.",
       "text": "`manager_id = NULL` evaluates to {1}, never to true. WHERE keeps a row only when its predicate is {2}, so that filter returns no rows. The correct test for missing values is `manager_id IS {3}`.",
       "blanks": {
         "1": "UNKNOWN",
@@ -189,14 +189,14 @@
         "FALSE",
         "EMPTY"
       ],
-      "explanation": "SQL uses three-valued logic: TRUE, FALSE, UNKNOWN. NOT UNKNOWN is still UNKNOWN, which is why x <> 1 also drops rows where x is NULL."
+      "explanation": "SQL uses three-valued logic: TRUE, FALSE, UNKNOWN. NOT UNKNOWN is still UNKNOWN, which is why `x <> 1` also drops rows where x is `NULL`."
     },
     {
       "id": "code-second-highest",
       "concept": "Classic queries",
       "type": "code",
       "difficulty": 2,
-      "prompt": "Table employees(id, name, salary) holds salaries 150, 120, 120, 100, 90, 90, 80, 70. Write one query that returns the second highest distinct salary (120 for this data).",
+      "prompt": "Table `employees(id, name, salary)` holds salaries 150, 120, 120, 100, 90, 90, 80, 70. Write one query that returns the second highest distinct salary (120 for this data).",
       "language": "sql",
       "checks": [
         {
@@ -209,14 +209,14 @@
         }
       ],
       "model": "SELECT MAX(salary) FROM employees\nWHERE salary < (SELECT MAX(salary) FROM employees);",
-      "explanation": "Also valid: SELECT DISTINCT salary FROM employees ORDER BY salary DESC LIMIT 1 OFFSET 1, or DENSE_RANK() in a subquery. Without DISTINCT/DENSE_RANK the tie at 120 would break the OFFSET and ROW_NUMBER variants. Verified on PostgreSQL."
+      "explanation": "Also valid: `SELECT DISTINCT salary FROM employees ORDER BY salary DESC LIMIT 1 OFFSET 1`, or `DENSE_RANK()` in a subquery. Without `DISTINCT`/`DENSE_RANK` the tie at 120 would break the `OFFSET` and ROW_NUMBER variants. Verified on PostgreSQL."
     },
     {
       "id": "code-duplicates",
       "concept": "Classic queries",
       "type": "code",
       "difficulty": 1,
-      "prompt": "Table users(id, email). Write a query that lists every email that occurs more than once together with how many times, as column cnt.",
+      "prompt": "Table `users(id, email)`. Write a query that lists every email that occurs more than once together with how many times, as column `cnt`.",
       "language": "sql",
       "checks": [
         {
@@ -233,14 +233,14 @@
         }
       ],
       "model": "SELECT email, COUNT(*) AS cnt\nFROM users\nGROUP BY email\nHAVING COUNT(*) > 1;",
-      "explanation": "A window function (COUNT(*) OVER (PARTITION BY email)) in a subquery also works. To delete the extras keep MIN(id) per email."
+      "explanation": "A window function (`COUNT(*) OVER (PARTITION BY email)`) in a subquery also works. To delete the extras keep `MIN(id)` per email."
     },
     {
       "id": "code-self-join",
       "concept": "Classic queries",
       "type": "code",
       "difficulty": 2,
-      "prompt": "Table employees(id, name, manager_id) where manager_id refers to employees.id. Return each employee name and their manager's name as manager_name. Employees without a manager must still appear, with NULL.",
+      "prompt": "Table `employees(id, name, manager_id)` where `manager_id` refers to `employees.id`. Return each employee name and their manager's name as `manager_name`. Employees without a manager must still appear, with `NULL`.",
       "language": "sql",
       "checks": [
         {
@@ -257,14 +257,14 @@
         }
       ],
       "model": "SELECT e.name, m.name AS manager_name\nFROM employees e\nLEFT JOIN employees m ON e.manager_id = m.id;",
-      "explanation": "An INNER JOIN would silently drop the top-level employee. A RIGHT JOIN with the aliases swapped is equivalent. Verified on PostgreSQL with 8 sample rows."
+      "explanation": "An `INNER JOIN` would silently drop the top-level employee. A `RIGHT JOIN` with the aliases swapped is equivalent. Verified on PostgreSQL with 8 sample rows."
     },
     {
       "id": "code-anti-join",
       "concept": "Anti-join",
       "type": "code",
       "difficulty": 2,
-      "prompt": "Tables departments(id, name) and employees(id, dept_id), where some employees have dept_id NULL. Return the names of departments that have no employees.",
+      "prompt": "Tables `departments(id, name)` and `employees(id, dept_id)`, where some employees have `dept_id` `NULL`. Return the names of departments that have no employees.",
       "language": "sql",
       "checks": [
         {
@@ -277,47 +277,47 @@
         }
       ],
       "model": "SELECT d.name\nFROM departments d\nWHERE NOT EXISTS (\n  SELECT 1 FROM employees e WHERE e.dept_id = d.id);",
-      "explanation": "NOT IN (SELECT dept_id FROM employees) is the tempting version, but the NULL dept_id makes it return no rows at all. Both NOT EXISTS and LEFT JOIN ... IS NULL are safe."
+      "explanation": "`NOT IN (SELECT dept_id FROM employees)` is the tempting version, but the `NULL` dept_id makes it return no rows at all. Both `NOT EXISTS` and `LEFT JOIN` ... `IS NULL` are safe."
     },
     {
       "id": "left-join-where-trap",
       "concept": "Join types",
       "type": "single",
       "difficulty": 3,
-      "prompt": "Query: SELECT d.name, e.name FROM departments d LEFT JOIN employees e ON e.dept_id = d.id WHERE e.salary > 100. A teammate expected departments without any high earner to appear with NULLs. What actually happens?",
+      "prompt": "Query: `SELECT d.name, e.name FROM departments d LEFT JOIN employees e ON e.dept_id = d.id WHERE e.salary > 100`. A teammate expected departments without any high earner to appear with `NULL`s. What actually happens?",
       "options": [
         {
           "id": "a",
-          "text": "They vanish, since NULL > 100 is unknown; move the salary test into ON.",
-          "why": "Right: a WHERE filter on the right table silently turns the LEFT JOIN into an inner join."
+          "text": "They vanish, since `NULL > 100` is unknown; move the salary test into `ON`.",
+          "why": "Right: a `WHERE` filter on the right table silently turns the `LEFT JOIN` into an inner join."
         },
         {
           "id": "b",
-          "text": "The planner rewrites the LEFT JOIN into a FULL JOIN to preserve the unmatched departments.",
+          "text": "The planner rewrites the `LEFT JOIN` into a `FULL JOIN` to preserve the unmatched departments.",
           "why": "Planners only rewrite outer joins into inner joins when it is safe, never the other way."
         },
         {
           "id": "c",
-          "text": "The query fails because a LEFT JOIN may only be filtered in HAVING, never in WHERE.",
-          "why": "WHERE is allowed; it is just applied after the join."
+          "text": "The query fails because a `LEFT JOIN` may only be filtered in `HAVING`, never in `WHERE`.",
+          "why": "`WHERE` is allowed; it is just applied after the join."
         },
         {
           "id": "d",
-          "text": "Every department appears, and rows with salary of 100 or less show NULL in the name column.",
-          "why": "WHERE removes whole rows; it never nulls individual columns."
+          "text": "Every department appears, and rows with salary of 100 or less show `NULL` in the name column.",
+          "why": "`WHERE` removes whole rows; it never nulls individual columns."
         }
       ],
       "correct": [
         "a"
       ],
-      "explanation": "ON decides which right rows match; WHERE decides which result rows survive. For outer joins, conditions on the optional side belong in ON (or use IS NULL OR ... deliberately)."
+      "explanation": "`ON` decides which right rows match; `WHERE` decides which result rows survive. For outer joins, conditions on the optional side belong in `ON` (or use `IS NULL OR ...` deliberately)."
     },
     {
       "id": "left-join-more-rows",
       "concept": "Join types",
       "type": "truefalse",
       "difficulty": 2,
-      "prompt": "A LEFT JOIN can return more rows than the left table contains.",
+      "prompt": "A `LEFT JOIN` can return more rows than the left table contains.",
       "options": [
         {
           "id": "a",
@@ -333,39 +333,39 @@
       "correct": [
         "a"
       ],
-      "explanation": "A LEFT JOIN guarantees at least one row per left row, not at most one. That fan-out is why SUM() over a joined parent column double counts."
+      "explanation": "A `LEFT JOIN` guarantees at least one row per left row, not at most one. That fan-out is why `SUM()` over a joined parent column double counts."
     },
     {
       "id": "logical-order",
       "concept": "Aggregation",
       "type": "multi",
       "difficulty": 2,
-      "prompt": "Select all true statements about the logical evaluation order of a SELECT query.",
+      "prompt": "Select all true statements about the logical evaluation order of a `SELECT` query.",
       "options": [
         {
           "id": "a",
-          "text": "FROM and JOIN are evaluated before WHERE.",
+          "text": "FROM and `JOIN` are evaluated before `WHERE`.",
           "why": "Right: rows are produced, then filtered."
         },
         {
           "id": "b",
-          "text": "WHERE is evaluated before GROUP BY, so it cannot filter on aggregates.",
-          "why": "Right: that is why HAVING exists."
+          "text": "`WHERE` is evaluated before `GROUP BY`, so it cannot filter on aggregates.",
+          "why": "Right: that is why `HAVING` exists."
         },
         {
           "id": "c",
-          "text": "ORDER BY can refer to a column alias defined in the SELECT list.",
-          "why": "Right: ORDER BY runs after SELECT in the logical order."
+          "text": "`ORDER BY` can refer to a column alias defined in the `SELECT` list.",
+          "why": "Right: `ORDER BY` runs after `SELECT` in the logical order."
         },
         {
           "id": "d",
-          "text": "A SELECT alias can be used in the WHERE clause of the same query.",
-          "why": "WHERE runs before SELECT is evaluated, so PostgreSQL rejects the alias."
+          "text": "A `SELECT` alias can be used in the `WHERE` clause of the same query.",
+          "why": "`WHERE` runs before `SELECT` is evaluated, so PostgreSQL rejects the alias."
         },
         {
           "id": "e",
-          "text": "HAVING is evaluated before GROUP BY.",
-          "why": "HAVING filters groups, so it runs after GROUP BY."
+          "text": "`HAVING` is evaluated before `GROUP BY`.",
+          "why": "`HAVING` filters groups, so it runs after `GROUP BY`."
         }
       ],
       "correct": [
@@ -373,24 +373,24 @@
         "b",
         "c"
       ],
-      "explanation": "Logical order: FROM/JOIN, WHERE, GROUP BY, HAVING, window functions, SELECT, DISTINCT, ORDER BY, LIMIT. The optimiser may execute differently but must return the same result."
+      "explanation": "Logical order: FROM/`JOIN`, `WHERE`, `GROUP BY`, `HAVING`, window functions, `SELECT`, `DISTINCT`, `ORDER BY`, `LIMIT`. The optimiser may execute differently but must return the same result."
     },
     {
       "id": "union-vs-union-all",
       "concept": "Set operations",
       "type": "integer",
       "difficulty": 2,
-      "prompt": "Table a holds the ids 1, 2, 2, 3 and table b holds the ids 2, 3, 4. How many rows does SELECT id FROM a UNION SELECT id FROM b return?",
+      "prompt": "Table `a` holds the ids 1, 2, 2, 3 and table `b` holds the ids 2, 3, 4. How many rows does\n\n```sql\nSELECT id FROM a\nUNION\nSELECT id FROM b\n```\n\nreturn?",
       "answer": 4,
       "unit": "rows",
-      "explanation": "UNION removes duplicates across the whole result: the distinct ids are 1, 2, 3 and 4, so 4 rows. UNION ALL would return 7 rows (4 + 3) and skips the sort or hash step, so it is cheaper when duplicates are impossible or acceptable. INTERSECT would give 2 and 3; EXCEPT (a minus b) would give 1."
+      "explanation": "`UNION` removes duplicates across the whole result: the distinct ids are 1, 2, 3 and 4, so 4 rows. `UNION ALL` would return 7 rows (4 + 3) and skips the sort or hash step, so it is cheaper when duplicates are impossible or acceptable. `INTERSECT` would give 2 and 3; `EXCEPT` (a minus b) would give 1."
     },
     {
       "id": "code-earns-more-than-manager",
       "concept": "Self joins",
       "type": "code",
       "difficulty": 2,
-      "prompt": "Table employees(id, name, salary, manager_id) where manager_id refers to employees.id. Return the names of employees who earn more than their own manager.",
+      "prompt": "Table `employees(id, name, salary, manager_id)` where `manager_id` refers to `employees.id`. Return the names of employees who earn more than their own manager.",
       "language": "sql",
       "checks": [
         {
@@ -403,14 +403,14 @@
         }
       ],
       "model": "SELECT e.name\nFROM employees e\nJOIN employees m ON e.manager_id = m.id\nWHERE e.salary > m.salary;",
-      "explanation": "A self join with two aliases; an INNER JOIN is right because employees without a manager cannot satisfy the comparison anyway. Verified on PostgreSQL with 5 sample rows. Another classic variant: compare an employee with the average of their department using a correlated subquery or AVG() OVER (PARTITION BY dept_id)."
+      "explanation": "A self join with two aliases; an `INNER JOIN` is right because employees without a manager cannot satisfy the comparison anyway. Verified on PostgreSQL with 5 sample rows. Another classic variant: compare an employee with the average of their department using a correlated subquery or `AVG() OVER (PARTITION BY dept_id)`."
     },
     {
       "id": "code-nth-highest",
       "concept": "Ranking queries",
       "type": "code",
       "difficulty": 3,
-      "prompt": "Table employees(id, name, salary). Write a query that returns the third highest distinct salary using DENSE_RANK, and returns no row when fewer than three distinct salaries exist.",
+      "prompt": "Table `employees(id, name, salary)`. Write a query that returns the third highest distinct salary using `DENSE_RANK`, and returns no row when fewer than three distinct salaries exist.",
       "language": "sql",
       "checks": [
         {
@@ -427,7 +427,7 @@
         }
       ],
       "model": "SELECT DISTINCT salary\nFROM (SELECT salary, DENSE_RANK() OVER (ORDER BY salary DESC) AS rnk\n      FROM employees) t\nWHERE rnk = 3;",
-      "explanation": "DENSE_RANK numbers distinct values without gaps, so rnk = 3 is the third highest distinct salary and an empty result appears naturally when it does not exist. The scalar-subquery form (SELECT MAX(salary) ... WHERE salary < (SELECT MAX ...)) does not generalise to N, and LIMIT 1 OFFSET 2 on DISTINCT salary also works."
+      "explanation": "`DENSE_RANK` numbers distinct values without gaps, so `rnk = 3` is the third highest distinct salary and an empty result appears naturally when it does not exist. The scalar-subquery form `(SELECT MAX(salary) ... WHERE salary < (SELECT MAX ...))` does not generalise to N, and `LIMIT 1 OFFSET 2` on `DISTINCT` salary also works."
     }
   ]
 }

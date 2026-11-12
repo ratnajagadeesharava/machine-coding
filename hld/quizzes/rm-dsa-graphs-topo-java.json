@@ -16,7 +16,7 @@
       "concept": "Graph representation",
       "type": "code",
       "difficulty": 1,
-      "prompt": "Write a Java method List<List<Integer>> buildGraph(int n, int[][] edges) that returns an adjacency list for an undirected graph with vertices 0..n-1.",
+      "prompt": "Write a Java method `List<List<Integer>> buildGraph(int n, int[][] edges)` that returns an adjacency list for an undirected graph with vertices `0..n-1`.",
       "language": "java",
       "starter": "static List<List<Integer>> buildGraph(int n, int[][] edges) {\n  \n}",
       "checks": [
@@ -38,14 +38,14 @@
         }
       ],
       "model": "static List<List<Integer>> buildGraph(int n, int[][] edges) {\n  List<List<Integer>> adj = new ArrayList<>();\n  for (int i = 0; i < n; i++) adj.add(new ArrayList<>());\n  for (int[] e : edges) {\n    adj.get(e[0]).add(e[1]);\n    adj.get(e[1]).add(e[0]);\n  }\n  return adj;\n}",
-      "explanation": "Create each inner list separately in a loop. Collections.nCopies(n, new ArrayList<>()) would put the same list in every slot."
+      "explanation": "Create each inner list separately in a loop. `Collections.nCopies(n, new ArrayList<>())` would put the same list in every slot."
     },
     {
       "id": "islands",
       "concept": "Graphs",
       "type": "code",
       "difficulty": 2,
-      "prompt": "Write a Java method int numIslands(char[][] grid) counting the 4-directionally connected groups of '1' (land) in a grid of '1' and '0'. You may modify the grid.",
+      "prompt": "Write a Java method `int numIslands(char[][] grid)` counting the 4-directionally connected groups of `'1'` (land) in a grid of `'1'` and `'0'`. You may modify the grid.",
       "language": "java",
       "starter": "static int numIslands(char[][] grid) {\n  \n}",
       "checks": [
@@ -71,14 +71,14 @@
         }
       ],
       "model": "static int numIslands(char[][] grid) {\n  int count = 0;\n  for (int r = 0; r < grid.length; r++)\n    for (int c = 0; c < grid[0].length; c++)\n      if (grid[r][c] == '1') { count++; sink(grid, r, c); }\n  return count;\n}\nstatic void sink(char[][] g, int r, int c) {\n  if (r < 0 || c < 0 || r >= g.length || c >= g[0].length || g[r][c] != '1') return;\n  g[r][c] = '0';\n  sink(g, r + 1, c); sink(g, r - 1, c); sink(g, r, c + 1); sink(g, r, c - 1);\n}",
-      "explanation": "Sinking visited land acts as the visited set, so no extra memory is needed beyond the recursion. For very large grids use an explicit ArrayDeque to avoid StackOverflowError."
+      "explanation": "Sinking visited land acts as the visited set, so no extra memory is needed beyond the recursion. For very large grids use an explicit `ArrayDeque` to avoid `StackOverflowError`."
     },
     {
       "id": "kahn",
       "concept": "Topological sort",
       "type": "code",
       "difficulty": 3,
-      "prompt": "Write a Java method boolean canFinish(int n, int[][] prerequisites) where each pair {a, b} means course b must be taken before a. Return true if all n courses can be finished (no cycle), using Kahn's algorithm with in-degrees and an ArrayDeque.",
+      "prompt": "Write a Java method `boolean canFinish(int n, int[][] prerequisites)` where each pair `{a, b}` means course b must be taken before a. Return true if all n courses can be finished (no cycle), using Kahn's algorithm with in-degrees and an `ArrayDeque`.",
       "language": "java",
       "starter": "static boolean canFinish(int n, int[][] prerequisites) {\n  \n}",
       "checks": [
@@ -111,7 +111,7 @@
       "concept": "Clone graph",
       "type": "code",
       "difficulty": 3,
-      "prompt": "Write a Java method Node cloneGraph(Node node) that deep-copies a connected undirected graph (Node has int val and List<Node> neighbors, with a constructor Node(int val)). Use a HashMap from original to copy.",
+      "prompt": "Write a Java method `Node cloneGraph(Node node)` that deep-copies a connected undirected graph (`Node has int val and List<Node> neighbors`, with a constructor `Node(int val)`). Use a `HashMap` from original to copy.",
       "language": "java",
       "starter": "static Node cloneGraph(Node node) {\n  \n}",
       "checks": [
@@ -148,23 +148,23 @@
       "left": [
         {
           "id": "a",
-          "text": "ArrayDeque<Integer>"
+          "text": "`ArrayDeque<Integer>`"
         },
         {
           "id": "b",
-          "text": "boolean[] visited"
+          "text": "`boolean[] visited`"
         },
         {
           "id": "c",
-          "text": "List<List<Integer>>"
+          "text": "`List<List<Integer>>`"
         },
         {
           "id": "d",
-          "text": "PriorityQueue<int[]>"
+          "text": "`PriorityQueue<int[]>`"
         },
         {
           "id": "e",
-          "text": "Map<Node, Node>"
+          "text": "`Map<Node, Node>`"
         }
       ],
       "right": [
@@ -229,10 +229,10 @@
       "concept": "Stack and deque",
       "type": "integer",
       "difficulty": 2,
-      "prompt": "An ArrayDeque<Integer> d receives d.offer(1), d.offer(2), d.offer(3), d.push(4), d.pollLast(), d.poll(), d.push(5) in that order. What does d.peekLast() return?",
+      "prompt": "An `ArrayDeque<Integer> d` receives `d.offer(1), d.offer(2), d.offer(3), d.push(4), d.pollLast(), d.poll(), d.push(5)` in that order. What does `d.peekLast()` return?",
       "answer": 2,
       "tolerance": 0,
-      "explanation": "After the offers the deque is [1, 2, 3]; push(4) gives [4, 1, 2, 3]; pollLast removes 3; poll removes 4, leaving [1, 2]; push(5) gives [5, 1, 2]. The last element is 2. I ran it to confirm."
+      "explanation": "After the offers the deque is `[1, 2, 3]`; `push(4)` gives `[4, 1, 2, 3]`; `pollLast` removes 3; `poll` removes 4, leaving `[1, 2]`; `push(5)` gives `[5, 1, 2]`. The last element is 2. I ran it to confirm."
     },
     {
       "id": "int-array-key",
@@ -240,8 +240,8 @@
       "type": "assertion",
       "difficulty": 3,
       "prompt": "Evaluate the assertion and the reason.",
-      "assertion": "A HashSet<int[]> used as a visited set for grid cells will not recognise a cell that was added before.",
-      "reason": "Java arrays use identity-based equals and hashCode, so two int[] with the same contents are different keys.",
+      "assertion": "A `HashSet<int[]>` used as a visited set for grid cells will not recognise a cell that was added before.",
+      "reason": "Java arrays use identity-based `equals` and `hashCode`, so two `int[]` with the same contents are different keys.",
       "correct": [
         "a"
       ],
@@ -251,7 +251,7 @@
         "c": "R is true, so c is wrong.",
         "d": "A is true, so d is wrong."
       },
-      "explanation": "I ran the example and contains returned false. This is a frequent source of infinite BFS loops in grid problems."
+      "explanation": "I ran the example and `contains` returned false. This is a frequent source of infinite BFS loops in grid problems."
     },
     {
       "id": "kahn-complexity",
@@ -259,8 +259,8 @@
       "type": "assertion",
       "difficulty": 2,
       "prompt": "Evaluate the assertion and the reason.",
-      "assertion": "Kahn's algorithm with an ArrayDeque and adjacency lists runs in O(V + E).",
-      "reason": "ArrayDeque offer and poll take O(1) amortised time.",
+      "assertion": "Kahn's algorithm with an `ArrayDeque` and adjacency lists runs in O(V + E).",
+      "reason": "`ArrayDeque offer and poll` take O(1) amortised time.",
       "correct": [
         "b"
       ],
@@ -278,8 +278,8 @@
       "type": "assertion",
       "difficulty": 3,
       "prompt": "Evaluate the assertion and the reason.",
-      "assertion": "For vertices numbered 0..n-1, a HashSet<Integer> is a faster visited structure than a boolean[].",
-      "reason": "HashSet lookups take O(1) time on average.",
+      "assertion": "For vertices numbered `0..n-1`, a `HashSet<Integer>` is a faster visited structure than a `boolean[]`.",
+      "reason": "`HashSet` lookups take O(1) time on average.",
       "correct": [
         "d"
       ],
@@ -289,7 +289,7 @@
         "c": "R is true, so c is wrong.",
         "d": "Correct: R is true but a boolean[] is faster still (direct indexing, no boxing or hashing), so A is false."
       },
-      "explanation": "Use a primitive array when ids are small integers; use a HashSet or HashMap only when nodes are objects or the id range is huge."
+      "explanation": "Use a primitive array when ids are small integers; use a `HashSet` or `HashMap` only when nodes are objects or the id range is huge."
     },
     {
       "id": "adj-shared",
@@ -300,36 +300,36 @@
       "options": [
         {
           "id": "a",
-          "text": "new ArrayList<>(Collections.nCopies(n, new ArrayList<Integer>()))",
-          "why": "Correct: nCopies repeats one object reference n times, so adding an edge for one vertex appears for all."
+          "text": "`new ArrayList<>(Collections.nCopies(n, new ArrayList<Integer>()))`",
+          "why": "Correct: `nCopies` repeats one object reference n times, so adding an edge for one vertex appears for all."
         },
         {
           "id": "b",
-          "text": "Stream.generate(ArrayList<Integer>::new).limit(n).collect(Collectors.toList())",
+          "text": "`Stream.generate(ArrayList<Integer>::new).limit(n).collect(Collectors.toList())`",
           "why": "This calls the constructor for each element, so the lists are independent."
         },
         {
           "id": "c",
-          "text": "A loop that calls adj.add(new ArrayList<>()) n times",
+          "text": "A loop that calls `adj.add(new ArrayList<>())` n times",
           "why": "Each iteration creates a fresh list, so this is the safe standard form."
         },
         {
           "id": "d",
-          "text": "new HashMap<Integer, List<Integer>>() filled with computeIfAbsent",
-          "why": "computeIfAbsent creates a fresh list per key, so there is no sharing."
+          "text": "`new HashMap<Integer, List<Integer>>()` filled with `computeIfAbsent`",
+          "why": "`computeIfAbsent` creates a fresh list per key, so there is no sharing."
         }
       ],
       "correct": [
         "a"
       ],
-      "explanation": "I ran the nCopies version: after adding to vertex 0, printing three vertices gave [[1], [1], [1]]. Always create the inner lists in a loop."
+      "explanation": "I ran the `nCopies` version: after adding to vertex 0, printing three vertices gave `[[1], [1], [1]]`. Always create the inner lists in a loop."
     },
     {
       "id": "stack-overflow",
       "concept": "DFS recursion limits",
       "type": "truefalse",
       "difficulty": 2,
-      "prompt": "A recursive DFS over a path graph with 100,000 nodes can throw StackOverflowError on a default Java thread stack, so an explicit stack is safer for deep graphs.",
+      "prompt": "A recursive DFS over a path graph with 100,000 nodes can throw `StackOverflowError` on a default Java thread stack, so an explicit stack is safer for deep graphs.",
       "options": [
         {
           "id": "a",
@@ -345,14 +345,14 @@
       "correct": [
         "a"
       ],
-      "explanation": "Convert deep DFS to an iterative version with ArrayDeque, or run it on a thread created with a larger stack size."
+      "explanation": "Convert deep DFS to an iterative version with `ArrayDeque`, or run it on a thread created with a larger stack size."
     },
     {
       "id": "int-array-default",
       "concept": "Graph representation",
       "type": "truefalse",
       "difficulty": 1,
-      "prompt": "A new int[n] used for in-degrees starts with every element equal to -1 in Java, so it has to be filled with zeros first.",
+      "prompt": "A `new int[n]` used for in-degrees starts with every element equal to `-1` in Java, so it has to be filled with zeros first.",
       "options": [
         {
           "id": "a",
@@ -368,7 +368,7 @@
       "correct": [
         "b"
       ],
-      "explanation": "Boolean arrays start false and object arrays start null, so new boolean[n] is a ready visited array."
+      "explanation": "Boolean arrays start `false` and object arrays start `null`, so `new boolean[n]` is a ready visited array."
     }
   ]
 }

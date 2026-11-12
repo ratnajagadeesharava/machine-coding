@@ -17,8 +17,8 @@
       "type": "assertion",
       "difficulty": 3,
       "prompt": "Read the assertion (A) and the reason (R), then choose the option that fits.",
-      "assertion": "With the default expire_on_commit=True, session.commit() expires every loaded attribute, so the next attribute access reloads the row.",
-      "reason": "commit() discards the Session's identity map and detaches every object.",
+      "assertion": "With the default `expire_on_commit=True`, `session.commit()` expires every loaded attribute, so the next attribute access reloads the row.",
+      "reason": "`commit()` discards the Session's identity map and detaches every object.",
       "correct": [
         "c"
       ],
@@ -28,7 +28,7 @@
         "c": "Correct: A is true; R is false because objects stay attached to the Session and are merely expired.",
         "d": "A is true, so this option wrongly calls it false."
       },
-      "explanation": "In async code people set expire_on_commit=False because an expired attribute would trigger an implicit (impossible) lazy load after commit. In sync code the default is fine."
+      "explanation": "In async code people set `expire_on_commit=False` because an expired attribute would trigger an implicit (impossible) lazy load after commit. In sync code the default is fine."
     },
     {
       "id": "asyncsession-concurrency",
@@ -36,8 +36,8 @@
       "type": "assertion",
       "difficulty": 3,
       "prompt": "Read the assertion (A) and the reason (R), then choose the option that fits.",
-      "assertion": "One AsyncSession must not be shared by concurrent asyncio tasks, for example inside asyncio.gather().",
-      "reason": "asyncio code runs on a single operating-system thread.",
+      "assertion": "One `AsyncSession` must not be shared by concurrent `asyncio` tasks, for example inside `asyncio.gather()`.",
+      "reason": "`asyncio` code runs on a single operating-system thread.",
       "correct": [
         "b"
       ],
@@ -47,7 +47,7 @@
         "c": "R is true, so this option wrongly calls it false.",
         "d": "A is true, so this option wrongly calls it false."
       },
-      "explanation": "Give each task its own session (async with session_maker() as s) or run the statements sequentially. Sessions are cheap; connections come from the pool."
+      "explanation": "Give each task its own session (`async with session_maker() as s`) or run the statements sequentially. Sessions are cheap; connections come from the pool."
     },
     {
       "id": "code-async-transaction",
@@ -78,7 +78,7 @@
       "concept": "Parameter binding",
       "type": "code",
       "difficulty": 2,
-      "prompt": "With a SQLAlchemy Core connection `conn` and a Python variable `email`, run a parameterised query selecting all columns of table users where email equals the variable, using a bound parameter named :email.",
+      "prompt": "With a SQLAlchemy Core connection `conn` and a Python variable `email`, run a parameterised query selecting all columns of table `users` where `email` equals the variable, using a bound parameter named `:email`.",
       "language": "python",
       "checks": [
         {
@@ -99,7 +99,7 @@
         }
       ],
       "model": "result = conn.execute(\n    text(\"SELECT * FROM users WHERE email = :email\"),\n    {\"email\": email},\n)",
-      "explanation": "text() returns a TextClause; bound parameters are sent separately from the SQL, which prevents injection. With asyncpg the placeholder would be $1, with psycopg %s."
+      "explanation": "`text()` returns a `TextClause`; bound parameters are sent separately from the SQL, which prevents injection. With asyncpg the placeholder would be `$1`, with psycopg `%s`."
     },
     {
       "id": "psycopg-safe",
@@ -110,29 +110,29 @@
       "options": [
         {
           "id": "a",
-          "text": "cur.execute(\"SELECT * FROM users WHERE name = %s\", (name,))",
+          "text": "`cur.execute(\"SELECT * FROM users WHERE name = %s\", (name,))`",
           "why": "Right: the driver sends the value separately; note the one-element tuple."
         },
         {
           "id": "b",
-          "text": "cur.execute(\"SELECT * FROM users WHERE name = '%s'\" % (name))",
+          "text": "`cur.execute(\"SELECT * FROM users WHERE name = '%s'\" % (name))`",
           "why": "Python string formatting puts user input straight into the SQL text."
         },
         {
           "id": "c",
-          "text": "cur.execute(f\"SELECT * FROM users WHERE name = '{name}'\")",
+          "text": "`cur.execute(f\"SELECT * FROM users WHERE name = '{name}'\")`",
           "why": "An f-string is still string concatenation and is injectable."
         },
         {
           "id": "d",
-          "text": "cur.execute(\"SELECT * FROM users WHERE name = %s\", name)",
+          "text": "`cur.execute(\"SELECT * FROM users WHERE name = %s\", name)`",
           "why": "A bare string is not a parameter sequence, so psycopg rejects it."
         }
       ],
       "correct": [
         "a"
       ],
-      "explanation": "Parameters go in a tuple or list (or a dict with %(name)s). The classic bug is forgetting the trailing comma in (name,)."
+      "explanation": "Parameters go in a tuple or list (or a dict with `%(name)s`). The classic bug is forgetting the trailing comma in `(name,)`."
     },
     {
       "id": "placeholder-styles",
@@ -143,45 +143,45 @@
       "left": [
         {
           "id": "l1",
-          "text": "asyncpg"
+          "text": "`asyncpg`"
         },
         {
           "id": "l2",
-          "text": "psycopg"
+          "text": "`psycopg`"
         },
         {
           "id": "l3",
-          "text": "SQLAlchemy text()"
+          "text": "SQLAlchemy `text()`"
         },
         {
           "id": "l4",
-          "text": "sqlite3 (qmark style)"
+          "text": "`sqlite3` (qmark style)"
         }
       ],
       "right": [
         {
           "id": "r1",
-          "text": "$1, $2"
+          "text": "`$1, $2`"
         },
         {
           "id": "r2",
-          "text": "%s"
+          "text": "`%s`"
         },
         {
           "id": "r3",
-          "text": ":name"
+          "text": "`:name`"
         },
         {
           "id": "r4",
-          "text": "?"
+          "text": "`?`"
         },
         {
           "id": "r5",
-          "text": "{name}"
+          "text": "`{name}`"
         },
         {
           "id": "r6",
-          "text": "#{id}"
+          "text": "`#{id}`"
         }
       ],
       "pairs": {
@@ -190,14 +190,14 @@
         "l3": "r3",
         "l4": "r4"
       },
-      "explanation": "asyncpg uses PostgreSQL-native numbered parameters; psycopg uses %s (or %(name)s); SQLAlchemy text() uses :name; sqlite3 defaults to question marks. An f-string is never a placeholder."
+      "explanation": "`asyncpg` uses PostgreSQL-native numbered parameters; `psycopg` uses `%s` (or `%(name)s`); SQLAlchemy `text()` uses `:name`; `sqlite3` defaults to question marks. An f-string is never a placeholder."
     },
     {
       "id": "begin-nested-savepoint",
       "concept": "Savepoints",
       "type": "code",
       "difficulty": 3,
-      "prompt": "Using a synchronous SQLAlchemy Session named session, add Order(id=2) inside a savepoint so that a failure inside the block rolls back only that part, while Order(id=1) added earlier stays in the outer transaction.",
+      "prompt": "Using a synchronous SQLAlchemy `Session` named `session`, add `Order(id=2)` inside a savepoint so that a failure inside the block rolls back only that part, while `Order(id=1)` added earlier stays in the outer transaction.",
       "language": "python",
       "checks": [
         {
@@ -210,7 +210,7 @@
         }
       ],
       "model": "session.add(Order(id=1))\nwith session.begin_nested():\n    session.add(Order(id=2))",
-      "explanation": "begin_nested() emits SAVEPOINT; leaving the block releases it, an exception rolls back to it. The outer transaction still needs session.commit().",
+      "explanation": "`begin_nested()` emits `SAVEPOINT`; leaving the block releases it, an exception rolls back to it. The outer transaction still needs `session.commit()`.",
       "starter": "session.add(Order(id=1))\n"
     },
     {
@@ -218,18 +218,18 @@
       "concept": "Savepoints",
       "type": "integer",
       "difficulty": 3,
-      "prompt": "In one Session transaction the code adds Author A, then runs \"with session.begin_nested(): add Author B; raise ValueError\" inside try/except ValueError, then adds Author C and calls session.commit(). How many of A, B, C are committed?",
+      "prompt": "In one Session transaction the code adds Author A, then runs `\"with session.begin_nested(): add Author B; raise ValueError\"` inside `try/except ValueError`, then adds Author C and calls `session.commit()`. How many of A, B, C are committed?",
       "answer": 2,
       "tolerance": 0,
       "unit": "rows",
-      "explanation": "Only B is inside the savepoint, which is rolled back when the ValueError leaves the block; the caught exception does not affect the outer transaction, so A and C commit. Verified against SQLite with proper savepoint handling."
+      "explanation": "Only B is inside the savepoint, which is rolled back when the `ValueError` leaves the block; the caught exception does not affect the outer transaction, so A and C commit. Verified against SQLite with proper savepoint handling."
     },
     {
       "id": "asyncpg-transaction",
       "concept": "Transactions (asyncpg)",
       "type": "code",
       "difficulty": 2,
-      "prompt": "Using an asyncpg connection conn, run two statements, UPDATE accounts SET balance = balance - 10 WHERE id = 1 and UPDATE accounts SET balance = balance + 10 WHERE id = 2, as one atomic transaction that commits on success and rolls back on an exception.",
+      "prompt": "Using an asyncpg connection `conn`, run two statements, `UPDATE accounts SET balance = balance - 10 WHERE id = 1` and `UPDATE accounts SET balance = balance + 10 WHERE id = 2`, as one atomic transaction that commits on success and rolls back on an exception.",
       "language": "python",
       "checks": [
         {
@@ -246,14 +246,14 @@
         }
       ],
       "model": "async with conn.transaction():\n    await conn.execute(\"UPDATE accounts SET balance = balance - 10 WHERE id = 1\")\n    await conn.execute(\"UPDATE accounts SET balance = balance + 10 WHERE id = 2\")",
-      "explanation": "The block commits when it exits normally and rolls back if an exception escapes. Nested conn.transaction() blocks become savepoints. Use $1 placeholders and pass the values instead of formatting them into the SQL."
+      "explanation": "The block commits when it exits normally and rolls back if an exception escapes. Nested `conn.transaction()` blocks become savepoints. Use `$1` placeholders and pass the values instead of formatting them into the SQL."
     },
     {
       "id": "isolation-engine",
       "concept": "Isolation levels",
       "type": "code",
       "difficulty": 2,
-      "prompt": "Create the SQLAlchemy engine engine for DATABASE_URL so that every connection runs at the SERIALIZABLE isolation level.",
+      "prompt": "Create the SQLAlchemy `engine` `engine` for `DATABASE_URL` so that every connection runs at the `SERIALIZABLE` isolation level.",
       "language": "python",
       "checks": [
         {
@@ -270,7 +270,7 @@
         }
       ],
       "model": "engine = create_engine(DATABASE_URL, isolation_level=\"SERIALIZABLE\")",
-      "explanation": "Higher levels can raise serialization failures (SQLSTATE 40001) that the application must retry. engine.execution_options(isolation_level=...) or a per-connection option can change the level only where needed.",
+      "explanation": "Higher levels can raise serialization failures (`SQLSTATE 40001`) that the application must retry. `engine.execution_options(isolation_level=...)` or a per-connection option can change the level only where needed.",
       "starter": "from sqlalchemy import create_engine\n"
     },
     {
@@ -279,8 +279,8 @@
       "type": "assertion",
       "difficulty": 2,
       "prompt": "Judge the assertion and the reason.",
-      "assertion": "session.flush() sends pending changes to the database inside the current transaction but does not commit them.",
-      "reason": "flush() emits the SQL without ending the transaction, so a later rollback() can still undo it.",
+      "assertion": "`session.flush()` sends pending changes to the database inside the current transaction but does not commit them.",
+      "reason": "`flush()` emits the SQL without ending the transaction, so a later `rollback()` can still undo it.",
       "correct": [
         "a"
       ],
@@ -290,7 +290,7 @@
         "c": "Wrong: R is true.",
         "d": "Wrong: A is true."
       },
-      "explanation": "Use flush() when you need an auto-generated primary key before commit. commit() flushes first, so you rarely call flush() just to save data."
+      "explanation": "Use `flush()` when you need an auto-generated primary key before commit. `commit()` flushes first, so you rarely call `flush()` just to save data."
     },
     {
       "id": "psycopg-context-manager",
@@ -298,8 +298,8 @@
       "type": "assertion",
       "difficulty": 3,
       "prompt": "Judge the assertion and the reason.",
-      "assertion": "Using a psycopg 3 connection as a context manager commits on normal exit and rolls back when an exception leaves the block.",
-      "reason": "Leaving the block normally calls commit(), and leaving it with an exception calls rollback().",
+      "assertion": "Using a `psycopg` 3 connection as a context manager commits on normal exit and rolls back when an exception leaves the block.",
+      "reason": "Leaving the block normally calls `commit()`, and leaving it with an exception calls `rollback()`.",
       "correct": [
         "a"
       ],
@@ -309,7 +309,7 @@
         "c": "Wrong: R is true.",
         "d": "Wrong: A is true."
       },
-      "explanation": "psycopg 3 also has conn.transaction() blocks (with savepoints when nested). In psycopg 2 the with-block ended the transaction but did not close the connection."
+      "explanation": "`psycopg` 3 also has `conn.transaction()` blocks (with savepoints when nested). In `psycopg` 2 the with-block ended the transaction but did not close the connection."
     },
     {
       "id": "postgres-default-isolation",
@@ -317,8 +317,8 @@
       "type": "assertion",
       "difficulty": 2,
       "prompt": "Judge the assertion and the reason.",
-      "assertion": "PostgreSQL runs transactions at READ COMMITTED unless told otherwise.",
-      "reason": "PostgreSQL does not implement the REPEATABLE READ isolation level.",
+      "assertion": "PostgreSQL runs transactions at `READ COMMITTED` unless told otherwise.",
+      "reason": "PostgreSQL does not implement the `REPEATABLE READ` isolation level.",
       "correct": [
         "c"
       ],
@@ -328,40 +328,40 @@
         "c": "Correct: A is true; R is false because PostgreSQL offers REPEATABLE READ (snapshot isolation) and SERIALIZABLE.",
         "d": "Wrong: A is true."
       },
-      "explanation": "Know the default of your own database: MySQL InnoDB defaults to REPEATABLE READ, PostgreSQL to READ COMMITTED."
+      "explanation": "Know the default of your own database: MySQL InnoDB defaults to `REPEATABLE READ`, PostgreSQL to `READ COMMITTED`."
     },
     {
       "id": "session-per-request",
       "concept": "SQLAlchemy sessions",
       "type": "single",
       "difficulty": 2,
-      "prompt": "How should a FastAPI application scope its SQLAlchemy Session?",
+      "prompt": "How should a FastAPI application scope its SQLAlchemy `Session`?",
       "options": [
         {
           "id": "a",
-          "text": "One global Session created at import time and shared by every request in the process.",
+          "text": "One global `Session` created at import time and shared by every request in the process.",
           "why": "Sessions are not thread-safe or task-safe; sharing leaks state between users."
         },
         {
           "id": "b",
-          "text": "One Session per request, from a Depends function that yields and closes it.",
+          "text": "One `Session` per request, from a `Depends` function that yields and closes it.",
           "why": "Correct: a request-scoped session keeps the identity map and transaction contained."
         },
         {
           "id": "c",
-          "text": "One Session per row inserted, committed and closed immediately.",
+          "text": "One `Session` per row inserted, committed and closed immediately.",
           "why": "That multiplies transactions and loses atomicity across related changes."
         },
         {
           "id": "d",
-          "text": "One Session per worker, stored on app.state, reused across requests.",
+          "text": "One `Session` per worker, stored on `app.state`, reused across requests.",
           "why": "It would share one transaction and identity map among concurrent requests."
         }
       ],
       "correct": [
         "b"
       ],
-      "explanation": "Engine per process, Session per request, short transactions. In async code give each task its own AsyncSession."
+      "explanation": "Engine per process, `Session` per request, short transactions. In async code give each task its own `AsyncSession`."
     },
     {
       "id": "commit-in-loop",
@@ -384,7 +384,7 @@
       "correct": [
         "b"
       ],
-      "explanation": "Insert in batches of a few hundred to a few thousand rows per transaction, or use bulk APIs such as executemany or COPY."
+      "explanation": "Insert in batches of a few hundred to a few thousand rows per transaction, or use bulk APIs such as `executemany` or `COPY`."
     },
     {
       "id": "session-transaction-words",
@@ -405,7 +405,7 @@
         "flush()",
         "close()"
       ],
-      "explanation": "Using the Session as a context manager together with session.begin() commits on success and rolls back on exception automatically."
+      "explanation": "Using the Session as a context manager together with `session.begin()` commits on success and rolls back on exception automatically."
     }
   ]
 }

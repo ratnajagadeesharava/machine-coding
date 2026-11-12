@@ -83,7 +83,7 @@
       "options": [
         {
           "id": "a",
-          "text": "When the request omits `size`, the default `page` `size` is 20.",
+          "text": "When the request omits `size`, the default page size is 20.",
           "why": "`spring.data.web.pageable.default-page-size` defaults to 20."
         },
         {
@@ -104,7 +104,7 @@
         {
           "id": "e",
           "text": "The `page` parameter is zero-based unless `one-indexed-parameters` is enabled.",
-          "why": "Index 0 is the first `page` by default, a classic off-by-one trap."
+          "why": "Index 0 is the first page by default, a classic off-by-one trap."
         },
         {
           "id": "f",
@@ -242,8 +242,8 @@
       "type": "assertion",
       "difficulty": 3,
       "prompt": "Judge the assertion and the reason.",
-      "assertion": "A plain `@SchemaMapping` method `author(Book book)` is invoked once for every `Book` in the result list.",
-      "reason": "A `@BatchMapping` method receives all the `Books` of the request as one `List`.",
+      "assertion": "A plain `@SchemaMapping` method `author(Book book)` is invoked once for every Book in the result list.",
+      "reason": "A `@BatchMapping` method receives all the Books of the request as one `List`.",
       "correct": [
         "b"
       ],

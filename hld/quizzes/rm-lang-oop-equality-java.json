@@ -75,11 +75,11 @@
       "right": [
         {
           "id": "p",
-          "text": "Compact immutable data carrier with generated equals, hashCode and toString"
+          "text": "Compact immutable data carrier with generated `equals`, `hashCode` and `toString`"
         },
         {
           "id": "q",
-          "text": "Closed hierarchy: only the classes named in permits may extend it"
+          "text": "Closed hierarchy: only the classes named in `permits` may extend it"
         },
         {
           "id": "r",
@@ -131,9 +131,9 @@
       "concept": "Inheritance vs composition",
       "type": "integer",
       "difficulty": 3,
-      "prompt": "A subclass of HashSet<String> counts additions: add(e) does count++ then super.add(e); addAll(c) does count += c.size() then super.addAll(c). After one call addAll(List.of(\"a\",\"b\",\"c\")) on a new instance, what is count?",
+      "prompt": "A subclass of `HashSet<String>` counts additions: `add(e)` does `count++` then `super.add(e);` `addAll(c)` does `count += c.size()` then `super.addAll(c)`. After one call `addAll(List.of(\"a\",\"b\",\"c\"))` on a new instance, what is `count`?",
       "answer": 6,
-      "explanation": "HashSet.addAll (inherited from AbstractCollection) calls the overridden add for every element, so each element is counted twice: 3 + 3 = 6. This is the textbook case for composition over inheritance. (Verified by running it.)"
+      "explanation": "`HashSet.addAll` (inherited from `AbstractCollection`) calls the overridden `add` for every element, so each element is counted twice: 3 + 3 = 6. This is the textbook case for composition over inheritance. (Verified by running it.)"
     },
     {
       "id": "equals-contract-fill",
@@ -155,23 +155,23 @@
         "different",
         "modifiers"
       ],
-      "explanation": "Equal objects must have equal hashes; unequal objects may share a hash. Records derive equals/hashCode from their components."
+      "explanation": "Equal objects must have equal hashes; unequal objects may share a hash. Records derive `equals/hashCode` from their components."
     },
     {
       "id": "integer-cache",
       "concept": "Equality and hashing",
       "type": "integer",
       "difficulty": 2,
-      "prompt": "Integer a = 127, b = 127, c = 128, d = 128;  How many of the four expressions a == b, c == d, c.equals(d), a.equals(b) evaluate to true?",
+      "prompt": "```java\nInteger a = 127, b = 127, c = 128, d = 128;\n```\n\nHow many of the four expressions `a == b`, `c == d`, `c.equals(d)`, `a.equals(b)` evaluate to true?",
       "answer": 3,
-      "explanation": "Autoboxing uses Integer.valueOf, which caches -128..127, so a == b is true but c == d compares two distinct objects and is false. Both equals calls are true: 3 true. (Verified by running it.)"
+      "explanation": "Autoboxing uses `Integer.valueOf`, which caches `-128..127`, so `a == b` is true but `c == d` compares two distinct objects and is false. Both `equals` calls are true: 3 true. (Verified by running it.)"
     },
     {
       "id": "equals-hashcode",
       "concept": "Equality and hashing",
       "type": "code",
       "difficulty": 2,
-      "prompt": "Write a final class Point { private final int x, y; } with equals(Object) and hashCode() that follow the contract (value equality on x and y).",
+      "prompt": "Write a\n\n```java\nfinal class Point {\n    private final int x, y;\n}\n```\n\nwith `equals(Object)` and `hashCode()` that follow the contract (value equality on `x` and `y`).",
       "language": "java",
       "starter": "public final class Point {\n  private final int x, y;\n  // constructor omitted\n",
       "checks": [
@@ -193,14 +193,14 @@
         }
       ],
       "model": "@Override public boolean equals(Object o) {\n  if (this == o) return true;\n  if (!(o instanceof Point)) return false;\n  Point p = (Point) o;\n  return x == p.x && y == p.y;\n}\n@Override public int hashCode() { return Objects.hash(x, y); }",
-      "explanation": "A record Point(int x, int y) generates all of this. getClass() versus instanceof is a debate: instanceof is fine for a final class. Other correct spellings (31 * x + y) also pass."
+      "explanation": "A `record Point(int x, int y)` generates all of this. `getClass()` versus `instanceof` is a debate: `instanceof` is fine for a final class. Other correct spellings (`31 * x + y`) also pass."
     },
     {
       "id": "record-pair",
       "concept": "Modern language constructs",
       "type": "code",
       "difficulty": 1,
-      "prompt": "Write a Java record named Pair with a String component name and an int component age.",
+      "prompt": "Write a Java record named `Pair` with a String component name and an int component age.",
       "language": "java",
       "checks": [
         {
@@ -224,33 +224,33 @@
       "concept": "Equality and hashing",
       "type": "single",
       "difficulty": 3,
-      "prompt": "What does this Java snippet print?\nList<Integer> k = new ArrayList<>(List.of(1));\nMap<List<Integer>, String> m = new HashMap<>();\nm.put(k, \"v\");\nk.add(2);\nSystem.out.println(m.get(k) + \" \" + m.containsKey(List.of(1, 2)) + \" \" + m.size());\nWhat is printed?",
+      "prompt": "What does this Java snippet print?\n\n```java\nList<Integer> k = new ArrayList<>(List.of(1));\nMap<List<Integer>, String> m = new HashMap<>();\nm.put(k, \"v\");\nk.add(2);\nSystem.out.println(m.get(k) + \" \" + m.containsKey(List.of(1, 2)) + \" \" + m.size());\n```\n\nWhat is printed?",
       "options": [
         {
           "id": "a",
-          "text": "v true 1",
-          "why": "The entry was filed under the hash of [1]; after the mutation the hash is different, so the lookup goes to another bucket."
+          "text": "`v true 1`",
+          "why": "The entry was filed under the hash of `[1]`; after the mutation the hash is different, so the lookup goes to another bucket."
         },
         {
           "id": "b",
-          "text": "null false 1",
+          "text": "`null false 1`",
           "why": "Correct: the entry is still in the map (size 1) but is unreachable by either the mutated key or an equal new list."
         },
         {
           "id": "c",
-          "text": "null true 1",
-          "why": "containsKey would only be true if the entry were found; it sits in the bucket of the old hash."
+          "text": "`null true 1`",
+          "why": "`containsKey` would only be true if the entry were found; it sits in the bucket of the old hash."
         },
         {
           "id": "d",
-          "text": "v false 0 (entry removed)",
-          "why": "Mutating a key never removes the entry, and get(k) cannot succeed here."
+          "text": "`v false 0 (entry removed)`",
+          "why": "Mutating a key never removes the entry, and `get(k)` cannot succeed here."
         }
       ],
       "correct": [
         "b"
       ],
-      "explanation": "Never use a mutable object as a HashMap key (or HashSet element) if its hashCode depends on mutable state. The entry becomes a leak: present but unfindable. (Verified by running it.)"
+      "explanation": "Never use a mutable object as a `HashMap` key (or `HashSet` element) if its `hashCode` depends on mutable state. The entry becomes a leak: present but unfindable. (Verified by running it.)"
     },
     {
       "id": "equals-no-hash",
@@ -258,8 +258,8 @@
       "type": "assertion",
       "difficulty": 2,
       "prompt": "Read the assertion (A) and the reason (R), then choose the option that fits.",
-      "assertion": "If a class overrides equals() but not hashCode(), two equal objects can both end up in the same HashSet.",
-      "reason": "The hashCode() contract requires a different hash value for every pair of unequal objects.",
+      "assertion": "If a class overrides `equals()` but not `hashCode()`, two equal objects can both end up in the same `HashSet`.",
+      "reason": "The `hashCode()` contract requires a different hash value for every pair of unequal objects.",
       "correct": [
         "c"
       ],
@@ -276,32 +276,32 @@
       "concept": "Equality and hashing",
       "type": "multi",
       "difficulty": 2,
-      "prompt": "Select all that are safe to use as HashMap keys (value-based equality, hash stable over time).",
+      "prompt": "Select all that are safe to use as `HashMap` keys (value-based equality, hash stable over time).",
       "options": [
         {
           "id": "a",
-          "text": "A String",
+          "text": "A `String`",
           "why": "Immutable, value-based equals, and the hash is cached."
         },
         {
           "id": "b",
-          "text": "A record Pair(String name, int age)",
-          "why": "Records get value-based equals/hashCode from immutable components."
+          "text": "A `record Pair(String name, int age)`",
+          "why": "Records get value-based `equals/hashCode` from immutable components."
         },
         {
           "id": "c",
-          "text": "An Integer",
+          "text": "An `Integer`",
           "why": "Immutable with value-based equality."
         },
         {
           "id": "d",
-          "text": "An ArrayList you keep adding to",
+          "text": "An `ArrayList` you keep adding to",
           "why": "Its hashCode changes with its contents, so the entry gets lost."
         },
         {
           "id": "e",
-          "text": "A StringBuilder used as the key",
-          "why": "It does not override equals/hashCode, so lookups only work by identity, and its contents are mutable."
+          "text": "A `StringBuilder` used as the key",
+          "why": "It does not override `equals/hashCode`, so lookups only work by identity, and its contents are mutable."
         }
       ],
       "correct": [
@@ -318,7 +318,7 @@
       "difficulty": 1,
       "prompt": "Read the assertion (A) and the reason (R), then choose the option that fits.",
       "assertion": "A Java record is implicitly final.",
-      "reason": "The equals method of a record compares all of its components.",
+      "reason": "The `equals` method of a record compares all of its components.",
       "correct": [
         "b"
       ],
@@ -328,7 +328,7 @@
         "c": "R is true as well.",
         "d": "A is true: record classes are implicitly final."
       },
-      "explanation": "Records are shallowly immutable data carriers: final class, final fields, accessors, and component-based equals/hashCode/toString."
+      "explanation": "Records are shallowly immutable data carriers: final class, final fields, accessors, and component-based `equals`/hashCode/toString."
     },
     {
       "id": "multiple-extends",
@@ -354,22 +354,22 @@
       "concept": "Interfaces and abstract classes",
       "type": "single",
       "difficulty": 3,
-      "prompt": "What happens when this Java code is compiled?\n\ninterface A { default String who() { return \"A\"; } }\ninterface B extends A { default String who() { return \"B\"; } }\ninterface C extends A { default String who() { return \"C\"; } }\nclass D implements B, C { }\n\nWhat is the outcome?",
+      "prompt": "What happens when this Java code is compiled?\n\n```java\ninterface A {\n    default String who() { return \"A\"; }\n}\ninterface B extends A {\n    default String who() { return \"B\"; }\n}\ninterface C extends A {\n    default String who() { return \"C\"; }\n}\nclass D implements B, C { }\n```\n\nWhat is the outcome?",
       "options": [
         {
           "id": "a",
-          "text": "Compile error: D inherits unrelated defaults for who() and must override it",
-          "why": "Correct: B and C each override A.who(), so neither is more specific and the class must resolve the conflict."
+          "text": "Compile error: `D` inherits unrelated defaults for `who()` and must override it",
+          "why": "Correct: `B` and `C` each override `A.who()`, so neither is more specific and the class must resolve the conflict."
         },
         {
           "id": "b",
-          "text": "It compiles and who() returns \"B\", because B is listed first",
+          "text": "It compiles and `who()` returns `\"B\"`, because `B` is listed first",
           "why": "Declaration order never resolves a default-method conflict."
         },
         {
           "id": "c",
-          "text": "It compiles and who() returns \"A\", the common ancestor",
-          "why": "A is overridden by both B and C, so it is not the winner."
+          "text": "It compiles and `who()` returns `\"A\"`, the common ancestor",
+          "why": "A is overridden by both `B` and `C`, so it is not the winner."
         },
         {
           "id": "d",
@@ -380,7 +380,7 @@
       "correct": [
         "a"
       ],
-      "explanation": "Fix it by overriding: public String who() { return B.super.who(); }. Rule: a class wins over interfaces, a more specific interface wins over a less specific one, otherwise you must override."
+      "explanation": "Fix it by overriding: `public String who() { return B.super.who(); }`. Rule: a class wins over interfaces, a more specific interface wins over a less specific one, otherwise you must override."
     },
     {
       "id": "interfaces-multiple",
@@ -433,27 +433,27 @@
       "concept": "Overloading vs overriding",
       "type": "single",
       "difficulty": 3,
-      "prompt": "What does this Java code print?\n\nstatic void f(Object o) { System.out.print(\"O\"); }\nstatic void f(String s) { System.out.print(\"S\"); }\n// in main:\nObject x = \"hi\";\nf(x); f(\"hi\"); f(null);\n\nWhat is the output?",
+      "prompt": "What does this Java code print?\n\n```java\nstatic void f(Object o) { System.out.print(\"O\"); }\nstatic void f(String s) { System.out.print(\"S\"); }\n// in main:\nObject x = \"hi\";\nf(x); f(\"hi\"); f(null);\n```\n\nWhat is the output?",
       "options": [
         {
           "id": "a",
-          "text": "OSS, since only f(x) is bound to the Object overload",
-          "why": "Correct: overloads are chosen at compile time from the static type, so f(x) is O; \"hi\" and null both pick the most specific f(String)."
+          "text": "`OSS, since only f(x) is bound to the Object overload`",
+          "why": "Correct: overloads are chosen at compile time from the static type, so `f(x)` is O; `\"hi\"` and `null` both pick the most specific `f(String)`."
         },
         {
           "id": "b",
-          "text": "SSS, since the runtime type of x decides the overload",
-          "why": "Wrong: x has static type Object, so the compiler binds f(x) to f(Object) even though the runtime object is a String."
+          "text": "`SSS, since the runtime type of x decides the overload`",
+          "why": "Wrong: x has static type `Object`, so the compiler binds `f(x)` to `f(Object)` even though the runtime object is a `String`."
         },
         {
           "id": "c",
-          "text": "OOS, since a string literal prefers the Object overload",
-          "why": "Wrong: a string literal has static type String, so f(\"hi\") binds to the more specific overload and prints S."
+          "text": "`OOS, since a string literal prefers the Object overload`",
+          "why": "Wrong: a string literal has static type `String`, so f(`\"hi\"`) binds to the more specific overload and prints S."
         },
         {
           "id": "d",
-          "text": "Compile error, since the call f(null) is ambiguous",
-          "why": "Wrong: String is more specific than Object, so f(null) is not ambiguous; it would be ambiguous only for unrelated types like String and Integer."
+          "text": "`Compile error, since the call f(null) is ambiguous`",
+          "why": "Wrong: `String` is more specific than `Object`, so `f(null)` is not ambiguous; it would be ambiguous only for unrelated types like `String` and `Integer`."
         }
       ],
       "correct": [
@@ -466,26 +466,26 @@
       "concept": "Overloading vs overriding",
       "type": "single",
       "difficulty": 3,
-      "prompt": "What does this Java code print?\n\nclass P { String n = \"P\"; String get() { return \"P\"; } }\nclass C extends P { String n = \"C\"; String get() { return \"C\"; } }\n// in main:\nP p = new C();\nSystem.out.println(p.n + p.get());\n\nWhat is the output?",
+      "prompt": "What does this Java code print?\n\n```java\nclass P {\n    String n = \"P\";\n    String get() { return \"P\"; }\n}\nclass C extends P {\n    String n = \"C\";\n    String get() { return \"C\"; }\n}\n// in main:\nP p = new C();\nSystem.out.println(p.n + p.get());\n```\n\nWhat is the output?",
       "options": [
         {
           "id": "a",
-          "text": "PC",
-          "why": "Correct: field access uses the static type (P.n is \"P\") while the overridden method is dispatched on the real class (C.get() is \"C\")."
+          "text": "`PC`",
+          "why": "Correct: field access uses the static type (`P.n` is \"P\") while the overridden method is dispatched on the real class (`C.get()` is \"C\")."
         },
         {
           "id": "b",
-          "text": "CC",
+          "text": "`CC`",
           "why": "Wrong: fields are not polymorphic; a subclass field with the same name hides the parent field rather than overriding it."
         },
         {
           "id": "c",
-          "text": "PP",
-          "why": "Wrong: get() is an instance method and is overridden, so the call runs C.get() even though the reference type is P."
+          "text": "`PP`",
+          "why": "Wrong: `get()` is an instance method and is overridden, so the call runs `C.get()` even though the reference type is P."
         },
         {
           "id": "d",
-          "text": "CP",
+          "text": "`CP`",
           "why": "Wrong: this swaps the two rules; the field follows the reference type and the method follows the object type."
         }
       ],

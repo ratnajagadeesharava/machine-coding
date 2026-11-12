@@ -83,7 +83,7 @@
         }
       ],
       "model": "proxy_connect_timeout 2s;\nproxy_read_timeout 5s;",
-      "explanation": "nginx defaults are 60 seconds for both, far too long for an interactive path. proxy_read_timeout limits the gap between two reads, not the whole response, so pair it with an application-level deadline."
+      "explanation": "nginx defaults are 60 seconds for both, far too long for an interactive path. `proxy_read_timeout` limits the gap between two reads, not the whole response, so pair it with an application-level deadline."
     },
     {
       "id": "deadline-propagation",
@@ -102,7 +102,7 @@
         "c": "Not this one: A is true while R is false does not describe this pair; check the truth of R again.",
         "d": "Not this one: A is false while R is true does not describe this pair; check the truth of A again."
       },
-      "explanation": "Propagate a deadline (gRPC deadlines, an X-Request-Deadline header) and subtract elapsed time at each hop."
+      "explanation": "Propagate a deadline (gRPC deadlines, an `X-Request-Deadline` header) and subtract elapsed time at each hop."
     },
     {
       "id": "timeout-processed",
@@ -128,7 +128,7 @@
       "concept": "Idempotency",
       "type": "code",
       "difficulty": 2,
-      "prompt": "Write a curl command that POSTs the JSON body {\"amount\":100} to https://api.example.com/payments with a Content-Type header and an Idempotency-Key header whose value is 7f3a-91.",
+      "prompt": "Write a curl command that POSTs the JSON body `{\"amount\":100}` to `https://api.example.com/payments` with a `Content-Type` header and an `Idempotency-Key` header whose value is `7f3a-91`.",
       "language": "shell",
       "checks": [
         {
@@ -166,7 +166,7 @@
       "concept": "Retries",
       "type": "integer",
       "difficulty": 2,
-      "prompt": "Exponential backoff uses delay = base x 2^(n-1) for the n-th retry, with base 100 ms and no cap. What is the delay in milliseconds before the 5th retry?",
+      "prompt": "Exponential backoff uses `delay = base x 2^(n-1)` for the n-th retry, with base 100 ms and no cap. What is the delay in milliseconds before the 5th retry?",
       "answer": 1600,
       "unit": "ms",
       "explanation": "100 x 2^4 = 1,600 ms. Delays run 100, 200, 400, 800, 1600. Real systems add a cap and jitter."
@@ -196,7 +196,7 @@
       "concept": "Retries and backoff",
       "type": "integer",
       "difficulty": 2,
-      "prompt": "Full-jitter backoff sleeps a random time between 0 and min(cap, base x 2^attempt), with attempt numbered from 0. With base = 100 ms and cap = 10,000 ms, what is the upper bound of the sleep, in milliseconds, for attempt 7?",
+      "prompt": "Full-jitter backoff sleeps a random time between 0 and `min(cap, base x 2^attempt)`, with attempt numbered from 0. With base = 100 ms and cap = 10,000 ms, what is the upper bound of the sleep, in milliseconds, for attempt 7?",
       "answer": 10000,
       "unit": "ms",
       "explanation": "100 x 2^7 = 12,800 ms, which exceeds the cap, so the bound is 10,000 ms. Past the crossover the bound stays flat, which prevents unbounded waits."
@@ -243,7 +243,7 @@
       "options": [
         {
           "id": "a",
-          "text": "Retry only transient failures such as timeouts, connection resets, 503 and 429 (honour Retry-After).",
+          "text": "Retry only transient failures such as timeouts, connection resets, 503 and 429 (honour `Retry-After`).",
           "why": "Correct: these may succeed on a later attempt."
         },
         {
@@ -361,7 +361,7 @@
       "concept": "What is retryable",
       "type": "truefalse",
       "difficulty": 2,
-      "prompt": "True or false: when a 429 response carries a Retry-After header, a well-behaved client waits at least that long (plus jitter) before retrying.",
+      "prompt": "True or false: when a 429 response carries a `Retry-After` header, a well-behaved client waits at least that long (plus jitter) before retrying.",
       "options": [
         {
           "id": "a",
@@ -377,7 +377,7 @@
       "correct": [
         "a"
       ],
-      "explanation": "Retry-After may be a number of seconds or an HTTP date. It overrides the client own backoff when it is longer."
+      "explanation": "`Retry-After` may be a number of seconds or an HTTP date. It overrides the client own backoff when it is longer."
     }
   ]
 }

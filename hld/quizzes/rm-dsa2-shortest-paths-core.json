@@ -121,7 +121,7 @@
       "concept": "Bellman-Ford with K stops",
       "type": "integer",
       "difficulty": 3,
-      "prompt": "Flights (from,to,price): 0->1 100, 1->2 100, 0->2 500, 2->3 100, 1->3 600. What is the cheapest price from city 0 to city 3 using at most K = 1 stop (at most 2 flights)?",
+      "prompt": "Flights `(from,to,price)`: 0->1 100, 1->2 100, 0->2 500, 2->3 100, 1->3 600. What is the cheapest price from city 0 to city 3 using at most `K = 1` stop (at most 2 flights)?",
       "explanation": "With 2 flights the options are 0->1->3 = 700 and 0->2->3 = 600. The 300 route 0->1->2->3 needs two stops. The classic trap is returning the unrestricted Dijkstra answer.",
       "answer": 600
     },
@@ -130,7 +130,7 @@
       "concept": "Dijkstra",
       "type": "code",
       "difficulty": 2,
-      "prompt": "Write pseudocode for the main loop of Dijkstra with a min-heap and lazy deletion. dist[] is already initialised (0 for the source, infinity elsewhere) and the heap holds (0, src). Edges are (u, v, w) with w >= 0.",
+      "prompt": "Write pseudocode for the main loop of Dijkstra with a min-heap and lazy deletion. `dist[]` is already initialised (0 for the source, infinity elsewhere) and the heap holds `(0, src)`. Edges are `(u, v, w)` with `w >= 0`.",
       "explanation": "This is the lazy-deletion version: heaps usually have no decrease-key, so duplicates are pushed and stale ones skipped on pop. Any consistent pseudocode with the same four steps is fine. Time O(E log V).",
       "language": "pseudocode",
       "starter": "",

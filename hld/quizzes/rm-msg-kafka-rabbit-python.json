@@ -16,7 +16,7 @@
       "concept": "aiokafka",
       "type": "code",
       "difficulty": 2,
-      "prompt": "Create an AIOKafkaConsumer named consumer for topic \"orders\" on bootstrap server \"localhost:9092\" in group \"billing\", with auto-commit disabled and auto_offset_reset set to \"earliest\".",
+      "prompt": "Create an `AIOKafkaConsumer` named `consumer` for topic `\"orders\"` on bootstrap server `\"localhost:9092\"` in group `\"billing\"`, with auto-commit disabled and `auto_offset_reset` set to `\"earliest\"`.",
       "language": "python",
       "starter": "from aiokafka import AIOKafkaConsumer\n",
       "checks": [
@@ -38,14 +38,14 @@
         }
       ],
       "model": "consumer = AIOKafkaConsumer(\n    \"orders\",\n    bootstrap_servers=\"localhost:9092\",\n    group_id=\"billing\",\n    enable_auto_commit=False,\n    auto_offset_reset=\"earliest\",\n)",
-      "explanation": "Remember to await consumer.start() and to stop() the consumer in a finally block so the group rebalances promptly. Two groups with different group_id values each receive every record."
+      "explanation": "Remember to `await consumer.start()` and to `stop()` the consumer in a finally block so the group rebalances promptly. Two groups with different `group_id` values each receive every record."
     },
     {
       "id": "aiokafka-manual-commit",
       "concept": "aiokafka",
       "type": "code",
       "difficulty": 3,
-      "prompt": "Using aiokafka, consumer is an AIOKafkaConsumer created with enable_auto_commit=False. Write the loop that reads each record msg, awaits process(msg) and only afterwards commits the offsets.",
+      "prompt": "Using aiokafka, `consumer` is an `AIOKafkaConsumer` created with `enable_auto_commit=False`. Write the loop that reads each record `msg`, awaits `process(msg)` and only afterwards commits the offsets.",
       "language": "python",
       "starter": "async def run(consumer):\n    await consumer.start()\n",
       "checks": [
@@ -70,7 +70,7 @@
       "concept": "aiokafka",
       "type": "code",
       "difficulty": 2,
-      "prompt": "With a started AIOKafkaProducer named producer created with acks=\"all\", write the line that sends bytes payload to topic \"orders\" with key b\"order-7\" and waits until the broker has acknowledged it.",
+      "prompt": "With a started `AIOKafkaProducer` named `producer` created with `acks=\"all\"`, write the line that sends bytes `payload` to topic `\"orders\"` with key `b\"order-7\"` and waits until the broker has acknowledged it.",
       "language": "python",
       "checks": [
         {
@@ -91,14 +91,14 @@
         }
       ],
       "model": "await producer.send_and_wait(\"orders\", value=payload, key=b\"order-7\")",
-      "explanation": "send() returns a future after buffering; send_and_wait() also waits for the acknowledgement level set by acks. Same key means same partition, so one order stays in order. Other correct answers await the future returned by send()."
+      "explanation": "`send()` returns a future after buffering; `send_and_wait()` also waits for the acknowledgement level set by `acks`. Same key means same partition, so one order stays in order. Other correct answers await the future returned by `send()`."
     },
     {
       "id": "confluent-poll",
       "concept": "confluent-kafka",
       "type": "code",
       "difficulty": 3,
-      "prompt": "With a confluent_kafka Consumer named consumer already subscribed (enable.auto.commit false), write the loop that polls with a 1 second timeout, skips empty polls, calls handle(msg) and then synchronously commits that message.",
+      "prompt": "With a `confluent_kafka` `Consumer` named `consumer` already subscribed (`enable.auto.commit` false), write the loop that polls with a 1 second timeout, skips empty polls, calls `handle(msg)` and then synchronously commits that message.",
       "language": "python",
       "starter": "while True:\n",
       "checks": [
@@ -120,7 +120,7 @@
         }
       ],
       "model": "    msg = consumer.poll(1.0)\n    if msg is None:\n        continue\n    if msg.error():\n        log.error(msg.error())\n        continue\n    handle(msg)\n    consumer.commit(message=msg, asynchronous=False)",
-      "explanation": "poll() returns None when nothing arrived and a message object whose error() may be set. Committing after handle() is at-least-once. The loop must also call consumer.close() on shutdown so the group rebalances quickly."
+      "explanation": "`poll()` returns None when nothing arrived and a message object whose `error()` may be set. Committing after handle() is at-least-once. The loop must also call `consumer.close()` on shutdown so the group rebalances quickly."
     },
     {
       "id": "python-async-consumer",
@@ -146,12 +146,12 @@
         },
         {
           "id": "d",
-          "text": "Call time.sleep() for back-off inside the consumer coroutine.",
+          "text": "Call `time.sleep()` for back-off inside the consumer coroutine.",
           "why": "It blocks the whole event loop, delaying heartbeats and every other task."
         },
         {
           "id": "e",
-          "text": "Create a new AIOKafkaConsumer for every message to keep state clean.",
+          "text": "Create a new `AIOKafkaConsumer` for every message to keep state clean.",
           "why": "Each consumer join triggers a rebalance; reuse one long-lived consumer."
         }
       ],
@@ -160,7 +160,7 @@
         "b",
         "c"
       ],
-      "explanation": "Use await asyncio.sleep() for pauses, keep batches small enough to finish within max_poll_interval_ms, and handle rebalances by committing processed offsets first."
+      "explanation": "Use `await asyncio.sleep()` for pauses, keep batches small enough to finish within `max_poll_interval_ms`, and handle rebalances by committing processed offsets first."
     },
     {
       "id": "celery-acks",
@@ -169,7 +169,7 @@
       "difficulty": 3,
       "prompt": "Read the assertion A and the reason R, then choose the correct relationship between them.",
       "assertion": "With Celery default settings, a worker that crashes in the middle of running a task can lose that task.",
-      "reason": "By default Celery acknowledges the message just before the task starts executing; acks_late=True moves the ack to after completion.",
+      "reason": "By default Celery acknowledges the message just before the task starts executing`; acks_late=True` moves the ack to after completion.",
       "correct": [
         "a"
       ],
@@ -179,7 +179,7 @@
         "c": "Not this one: A is true while R is false does not describe this pair; check the truth of R again.",
         "d": "Not this one: A is false while R is true does not describe this pair; check the truth of A again."
       },
-      "explanation": "acks_late=True gives at-least-once, so tasks must then be idempotent. A worker process killed by the OS (for example out of memory) also needs task_reject_on_worker_lost=True to be redelivered."
+      "explanation": "`acks_late=True` gives at-least-once, so tasks must then be idempotent. A worker process killed by the OS (for example out of memory) also needs `task_reject_on_worker_lost=True` to be redelivered."
     },
     {
       "id": "celery-late-exactly-once",
@@ -187,8 +187,8 @@
       "type": "assertion",
       "difficulty": 3,
       "prompt": "Read the assertion A and the reason R, then choose the correct relationship between them.",
-      "assertion": "Tasks should still be idempotent when acks_late=True is enabled.",
-      "reason": "acks_late=True makes Celery guarantee that every task executes exactly once.",
+      "assertion": "Tasks should still be idempotent when `acks_late=True` is enabled.",
+      "reason": "`acks_late=True` makes Celery guarantee that every task executes exactly once.",
       "correct": [
         "c"
       ],
@@ -205,7 +205,7 @@
       "concept": "Celery",
       "type": "code",
       "difficulty": 2,
-      "prompt": "Declare a Celery task send_email on an app named app that acknowledges late, retries automatically on ConnectionError with exponential back-off, and gives up after 3 retries.",
+      "prompt": "Declare a Celery task `send_email` on an app named `app` that acknowledges late, retries automatically on `ConnectionError` with exponential back-off, and gives up after 3 retries.",
       "language": "python",
       "checks": [
         {
@@ -230,24 +230,24 @@
         }
       ],
       "model": "@app.task(acks_late=True, autoretry_for=(ConnectionError,), retry_backoff=True, max_retries=3)\ndef send_email(to):\n    ...",
-      "explanation": "retry_backoff=True doubles the delay each retry starting at 1 s (capped by retry_backoff_max) and retry_jitter is on by default. Combined with acks_late the task can run more than once, so make send_email idempotent."
+      "explanation": "`retry_backoff=True` doubles the delay each retry starting at 1 s (capped by `retry_backoff_max`) and `retry_jitter` is on by default. Combined with `acks_late` the task can run more than once, so make `send_email` idempotent."
     },
     {
       "id": "celery-prefetch",
       "concept": "Celery",
       "type": "integer",
       "difficulty": 2,
-      "prompt": "A Celery worker runs with --concurrency=4 and the default worker_prefetch_multiplier of 4. How many messages can it reserve from the broker at one time?",
+      "prompt": "A Celery worker runs with `--concurrency=4` and the default `worker_prefetch_multiplier` of 4. How many messages can it reserve from the broker at one time?",
       "answer": 16,
       "unit": "messages",
-      "explanation": "Prefetch count = concurrency x multiplier = 4 x 4 = 16. With long tasks set the multiplier to 1 (and often acks_late) so one slow task does not hold a backlog hostage."
+      "explanation": "Prefetch count = concurrency x multiplier = 4 x 4 = 16. With long tasks set the multiplier to 1 (and often `acks_late`) so one slow task does not hold a backlog hostage."
     },
     {
       "id": "visibility-timeout",
       "concept": "Celery",
       "type": "single",
       "difficulty": 3,
-      "prompt": "A Celery task using a Redis broker runs for 2 hours while the broker visibility_timeout is the default of 1 hour and acks_late is on. What is the likely result?",
+      "prompt": "A Celery task using a Redis broker runs for 2 hours while the broker `visibility_timeout` is the default of 1 hour and `acks_late` is on. What is the likely result?",
       "options": [
         {
           "id": "a",
@@ -267,30 +267,30 @@
         {
           "id": "d",
           "text": "Redis extends the timeout automatically for as long as the worker stays connected.",
-          "why": "Redis does not extend it; you must raise visibility_timeout yourself."
+          "why": "Redis does not extend it; you must raise `visibility_timeout` yourself."
         }
       ],
       "correct": [
         "b"
       ],
-      "explanation": "Raise broker_transport_options[\"visibility_timeout\"] above your longest task, or use a broker with real acknowledgement semantics. Idempotent tasks make the duplicate harmless."
+      "explanation": "Raise `broker_transport_options[\"visibility_timeout\"]` above your longest task, or use a broker with real acknowledgement semantics. Idempotent tasks make the duplicate harmless."
     },
     {
       "id": "tenacity-wait",
       "concept": "Retries and dead letters",
       "type": "integer",
       "difficulty": 2,
-      "prompt": "A consumer wraps processing with tenacity using stop_after_attempt(4) and wait_fixed(2). If every attempt fails, how many seconds does tenacity spend waiting between attempts?",
+      "prompt": "A consumer wraps processing with tenacity using `stop_after_attempt(4)` and `wait_fixed(2)`. If every attempt fails, how many seconds does tenacity spend waiting between attempts?",
       "answer": 6,
       "unit": "s",
-      "explanation": "Four attempts have three gaps between them: 3 x 2 s = 6 s. The wait is not applied after the last failed attempt, which is re-raised or wrapped in RetryError."
+      "explanation": "Four attempts have three gaps between them: 3 x 2 s = 6 s. The wait is not applied after the last failed attempt, which is re-raised or wrapped in `RetryError`."
     },
     {
       "id": "dlq-publish",
       "concept": "Retries and dead letters",
       "type": "code",
       "difficulty": 3,
-      "prompt": "In an aiokafka consumer, after retries are exhausted for msg because of exception exc, write the line that publishes msg.value to the topic \"orders.dlq\" with a header named \"error\" containing the error text, waiting for the broker acknowledgement.",
+      "prompt": "In an aiokafka consumer, after retries are exhausted for `msg` because of exception `exc`, write the line that publishes `msg.value` to the topic `\"orders.dlq\"` with a header named `\"error\"` containing the error text, waiting for the broker acknowledgement.",
       "language": "python",
       "checks": [
         {
@@ -326,7 +326,7 @@
         "c": "Not this one: A is true while R is false does not describe this pair; check the truth of R again.",
         "d": "Not this one: A is false while R is true does not describe this pair; check the truth of A again."
       },
-      "explanation": "Run the work in loop.run_in_executor or a process pool, keep each poll batch short, and tune max_poll_interval_ms and session_timeout_ms only after fixing the blocking."
+      "explanation": "Run the work in `loop.run_in_executor` or a process pool, keep each poll batch short, and tune `max_poll_interval_ms` and `session_timeout_ms` only after fixing the blocking."
     },
     {
       "id": "send-and-wait",
@@ -334,8 +334,8 @@
       "type": "assertion",
       "difficulty": 3,
       "prompt": "Read the assertion A and the reason R, then choose the correct relationship between them.",
-      "assertion": "Awaiting producer.send_and_wait() guarantees the record is stored on every replica of the partition.",
-      "reason": "The number of replicas that must acknowledge a write is controlled by the producer acks setting and the topic min.insync.replicas.",
+      "assertion": "Awaiting producer.`send_and_wait()` guarantees the record is stored on every replica of the partition.",
+      "reason": "The number of replicas that must acknowledge a write is controlled by the producer `acks` setting and the topic `min.insync.replicas`.",
       "correct": [
         "d"
       ],
@@ -345,7 +345,7 @@
         "c": "Not this one: A is true while R is false does not describe this pair; check the truth of R again.",
         "d": "Correct: A is false: with acks=1 only the leader has confirmed, and with acks=all it is the in-sync replicas, not every replica. R is true."
       },
-      "explanation": "Use acks=\"all\" with min.insync.replicas of 2 on a replication factor 3 topic for durable writes."
+      "explanation": "Use `acks=\"all\"` with `min.insync.replicas` of 2 on a replication factor 3 topic for durable writes."
     },
     {
       "id": "offset-reset-python",
@@ -353,7 +353,7 @@
       "type": "assertion",
       "difficulty": 2,
       "prompt": "Read the assertion A and the reason R, then choose the correct relationship between them.",
-      "assertion": "Setting auto_offset_reset=\"earliest\" makes a new consumer group read from the start of the retained log.",
+      "assertion": "Setting `auto_offset_reset=\"earliest\"` makes a new consumer group read from the start of the retained log.",
       "reason": "Kafka removes old log segments according to retention time or size limits.",
       "correct": [
         "b"
@@ -371,23 +371,23 @@
       "concept": "aiokafka",
       "type": "matrix",
       "difficulty": 1,
-      "prompt": "Match each AIOKafkaConsumer parameter with what it controls.",
+      "prompt": "Match each `AIOKafkaConsumer` parameter with what it controls.",
       "left": [
         {
           "id": "l1",
-          "text": "group_id"
+          "text": "`group_id`"
         },
         {
           "id": "l2",
-          "text": "enable_auto_commit"
+          "text": "`enable_auto_commit`"
         },
         {
           "id": "l3",
-          "text": "auto_offset_reset"
+          "text": "`auto_offset_reset`"
         },
         {
           "id": "l4",
-          "text": "max_poll_records"
+          "text": "`max_poll_records`"
         }
       ],
       "right": [
@@ -405,7 +405,7 @@
         },
         {
           "id": "r4",
-          "text": "Upper bound on the records returned by one getmany call"
+          "text": "Upper bound on the records returned by one `getmany` call"
         },
         {
           "id": "r5",
@@ -418,14 +418,14 @@
         "l3": "r3",
         "l4": "r4"
       },
-      "explanation": "The last distractor belongs to the producer side (acks). Keep consumer and producer settings separate when debugging."
+      "explanation": "The last distractor belongs to the producer side (`acks`). Keep consumer and producer settings separate when debugging."
     },
     {
       "id": "sleep-in-loop",
       "concept": "aiokafka",
       "type": "truefalse",
       "difficulty": 2,
-      "prompt": "True or false: calling time.sleep(5) inside an async consumer loop pauses only the current message while the rest of the event loop keeps running.",
+      "prompt": "True or false: calling `time.sleep(5)` inside an async consumer loop pauses only the current message while the rest of the event loop keeps running.",
       "options": [
         {
           "id": "a",
@@ -441,14 +441,14 @@
       "correct": [
         "b"
       ],
-      "explanation": "Use await asyncio.sleep(5) for a non-blocking pause."
+      "explanation": "Use `await asyncio.sleep(5)` for a non-blocking pause."
     },
     {
       "id": "asyncpg-dedup",
       "concept": "Idempotent consumers",
       "type": "code",
       "difficulty": 3,
-      "prompt": "With an asyncpg connection conn and a string msg_id, write the statement that inserts msg_id into processed_messages(message_id) with ON CONFLICT DO NOTHING and stores the returned command tag in status. Use a positional placeholder.",
+      "prompt": "With an asyncpg connection `conn` and a string `msg_id`, write the statement that inserts `msg_id` into `processed_messages(message_id)` with `ON CONFLICT DO NOTHING` and stores the returned command tag in `status`. Use a positional placeholder.",
       "language": "python",
       "checks": [
         {
@@ -469,14 +469,14 @@
         }
       ],
       "model": "status = await conn.execute(\n    \"INSERT INTO processed_messages (message_id) VALUES ($1) ON CONFLICT (message_id) DO NOTHING\",\n    msg_id,\n)",
-      "explanation": "asyncpg returns the command tag as text such as \"INSERT 0 1\" for a new row and \"INSERT 0 0\" for a duplicate, so status.endswith(\" 0\") means already seen. Run it in the same transaction as the business effect (async with conn.transaction())."
+      "explanation": "asyncpg returns the command tag as text such as `\"INSERT 0 1\"` for a new row and `\"INSERT 0 0\"` for a duplicate, so `status.endswith(\" 0\")` means already seen. Run it in the same transaction as the business effect (`async with conn.transaction()`)."
     },
     {
       "id": "outbox-relay-py",
       "concept": "Outbox pattern",
       "type": "code",
       "difficulty": 3,
-      "prompt": "In an asyncpg transaction, write the fetch that selects up to 100 unpublished rows (published_at IS NULL) from outbox in id order, locked so that several relay workers never take the same rows and do not block each other. Assign the result to rows.",
+      "prompt": "In an asyncpg transaction, write the fetch that selects up to 100 unpublished rows (`published_at IS NULL`) from `outbox` in id order, locked so that several relay workers never take the same rows and do not block each other. Assign the result to `rows`.",
       "language": "python",
       "starter": "async with conn.transaction():\n",
       "checks": [
@@ -498,14 +498,14 @@
         }
       ],
       "model": "    rows = await conn.fetch(\n        \"SELECT * FROM outbox WHERE published_at IS NULL ORDER BY id LIMIT 100 FOR UPDATE SKIP LOCKED\"\n    )",
-      "explanation": "Publish each row, then UPDATE outbox SET published_at = now() for the ids, still inside the transaction. A crash after publishing re-sends the event, so downstream consumers must be idempotent. Several relays may reorder events of one aggregate."
+      "explanation": "Publish each row, then `UPDATE outbox SET published_at = now()` for the ids, still inside the transaction. A crash after publishing re-sends the event, so downstream consumers must be idempotent. Several relays may reorder events of one aggregate."
     },
     {
       "id": "reconcile-py",
       "concept": "Reconciliation",
       "type": "code",
       "difficulty": 3,
-      "prompt": "ledger and bank are dicts of transaction id to amount. Write def reconcile(ledger, bank, tol=0.01) returning a tuple (ids only in ledger, ids only in bank, ids in both whose amounts differ by more than tol).",
+      "prompt": "`ledger` and `bank` are dicts of transaction id to amount. Write `def reconcile(ledger, bank, tol=0.01)` returning a tuple (ids only in ledger, ids only in bank, ids in both whose amounts differ by more than `tol`).",
       "language": "python",
       "starter": "def reconcile(ledger, bank, tol=0.01):\n",
       "checks": [
@@ -523,7 +523,7 @@
         }
       ],
       "model": "    only_ledger = ledger.keys() - bank.keys()\n    only_bank = bank.keys() - ledger.keys()\n    diff = {k for k in ledger.keys() & bank.keys() if abs(ledger[k] - bank[k]) > tol}\n    return only_ledger, only_bank, diff",
-      "explanation": "Any loop-based version is fine. Use Decimal or integer cents for money, report all three buckets with counts and sums, and allow a grace window for late-arriving data before raising an alert."
+      "explanation": "Any loop-based version is fine. Use `Decimal` or integer cents for money, report all three buckets with counts and sums, and allow a grace window for late-arriving data before raising an alert."
     }
   ]
 }
