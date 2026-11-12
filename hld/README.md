@@ -47,7 +47,7 @@ The **Quizzes** tab (`/quiz.html`) is for checking what you know between intervi
   of each answer. Options are shuffled each attempt.
 - **Ask Claude panel (right of the question):** while you answer, a chat panel sits on the right (hide or show it with the buttons; it becomes a slide-over on
   narrow screens). Ask it to explain the question more clearly, give a hint, compare options, show an example, or just discuss. One conversation per
-  question, with quick-reply chips and code shown as snippets. Before you answer it explains and nudges but **does not give the answer away** (unless you
+  question, with quick-reply chips and code shown as snippets. The question's own explanation (the one that used to sit under the question) now appears in this panel as its first message as soon as you answer; if you hide the panel it shows under the question as before. Before you answer, Claude explains and nudges but **does not give the answer away** (unless you
   explicitly ask); after you answer it can explain why the answer is right or where your choice breaks. It works for every question type (options, integer,
   assertion-reason, matrix, fill, code) and uses your Claude API key (the "Add key" button, or `ANTHROPIC_API_KEY` in `.env`; demo mode gives canned replies).
 - **Create a quiz with AI:** give a topic, or paste your own study notes, choose the length and level, and Claude writes a quiz

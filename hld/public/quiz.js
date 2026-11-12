@@ -662,7 +662,6 @@ function renderQuestion() {
     els.verdict.className = `verdict-line ${ok ? 'ok' : 'no'}`;
     els.explain.replaceChildren(...richText(h, q.explanation));
   }
-  els.tutorBtn.hidden = !checked;
   renderPanel();
 }
 
@@ -774,7 +773,7 @@ const AUTO_TEXT = 'Explain this question more clearly.';
 function chipsFor(q, checked) {
   if (!checked) return [AUTO_TEXT, 'Give me a hint without the answer.', 'What concept is this testing?', 'Show a small real-world example.'];
   const ok = isCorrect(q, selectedIds());
-  return [ok ? 'Why is that answer right?' : 'Why is the right answer right, and where did I go wrong?', RICH[q.type] || q.type === 'integer' ? 'Show me another way to solve it.' : 'Why are the other options wrong?', 'How would I say this in an interview?', 'Give me a harder follow-up question.'];
+  return ['Explain this more simply.', ok ? 'Go deeper: what is the edge case here?' : 'Where exactly did my answer go wrong?', RICH[q.type] ? 'Show me another way to solve it.' : 'Why are the other options wrong?', 'How would I say this in an interview?', 'Give me a harder follow-up question.'];
 }
 
 function bubble(m, last, busy) {
@@ -792,15 +791,21 @@ function renderPanel() {
   els.runLayout.classList.toggle('chat-open', open);
   els.panel.hidden = !open;
   els.cpOpen.hidden = open;
-  if (!open) return;
   const checked = !!run.checked[q.id];
+  els.explain.hidden = open; // the explanation lives in the Claude panel while it is open
+  els.tutorBtn.hidden = open || !checked;
+  if (!open) return;
   const t = run.tutor[q.id] || { log: [], busy: false };
   const aiOff = S.health.ai === 'off';
   els.cpState.textContent = aiOff ? '' : checked ? 'You answered: Claude can discuss the answer freely.' : 'Not answered yet: Claude will help without giving the answer away.';
   els.cpLog.replaceChildren();
+  if (checked) {
+    els.cpLog.append(h('div', { class: 'msg bot explain' }, h('div', { class: 'avatar', 'aria-hidden': 'true', text: '✦' }),
+      h('div', { class: 'bubble' }, h('div', { class: 'explain-label', text: 'Explanation' }), ...richText(h, q.explanation))));
+  }
   if (aiOff) {
-    els.cpLog.append(h('div', { class: 'cp-empty' }, h('b', { text: 'Claude is not connected.' }), h('p', { class: 'muted', text: 'Click "Add key" at the top right and paste your Anthropic API key (it stays in this browser), or start the server with demo mode.' })));
-  } else if (!t.log.length) {
+    els.cpLog.append(h('div', { class: 'cp-empty' }, h('b', { text: 'Claude chat is not connected.' }), h('p', { class: 'muted', text: 'Click "Add key" at the top right and paste your Anthropic API key (it stays in this browser) to ask follow-up questions, or start the server with demo mode.' })));
+  } else if (!t.log.length && !checked) {
     els.cpLog.append(h('div', { class: 'cp-empty' }, h('b', { text: 'Stuck, or want to go deeper?' }), h('p', { class: 'muted', text: 'Ask me to explain this question in simpler words, give a hint, compare the options, or just discuss it.' })));
   } else {
     t.log.forEach((m, i) => els.cpLog.append(bubble(m, i === t.log.length - 1, t.busy)));
@@ -842,12 +847,7 @@ async function sendChat(text, { auto = false } = {}) {
   }
 }
 
-els.tutorBtn.addEventListener('click', () => {
-  const t = S.run.tutor[cur().id];
-  store.setLocal(CHAT_OPEN_KEY, true);
-  renderPanel();
-  if (!t || !t.log.length) sendChat('Explain why this is the answer, and where a wrong choice breaks.', { auto: true });
-});
+els.tutorBtn.addEventListener('click', () => setChatOpen(true));
 els.cpForm.addEventListener('submit', (e) => {
   e.preventDefault();
   const text = els.cpInput.value.trim();
