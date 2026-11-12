@@ -44,7 +44,7 @@ test('quiz list and detail endpoints', async () => {
     assert.equal((await fetch(`${s.base}/api/quizzes/nope`)).status, 404);
     assert.equal((await fetch(`${s.base}/api/quizzes/Bad%20Id`)).status, 404);
     assert.equal((await fetch(`${s.base}/quiz.html`)).status, 200);
-    assert.match(await (await fetch(`${s.base}/quiz.js`)).text(), /Quizzes|quiz/i);
+    assert.match(await (await fetch(`${s.base}/quiz/main.js`)).text(), /Quizzes|quiz/i);
   } finally { await s.close(); }
 });
 

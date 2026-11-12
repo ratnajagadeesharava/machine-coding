@@ -124,7 +124,7 @@ export function mountWhiteboard(container, options = {}) {
   const saved = storageKey ? loadSavedBoard(storageKey) : null;
   const initialBoard = saved || (board ? sanitizeBoard(board) : emptyBoard());
   const savedMode = storageKey ? loadSavedMode(storageKey) : {};
-  const theme = options.theme || savedMode.theme || (prefersDark() ? 'dark' : 'light');
+  const theme = options.theme || 'light'; // one look everywhere: the board is light too
   const wb = new M.engine.Whiteboard(stage, {
     board: initialBoard, readOnly, theme, background: savedMode.background, grid: savedMode.grid ?? false, keyboard,
   });
