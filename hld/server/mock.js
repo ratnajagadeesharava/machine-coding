@@ -74,10 +74,15 @@ function isTutor(params) {
 }
 
 function mockExplain(params) {
-  const text = lastUserText(params);
-  const concept = /Concept: (.+)/.exec(text)?.[1] || 'this concept';
-  const chose = /Learner chose: (.+)/.exec(text)?.[1] || '(nothing)';
-  if (!text.includes('Explain this to me.')) return `Mock tutor follow-up: ${text.slice(0, 80)}`;
+  const msgs = params.messages || [];
+  const first = typeof msgs[0]?.content === 'string' ? msgs[0].content : '';
+  const last = lastUserText(params);
+  const concept = /Concept: (.+)/.exec(first)?.[1] || 'this concept';
+  const answered = /Answered: (\w+)/.exec(first)?.[1] === 'yes';
+  const chose = /Learner chose: (.+)/.exec(first)?.[1] || /Learner's answer: (.+)/.exec(first)?.[1] || '(nothing)';
+  const ask = /Learner: ([\s\S]*)$/.exec(last)?.[1] || last;
+  if (msgs.length > 1) return `Mock tutor follow-up: ${ask.slice(0, 80)}`;
+  if (!answered) return `Mock tutor: before you answer, here is what the question about ${concept} is asking. Think about the key trade-off, then pick an answer. (Asked: ${ask.slice(0, 60)})`;
   return `Mock tutor: let us look at ${concept}. You chose ${chose}. The reference explanation is the key idea to remember.`;
 }
 

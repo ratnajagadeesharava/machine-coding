@@ -212,8 +212,12 @@ export function createServer({ ai, questions, quizzes = [], mode = 'off', model 
     const body = await readJson(req);
     const cleaned = cleanQuestion(body.question);
     if (cleaned.error) throw new HttpError(400, `Invalid question: ${cleaned.error}`);
-    const ids = new Set(cleaned.question.options.map((o) => o.id));
+    const optionIds = cleaned.question.options ? cleaned.question.options.map((o) => o.id) : cleaned.question.type === 'assertion' ? ['a', 'b', 'c', 'd'] : [];
+    const ids = new Set(optionIds);
     const selected = Array.isArray(body.selected) ? body.selected.filter((x) => typeof x === 'string' && ids.has(x)) : [];
+    const answer = Array.isArray(body.answer) ? body.answer.filter((x) => typeof x === 'string').slice(0, 20).map((x) => x.slice(0, 4000)) : [];
+    const checked = body.checked !== false;
+    const auto = body.auto === true;
     const ctl = new AbortController();
     res.on('close', () => { if (!res.writableEnded) ctl.abort(); });
     res.writeHead(200, {
@@ -225,7 +229,7 @@ export function createServer({ ai, questions, quizzes = [], mode = 'off', model 
     });
     const send = (event, data) => res.write(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`);
     try {
-      for await (const text of ai.explain({ question: cleaned.question, selected, history: body.history, signal: ctl.signal })) send('delta', { text });
+      for await (const text of ai.explain({ question: cleaned.question, selected, answer, checked, auto, history: body.history, signal: ctl.signal })) send('delta', { text });
       send('done', {});
     } catch (err) {
       if (!ctl.signal.aborted) send('error', { message: friendlyError(err).message });

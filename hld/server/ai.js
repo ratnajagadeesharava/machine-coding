@@ -155,18 +155,21 @@ export function createAi({ client, model = DEFAULT_MODEL, effort = 'default' }) 
     return cleanEvaluation(parsed);
   }
 
-  // Streams a tutor-style explanation of a quiz question; `history` carries earlier follow-up turns (assistant first).
-  async function* explain({ question, selected, history, signal }) {
-    const messages = [{ role: 'user', content: `${explainContext(question, selected)}\n\nExplain this to me.` }];
-    for (const m of Array.isArray(history) ? history.slice(-12) : []) {
+  // Streams the quiz tutor's reply in the chat panel next to a question. `history` is the whole conversation so far (learner first); with no history and
+  // `auto` set, the tutor is asked to explain the question. `checked` says whether the learner has answered (the tutor then does not give the answer away).
+  async function* explain({ question, selected, answer, checked = true, auto = false, history, signal }) {
+    const turns = [];
+    for (const m of Array.isArray(history) ? history.slice(-20) : []) {
       if (!m || (m.role !== 'user' && m.role !== 'assistant') || typeof m.content !== 'string' || !m.content.trim()) continue;
       const content = m.content.trim().slice(0, 4000);
-      const last = messages[messages.length - 1];
-      if (last.role === m.role) last.content += `\n\n${content}`;
-      else messages.push({ role: m.role, content });
+      const last = turns[turns.length - 1];
+      if (last && last.role === m.role) last.content += `\n\n${content}`;
+      else turns.push({ role: m.role, content });
     }
-    if (messages[messages.length - 1].role !== 'user') throw new AriaError('Ask a question first.', 400);
-    const params = request('explain', explainSystem(), messages, 3000);
+    if (!turns.length || turns[0].role !== 'user') turns.unshift({ role: 'user', content: 'Explain this question to me more clearly.' });
+    if (turns[turns.length - 1].role !== 'user') throw new AriaError('Ask a question first.', 400);
+    turns[0] = { role: 'user', content: `${explainContext(question, selected, answer, checked)}\n\n---\nLearner: ${turns[0].content}` };
+    const params = request('explain', explainSystem(), turns, 3000);
     const stream = client.messages.stream(params, signal ? { signal } : undefined);
     if (signal) signal.addEventListener('abort', () => stream.abort?.(), { once: true });
     for await (const event of stream) {
