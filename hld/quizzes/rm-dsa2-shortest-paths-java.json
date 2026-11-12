@@ -118,8 +118,8 @@
       "concept": "Comparators",
       "type": "single",
       "difficulty": 3,
-      "prompt": "Distances in a `PriorityQueue<int[]>` may be close to 2 billion, and entries are ordered by a[0] ascending. Which comparator is always correct?",
-      "explanation": "Subtraction comparators are a classic overflow bug. `Integer.compare`, `Comparator.comparingInt(a -> a[0])` or Long.compare for long keys are safe.",
+      "prompt": "Distances in a `PriorityQueue<int[]>` may be close to 2 billion, and entries are ordered by `a[0]` ascending. Which comparator is always correct?",
+      "explanation": "Subtraction comparators are a classic overflow bug. `Integer.compare`, `Comparator.comparingInt(a -> a[0])` or `Long.compare` for long keys are safe.",
       "options": [
         {
           "id": "a",

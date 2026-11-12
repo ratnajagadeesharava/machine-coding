@@ -153,7 +153,7 @@
       "type": "single",
       "difficulty": 3,
       "prompt": "Inside backtracking, `cur` is a `List<Integer>` and you just appended the `int` `x` at its end. Which undo step is always correct?",
-      "explanation": "`List.remove` has two overloads, `remove(int index)` and `remove(Object o)`. The index form on size() - 1 is both safe and O(1) for an ArrayList.",
+      "explanation": "`List.remove` has two overloads, `remove(int index)` and `remove(Object o)`. The index form on `size()` - 1 is both safe and O(1) for an ArrayList.",
       "options": [
         {
           "id": "a",
@@ -163,7 +163,7 @@
         {
           "id": "b",
           "text": "`cur.remove(x)`, passing the primitive `int` `x`",
-          "why": "The int overload removes the element at index `x`, which is the wrong element or an exception."
+          "why": "The `int` overload removes the element at index `x`, which is the wrong element or an exception."
         },
         {
           "id": "c",
@@ -206,7 +206,7 @@
         {
           "id": "d",
           "text": "Because `ArrayList.add` only accepts increasing indices.",
-          "why": "add accepts any element; there is no ordering requirement on indices."
+          "why": "`add` accepts any element; there is no ordering requirement on indices."
         }
       ],
       "correct": [

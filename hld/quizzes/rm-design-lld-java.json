@@ -16,7 +16,7 @@
       "concept": "LRU cache",
       "type": "code",
       "difficulty": 2,
-      "prompt": "Write a generic Java class LRU<K,V> extending LinkedHashMap that keeps at most cap entries, evicting the least recently used one (cap is a constructor argument).",
+      "prompt": "Write a generic Java class `LRU<K,V>` extending `LinkedHashMap` that keeps at most `cap` entries, evicting the least recently used one (`cap` is a constructor argument).",
       "language": "java",
       "checks": [
         {
@@ -37,14 +37,14 @@
         }
       ],
       "model": "class LRU<K,V> extends LinkedHashMap<K,V> {\n  private final int cap;\n  LRU(int cap) { super(16, 0.75f, true); this.cap = cap; }\n  @Override protected boolean removeEldestEntry(Map.Entry<K,V> e) { return size() > cap; }\n}",
-      "explanation": "accessOrder = true makes get() move an entry to the end. The interview follow-up is to implement the same with a HashMap plus a doubly linked list with head and tail sentinels, giving O(1) get and put."
+      "explanation": "`accessOrder = true` makes `get()` move an entry to the end. The interview follow-up is to implement the same with a `HashMap` plus a doubly linked list with head and tail sentinels, giving O(1) `get` and `put`."
     },
     {
       "id": "token-bucket",
       "concept": "Rate limiter LLD",
       "type": "code",
       "difficulty": 3,
-      "prompt": "Write a thread-safe Java class TokenBucket(double capacity, double refillPerSecond) with a boolean tryAcquire() method that refills lazily from elapsed time (never above capacity), starts full and takes one token on success.",
+      "prompt": "Write a thread-safe Java class `TokenBucket(double capacity, double refillPerSecond)` with a `boolean tryAcquire()` method that refills lazily from elapsed time (never above capacity), starts full and takes one token on success.",
       "language": "java",
       "checks": [
         {
@@ -65,14 +65,14 @@
         }
       ],
       "model": "class TokenBucket {\n  private final double cap, rate; private double tokens; private long last = System.nanoTime();\n  TokenBucket(double cap, double rate) { this.cap = cap; this.rate = rate; this.tokens = cap; }\n  synchronized boolean tryAcquire() {\n    long now = System.nanoTime();\n    tokens = Math.min(cap, tokens + (now - last) / 1e9 * rate); last = now;\n    if (tokens >= 1) { tokens -= 1; return true; } return false;\n  }\n}",
-      "explanation": "Lazy refill avoids a timer thread. Use nanoTime (monotonic) rather than wall-clock time. Other correct versions use a lock or an AtomicLong with compare-and-set."
+      "explanation": "Lazy refill avoids a timer thread. Use `nanoTime` (monotonic) rather than wall-clock time. Other correct versions use a lock or an `AtomicLong` with compare-and-set."
     },
     {
       "id": "vehicle-interface",
       "concept": "Parking lot LLD",
       "type": "code",
       "difficulty": 2,
-      "prompt": "Write Java for a parking lot: an interface Vehicle with an int method spotsNeeded(), and a concrete class Car that implements Vehicle and needs 1 spot.",
+      "prompt": "Write Java for a parking lot: an interface `Vehicle` with an `int` method `spotsNeeded()`, and a concrete class `Car` that implements `Vehicle` and needs 1 spot.",
       "language": "java",
       "checks": [
         {
@@ -93,16 +93,16 @@
         }
       ],
       "model": "interface Vehicle { int spotsNeeded(); }\nclass Car implements Vehicle {\n  @Override public int spotsNeeded() { return 1; }\n}",
-      "explanation": "Code to the interface so a Bike or Truck can be added without touching the lot. An abstract class is the alternative when the vehicles share state or behaviour, and an enum VehicleType is the usual way to tag them. Other correct versions exist, such as an abstract class with an abstract method."
+      "explanation": "Code to the interface so a Bike or Truck can be added without touching the lot. An abstract class is the alternative when the vehicles share state or behaviour, and an enum `VehicleType` is the usual way to tag them. Other correct versions exist, such as an abstract class with an abstract method."
     },
     {
       "id": "lru-trace",
       "concept": "LRU trace",
       "type": "integer",
       "difficulty": 2,
-      "prompt": "An LRU cache has capacity 3. Operations: put(1), put(2), put(3), get(1), put(4), get(3), put(5). What is the sum of the keys left in the cache?",
+      "prompt": "An LRU cache has capacity 3. Operations: `put(1)`, `put(2)`, `put(3)`, `get(1)`, `put(4)`, `get(3)`, `put(5)`. What is the sum of the keys left in the cache?",
       "answer": 12,
-      "explanation": "After put(4) key 2 is evicted; after get(3) the order is 1,4,3 (oldest first); put(5) evicts 1. Remaining keys 4, 3, 5 sum to 12."
+      "explanation": "After `put(4)` key 2 is evicted; after `get(3)` the order is 1,4,3 (oldest first); `put(5)` evicts 1. Remaining keys 4, 3, 5 sum to 12."
     },
     {
       "id": "bucket-trace",
@@ -127,7 +127,7 @@
         },
         {
           "id": "b",
-          "text": "Create the right Spot subclass from a type"
+          "text": "Create the right `Spot` subclass from a type"
         },
         {
           "id": "c",
@@ -135,7 +135,7 @@
         },
         {
           "id": "d",
-          "text": "A ticket moves from ISSUED to PAID to EXITED"
+          "text": "A ticket moves from `ISSUED` to `PAID` to `EXITED`"
         },
         {
           "id": "e",
@@ -183,7 +183,7 @@
       "type": "assertion",
       "difficulty": 2,
       "prompt": "Read the assertion and the reason, then choose the option that describes them correctly.",
-      "assertion": "An LRU cache built from a hash map and a doubly linked list supports O(1) get and put.",
+      "assertion": "An LRU cache built from a hash map and a doubly linked list supports O(1) `get` and `put`.",
       "reason": "The map finds a node directly and the doubly linked list can unlink and move it without scanning.",
       "correct": [
         "a"
@@ -202,8 +202,8 @@
       "type": "assertion",
       "difficulty": 2,
       "prompt": "Read the assertion and the reason, then choose the option that describes them correctly.",
-      "assertion": "Define PricingPolicy as an interface so the parking lot can swap pricing rules.",
-      "reason": "The compiler rejects new PricingPolicy() because an interface cannot be instantiated directly.",
+      "assertion": "Define `PricingPolicy` as an interface so the parking lot can swap pricing rules.",
+      "reason": "The compiler rejects `new PricingPolicy()` because an interface cannot be instantiated directly.",
       "correct": [
         "b"
       ],
@@ -221,18 +221,18 @@
       "type": "assertion",
       "difficulty": 3,
       "prompt": "Read the assertion and the reason, then choose the option that describes them correctly.",
-      "assertion": "LinkedHashMap with accessOrder = true is a convenient base for an LRU cache.",
-      "reason": "LinkedHashMap is thread-safe, so concurrent get calls are safe.",
+      "assertion": "`LinkedHashMap` with `accessOrder = true` is a convenient base for an LRU cache.",
+      "reason": "`LinkedHashMap` is thread-safe, so concurrent get calls are safe.",
       "correct": [
         "c"
       ],
       "whys": {
         "a": "The reason is false.",
         "b": "The reason is false.",
-        "c": "Right: LinkedHashMap is not thread-safe and in access order even get() mutates it.",
+        "c": "Right: `LinkedHashMap` is not thread-safe and in access order even `get()` mutates it.",
         "d": "The assertion is the true statement."
       },
-      "explanation": "Wrap with Collections.synchronizedMap or guard get and put with one lock. Caffeine is the production answer."
+      "explanation": "Wrap with `Collections.synchronizedMap` or guard `get` and `put` with one lock. Caffeine is the production answer."
     },
     {
       "id": "spot-pricing",
@@ -240,7 +240,7 @@
       "type": "assertion",
       "difficulty": 3,
       "prompt": "Read the assertion and the reason, then choose the option that describes them correctly.",
-      "assertion": "The Spot class should compute the parking fee for the vehicle it holds.",
+      "assertion": "The `Spot` class should compute the parking fee for the vehicle it holds.",
       "reason": "The Single Responsibility Principle says a class should have one reason to change.",
       "correct": [
         "d"
@@ -251,7 +251,7 @@
         "c": "The reason is true.",
         "d": "Right: pricing changes for business reasons unrelated to spots, so the assertion is false while the reason is true."
       },
-      "explanation": "Put pricing in a PricingPolicy used by the Ticket or a payment service."
+      "explanation": "Put pricing in a `PricingPolicy` used by the Ticket or a payment service."
     },
     {
       "id": "lru-parts",
@@ -273,28 +273,28 @@
         "removeAll",
         "<"
       ],
-      "explanation": "The three-argument constructor is LinkedHashMap(initialCapacity, loadFactor, accessOrder). removeEldestEntry is called after each put and returns true when the eldest entry should go."
+      "explanation": "The three-argument constructor is `LinkedHashMap(initialCapacity, loadFactor, accessOrder)`. `removeEldestEntry` is called after each `put` and returns true when the eldest entry should go."
     },
     {
       "id": "lru-thread",
       "concept": "Thread safety",
       "type": "single",
       "difficulty": 3,
-      "prompt": "Why is a plain LinkedHashMap LRU unsafe for concurrent readers even if the threads only call get?",
+      "prompt": "Why is a plain `LinkedHashMap` LRU unsafe for concurrent readers even if the threads only call `get`?",
       "options": [
         {
           "id": "a",
-          "text": "get() reorders entries, so each read mutates it",
+          "text": "`get()` reorders entries, so each read mutates it",
           "why": "Right: concurrent reorders can corrupt the links or lose entries."
         },
         {
           "id": "b",
-          "text": "get() always throws ConcurrentModificationException",
+          "text": "`get()` always throws `ConcurrentModificationException`",
           "why": "It is not guaranteed to throw; corruption can be silent."
         },
         {
           "id": "c",
-          "text": "LinkedHashMap forbids more than one reader thread at any time",
+          "text": "`LinkedHashMap` forbids more than one reader thread at any time",
           "why": "No such restriction exists in the class."
         },
         {
@@ -306,7 +306,7 @@
       "correct": [
         "a"
       ],
-      "explanation": "Use a lock around get and put, or a concurrent cache library such as Caffeine."
+      "explanation": "Use a lock around `get` and `put`, or a concurrent cache library such as Caffeine."
     },
     {
       "id": "lld-practice",
@@ -317,7 +317,7 @@
       "options": [
         {
           "id": "a",
-          "text": "Use an enum for VehicleType rather than free strings",
+          "text": "Use an enum for `VehicleType` rather than free strings",
           "why": "Right: it is type-safe and exhaustive."
         },
         {
@@ -327,12 +327,12 @@
         },
         {
           "id": "c",
-          "text": "Return Optional<Spot> from findSpot instead of null",
+          "text": "Return `Optional<Spot>` from `findSpot` instead of `null`",
           "why": "Right: the absence case is explicit."
         },
         {
           "id": "d",
-          "text": "Expose a public mutable List<Spot> field for convenience",
+          "text": "Expose a public mutable `List<Spot>` field for convenience",
           "why": "Callers could corrupt the lot state; expose behaviour instead."
         }
       ],
@@ -341,30 +341,30 @@
         "b",
         "c"
       ],
-      "explanation": "Clarify requirements, list entities, define interfaces, then write the core flow park and unpark first."
+      "explanation": "Clarify requirements, list entities, define interfaces, then write the core flow `park` and `unpark` first."
     },
     {
       "id": "dcl-volatile",
       "concept": "Thread safety",
       "type": "truefalse",
       "difficulty": 3,
-      "prompt": "True or false: a double-checked locking Singleton in Java needs its instance field declared volatile so another thread cannot see a partially constructed object.",
+      "prompt": "True or false: a double-checked locking Singleton in Java needs its instance field declared `volatile` so another thread cannot see a partially constructed object.",
       "options": [
         {
           "id": "a",
           "text": "True",
-          "why": "Right: without volatile the write of the reference can be reordered before the constructor's writes, so a second thread may see a half-built object (fixed by the Java 5 memory model with volatile)."
+          "why": "Right: without `volatile` the write of the reference can be reordered before the constructor's writes, so a second thread may see a half-built object (fixed by the Java 5 memory model with `volatile`)."
         },
         {
           "id": "b",
           "text": "False",
-          "why": "Incorrect: the synchronized block only protects the second check; the unsynchronised first read can still observe a reference to an unfinished object without volatile."
+          "why": "Incorrect: the synchronized block only protects the second check; the unsynchronised first read can still observe a reference to an unfinished object without `volatile`."
         }
       ],
       "correct": [
         "a"
       ],
-      "explanation": "Cleaner alternatives are the initialisation-on-demand holder idiom or a single-element enum Singleton (Effective Java, Item 3), neither of which needs volatile."
+      "explanation": "Cleaner alternatives are the initialisation-on-demand holder idiom or a single-element enum Singleton (Effective Java, Item 3), neither of which needs `volatile`."
     },
     {
       "id": "abstract-method",

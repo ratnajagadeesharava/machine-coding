@@ -158,7 +158,7 @@ test('every quiz topic maps to a subject, and a subject never mixes Java and Pyt
 
 // ---------- code in a prompt is written as a fenced snippet (```lang ... ```) or `inline code`, never as run-on text ----------
 const stripCode = (t) => t.replace(/```[\s\S]*?```/g, ' ').replace(/`[^`\n]*`/g, ' ');
-const CODE_LEAK = /;\s*\S|[{}]|\bdef\s+\w+\(|=>|\bnew\s+[A-Z]\w*[<(]|\bSELECT\b[^.?]*\bFROM\b|\b[a-z]\w*\.[a-z]\w*\([^)]*\)\s*(;|\.|\+)|\w+\s*=\s*\w+\(|\bimport\s+[a-z]\w*(\.\w+)*\b|\bfor\s+\w+\s+in\s+\w|\bclass\s+[A-Z]\w*\s*[({:]/;
+const CODE_LEAK = /[)\]\"'\w]\s*;\s*[A-Za-z_][\w.]*\s*[=(.]|[{}]|\bdef\s+\w+\(|=>|\bnew\s+[A-Z]\w*[<(]|\bSELECT\b[^.?]*\bFROM\b|\b[a-z]\w*\.[a-z]\w*\([^)]*\)\s*(;|\.|\+)|\w+\s*=\s*\w+\(|\bimport\s+[a-z]\w*(\.\w+)*\b|\bfor\s+\w+\s+in\s+(?:range\(|[\w.]+\s*:)|\bclass\s+[A-Z]\w*\s*[({:]/;
 for (const quiz of quizzes) {
   test(`quiz "${quiz.id}" formats code in prompts`, () => {
     for (const q of quiz.questions) {

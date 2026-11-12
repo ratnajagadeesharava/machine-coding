@@ -158,7 +158,7 @@
       "concept": "Memory visibility",
       "type": "single",
       "difficulty": 2,
-      "prompt": "Worker 1 writes data = 42 and then sets ready = true, with no lock or atomic operation involved. Worker 2 loops until it sees ready == true, then reads data. What is guaranteed?",
+      "prompt": "Worker 1 writes `data = 42` and then sets `ready = true`, with no lock or atomic operation involved. Worker 2 loops until it sees `ready == true`, then reads `data`. What is guaranteed?",
       "options": [
         {
           "id": "a",
@@ -213,22 +213,22 @@
       "concept": "Little's law",
       "type": "integer",
       "difficulty": 2,
-      "prompt": "A service receives 200 requests per second and each request spends 50 ms inside the system on average. By Little's law (L = arrival rate x time in system), how many requests are in flight on average?",
+      "prompt": "A service receives 200 requests per second and each request spends 50 ms inside the system on average. By Little's law (`L = arrival rate x time in system`), how many requests are in flight on average?",
       "answer": 10,
       "tolerance": 0,
       "unit": "requests",
-      "explanation": "L = 200/s x 0.05 s = 10 requests in flight. Size pools and connection limits from L, not from the peak request rate alone."
+      "explanation": "`L = 200/s x 0.05 s = 10` requests in flight. Size pools and connection limits from L, not from the peak request rate alone."
     },
     {
       "id": "pool-size-core",
       "concept": "Pool sizing",
       "type": "integer",
       "difficulty": 3,
-      "prompt": "Using the sizing rule workers = cores x (1 + wait time / compute time), how many workers suit an 8-core machine whose tasks spend 90 ms waiting on a remote service and 10 ms computing?",
+      "prompt": "Using the sizing rule `workers = cores x (1 + wait time / compute time)`, how many workers suit an 8-core machine whose tasks spend 90 ms waiting on a remote service and 10 ms computing?",
       "answer": 80,
       "tolerance": 0,
       "unit": "workers",
-      "explanation": "wait/compute = 90/10 = 9, so 8 x (1 + 9) = 80. For purely CPU-bound work use about the core count. The formula is a starting point; load test to confirm."
+      "explanation": "`wait/compute = 90/10 = 9, so 8 x (1 + 9) = 80`. For purely CPU-bound work use about the core count. The formula is a starting point; load test to confirm."
     },
     {
       "id": "amdahl-limit",
@@ -239,7 +239,7 @@
       "answer": 2,
       "tolerance": 0,
       "unit": "times",
-      "explanation": "Speed-up = 1 / (serial + parallel / n). With serial = 0.5 and n growing without bound this tends to 1 / 0.5 = 2, so the serial half caps the gain."
+      "explanation": "`Speed-up = 1 / (serial + parallel / n)`. With `serial = 0.5` and n growing without bound this tends to `1 / 0.5 = 2`, so the serial half caps the gain."
     },
     {
       "id": "backlog-growth",
@@ -518,7 +518,7 @@
       "concept": "Deadlocks",
       "type": "code",
       "difficulty": 3,
-      "prompt": "In pseudocode, write transfer(from, to, amount) for two accounts that each have an id, a balance and a lock, so that two opposite transfers (A to B and B to A) can never deadlock. Lock the account with the smaller id first.",
+      "prompt": "In pseudocode, write `transfer(from, to, amount)` for two accounts that each have an `id`, a `balance` and a `lock`, so that two opposite transfers (A to B and B to A) can never deadlock. Lock the account with the smaller `id` first.",
       "language": "pseudocode",
       "checks": [
         {
@@ -539,7 +539,7 @@
         }
       ],
       "model": "function transfer(from, to, amount):\n  first  = (from.id < to.id) ? from : to\n  second = (first == from) ? to : from\n  lock(first)\n  lock(second)\n  from.balance = from.balance - amount\n  to.balance   = to.balance + amount\n  unlock(second)\n  unlock(first)",
-      "explanation": "The fixed order removes circular wait. Release in any order, ideally in a finally-style block so an error cannot leave a lock held. Ties on id need a tie-breaker, and transferring to the same account needs special handling.",
+      "explanation": "The fixed order removes circular wait. Release in any order, ideally in a `finally`-style block so an error cannot leave a lock held. Ties on id need a tie-breaker, and transferring to the same account needs special handling.",
       "starter": "function transfer(from, to, amount):\n  "
     },
     {
@@ -547,7 +547,7 @@
       "concept": "Lock-free retry",
       "type": "code",
       "difficulty": 3,
-      "prompt": "In pseudocode, write increment(cell) for a counter without a lock, using an atomic compare_and_set(cell, expected, new) that returns true only if the cell still held expected.",
+      "prompt": "In pseudocode, write `increment(cell)` for a counter without a lock, using an atomic `compare_and_set(cell, expected, new)` that returns `true` only if the cell still held `expected`.",
       "language": "pseudocode",
       "checks": [
         {
@@ -568,7 +568,7 @@
         }
       ],
       "model": "function increment(cell):\n  loop:\n    old = read(cell)\n    if compare_and_set(cell, old, old + 1):\n      return",
-      "explanation": "If another worker changed the cell between the read and the compare_and_set, the call fails and the loop re-reads. This is lock-free but not wait-free, and values that go A to B to A can fool a CAS (the ABA problem).",
+      "explanation": "If another worker changed the cell between the read and the `compare_and_set`, the call fails and the loop re-reads. This is lock-free but not wait-free, and values that go A to B to A can fool a CAS (the `ABA` problem).",
       "starter": "function increment(cell):\n  "
     }
   ]

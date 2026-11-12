@@ -90,17 +90,17 @@
         {
           "id": "a",
           "text": "The state may change before the woken thread runs, so it has to re-test the predicate.",
-          "why": "Nothing in the module requires a loop around `wait()`."
+          "why": "Correct: a woken thread must re-test, because the state can change before it re-acquires the lock, and wake-ups can be spurious."
         },
         {
           "id": "b",
           "text": "`wait()` raises `RuntimeError` unless it is called from inside a loop body in the same method, always.",
-          "why": "Looping has no influence on fairness; it only re-tests the predicate."
+          "why": "Nothing in the module requires a loop around `wait()`."
         },
         {
           "id": "c",
           "text": "The loop makes the condition fair, so that waiting threads are woken strictly in arrival order.",
-          "why": "Correct: a woken thread must re-test, because the state can change before it re-acquires the lock, and wake-ups can be spurious."
+          "why": "Looping has no influence on fairness; it only re-tests the predicate."
         },
         {
           "id": "d",
@@ -109,7 +109,7 @@
         }
       ],
       "correct": [
-        "c"
+        "a"
       ],
       "explanation": "`Condition.wait_for(predicate)` packages the loop for you. Always re-check the predicate after any wake-up."
     },

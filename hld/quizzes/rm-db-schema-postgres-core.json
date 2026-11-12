@@ -16,22 +16,22 @@
       "concept": "Normalisation",
       "type": "single",
       "difficulty": 1,
-      "prompt": "A table order_items(order_id, product_id, product_name, qty) has key (order_id, product_id). product_name depends only on product_id. Which normal form does this violate, and what is the fix?",
+      "prompt": "A table `order_items(order_id, product_id, product_name, qty)` has key `(order_id, product_id)`. `product_name` depends only on `product_id`. Which normal form does this violate, and what is the fix?",
       "options": [
         {
           "id": "a",
-          "text": "2NF (partial dependency): move product_name into a products table keyed by product_id.",
+          "text": "2NF (partial dependency): move `product_name` into a `products` table keyed by `product_id`.",
           "why": "Right: a non-key column depends on only part of the composite key, which is exactly the 2NF violation."
         },
         {
           "id": "b",
-          "text": "1NF: split product_name into several columns.",
-          "why": "1NF is about atomic values and no repeating groups; product_name is already atomic."
+          "text": "1NF: split `product_name` into several columns.",
+          "why": "1NF is about atomic values and no repeating groups; `product_name` is already atomic."
         },
         {
           "id": "c",
           "text": "BCNF only: add a surrogate key and leave the data as is.",
-          "why": "A surrogate key does not remove the duplicated product_name; the partial dependency is still there."
+          "why": "A surrogate key does not remove the duplicated `product_name`; the partial dependency is still there."
         },
         {
           "id": "d",
@@ -50,7 +50,7 @@
       "type": "assertion",
       "difficulty": 2,
       "prompt": "Read the assertion A and the reason R, then choose the correct relationship between them.",
-      "assertion": "Copying customer_name into every row of orders speeds up the order list page but creates update anomalies.",
+      "assertion": "Copying `customer_name` into every row of `orders` speeds up the order list page but creates update anomalies.",
       "reason": "The same fact is now stored in many places, so a change has to be applied to every copy or the copies disagree.",
       "correct": [
         "a"
@@ -110,19 +110,19 @@
       "left": [
         {
           "id": "l1",
-          "text": "data -> 'tag'"
+          "text": "`data -> 'tag'`"
         },
         {
           "id": "l2",
-          "text": "data ->> 'tag'"
+          "text": "`data ->> 'tag'`"
         },
         {
           "id": "l3",
-          "text": "data @> '{\"tag\": \"x\"}'"
+          "text": "`data @> '{\"tag\": \"x\"}'`"
         },
         {
           "id": "l4",
-          "text": "data ? 'tag'"
+          "text": "`data ? 'tag'`"
         }
       ],
       "right": [
@@ -153,40 +153,40 @@
         "l3": "r3",
         "l4": "r4"
       },
-      "explanation": "-> keeps the jsonb type (you can keep drilling), ->> returns text (for comparing or casting), @> is containment and is what a GIN index accelerates, ? tests for a top-level key. Removal is the - operator."
+      "explanation": "`->` keeps the jsonb type (you can keep drilling), `->>` returns text (for comparing or casting), `@>` is containment and is what a GIN index accelerates, `?` tests for a top-level key. Removal is the `-` operator."
     },
     {
       "id": "gin-for-containment",
       "concept": "JSONB",
       "type": "single",
       "difficulty": 2,
-      "prompt": "A table events(id, payload jsonb) is queried with WHERE payload @> '{\"type\": \"refund\"}' and it is slow. Which index fits best?",
+      "prompt": "A table `events(id, payload jsonb)` is queried with `WHERE payload @> '{\"type\": \"refund\"}'` and it is slow. Which index fits best?",
       "options": [
         {
           "id": "a",
-          "text": "CREATE INDEX ON events USING gin (payload);",
-          "why": "Right: the default jsonb_ops GIN class supports @>, ?, ?| and ?&."
+          "text": "`CREATE INDEX ON events USING gin (payload);`",
+          "why": "Right: the default `jsonb_ops` GIN class supports `@>, ?, ?| and ?&`."
         },
         {
           "id": "b",
-          "text": "CREATE INDEX ON events (payload);",
+          "text": "`CREATE INDEX ON events (payload);`",
           "why": "A btree on jsonb only helps equality and ordering of the whole document, not containment."
         },
         {
           "id": "c",
-          "text": "CREATE INDEX ON events USING hash (id);",
+          "text": "`CREATE INDEX ON events USING hash (id);`",
           "why": "It indexes a different column and a hash index cannot do containment anyway."
         },
         {
           "id": "d",
-          "text": "CREATE INDEX ON events USING brin (payload);",
-          "why": "BRIN stores block ranges for naturally ordered data; it cannot answer containment."
+          "text": "`CREATE INDEX ON events USING brin (payload);`",
+          "why": "`BRIN` stores block ranges for naturally ordered data; it cannot answer containment."
         }
       ],
       "correct": [
         "a"
       ],
-      "explanation": "GIN for containment and key-exists. For one hot path, an expression btree such as ((payload->>'type')) is smaller and faster. jsonb_path_ops is a smaller GIN class that supports only @> and path operators."
+      "explanation": "GIN for containment and key-exists. For one hot path, an expression btree such as `((payload->>'type'))` is smaller and faster. `jsonb_path_ops` is a smaller GIN class that supports only `@>` and path operators."
     },
     {
       "id": "jsonb-vs-json",
@@ -212,7 +212,7 @@
       "concept": "CREATE INDEX CONCURRENTLY",
       "type": "code",
       "difficulty": 2,
-      "prompt": "Write the statement that builds an index named idx_orders_customer on orders(customer_id) without blocking writes to the table.",
+      "prompt": "Write the statement that builds an index named `idx_orders_customer` on `orders(customer_id)` without blocking writes to the table.",
       "language": "sql",
       "starter": "CREATE ",
       "checks": [
@@ -230,14 +230,14 @@
         }
       ],
       "model": "CREATE INDEX CONCURRENTLY idx_orders_customer ON orders (customer_id);",
-      "explanation": "Plain CREATE INDEX takes a SHARE lock that blocks writes. The concurrent form scans the table twice and lets writes continue. IF NOT EXISTS and USING btree are optional extras."
+      "explanation": "Plain `CREATE INDEX` takes a `SHARE` lock that blocks writes. The concurrent form scans the table twice and lets writes continue. `IF NOT EXISTS` and `USING btree` are optional extras."
     },
     {
       "id": "concurrently-facts",
       "concept": "CREATE INDEX CONCURRENTLY",
       "type": "multi",
       "difficulty": 3,
-      "prompt": "Which statements about CREATE INDEX CONCURRENTLY in PostgreSQL are true? Select all that apply.",
+      "prompt": "Which statements about `CREATE INDEX CONCURRENTLY` in PostgreSQL are true? Select all that apply.",
       "options": [
         {
           "id": "a",
@@ -246,22 +246,22 @@
         },
         {
           "id": "b",
-          "text": "If it fails it can leave an INVALID index that must be dropped.",
-          "why": "Right: check pg_index.indisvalid and drop and retry."
+          "text": "If it fails it can leave an `INVALID` index that must be dropped.",
+          "why": "Right: check `pg_index.indisvalid` and drop and retry."
         },
         {
           "id": "c",
           "text": "Normal reads and writes on the table can continue while it builds.",
-          "why": "Right: it only takes a SHARE UPDATE EXCLUSIVE lock."
+          "why": "Right: it only takes a `SHARE UPDATE EXCLUSIVE` lock."
         },
         {
           "id": "d",
-          "text": "It is faster than a plain CREATE INDEX on the same data.",
+          "text": "It is faster than a plain `CREATE INDEX` on the same data.",
           "why": "It does two scans and waits for old transactions, so it is slower."
         },
         {
           "id": "e",
-          "text": "It takes an ACCESS EXCLUSIVE lock for the whole build.",
+          "text": "It takes an `ACCESS EXCLUSIVE` lock for the whole build.",
           "why": "That would block reads too; the entire point is to avoid it."
         }
       ],
@@ -270,7 +270,7 @@
         "b",
         "c"
       ],
-      "explanation": "Trade-off: slower and more fragile, but no write outage. Same applies to DROP INDEX CONCURRENTLY and REINDEX CONCURRENTLY."
+      "explanation": "Trade-off: slower and more fragile, but no write outage. Same applies to `DROP INDEX CONCURRENTLY` and `REINDEX CONCURRENTLY`."
     },
     {
       "id": "replica-lag",
@@ -289,14 +289,14 @@
         "c": "Correct: replication is asynchronous by default, so lag is possible; R is false.",
         "d": "A is true, so the \"A false\" option is wrong."
       },
-      "explanation": "Default streaming replication is asynchronous. Fix read-your-writes by reading from the primary for a short window after a write, by sticky sessions, or by waiting for an LSN."
+      "explanation": "Default streaming replication is asynchronous. Fix read-your-writes by reading from the primary for a short window after a write, by sticky sessions, or by waiting for an `LSN`."
     },
     {
       "id": "backfill-batches",
       "concept": "Zero-downtime migration",
       "type": "integer",
       "difficulty": 2,
-      "prompt": "A table has 10,000,000 rows. You backfill a new column with UPDATE ... WHERE id in a range, 5,000 rows per batch, committing after each batch. How many batches (transactions) are needed?",
+      "prompt": "A table has 10,000,000 rows. You backfill a new column with `UPDATE ... WHERE id in a range`, 5,000 rows per batch, committing after each batch. How many batches (transactions) are needed?",
       "answer": 2000,
       "tolerance": 0,
       "unit": "batches",
@@ -307,7 +307,7 @@
       "concept": "Zero-downtime migration",
       "type": "single",
       "difficulty": 3,
-      "prompt": "You must rename users.email to users.contact_email on a live system with rolling deploys. Which order is safe?",
+      "prompt": "You must rename `users.email` to `users.contact_email` on a live system with rolling deploys. Which order is safe?",
       "options": [
         {
           "id": "a",
@@ -316,17 +316,17 @@
         },
         {
           "id": "b",
-          "text": "Run ALTER TABLE RENAME COLUMN in the migration, then deploy the new code afterwards.",
+          "text": "Run `ALTER TABLE RENAME COLUMN` in the migration, then deploy the new code afterwards.",
           "why": "Old app instances still running will fail the moment the column disappears."
         },
         {
           "id": "c",
-          "text": "Deploy the new code that reads contact_email first, then rename the column afterwards.",
+          "text": "Deploy the new code that reads `contact_email` first, then rename the column afterwards.",
           "why": "The new code would query a column that does not exist yet."
         },
         {
           "id": "d",
-          "text": "Drop email, add contact_email and restore the old values from a backup file.",
+          "text": "Drop `email`, add `contact_email` and restore the old values from a backup file.",
           "why": "That loses data and causes downtime."
         }
       ],
@@ -340,7 +340,7 @@
       "concept": "Zero-downtime migration",
       "type": "code",
       "difficulty": 2,
-      "prompt": "Expand phase: write one statement that adds a nullable text column contact_email to the users table.",
+      "prompt": "Expand phase: write one statement that adds a nullable text column `contact_email` to the `users` table.",
       "language": "sql",
       "starter": "ALTER TABLE ",
       "checks": [
@@ -362,14 +362,14 @@
         }
       ],
       "model": "ALTER TABLE users ADD COLUMN contact_email text;",
-      "explanation": "Adding a nullable column without a default is a catalog-only change in PostgreSQL. NOT NULL is added at the end via a NOT VALID check constraint, then VALIDATE, then SET NOT NULL."
+      "explanation": "Adding a nullable column without a default is a catalog-only change in PostgreSQL. `NOT NULL` is added at the end via a `NOT VALID` check constraint, then `VALIDATE`, then `SET NOT NULL`."
     },
     {
       "id": "backfill-sql",
       "concept": "Zero-downtime migration",
       "type": "code",
       "difficulty": 2,
-      "prompt": "Backfill step: write an UPDATE that copies email into contact_email for rows with id from 1 to 5000 that are not yet filled.",
+      "prompt": "Backfill step: write an `UPDATE` that copies `email` into `contact_email` for rows with `id` from 1 to 5000 that are not yet filled.",
       "language": "sql",
       "starter": "UPDATE ",
       "checks": [
@@ -391,7 +391,7 @@
         }
       ],
       "model": "UPDATE users SET contact_email = email WHERE contact_email IS NULL AND id BETWEEN 1 AND 5000;",
-      "explanation": "Idempotent, restartable batches are the point. A keyset loop (WHERE id > :last ORDER BY id LIMIT 5000) is an equally valid shape."
+      "explanation": "Idempotent, restartable batches are the point. A keyset loop (`WHERE id > :last ORDER BY id LIMIT 5000`) is an equally valid shape."
     },
     {
       "id": "add-column-default",
@@ -399,7 +399,7 @@
       "type": "assertion",
       "difficulty": 3,
       "prompt": "Read the assertion A and the reason R, then choose the correct relationship between them.",
-      "assertion": "In PostgreSQL 11 and later, ALTER TABLE t ADD COLUMN flag boolean NOT NULL DEFAULT false does not rewrite the table.",
+      "assertion": "In PostgreSQL 11 and later, `ALTER TABLE t ADD COLUMN flag boolean NOT NULL DEFAULT false` does not rewrite the table.",
       "reason": "A constant default is stored in the catalog and applied when old rows are read, rather than written into every row.",
       "correct": [
         "a"
@@ -410,14 +410,14 @@
         "c": "R is true.",
         "d": "A is true for PostgreSQL 11+ with a non-volatile default."
       },
-      "explanation": "Volatile defaults such as random() or clock_timestamp() still force a rewrite. Before version 11 any default rewrote the whole table under ACCESS EXCLUSIVE."
+      "explanation": "Volatile defaults such as `random()` or `clock_timestamp()` still force a rewrite. Before version 11 any default rewrote the whole table under `ACCESS EXCLUSIVE`."
     },
     {
       "id": "code-soft-delete-unique",
       "concept": "Constraints",
       "type": "code",
       "difficulty": 3,
-      "prompt": "Table users(id, email, deleted_at) uses soft deletes. Write the statement that keeps email unique among live users only, so a deleted user's email can be reused.",
+      "prompt": "Table `users(id, email, deleted_at)` uses soft deletes. Write the statement that keeps `email` unique among live users only, so a deleted user's email can be reused.",
       "language": "sql",
       "checks": [
         {
@@ -430,14 +430,14 @@
         }
       ],
       "model": "CREATE UNIQUE INDEX users_email_live ON users (email) WHERE deleted_at IS NULL;",
-      "explanation": "A partial unique index only indexes (and checks) rows matching its predicate; deleted rows are ignored. A plain UNIQUE constraint cannot carry a WHERE clause in PostgreSQL, so the index form is the answer. Verified on PostgreSQL 16."
+      "explanation": "A partial unique index only indexes (and checks) rows matching its predicate; deleted rows are ignored. A plain `UNIQUE` constraint cannot carry a `WHERE` clause in PostgreSQL, so the index form is the answer. Verified on PostgreSQL 16."
     },
     {
       "id": "code-range-partition",
       "concept": "Partitioning",
       "type": "code",
       "difficulty": 3,
-      "prompt": "Write the PostgreSQL statements that create a table events(id bigint, created_at timestamptz) partitioned by range of created_at, and one partition events_2025 holding all of 2025.",
+      "prompt": "Write the PostgreSQL statements that create a table `events(id bigint, created_at timestamptz)` partitioned by range of `created_at`, and one partition `events_2025` holding all of 2025.",
       "language": "sql",
       "checks": [
         {

@@ -93,7 +93,7 @@
       "type": "truefalse",
       "difficulty": 3,
       "prompt": "True or false: for `Integer a = 1000` and `Integer b = 1000`, the expression `a == b` reliably evaluates to true.",
-      "explanation": "This is why comparing boxed values from a map or list with == produces flaky bugs that only appear for larger numbers.",
+      "explanation": "This is why comparing boxed values from a map or list with `==` produces flaky bugs that only appear for larger numbers.",
       "options": [
         {
           "id": "a",
@@ -103,7 +103,7 @@
         {
           "id": "b",
           "text": "False",
-          "why": "Correct: == compares references for objects, so use `equals` or unbox to `int`."
+          "why": "Correct: `==` compares references for objects, so use `equals` or unbox to `int`."
         }
       ],
       "correct": [
@@ -238,7 +238,7 @@
         },
         {
           "id": "d",
-          "text": "Comparing two boxed Integer values with =="
+          "text": "Comparing two boxed `Integer` values with `==`"
         },
         {
           "id": "e",
@@ -260,7 +260,7 @@
         },
         {
           "id": "s",
-          "text": "Use a larger int array"
+          "text": "Use a larger `int` array"
         },
         {
           "id": "t",
