@@ -25,9 +25,9 @@
 }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
-    --bg: #0e1117; --panel: #131720; --card: #181d27; --ink: #e6e9f0; --muted: #9aa3b4; --line: #2a3140;
-    --accent: #7aa2f7; --accent2: #bb9af7; --accent-soft: #1f2a44; --accent-ink: #0b1020; --accent-strong: #9ebcff; --danger: #ff8a80; --danger-soft: #3a1f27;
-    --board: #0f131b; --dot: #2a3142; --shape-fill: #1b2230; --shape-stroke: #e6e9f0; --shadow: 0 6px 24px rgba(0,0,0,.4);
+    --bg: #121316; --panel: #181a1f; --card: #1d1f25; --ink: #ececf1; --muted: #a0a4b0; --line: #2e3139;
+    --accent: #f2b705; --accent2: #ff9f1c; --accent-soft: #2b2d36; --accent-ink: #1f1d16; --accent-strong: #f5c542; --danger: #ff8a80; --danger-soft: #3a1f27;
+    --board: #14161a; --dot: #2f323a; --shape-fill: #1d1f25; --shape-stroke: #ececf1; --shadow: 0 6px 24px rgba(0,0,0,.4);
     color-scheme: dark;
   }
 }
@@ -62,7 +62,7 @@ h1, h2, h3, p, ul { margin: 0; }
 .banner[hidden] { display: none; }
 .banner.info { background: var(--accent-soft); color: var(--ink); border-color: var(--line); }
 .banner code { font-family: var(--mono); background: rgba(0,0,0,.07); padding: 1px 5px; border-radius: 4px; }
-@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .banner { background: #1c2538; color: #cfd8ee; border-color: #2f3b57; } :root:not([data-theme="light"]) .banner.info { background: var(--accent-soft); color: var(--ink); } }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .banner { background: #262932; color: #e6e8ee; border-color: #3a3e49; } :root:not([data-theme="light"]) .banner.info { background: var(--accent-soft); color: var(--ink); } }
 
 .typing { display: inline-flex; gap: 4px; padding: 4px 0; }
 .typing i { width: 6px; height: 6px; border-radius: 50%; background: var(--muted); animation: pulse 1s infinite; }
@@ -80,7 +80,7 @@ dialog::backdrop { background: rgba(10, 14, 12, .45); }
 .chip-pill.Hard { background: var(--danger-soft); color: var(--danger); }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) .chip-pill.Easy { background: #1d3a29; color: #8fdcab; }
-  :root:not([data-theme="light"]) .chip-pill.Medium { background: #2a2f3d; color: #f0c75e; }
+  :root:not([data-theme="light"]) .chip-pill.Medium { background: #2d2f36; color: #f0c75e; }
 }
 .field { display: grid; gap: 5px; font-size: 13px; font-weight: 650; }
 .field input, .field textarea, .field select { width: 100%; border: 1px solid var(--line); border-radius: 10px; background: var(--card); padding: 9px 11px; font: inherit; font-weight: 400; color: inherit; }
@@ -115,14 +115,14 @@ a.btn.primary { color: var(--accent-ink); }
 
 /* forced dark (theme toggle) */
 :root[data-theme="dark"] {
-    --bg: #0e1117; --panel: #131720; --card: #181d27; --ink: #e6e9f0; --muted: #9aa3b4; --line: #2a3140;
-    --accent: #7aa2f7; --accent2: #bb9af7; --accent-soft: #1f2a44; --accent-ink: #0b1020; --accent-strong: #9ebcff; --danger: #ff8a80; --danger-soft: #3a1f27;
-    --board: #0f131b; --dot: #2a3142; --shape-fill: #1b2230; --shape-stroke: #e6e9f0; --shadow: 0 6px 24px rgba(0,0,0,.4);
+    --bg: #121316; --panel: #181a1f; --card: #1d1f25; --ink: #ececf1; --muted: #a0a4b0; --line: #2e3139;
+    --accent: #f2b705; --accent2: #ff9f1c; --accent-soft: #2b2d36; --accent-ink: #1f1d16; --accent-strong: #f5c542; --danger: #ff8a80; --danger-soft: #3a1f27;
+    --board: #14161a; --dot: #2f323a; --shape-fill: #1d1f25; --shape-stroke: #ececf1; --shadow: 0 6px 24px rgba(0,0,0,.4);
     color-scheme: dark;
   }
-:root[data-theme="dark"] .banner { background: #1c2538; color: #cfd8ee; border-color: #2f3b57; } :root[data-theme="dark"] .banner.info { background: var(--accent-soft); color: var(--ink); }
+:root[data-theme="dark"] .banner { background: #262932; color: #e6e8ee; border-color: #3a3e49; } :root[data-theme="dark"] .banner.info { background: var(--accent-soft); color: var(--ink); }
 :root[data-theme="dark"] .chip-pill.Easy { background: #1d3a29; color: #8fdcab; }
-  :root[data-theme="dark"] .chip-pill.Medium { background: #2a2f3d; color: #f0c75e; }
+  :root[data-theme="dark"] .chip-pill.Medium { background: #2d2f36; color: #f0c75e; }
 .themebtn { width: 40px; padding: 0; justify-content: center; }
 
 .keybtn-model { font-weight: 500; font-size: 12.5px; color: var(--muted); padding-left: 8px; border-left: 1px solid var(--line); }
