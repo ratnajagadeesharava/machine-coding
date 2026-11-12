@@ -63,8 +63,8 @@ const els = {
   genForm: $('#gen-form'), genTopic: $('#gen-topic'), genNotes: $('#gen-notes'), genCount: $('#gen-count'), genLevel: $('#gen-level'), genBtn: $('#gen-btn'), genStatus: $('#gen-status'),
   fill: $('#progress-fill'), progress: document.querySelector('.progress'), count: $('#run-count'), instant: $('#instant'),
   concept: $('#q-concept'), diff: $('#q-diff'), prompt: $('#q-prompt'), hint: $('#q-hint'), options: $('#q-options'),
-  feedback: $('#q-feedback'), verdict: $('#q-verdict'), explain: $('#q-explain'), tutorBtn: $('#btn-tutor'), tutor: $('#tutor'),
-  tutorText: $('#tutor-text'), tutorForm: $('#tutor-form'), tutorInput: $('#tutor-input'),
+  feedback: $('#q-feedback'), verdict: $('#q-verdict'), explain: $('#q-explain'), tutorBtn: $('#btn-tutor'),
+  panel: $('#claude-panel'), cpLog: $('#cp-log'), cpChips: $('#cp-chips'), cpForm: $('#cp-form'), cpInput: $('#cp-input'), cpSend: $('#cp-send'), cpState: $('#cp-state'), cpClose: $('#cp-close'), cpOpen: $('#cp-open'), cpClear: $('#cp-clear'), runLayout: $('#run-layout'),
   check: $('#btn-check'), next: $('#btn-next'),
   ring: $('#ring'), ringPct: $('#ring-pct'), resultTitle: $('#result-title'), resultSub: $('#result-sub'), clock: $('#run-clock'), timer: $('#run-timer'), limit: $('#limit'), limitLabel: $('#limit-label'),
   retryMissed: $('#btn-retry-missed'), retake: $('#btn-retake'), home: $('#btn-home'),
@@ -661,8 +661,9 @@ function renderQuestion() {
     els.verdict.textContent = ok ? 'Correct!' : q.type === 'multi' && [...sel].some((id) => q.correct.includes(id)) ? 'Partly right - you need exactly the right set.' : 'Not quite.';
     els.verdict.className = `verdict-line ${ok ? 'ok' : 'no'}`;
     els.explain.replaceChildren(...richText(h, q.explanation));
-    renderTutor();
   }
+  els.tutorBtn.hidden = !checked;
+  renderPanel();
 }
 
 function renderMap() {
@@ -759,58 +760,109 @@ document.addEventListener('keydown', (e) => {
   }
 });
 
-// ---------- tutor ----------
-function renderTutor() {
-  const q = cur();
-  const t = S.run.tutor[q.id];
-  const aiOff = S.health.ai === 'off';
-  els.tutorBtn.hidden = !!t || !!RICH[cur().type];
-  els.tutorBtn.disabled = aiOff;
-  els.tutorBtn.title = aiOff ? 'Needs the AI connection (add your key with the key button, or run demo mode)' : '';
-  els.tutor.hidden = !t;
-  els.tutorText.replaceChildren();
-  if (!t) return;
-  for (const m of t.log) {
-    if (m.role === 'user') els.tutorText.append(h('span', { class: 'q', text: `You: ${m.content}` }));
-    else els.tutorText.append(h('span', { class: m.error ? 'err' : '', text: m.content }));
-  }
+// ---------- Claude chat panel (right of the question) ----------
+// One conversation per question. Before the learner answers Claude explains and nudges but does not give the answer away; after answering it can
+// explain why the answer is right or wrong. The server gets the whole conversation, the question and the learner's answer on every message.
+const CHAT_OPEN_KEY = 'chatOpen';
+const chatIsOpen = () => { const v = store.get(CHAT_OPEN_KEY, null); return v == null ? window.innerWidth >= 1100 : v === true; };
+function setChatOpen(open) {
+  store.setLocal(CHAT_OPEN_KEY, open);
+  renderPanel();
+  if (open) setTimeout(() => els.cpInput.focus(), 50);
+}
+const AUTO_TEXT = 'Explain this question more clearly.';
+function chipsFor(q, checked) {
+  if (!checked) return [AUTO_TEXT, 'Give me a hint without the answer.', 'What concept is this testing?', 'Show a small real-world example.'];
+  const ok = isCorrect(q, selectedIds());
+  return [ok ? 'Why is that answer right?' : 'Why is the right answer right, and where did I go wrong?', RICH[q.type] || q.type === 'integer' ? 'Show me another way to solve it.' : 'Why are the other options wrong?', 'How would I say this in an interview?', 'Give me a harder follow-up question.'];
 }
 
-async function askTutor(followup) {
-  const q = cur();
+function bubble(m, last, busy) {
+  if (m.role === 'user') return h('div', { class: 'msg user' }, h('div', { class: 'bubble' }, ...richText(h, m.content)));
+  const body = m.content ? richText(h, m.content) : [];
+  return h('div', { class: 'msg bot' + (m.error ? ' err' : '') }, h('div', { class: 'avatar', 'aria-hidden': 'true', text: '✦' }),
+    h('div', { class: 'bubble' }, ...(body.length ? body : []), busy && last ? h('span', { class: 'typing', 'aria-label': 'Claude is typing' }, h('i'), h('i'), h('i')) : null));
+}
+
+function renderPanel() {
   const run = S.run;
+  if (!run || S.view !== 'run') return;
+  const q = cur();
+  const open = chatIsOpen();
+  els.runLayout.classList.toggle('chat-open', open);
+  els.panel.hidden = !open;
+  els.cpOpen.hidden = open;
+  if (!open) return;
+  const checked = !!run.checked[q.id];
+  const t = run.tutor[q.id] || { log: [], busy: false };
+  const aiOff = S.health.ai === 'off';
+  els.cpState.textContent = aiOff ? '' : checked ? 'You answered: Claude can discuss the answer freely.' : 'Not answered yet: Claude will help without giving the answer away.';
+  els.cpLog.replaceChildren();
+  if (aiOff) {
+    els.cpLog.append(h('div', { class: 'cp-empty' }, h('b', { text: 'Claude is not connected.' }), h('p', { class: 'muted', text: 'Click "Add key" at the top right and paste your Anthropic API key (it stays in this browser), or start the server with demo mode.' })));
+  } else if (!t.log.length) {
+    els.cpLog.append(h('div', { class: 'cp-empty' }, h('b', { text: 'Stuck, or want to go deeper?' }), h('p', { class: 'muted', text: 'Ask me to explain this question in simpler words, give a hint, compare the options, or just discuss it.' })));
+  } else {
+    t.log.forEach((m, i) => els.cpLog.append(bubble(m, i === t.log.length - 1, t.busy)));
+  }
+  els.cpChips.replaceChildren(...(aiOff || t.busy ? [] : (t.log.length ? chipsFor(q, checked).slice(0, 3) : chipsFor(q, checked)).map((text) => h('button', { class: 'cp-chip', type: 'button', text, onclick: () => sendChat(text, { auto: text === AUTO_TEXT && !t.log.length }) }))));
+  els.cpInput.disabled = aiOff || t.busy;
+  els.cpSend.disabled = aiOff || t.busy;
+  els.cpLog.scrollTop = els.cpLog.scrollHeight;
+}
+
+function tutorQuestion(q) {
+  const { id, concept, type, difficulty, prompt, explanation, options, correct, answer, tolerance, unit, assertion, reason, whys, left, right, pairs, text, blanks, bank, language, starter, checks, model } = q;
+  return { id, concept, type, difficulty, prompt, explanation, options, correct, answer, tolerance, unit, assertion, reason, whys, left, right, pairs, text, blanks, bank, language, starter, checks, model };
+}
+
+async function sendChat(text, { auto = false } = {}) {
+  const run = S.run;
+  if (!run || S.health.ai === 'off') return;
+  const q = cur();
   const t = run.tutor[q.id] || (run.tutor[q.id] = { log: [], busy: false });
-  if (t.busy) return;
+  if (t.busy || !text.trim()) return;
   t.busy = true;
-  const history = t.log.filter((m) => !m.error).map((m) => ({ role: m.role, content: m.content }));
-  if (followup) { t.log.push({ role: 'user', content: followup }); history.push({ role: 'user', content: followup }); }
+  t.log.push({ role: 'user', content: text.trim() });
+  const history = t.log.filter((m) => !m.error && m.content).map((m) => ({ role: m.role, content: m.content }));
   const reply = { role: 'assistant', content: '' };
   t.log.push(reply);
-  renderTutor();
-  els.tutorInput.disabled = true;
+  renderPanel();
+  const answered = !!run.checked[q.id];
+  const sel = selectedIds();
+  const optionLike = !RICH[q.type];
   try {
-    await streamSse('/api/quiz/explain', {
-      question: { id: q.id, concept: q.concept, type: q.type, difficulty: q.difficulty, prompt: q.prompt, options: q.options, correct: q.correct, explanation: q.explanation },
-      selected: selectedIds(), history,
-    }, (d) => { reply.content += d; if (S.run === run && cur() === q) renderTutor(); });
-    if (!reply.content.trim()) throw new Error('The tutor sent an empty reply. Try again.');
+    await streamSse('/api/quiz/explain', { question: tutorQuestion(q), selected: optionLike ? sel : [], answer: optionLike ? [] : sel, checked: answered, auto, history }, (d) => { reply.content += d; if (S.run === run && cur() === q) renderPanel(); });
+    if (!reply.content.trim()) throw new Error('Claude sent an empty reply. Try again.');
   } catch (err) {
     if (reply.content.trim()) { reply.content = reply.content.trim(); t.log.push({ role: 'assistant', content: err.message, error: true }); } else { reply.content = err.message; reply.error = true; }
   } finally {
     t.busy = false;
-    els.tutorInput.disabled = false;
-    if (S.run === run && cur() === q) renderTutor();
+    if (S.run === run && cur() === q) { renderPanel(); if (chatIsOpen()) els.cpInput.focus(); }
   }
 }
 
-els.tutorBtn.addEventListener('click', () => askTutor(null));
-els.tutorForm.addEventListener('submit', (e) => {
-  e.preventDefault();
-  const text = els.tutorInput.value.trim();
-  if (!text) return;
-  els.tutorInput.value = '';
-  askTutor(text);
+els.tutorBtn.addEventListener('click', () => {
+  const t = S.run.tutor[cur().id];
+  store.setLocal(CHAT_OPEN_KEY, true);
+  renderPanel();
+  if (!t || !t.log.length) sendChat('Explain why this is the answer, and where a wrong choice breaks.', { auto: true });
 });
+els.cpForm.addEventListener('submit', (e) => {
+  e.preventDefault();
+  const text = els.cpInput.value.trim();
+  if (!text) return;
+  els.cpInput.value = '';
+  sendChat(text);
+});
+els.cpInput.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter' && !e.shiftKey && !e.isComposing) { e.preventDefault(); els.cpForm.requestSubmit(); }
+  e.stopPropagation();
+});
+els.cpClose.addEventListener('click', () => setChatOpen(false));
+els.cpOpen.addEventListener('click', () => setChatOpen(true));
+els.cpClear.addEventListener('click', () => { const t = S.run.tutor[cur().id]; if (t && !t.busy) { t.log = []; renderPanel(); } });
+window.addEventListener('resize', () => { if (S.view === 'run') renderPanel(); });
 
 // ---------- results ----------
 function recordAttempt(result) {

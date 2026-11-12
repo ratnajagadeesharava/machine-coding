@@ -67,6 +67,8 @@
 
   <!-- running -->
   <section id="view-run" class="view" hidden>
+   <div class="run-layout" id="run-layout">
+    <div class="run-col">
     <div class="run-top">
       <div class="progress" role="progressbar" aria-label="Quiz progress" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><i id="progress-fill"></i></div>
       <div class="run-meta">
@@ -85,14 +87,7 @@
       <div id="q-feedback" class="feedback" hidden>
         <p id="q-verdict" class="verdict-line"></p>
         <p id="q-explain" class="explain-text"></p>
-        <button id="btn-tutor" class="btn" type="button">Explain more with Claude</button>
-        <div id="tutor" class="tutor" hidden>
-          <div id="tutor-text" class="tutor-text" aria-live="polite"></div>
-          <form id="tutor-form" class="tutor-form" autocomplete="off">
-            <input id="tutor-input" type="text" maxlength="500" placeholder="Ask a follow-up question" aria-label="Follow-up question">
-            <button class="btn" type="submit">Ask</button>
-          </form>
-        </div>
+        <button id="btn-tutor" class="btn" type="button">Ask Claude about this</button>
       </div>
       <div class="run-actions">
         <span class="muted kb">Keys: 1-6 select · Enter check / next · ← → move · F flag</span>
@@ -103,6 +98,26 @@
         <button id="btn-next" class="btn primary" type="button" hidden>Next</button>
       </div>
     </article>
+    </div>
+    <aside id="claude-panel" class="cpanel" aria-label="Ask Claude about this question">
+      <header class="cp-head">
+        <span class="cp-title"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z"/><path d="M19 16l.7 2 2 .7-2 .7-.7 2-.7-2-2-.7 2-.7z"/></svg> Ask Claude</span>
+        <span class="cp-actions">
+          <button id="cp-clear" class="cp-icon" type="button" title="Start this chat over" aria-label="Clear chat">Clear</button>
+          <button id="cp-close" class="cp-icon" type="button" title="Hide the chat" aria-label="Hide chat">✕</button>
+        </span>
+      </header>
+      <div id="cp-state" class="cp-state muted"></div>
+      <div id="cp-log" class="cp-log" aria-live="polite"></div>
+      <div id="cp-chips" class="cp-chips"></div>
+      <form id="cp-form" class="cp-form" autocomplete="off">
+        <textarea id="cp-input" rows="2" maxlength="800" placeholder="Ask about this question, or just chat..." aria-label="Message to Claude"></textarea>
+        <button id="cp-send" class="btn primary" type="submit">Send</button>
+      </form>
+      <p class="cp-note muted">Claude can make mistakes. Until you answer, it will not give the answer away.</p>
+    </aside>
+    <button id="cp-open" class="cp-open" type="button" hidden>Ask Claude</button>
+   </div>
   </section>
 
   <!-- results -->
