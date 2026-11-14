@@ -1,0 +1,510 @@
+{
+  "id": "rm-conc-concepts-java",
+  "title": "Concurrency in Java: core concepts",
+  "topic": "Java",
+  "language": "java",
+  "series": "java-multithreading",
+  "seriesTitle": "Java: multithreading",
+  "seriesOrder": 5,
+  "seriesDescription": "Threads, synchronized, locks, volatile, executors, CompletableFuture, virtual threads, concurrent collections and classic drills. JEE-Advanced style: integer, assertion-reason, matrix match, fill-in-the-blanks, short code and multi-correct questions.",
+  "description": "The ideas interviewers probe before any API: shared state, atomicity, visibility, safe publication, deadlock, livelock, starvation, ThreadLocal and Amdahl's law.",
+  "source": "Java Concurrency in Practice (Goetz et al.); JLS chapter 17 (threads and the memory model); Oracle Java docs (Thread, Object, ThreadLocal, java.util.concurrent); Coffman et al. 1971 (deadlock conditions)",
+  "estimatedMinutes": 16,
+  "questions": [
+    {
+      "id": "threads-share-what",
+      "concept": "Threads and processes",
+      "type": "single",
+      "difficulty": 1,
+      "prompt": "Two threads run inside the same JVM process. Which of these do they share, while two separate processes would not?",
+      "options": [
+        {
+          "id": "a",
+          "text": "The heap, including objects and static fields",
+          "why": "Correct: threads of one process live in one address space, so both can reach the same objects. That is why they need synchronization."
+        },
+        {
+          "id": "b",
+          "text": "Each other's call stacks and all of their local variables",
+          "why": "Every thread has its own stack; locals are never shared, which is why they are automatically thread-safe."
+        },
+        {
+          "id": "c",
+          "text": "Their program counters and saved CPU register state",
+          "why": "Each thread keeps its own program counter and register state so it can be paused and resumed independently."
+        },
+        {
+          "id": "d",
+          "text": "Nothing, because the JVM isolates every thread from the rest",
+          "why": "The JVM does not isolate threads. Shared heap access is exactly what makes visibility and race bugs possible."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "A process owns an address space; its threads share the heap and static data but each has a private stack and program counter. Cheap sharing is the benefit of threads and the source of every concurrency bug."
+    },
+    {
+      "id": "race-vs-data-race",
+      "concept": "Races and thread safety",
+      "type": "truefalse",
+      "difficulty": 3,
+      "prompt": "A data race and a race condition are two names for the same defect.",
+      "options": [
+        {
+          "id": "a",
+          "text": "True",
+          "why": "Wrong: a data race is unsynchronized conflicting access to one variable; a race condition is a timing-dependent wrong result."
+        },
+        {
+          "id": "b",
+          "text": "False",
+          "why": "Correct: a program can have a race condition with no data race (two atomic or locked steps in the wrong combination) and a data race that happens to be harmless."
+        }
+      ],
+      "correct": [
+        "b"
+      ],
+      "explanation": "Check-then-act on a `ConcurrentHashMap` (`containsKey` then `put`) has no data race, yet it is a race condition because another thread can slip in between the two calls. Name which one you mean in an interview."
+    },
+    {
+      "id": "problem-vs-property",
+      "concept": "Atomicity, visibility, ordering",
+      "type": "matrix",
+      "difficulty": 2,
+      "prompt": "Match each symptom to the concurrency property that is violated.",
+      "left": [
+        {
+          "id": "a",
+          "text": "Two threads run `count++` and one increment disappears"
+        },
+        {
+          "id": "b",
+          "text": "A worker loops forever because it never sees `running = false` written by `main`"
+        },
+        {
+          "id": "c",
+          "text": "A reader obtains a shared object whose fields still hold default values"
+        },
+        {
+          "id": "d",
+          "text": "Two threads wait for each other's locks and neither continues"
+        }
+      ],
+      "right": [
+        {
+          "id": "p",
+          "text": "Atomicity"
+        },
+        {
+          "id": "q",
+          "text": "Visibility"
+        },
+        {
+          "id": "r",
+          "text": "Safe publication and ordering"
+        },
+        {
+          "id": "s",
+          "text": "Liveness"
+        },
+        {
+          "id": "t",
+          "text": "Fairness"
+        }
+      ],
+      "pairs": {
+        "a": "p",
+        "b": "q",
+        "c": "r",
+        "d": "s"
+      },
+      "explanation": "The three safety properties are atomicity (compound actions are indivisible), visibility (writes become seen) and ordering (the order observed matches what the code promises). Deadlock is a liveness failure: something good never happens."
+    },
+    {
+      "id": "deadlock-conditions",
+      "concept": "Deadlock and liveness",
+      "type": "fill",
+      "difficulty": 2,
+      "prompt": "Complete the sentences about deadlock.",
+      "text": "Deadlock needs four conditions at once: mutual exclusion, {1}, no preemption and circular wait. Taking locks in one global order removes the {2} condition.",
+      "blanks": {
+        "1": "hold and wait",
+        "2": "circular wait"
+      },
+      "bank": [
+        "hold and wait",
+        "circular wait",
+        "starvation",
+        "priority inversion"
+      ],
+      "explanation": "These are the Coffman conditions. Break any one and deadlock cannot occur: one fixed lock order kills circular wait, acquiring everything up front kills hold and wait, and `tryLock` with a timeout lets a thread give a lock back."
+    },
+    {
+      "id": "wait-needs-monitor",
+      "concept": "Wait and notify",
+      "type": "single",
+      "difficulty": 2,
+      "prompt": "A thread calls `lock.wait()` without having entered `synchronized (lock)`. What happens?",
+      "options": [
+        {
+          "id": "a",
+          "text": "It throws `IllegalMonitorStateException`",
+          "why": "Correct: `wait()` and `notify()` require the caller to own that object's monitor, and the JVM enforces it at runtime."
+        },
+        {
+          "id": "b",
+          "text": "It waits normally and wakes up when another thread notifies it",
+          "why": "There is no lenient mode; the ownership check is mandatory and the call fails before waiting."
+        },
+        {
+          "id": "c",
+          "text": "It blocks first until it can acquire the object's monitor",
+          "why": "Waiting for a monitor is what a `synchronized` entry does, not what `wait()` does."
+        },
+        {
+          "id": "d",
+          "text": "It fails to compile because the synchronized block is missing",
+          "why": "The compiler cannot see monitor ownership, so this is a runtime error and not a compile error."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "`wait()` must release the monitor it holds while the thread sleeps, so owning it first is a precondition. The same rule applies to `notify()` and `notifyAll()`."
+    },
+    {
+      "id": "daemon-writes",
+      "concept": "Threads and processes",
+      "type": "assertion",
+      "difficulty": 2,
+      "prompt": "Read the assertion (A) and the reason (R), then choose the correct option.",
+      "assertion": "A daemon thread is a poor choice for a task that must finish writing a file.",
+      "reason": "The JVM exits once the last non-daemon thread ends, without waiting for daemon threads to complete.",
+      "correct": [
+        "a"
+      ],
+      "whys": {
+        "a": "Correct: both statements are true, and the reason is exactly why the write may be cut short mid-way.",
+        "b": "Both are true, but R does explain A, so this option is wrong.",
+        "c": "R is true, so this option is wrong.",
+        "d": "A is true, so this option is wrong."
+      },
+      "explanation": "Daemon threads suit background housekeeping such as metrics flushers. Work that must complete should run on non-daemon threads or be awaited with `join` or an executor shutdown."
+    },
+    {
+      "id": "immutable-share",
+      "concept": "Races and thread safety",
+      "type": "assertion",
+      "difficulty": 2,
+      "prompt": "Read the assertion (A) and the reason (R), then choose the correct option.",
+      "assertion": "An immutable object can be shared between threads without any locking.",
+      "reason": "The `String` class is immutable.",
+      "correct": [
+        "b"
+      ],
+      "whys": {
+        "a": "R does not explain why immutability makes sharing safe, so this option is wrong.",
+        "b": "Correct: both are true, but R is only one example of an immutable class; the reason is that state which never changes cannot be raced.",
+        "c": "R is true, so this option is wrong.",
+        "d": "A is true, so this option is wrong."
+      },
+      "explanation": "Immutable means all fields are `final` and the state cannot change after construction, and the object must be published safely. Immutability turns most thread-safety problems into non-problems."
+    },
+    {
+      "id": "starvation-no-deadlock",
+      "concept": "Deadlock and liveness",
+      "type": "assertion",
+      "difficulty": 3,
+      "prompt": "Read the assertion (A) and the reason (R), then choose the correct option.",
+      "assertion": "A thread can suffer starvation even though no deadlock exists in the program.",
+      "reason": "Starvation occurs only when threads are deadlocked.",
+      "correct": [
+        "c"
+      ],
+      "whys": {
+        "a": "R is false, so this option cannot be right.",
+        "b": "R is false, so option b (both true) is wrong.",
+        "c": "Correct: A is true (a low-priority or unlucky thread can be denied the lock or CPU indefinitely) and R is false, because starvation needs no cycle of waiting.",
+        "d": "A is true, so this option is wrong."
+      },
+      "explanation": "Unfair locks, thread priorities and a greedy thread that keeps re-acquiring a lock can starve others. `ReentrantLock(true)` is a fair lock that grants the lock in arrival order, at some throughput cost."
+    },
+    {
+      "id": "yield-guarantee",
+      "concept": "Thread scheduling",
+      "type": "assertion",
+      "difficulty": 3,
+      "prompt": "Read the assertion (A) and the reason (R), then choose the correct option.",
+      "assertion": "Calling `Thread.yield()` guarantees that another runnable thread runs before the caller continues.",
+      "reason": "`yield()` is only a hint that the current thread is willing to give up the processor.",
+      "correct": [
+        "d"
+      ],
+      "whys": {
+        "a": "A is false, so this option cannot be right.",
+        "b": "A is false, so option b (both true) is wrong.",
+        "c": "A is false, so option c is wrong.",
+        "d": "Correct: A is false because the scheduler may ignore the hint, and R is true and is exactly why no guarantee exists."
+      },
+      "explanation": "Never build correctness on `yield()`, `sleep()` timing or priorities. Use proper coordination such as locks, latches or queues."
+    },
+    {
+      "id": "threadlocal-pool",
+      "concept": "ThreadLocal",
+      "type": "single",
+      "difficulty": 3,
+      "prompt": "A web app stores the current user in a `ThreadLocal` and never calls `remove()`. Requests run on a pooled thread. What is the classic bug?",
+      "options": [
+        {
+          "id": "a",
+          "text": "A later request on that thread can read the old user's value",
+          "why": "Correct: pool threads outlive requests, so the entry stays attached to the thread and leaks into unrelated work. Clear it in a `finally` block."
+        },
+        {
+          "id": "b",
+          "text": "The value is copied into every other thread in the pool",
+          "why": "`ThreadLocal` values are per thread and are not broadcast to other threads."
+        },
+        {
+          "id": "c",
+          "text": "The value is garbage collected after each request",
+          "why": "The thread keeps a reference to its entries for as long as it lives, so they are not collected on their own."
+        },
+        {
+          "id": "d",
+          "text": "The JVM rejects the second `set()` call",
+          "why": "Calling `set()` repeatedly is fine; it simply overwrites the value for the current thread."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Besides stale data it can also leak memory when the value holds a big object or a class loader. Always remove the value in `finally`; it is also why `ThreadLocal` and virtual threads need care."
+    },
+    {
+      "id": "rwlock-when",
+      "concept": "Locks",
+      "type": "single",
+      "difficulty": 3,
+      "prompt": "When is a `ReentrantReadWriteLock` a poor replacement for a plain lock?",
+      "options": [
+        {
+          "id": "a",
+          "text": "When writes are frequent or the guarded work is tiny",
+          "why": "Correct: the extra bookkeeping then costs more than concurrent readers save, and writers can be starved or block all readers."
+        },
+        {
+          "id": "b",
+          "text": "When many threads only read the data and writes are rare",
+          "why": "This is the case it was designed for: readers proceed in parallel and only a writer needs exclusivity."
+        },
+        {
+          "id": "c",
+          "text": "When a single reader needs to read the same data twice",
+          "why": "Re-reading is no problem; the read lock can be held across both reads."
+        },
+        {
+          "id": "d",
+          "text": "When threads call it from several different classes",
+          "why": "The location of the callers is irrelevant; only the read/write mix and critical-section length matter."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Measure before switching. For read-mostly data with very short reads, `StampedLock` optimistic reads or an immutable snapshot swapped through a `volatile` reference may beat both."
+    },
+    {
+      "id": "safe-publication",
+      "concept": "Memory model",
+      "type": "multi",
+      "difficulty": 3,
+      "prompt": "Which of these safely publish an object to other threads without any extra synchronization by the readers? Select all that apply.",
+      "options": [
+        {
+          "id": "a",
+          "text": "Initialize it in a static initializer",
+          "why": "Correct: the JVM's class-initialization lock gives a happens-before edge to every user of the class."
+        },
+        {
+          "id": "b",
+          "text": "Store it in a `volatile` field",
+          "why": "Correct: the volatile write happens-before every later read of that field, so the object's state is visible."
+        },
+        {
+          "id": "c",
+          "text": "Store it in an ordinary field and read it later",
+          "why": "Without a lock or volatile, the reader may see the reference but stale or default field values."
+        },
+        {
+          "id": "d",
+          "text": "Hand it over through a `BlockingQueue`",
+          "why": "Correct: putting an item into a concurrent queue happens-before the matching take on another thread."
+        },
+        {
+          "id": "e",
+          "text": "Rely on the object being created before the thread starts reading",
+          "why": "Creation order in wall-clock time creates no happens-before edge, so this guarantees nothing."
+        }
+      ],
+      "correct": [
+        "a",
+        "b",
+        "d"
+      ],
+      "explanation": "Safe publication means publishing the reference and the object state together via a happens-before edge: a static initializer, a `volatile` or `AtomicReference`, a lock-guarded field, a `final` field of a properly constructed object, or a concurrent collection."
+    },
+    {
+      "id": "livelock-scenario",
+      "concept": "Deadlock and liveness",
+      "type": "single",
+      "difficulty": 2,
+      "prompt": "Two threads each take a lock, fail to get the second, release the first and retry at the same instant, forever. Both stay RUNNABLE. What is this called?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Livelock, both keep reacting but never progress",
+          "why": "Correct: the threads keep reacting to each other and consuming CPU, yet neither makes progress."
+        },
+        {
+          "id": "b",
+          "text": "Deadlock, where both threads sit blocked and idle",
+          "why": "In a deadlock the threads are blocked and idle; here they are actively running."
+        },
+        {
+          "id": "c",
+          "text": "Starvation, where one thread is denied",
+          "why": "Starvation means one thread is denied a resource; here both give way to each other in lockstep."
+        },
+        {
+          "id": "d",
+          "text": "Priority inversion, a low thread holding a lock",
+          "why": "That involves a low-priority thread holding a lock a high-priority one needs, which is not described here."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "The cure is randomized back-off or a fixed lock order. This is the failure that `tryLock` retry loops can fall into without jitter."
+    },
+    {
+      "id": "amdahl",
+      "concept": "Performance",
+      "type": "integer",
+      "difficulty": 2,
+      "prompt": "A job spends 20% of its time in code that cannot run in parallel. By Amdahl's law, what is the maximum possible speedup with an unlimited number of threads?",
+      "answer": 5,
+      "tolerance": 0,
+      "unit": "x",
+      "explanation": "Speedup is at most 1 / serial fraction = 1 / 0.2 = 5, no matter how many threads you add. Reducing the serial part (shorter critical sections, less contention) matters more than adding cores."
+    },
+    {
+      "id": "reentrant-depth",
+      "concept": "synchronized",
+      "type": "integer",
+      "difficulty": 2,
+      "prompt": "A thread enters `synchronized (this)`, calls another `synchronized` instance method on the same object, which calls a third one. How many monitor exits are needed before a second thread can acquire that monitor?",
+      "answer": 3,
+      "tolerance": 0,
+      "unit": "exits",
+      "explanation": "Monitors are reentrant and keep a hold count: three entries means three exits, and only when the count reaches 0 is the monitor free. `ReentrantLock` behaves the same way with `getHoldCount()`."
+    },
+    {
+      "id": "threadlocal-format",
+      "concept": "ThreadLocal",
+      "type": "code",
+      "difficulty": 2,
+      "prompt": "`SimpleDateFormat` is not thread-safe. Write a field declaration that gives each thread its own `SimpleDateFormat` for the pattern `yyyy-MM-dd`.",
+      "language": "java",
+      "checks": [
+        {
+          "label": "declares a ThreadLocal of SimpleDateFormat",
+          "pattern": "ThreadLocal\\s*<\\s*SimpleDateFormat\\s*>"
+        },
+        {
+          "label": "supplies an initial value",
+          "pattern": "withInitial|initialValue"
+        },
+        {
+          "label": "creates the formatter with the pattern",
+          "pattern": "new\\s+SimpleDateFormat\\s*\\(\\s*\"yyyy-MM-dd\""
+        }
+      ],
+      "model": "private static final ThreadLocal<SimpleDateFormat> FMT =\n    ThreadLocal.withInitial(() -> new SimpleDateFormat(\"yyyy-MM-dd\"));",
+      "explanation": "Each thread lazily gets its own copy, so no locking is needed. Other correct solutions exist, for example overriding `initialValue()`. Better still, use the immutable thread-safe `DateTimeFormatter`."
+    },
+    {
+      "id": "restore-interrupt",
+      "concept": "Thread basics",
+      "type": "code",
+      "difficulty": 2,
+      "prompt": "Inside `catch (InterruptedException e)` of a `Runnable` that cannot rethrow, write the single statement that restores the thread's interrupt status.",
+      "language": "java",
+      "checks": [
+        {
+          "label": "gets the current thread and calls interrupt()",
+          "pattern": "Thread\\s*\\.\\s*currentThread\\s*\\(\\s*\\)\\s*\\.\\s*interrupt\\s*\\(\\s*\\)"
+        }
+      ],
+      "model": "Thread.currentThread().interrupt();",
+      "explanation": "Throwing `InterruptedException` clears the interrupt flag. Swallowing it hides the cancellation request from callers up the stack; re-setting the flag lets them notice and stop."
+    },
+    {
+      "id": "join-visibility",
+      "concept": "Memory model",
+      "type": "single",
+      "difficulty": 3,
+      "prompt": "Thread `main` starts thread `t`, which writes a plain non-volatile field `result`. Then `main` calls `t.join()` and reads `result`. Is the write guaranteed to be visible?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Yes, because everything `t` did happens-before `join()` returning",
+          "why": "Correct: the Java Memory Model gives a happens-before edge from a thread's last action to a successful `join()` on it."
+        },
+        {
+          "id": "b",
+          "text": "No, because the field is not declared volatile or final",
+          "why": "`volatile` is only one way to build an edge; `join()` provides another, so the field needs no extra modifier."
+        },
+        {
+          "id": "c",
+          "text": "Only if `t` also used a `synchronized` block before writing",
+          "why": "The write is covered by the `join()` edge regardless of whether `t` used any lock."
+        },
+        {
+          "id": "d",
+          "text": "Only if `main` sleeps for a short moment after `join()` returns",
+          "why": "Sleeping does not create happens-before and is never needed after `join()` returns."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Edges worth remembering: `Thread.start()`, `join()`, monitor unlock/lock, volatile write/read, executor `submit`, `Future.get()` and concurrent-collection hand-offs."
+    },
+    {
+      "id": "long-tearing",
+      "concept": "Memory model",
+      "type": "truefalse",
+      "difficulty": 3,
+      "prompt": "The Java Language Specification allows a write to a non-volatile `long` to be performed as two separate 32-bit writes, so another thread could see half of it.",
+      "options": [
+        {
+          "id": "a",
+          "text": "True",
+          "why": "Correct: JLS 17.7 permits non-atomic treatment of non-volatile `long` and `double`, so a racy reader may see a torn value."
+        },
+        {
+          "id": "b",
+          "text": "False",
+          "why": "Wrong: atomic 64-bit writes are guaranteed only for `volatile` fields, even though most 64-bit JVMs do it anyway."
+        }
+      ],
+      "correct": [
+        "a"
+      ],
+      "explanation": "Declare shared `long` and `double` fields `volatile` (or use `AtomicLong`) when they are read without a lock. Do not rely on today's JVM behaviour."
+    }
+  ]
+}
