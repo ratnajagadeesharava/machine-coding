@@ -1,5 +1,5 @@
 // In-place text editing for the Whiteboard: free text, container labels, arrow labels and frame names (mixed into its prototype).
-import { FONT_FAMILIES, LIMITS, createElement, findItem, isContainer, isLinear, newId, resolvePoints } from '../../shared/board.js';
+import { FONT_FAMILIES, FONT_SIZES, LIMITS, createElement, findItem, isContainer, isLinear, newId, resolvePoints } from '../../shared/board.js';
 import { frameNameBox, innerBox, linearLabelLayout, polylineMidpoint, textSize } from './geometry.js';
 import { themeColor } from './render.js';
 import * as ops from './ops.js';
@@ -52,6 +52,7 @@ export function installText(P) {
     ta.value = (el[field] || '') + initial;
     this._editor = { id, ta, kind, field, isNew, before: el[field] || '', composing: false, done: false };
     this.root.appendChild(ta);
+    this._buildFormatBar(this._editor);
     this._renderNow();
     this._placeEditor();
     this._emit('editing', { id });
@@ -81,6 +82,60 @@ export function installText(P) {
     focus();
     setTimeout(focus, 0);
     this._onEditorInput(true);
+  };
+
+  // A small bar above the text being edited: font, size and alignment without leaving the keyboard flow.
+  // Its buttons never take focus, so the caret stays in the text and nothing closes the editor.
+  P._buildFormatBar = function _buildFormatBar(ed) {
+    if (ed.kind === 'frame') return;
+    const bar = document.createElement('div');
+    bar.className = 'wb-fmtbar';
+    bar.setAttribute('role', 'toolbar');
+    bar.setAttribute('aria-label', 'Text formatting');
+    const btns = [];
+    const group = (label) => { const g = document.createElement('span'); g.className = 'wb-fmt-group'; g.setAttribute('role', 'group'); g.setAttribute('aria-label', label); bar.appendChild(g); return g; };
+    const add = (g, text, title, prop, value) => {
+      const b = document.createElement('button');
+      b.type = 'button'; b.className = 'wb-fmt-btn'; b.textContent = text; b.title = title; b.setAttribute('aria-label', title);
+      b.addEventListener('mousedown', (e) => e.preventDefault());
+      b.addEventListener('pointerdown', (e) => e.stopPropagation());
+      b.addEventListener('click', () => { this.setStyle({ [prop]: value }); this._refreshFormatBar(ed); if (ed.ta.isConnected) ed.ta.focus({ preventScroll: true }); });
+      g.appendChild(b); btns.push({ b, prop, value });
+    };
+    const sizes = group('Size');
+    for (const [k, v] of Object.entries(FONT_SIZES)) add(sizes, k, `Font size ${k} (${v}px)`, 'fontSize', v);
+    if (ed.kind !== 'linear') {
+      const fam = group('Font');
+      add(fam, 'Aa', 'Hand-drawn font', 'fontFamily', 1); add(fam, 'Sans', 'Clean sans-serif font', 'fontFamily', 2); add(fam, '</>', 'Code font', 'fontFamily', 3);
+      const al = group('Align');
+      add(al, 'L', 'Align left', 'textAlign', 'left'); add(al, 'C', 'Align centre', 'textAlign', 'center'); add(al, 'R', 'Align right', 'textAlign', 'right');
+    }
+    bar.addEventListener('pointerdown', (e) => e.stopPropagation());
+    bar.addEventListener('mousedown', (e) => e.preventDefault());
+    ed.bar = bar; ed.barBtns = btns;
+    this.root.appendChild(bar);
+  };
+
+  P._refreshFormatBar = function _refreshFormatBar(ed) {
+    const el = findItem(this._board, ed.id);
+    if (!el || !ed.barBtns) return;
+    for (const { b, prop, value } of ed.barBtns) {
+      const cur = prop === 'textAlign' ? (el.textAlign || (ed.kind === 'container' ? 'center' : 'left')) : el[prop];
+      b.setAttribute('aria-pressed', String(cur === value));
+    }
+  };
+
+  P._placeFormatBar = function _placeFormatBar(ed, el, sx, sy, sw) {
+    if (!ed.bar) return;
+    this._refreshFormatBar(ed);
+    const rw = this.root.clientWidth || 800;
+    const bw = ed.bar.offsetWidth || 280;
+    let x = sx + sw / 2 - bw / 2;
+    x = Math.max(8, Math.min(rw - bw - 8, x));
+    let y = sy - 46;
+    if (y < 8) y = sy + Math.max(24, (el.fontSize || 20) * this._view.zoom * 1.6) + 12;
+    ed.bar.style.left = `${x}px`;
+    ed.bar.style.top = `${y}px`;
   };
 
   // Tab inserts two spaces (at the start of every selected line when several lines are selected); Shift+Tab removes them.
@@ -184,6 +239,7 @@ export function installText(P) {
     st.color = themeColor(el.strokeColor || '#1e1e1e', dark);
     st.background = bg;
     st.opacity = String((el.opacity ?? 100) / 100);
+    this._placeFormatBar(ed, el, sx, sy, box.w * z);
     if (rotate && rotC) {
       st.transformOrigin = `${(rotC.x - box.x) * z}px ${(rotC.y - box.y) * z}px`;
       st.transform = `rotate(${rotate}rad)`;
@@ -196,6 +252,7 @@ export function installText(P) {
     if (!ed || ed.done) return;
     ed.done = true;
     this._editor = null;
+    if (ed.bar) ed.bar.remove();
     const el = findItem(this._board, ed.id);
     const value = ed.ta.value;
     ed.ta.remove();

@@ -73,3 +73,11 @@
 @media (prefers-reduced-motion: reduce) {
   .wb-root * { transition: none !important; animation: none !important; }
 }
+
+.wb-editor-container { box-shadow: 0 0 0 2px color-mix(in srgb, var(--wb-accent) 45%, transparent); background: color-mix(in srgb, var(--wb-accent) 5%, transparent); }
+.wb-fmtbar { position: absolute; z-index: 4; display: flex; align-items: center; gap: 6px; padding: 5px 6px; background: var(--wb-panel, #fff); color: var(--wb-ink, #1e1e1e); border: 1px solid color-mix(in srgb, currentColor 18%, transparent); border-radius: 12px; box-shadow: 0 6px 22px rgba(0, 0, 0, .16); font: 600 13px system-ui, sans-serif; white-space: nowrap; user-select: none; }
+.wb-fmt-group { display: inline-flex; gap: 2px; padding-right: 6px; border-right: 1px solid color-mix(in srgb, currentColor 14%, transparent); }
+.wb-fmt-group:last-child { border-right: 0; padding-right: 0; }
+.wb-fmt-btn { min-width: 30px; height: 30px; padding: 0 7px; border: 0; border-radius: 8px; background: transparent; color: inherit; font: inherit; cursor: pointer; }
+.wb-fmt-btn:hover { background: color-mix(in srgb, var(--wb-accent) 14%, transparent); }
+.wb-fmt-btn[aria-pressed="true"] { background: var(--wb-accent); color: #fff; }
