@@ -93,3 +93,9 @@
 .wb-connectors { position: absolute; inset: 0; pointer-events: none; z-index: 3; }
 .wb-conn { position: absolute; width: 26px; height: 26px; margin: -13px 0 0 -13px; padding: 0; border-radius: 50%; border: 1.5px solid var(--wb-accent); background: #fff; color: var(--wb-accent); font: 700 17px/1 system-ui, sans-serif; display: grid; place-items: center; cursor: pointer; pointer-events: auto; opacity: .85; box-shadow: 0 2px 8px rgba(0, 0, 0, .15); }
 .wb-conn:hover { opacity: 1; background: var(--wb-accent); color: #fff; transform: scale(1.12); }
+
+/* naming a shape: type straight into it. No box, no ring, just the caret inside the shape. */
+.wb-editor-container { box-shadow: none; background: transparent; border-radius: 0; }
+.wb-editor-container::placeholder { color: color-mix(in srgb, currentColor 38%, transparent); font-style: italic; }
+.wb-fmt-sugg { flex-wrap: nowrap; overflow: hidden; }
+.wb-fmt-chip { flex: none; }
