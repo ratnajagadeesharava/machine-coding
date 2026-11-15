@@ -13,6 +13,22 @@ function kindOf(el) {
   return null;
 }
 
+// Grows a shape (around its centre, never shrinking it) until its label fits: wide enough for the longest word, then tall enough for the lines.
+function fitContainer(el, v) {
+  if (!v) return;
+  const opts = { fontFamily: el.fontFamily, fontSize: el.fontSize };
+  const longest = Math.max(...v.split(/\s+/).map((wd) => textSize(wd || ' ', opts).w));
+  for (let i = 0; i < 10; i++) {
+    const ib = innerBox(el);
+    const s = textSize(v, { ...opts, maxWidth: ib.w });
+    let dw = 0; let dh = 0;
+    if (longest > ib.w) dw = Math.ceil((longest - ib.w + 2) * (el.w / ib.w));
+    else if (s.h > ib.h) dh = Math.ceil((s.h - ib.h + 2) * (el.h / ib.h));
+    if (!dw && !dh) break;
+    el.x -= dw / 2; el.y -= dh / 2; el.w += dw; el.h += dh;
+  }
+}
+
 export function installText(P) {
   P.startEditing = function startEditing(id) { this._beginEdit(id); };
 
@@ -110,6 +126,11 @@ export function installText(P) {
       const al = group('Align');
       add(al, 'L', 'Align left', 'textAlign', 'left'); add(al, 'C', 'Align centre', 'textAlign', 'center'); add(al, 'R', 'Align right', 'textAlign', 'right');
     }
+    const done = document.createElement('button');
+    done.type = 'button'; done.className = 'wb-fmt-done'; done.textContent = 'Done'; done.title = 'Finish editing (Esc or Ctrl+Enter)';
+    done.addEventListener('mousedown', (e) => e.preventDefault());
+    done.addEventListener('click', () => this._finishEditor());
+    bar.appendChild(done);
     bar.addEventListener('pointerdown', (e) => e.stopPropagation());
     bar.addEventListener('mousedown', (e) => e.preventDefault());
     ed.bar = bar; ed.barBtns = btns;
@@ -176,7 +197,7 @@ export function installText(P) {
       el.w = Math.max(s.w, el.fontSize * 0.4);
       el.h = Math.max(s.h, el.fontSize * 1.25);
     } else if (ed.kind === 'frame') el[ed.field] = v;
-    else el.text = v;
+    else { el.text = v; if (ed.kind === 'container') fitContainer(el, v); }
     this._placeEditor();
     if (!silent) this._drawOverlay();
   };
