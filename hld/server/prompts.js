@@ -59,7 +59,14 @@ export function watchSystem(q) {
 
 const EVAL_RULES = `
 
-The interview has ended. Write the candidate's feedback report as the interviewer, based ONLY on what is in the transcript and the final board. Be honest, specific and constructive; reference actual components and statements. Use your own judgement of what a strong answer to this question looks like, scaled to the candidate level in the question block: the same work earns a higher score for a junior than for a staff candidate. Score each area from 0 (nothing shown) to 5 (excellent for that level). If the candidate showed little, say so and score low rather than inventing credit. Areas, in this order: Requirements, Estimation, API design, Data model, Architecture, Scaling, Trade-offs. Respond with the JSON the schema asks for.`;
+The interview has ended. Write the candidate's feedback report as the interviewer, based ONLY on what is in the transcript and the final board. Be honest, specific and constructive; reference actual components and statements. Use your own judgement of what a strong answer to this question looks like, scaled to the candidate level in the question block: the same work earns a higher score for a junior than for a staff candidate. Score each area from 0 (nothing shown) to 5 (excellent for that level). If the candidate showed little, say so and score low rather than inventing credit. Areas, in this order: Requirements, Estimation, API design, Data model, Architecture, Scaling, Trade-offs.
+
+Also write three extra parts of the review. Write all of them in clear, plain English: short sentences (about 20 words or fewer), everyday words, and a one-clause explanation the first time you use a technical term. Say what you see on the board by using the labels the candidate wrote.
+- expectation: 5 to 8 things you expected a candidate at this level to show for this question (for example "a place to store the data", "a way to handle ten times more traffic"). For each, say whether the candidate showed it on the board or in the conversation ("shown"), showed it only in part ("partly") or not at all ("missing"), with a one-sentence note that points at their board.
+- simulation: two or three short "what happens when" walk-throughs run against THEIR board as drawn (for example one normal request, one busy-traffic moment, one failure such as a database going down). Each has 3 to 6 steps. A step says what happens next, hop by hop along the arrows. Mark a step works=false where the board has no component or arrow that could do it, or where it would break, and say why in that step. End each walk-through with a one-sentence takeaway.
+- diagram: the architecture you would expect to see for this question at the candidate level, as named boxes and labelled arrows: 6 to 12 nodes (kind is one of client, service, database, cache, queue, balancer, external, storage) and the edges between them (label = what is sent, 1 to 3 words). Reuse the candidate's own names where their box is right. Give each node a short unique id. The caption is two plain sentences saying how a request flows through it. This is a teaching answer shown after the interview, so it may be complete.
+
+Respond with the JSON the schema asks for.`;
 
 export function evalSystem(q) {
   return `${PERSONA}\n\n${questionBlock(q)}${EVAL_RULES}`;
@@ -74,7 +81,7 @@ const MODE_TEXT = {
   chat: 'free chat',
   clarify: 'The candidate pressed "Clarify requirements": help them pin down requirements. If they did not ask a specific question, invite them with the two or three most important areas to clarify instead of answering everything at once.',
   hint: 'The candidate pressed "Give me a hint": give ONE graduated hint based on where they are right now.',
-  review: 'The candidate pressed "Review my board": review the board as it is now - one or two specific strengths, the most important gap or risk, and end with one probing question.',
+  review: 'The candidate pressed "Review my board": review the board as it is now, in clear plain English with short sentences. Say what you expected to see, what you actually see (use their labels), then walk one request through their arrows step by step and say where it would break. End with one probing question. Do not draw or list the full answer.',
 };
 
 export function buildContext({ board, elapsedMs, totalMs, status, mode, extra }) {

@@ -3,6 +3,7 @@
 import './apikey.js';
 import { boardSignature, boardStats, emptyBoard, toAiBoard } from '/shared/board.js';
 import { mountWhiteboard } from '/wb/mount.js';
+import { boardToSvgString } from '/wb/render.js';
 import { makeResizable } from '/resize.js';
 import {
   LEVELS, STYLES, boardStore, getCustom, getLaunch, getUi, loadSession, saveSession, sessionKey, setUi,
@@ -499,7 +500,62 @@ function renderReport(ev) {
   }
   const cols = node('div', 'cols');
   cols.append(section('What went well', ev.strengths), section('Gaps', ev.gaps), section('Next steps', ev.next_steps));
-  body.append(v, node('p', '', ev.summary), areas, cols);
+  body.append(v, node('p', '', ev.summary));
+  for (const part of [expectationBlock(ev.expectation), simulationBlock(ev.simulation), diagramBlock(ev.diagram)]) if (part) body.appendChild(part);
+  body.append(node('h3', 'rp-h', 'Scores by area'), areas, cols);
+}
+
+// Older saved reports have none of these three parts, so each block quietly returns nothing.
+const STATUS_LABEL = { shown: 'Shown', partly: 'Partly', missing: 'Missing' };
+
+function expectationBlock(list) {
+  if (!Array.isArray(list) || !list.length) return null;
+  const box = node('section', 'rp-block');
+  box.append(node('h3', 'rp-h', 'What I expected to see'), node('p', 'rp-sub', 'For this question and your level, a good answer shows these things.'));
+  const ul = node('ul', 'rp-expect');
+  for (const x of list) {
+    const li = node('li', `rp-item ${x.status}`);
+    const head = node('div', 'rp-item-head');
+    head.append(node('span', `rp-pill ${x.status}`, STATUS_LABEL[x.status] || x.status), node('b', '', x.what));
+    li.append(head);
+    if (x.note) li.append(node('p', '', x.note));
+    ul.appendChild(li);
+  }
+  box.appendChild(ul);
+  return box;
+}
+
+function simulationBlock(list) {
+  if (!Array.isArray(list) || !list.length) return null;
+  const box = node('section', 'rp-block');
+  box.append(node('h3', 'rp-h', 'What happens on your board'), node('p', 'rp-sub', 'I followed real situations along the arrows you drew. A tick means your board can handle that step. A cross means it cannot yet.'));
+  for (const s of list) {
+    const card = node('div', 'rp-sim');
+    card.append(node('h4', '', s.scenario));
+    const ol = node('ol', 'rp-steps');
+    for (const st of s.steps) {
+      const li = node('li', st.works ? 'ok' : 'bad');
+      li.append(node('span', 'rp-mark', st.works ? '\u2713' : '\u2717'), node('span', '', st.text));
+      ol.appendChild(li);
+    }
+    card.append(ol);
+    if (s.takeaway) card.append(node('p', 'rp-take', s.takeaway));
+    box.appendChild(card);
+  }
+  return box;
+}
+
+function diagramBlock(d) {
+  if (!d || !d.board) return null;
+  const box = node('section', 'rp-block');
+  box.append(node('h3', 'rp-h', 'The diagram I expected'), node('p', 'rp-sub', 'One good way to draw this answer. Yours can look different. Compare the boxes and the arrows, not the layout.'));
+  const fig = node('div', 'rp-diagram');
+  fig.setAttribute('role', 'img');
+  fig.setAttribute('aria-label', d.caption || 'Expected architecture diagram');
+  fig.innerHTML = boardToSvgString(d.board, { background: '#ffffff', padding: 24 }); // markup is built from validated board data and escaped by the renderer
+  box.append(fig);
+  if (d.caption) box.append(node('p', 'rp-caption', d.caption));
+  return box;
 }
 
 function reportMessage(text, buttonLabel, onClick, isError) {

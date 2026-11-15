@@ -3,6 +3,7 @@ import Anthropic from '@anthropic-ai/sdk';
 import {
   buildContext, chatSystem, evalSystem, normaliseMessages, transcriptText, watchSystem, withContext, formatClock,
 } from './prompts.js';
+import { buildExpectedDiagram, DIAGRAM_KINDS } from './diagram.js';
 import {
   explainContext, explainSystem, generateSystem, generateUser, GENERATE_SCHEMA, normaliseGenerated,
 } from './quiz.js';
@@ -53,8 +54,49 @@ export const EVAL_SCHEMA = {
     strengths: { type: 'array', items: { type: 'string' } },
     gaps: { type: 'array', items: { type: 'string' } },
     next_steps: { type: 'array', items: { type: 'string' } },
+    expectation: {
+      type: 'array',
+      items: {
+        type: 'object',
+        properties: { what: { type: 'string' }, status: { type: 'string', enum: ['shown', 'partly', 'missing'] }, note: { type: 'string' } },
+        required: ['what', 'status', 'note'],
+        additionalProperties: false,
+      },
+    },
+    simulation: {
+      type: 'array',
+      items: {
+        type: 'object',
+        properties: {
+          scenario: { type: 'string' },
+          steps: {
+            type: 'array',
+            items: { type: 'object', properties: { text: { type: 'string' }, works: { type: 'boolean' } }, required: ['text', 'works'], additionalProperties: false },
+          },
+          takeaway: { type: 'string' },
+        },
+        required: ['scenario', 'steps', 'takeaway'],
+        additionalProperties: false,
+      },
+    },
+    diagram: {
+      type: 'object',
+      properties: {
+        nodes: {
+          type: 'array',
+          items: { type: 'object', properties: { id: { type: 'string' }, label: { type: 'string' }, kind: { type: 'string', enum: DIAGRAM_KINDS } }, required: ['id', 'label', 'kind'], additionalProperties: false },
+        },
+        edges: {
+          type: 'array',
+          items: { type: 'object', properties: { from: { type: 'string' }, to: { type: 'string' }, label: { type: 'string' } }, required: ['from', 'to', 'label'], additionalProperties: false },
+        },
+        caption: { type: 'string' },
+      },
+      required: ['nodes', 'edges', 'caption'],
+      additionalProperties: false,
+    },
   },
-  required: ['verdict', 'summary', 'areas', 'strengths', 'gaps', 'next_steps'],
+  required: ['verdict', 'summary', 'areas', 'strengths', 'gaps', 'next_steps', 'expectation', 'simulation', 'diagram'],
   additionalProperties: false,
 };
 
@@ -217,5 +259,26 @@ export function cleanEvaluation(e) {
     strengths: list(e.strengths, 6),
     gaps: list(e.gaps, 6),
     next_steps: list(e.next_steps, 6),
+    expectation: cleanExpectation(e.expectation),
+    simulation: cleanSimulation(e.simulation),
+    diagram: buildExpectedDiagram(e.diagram),
   };
+}
+
+const short = (v, n) => (typeof v === 'string' ? v.trim().slice(0, n) : '');
+
+function cleanExpectation(list) {
+  return (Array.isArray(list) ? list : []).slice(0, 10).map((x) => ({
+    what: short(x?.what, 160),
+    status: ['shown', 'partly', 'missing'].includes(x?.status) ? x.status : 'missing',
+    note: short(x?.note, 320),
+  })).filter((x) => x.what);
+}
+
+function cleanSimulation(list) {
+  return (Array.isArray(list) ? list : []).slice(0, 4).map((s) => ({
+    scenario: short(s?.scenario, 160),
+    steps: (Array.isArray(s?.steps) ? s.steps : []).slice(0, 8).map((st) => ({ text: short(st?.text, 260), works: st?.works === true })).filter((st) => st.text),
+    takeaway: short(s?.takeaway, 320),
+  })).filter((s) => s.scenario && s.steps.length);
 }
