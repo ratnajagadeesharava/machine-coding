@@ -7,6 +7,7 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.util.Arrays;
 import java.util.List;
+
 import org.junit.jupiter.api.Test;
 import solution.Account;
 import solution.CheckingAccount;
@@ -14,7 +15,9 @@ import solution.SavingsAccount;
 
 class BehaviorTest {
 
-    /** A tiny subclass written in the test: only the two abstract decisions are supplied. */
+    /**
+     * A tiny subclass written in the test: only the two abstract decisions are supplied.
+     */
     private static final class Configurable extends Account {
         private final long fee;
         private final boolean allow;
@@ -24,8 +27,15 @@ class BehaviorTest {
             this.allow = allow;
         }
 
-        @Override protected long monthlyFee() { return fee; }
-        @Override protected boolean canWithdraw(long amount) { return allow; }
+        @Override
+        protected long monthlyFee() {
+            return fee;
+        }
+
+        @Override
+        protected boolean canWithdraw(long amount) {
+            return allow;
+        }
     }
 
     @Test

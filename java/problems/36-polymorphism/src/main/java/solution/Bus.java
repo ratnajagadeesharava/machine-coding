@@ -2,20 +2,28 @@ package solution;
 
 import contract.Vehicle;
 
-/** Bus. */
+/**
+ * 800 cents; at peak time 1.2x (960).
+ */
 public class Bus implements Vehicle {
+    private final String plate;
 
     public Bus(String plate) {
-        throw new UnsupportedOperationException("Not implemented yet");
+        if (plate == null || plate.isEmpty() || plate.isBlank()) {
+            throw new IllegalArgumentException("plate is not valid");
+        }
+        this.plate = plate;
     }
 
     @Override
     public String plate() {
-        throw new UnsupportedOperationException("Not implemented yet");
+
+        return this.plate;
     }
+
 
     @Override
     public long toll(boolean peak) {
-        throw new UnsupportedOperationException("Not implemented yet");
+        return peak ? 960 : 800;
     }
 }
