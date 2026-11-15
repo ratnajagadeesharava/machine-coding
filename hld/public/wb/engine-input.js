@@ -4,7 +4,7 @@ import {
   resolvePoints, selectionBounds,
 } from '../../shared/board.js';
 import {
-  elementsInBox, handleAt, hitTestTop, transformHandles, nearestBindTarget, resizeSelection, rotateAngle, simplifyStroke, snapMove, snapToGrid,
+  elementsInBox, handleAt, hitContainerInside, hitTestTop, transformHandles, nearestBindTarget, resizeSelection, rotateAngle, simplifyStroke, snapMove, snapToGrid,
 } from './geometry.js';
 import * as ops from './ops.js';
 import {
@@ -504,6 +504,8 @@ export function installInput(P) {
     this._justCreated = this._selection.size === 1 ? el.id : null;
     this._afterCreate();
     this._commit();
+    // a freshly drawn shape is ready for its label straight away (Esc or clicking away keeps it empty)
+    if (select && !keep && isContainer(el) && this._selection.size === 1) this._beginEdit(el.id);
   };
 
   // ---------- arrows / lines ----------
@@ -743,6 +745,8 @@ export function installInput(P) {
       this._beginEdit(hit.id);
       return;
     }
+    const inside = hitContainerInside(this._board, pt, { skipLocked: true });
+    if (inside) { this._setSelection([inside.id]); this._beginEdit(inside.id); return; }
     this._newText(pt);
   };
 
@@ -761,6 +765,9 @@ export function installInput(P) {
       }
       return;
     }
+    // an unfilled shape only "hits" on its outline: double-clicking inside it still edits its label
+    const inside = hitContainerInside(this._board, pt, { skipLocked: true });
+    if (inside) { this._setSelection([inside.id]); this._beginEdit(inside.id); return; }
     this._newText(pt);
   };
 
