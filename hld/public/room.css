@@ -133,3 +133,11 @@
 .rp-diagram { border: 1px solid var(--line); border-radius: 12px; background: #fff; overflow: auto; padding: 6px; }
 .rp-diagram svg { display: block; max-width: 100%; height: auto; margin: 0 auto; }
 .rp-caption { font-size: 14px; color: var(--muted); }
+
+.rp-foot { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; padding-top: 12px; border-top: 1px solid var(--line); }
+.rp-saved { color: var(--muted); font-size: 13px; }
+
+/* keep the header buttons on one line; let the header wrap instead of overlapping */
+.actions .btn { white-space: nowrap; }
+.room .topbar { flex-wrap: wrap; row-gap: 8px; height: auto; min-height: 64px; padding-top: 8px; padding-bottom: 8px; }
+.room .topbar .title { min-width: 0; flex: 1 1 260px; }

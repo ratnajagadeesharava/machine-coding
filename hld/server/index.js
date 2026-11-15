@@ -277,6 +277,24 @@ export function createServer({ ai, questions, quizzes = [], mode = 'off', model 
     throw new HttpError(405, 'Method not allowed.');
   }
 
+  // Saved interview feedback (same SQLite file). Reading is open; saving and deleting use the same guard as the progress routes.
+  async function feedbackRoute(req, res, p) {
+    if (!progress) throw new HttpError(503, 'The local database is not available.');
+    const m = /^\/api\/feedback\/([a-z]+:[A-Za-z0-9_-]{1,80})$/.exec(p);
+    if (!m) throw new HttpError(404, 'Unknown feedback key.');
+    const key = m[1];
+    if (req.method === 'GET') return json(res, 200, progress.getFeedback(key) || { report: null, at: null });
+    if (req.headers['x-hld-progress'] !== '1') throw new HttpError(403, 'Missing x-hld-progress header.');
+    const origin = req.headers.origin;
+    if (origin && new URL(origin).host !== req.headers.host) throw new HttpError(403, 'Cross-origin request refused.');
+    if (req.method === 'PUT') {
+      const body = await readJson(req);
+      try { return json(res, 200, progress.saveFeedback(key, body.report)); } catch (err) { throw new HttpError(400, err.message); }
+    }
+    if (req.method === 'DELETE') { progress.deleteFeedback(key); return json(res, 200, { ok: true }); }
+    throw new HttpError(405, 'Method not allowed.');
+  }
+
   return http.createServer(async (req, res) => {
     try {
       const url = new URL(req.url, 'http://localhost');
@@ -295,6 +313,7 @@ export function createServer({ ai, questions, quizzes = [], mode = 'off', model 
           return json(res, 200, quiz);
         }
         if (p === '/api/progress' || p.startsWith('/api/progress/')) return await progressRoute(req, res, p);
+        if (p.startsWith('/api/feedback/')) return await feedbackRoute(req, res, p);
         if (req.method !== 'POST') throw new HttpError(405, 'Method not allowed.');
         if (p === '/api/quiz/explain') return await quizExplain(req, res);
         if (p === '/api/quiz/generate') return await quizGenerate(req, res);

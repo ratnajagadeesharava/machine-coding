@@ -4,6 +4,7 @@ import './apikey.js';
 import { boardSignature, boardStats, emptyBoard, toAiBoard } from '/shared/board.js';
 import { mountWhiteboard } from '/wb/mount.js';
 import { boardToSvgString } from '/wb/render.js';
+import { selectionBounds } from '/shared/board.js';
 import { makeResizable } from '/resize.js';
 import {
   LEVELS, STYLES, boardStore, getCustom, getLaunch, getUi, loadSession, saveSession, sessionKey, setUi,
@@ -193,7 +194,8 @@ function renderControls() {
   els.pause.hidden = !active;
   els.pauseLabel.textContent = running ? 'Pause' : 'Resume';
   els.end.hidden = !active;
-  els.feedback.hidden = !(s.status === 'ended' && s.evaluation);
+  els.feedback.hidden = false;
+  els.feedback.textContent = s.evaluation ? 'View feedback' : 'Give feedback';
   els.chips2.forEach((c) => { c.disabled = state.streaming || !ariaOn(); });
   els.send.disabled = state.streaming;
 }
@@ -221,6 +223,7 @@ function start() {
   const s = state.s;
   if (s.status === 'ended') {
     state.s = newSession();
+    forgetFeedback();
     state.app.setBoard(emptyBoard(), { fit: false });
     renderChat();
   }
@@ -471,6 +474,41 @@ async function watchNow(force) {
   }
 }
 
+// ---------- saved feedback (local database, same file as the quiz progress) ----------
+const fbUrl = () => `/api/feedback/${encodeURIComponent(state.key).replace('%3A', ':')}`;
+const DB_HEADERS = { 'content-type': 'application/json', 'x-hld-progress': '1' };
+
+async function loadSavedFeedback() {
+  try {
+    const res = await fetch(fbUrl());
+    if (!res.ok) return null;
+    const out = await res.json();
+    return out && out.report ? out : null;
+  } catch { return null; }
+}
+async function storeFeedback(report) {
+  try {
+    const res = await fetch(fbUrl(), { method: 'PUT', headers: DB_HEADERS, body: JSON.stringify({ report }) });
+    if (res.ok) state.s.savedAt = (await res.json()).at || Date.now();
+  } catch { /* the report still shows and is kept in this browser */ }
+}
+const forgetFeedback = () => { fetch(fbUrl(), { method: 'DELETE', headers: DB_HEADERS }).catch(() => {}); };
+
+// Puts the expected diagram on the candidate's own whiteboard, to the right of whatever is already there, and brings it into view.
+function addDiagramToBoard(d) {
+  const wb = state.app && state.app.wb;
+  if (!wb || !d || !d.board) return false;
+  const own = state.app.getBoard();
+  const mine = selectionBounds(own, own.items);
+  const incoming = selectionBounds(d.board, d.board.items);
+  const at = own.items.length && mine
+    ? { x: mine.x + mine.w + 100 + incoming.w / 2, y: mine.y + incoming.h / 2 }
+    : 'viewport-center';
+  const ids = wb.insertElements(d.board.items, { at, select: true });
+  if (ids.length && wb.zoomToSelection) wb.zoomToSelection();
+  return ids.length > 0;
+}
+
 // ---------- feedback report ----------
 function section(title, items) {
   const box = document.createElement('div');
@@ -480,7 +518,7 @@ function section(title, items) {
   return box;
 }
 
-function renderReport(ev) {
+function renderReport(ev, savedAt) {
   const body = els.reportBody;
   body.replaceChildren();
   const v = node('div', 'verdict');
@@ -503,6 +541,14 @@ function renderReport(ev) {
   body.append(v, node('p', '', ev.summary));
   for (const part of [expectationBlock(ev.expectation), simulationBlock(ev.simulation), diagramBlock(ev.diagram)]) if (part) body.appendChild(part);
   body.append(node('h3', 'rp-h', 'Scores by area'), areas, cols);
+  const foot = node('div', 'rp-foot');
+  foot.append(node('span', 'rp-saved', savedAt ? `Saved on this computer · ${new Date(savedAt).toLocaleString()}` : 'Not saved yet'));
+  const redo = node('button', 'btn', 'Redo feedback');
+  redo.type = 'button';
+  redo.title = 'Ask Aria to write the review again from the current board and conversation';
+  redo.addEventListener('click', () => showFeedback(true, { force: true }));
+  foot.appendChild(redo);
+  body.appendChild(foot);
 }
 
 // Older saved reports have none of these three parts, so each block quietly returns nothing.
@@ -555,6 +601,12 @@ function diagramBlock(d) {
   fig.innerHTML = boardToSvgString(d.board, { background: '#ffffff', padding: 24 }); // markup is built from validated board data and escaped by the renderer
   box.append(fig);
   if (d.caption) box.append(node('p', 'rp-caption', d.caption));
+  const add = node('button', 'btn primary', 'Add this diagram to my whiteboard');
+  add.type = 'button';
+  add.addEventListener('click', () => {
+    if (addDiagramToBoard(d)) { els.report.close(); state.s && save(); } else add.textContent = 'Could not add it (the board is locked or not ready)';
+  });
+  box.append(add);
   return box;
 }
 
@@ -570,10 +622,10 @@ function reportMessage(text, buttonLabel, onClick, isError) {
   }
 }
 
-async function showFeedback(generate) {
+async function showFeedback(generate, { force = false } = {}) {
   const s = state.s;
   if (!els.report.open) openModal(els.report);
-  if (s.evaluation) return renderReport(s.evaluation);
+  if (s.evaluation && !force) return renderReport(s.evaluation, s.savedAt);
   if (!generate) return undefined;
   if (state.health.ai === 'off') {
     reportMessage('Aria is not connected, so there is no written feedback. The whiteboard and timer worked without her.', null, null, false);
@@ -593,11 +645,13 @@ async function showFeedback(generate) {
     const res = await fetch('/api/evaluate', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(payload({ status: 'ended' })) });
     if (!res.ok) throw new Error(await readError(res));
     s.evaluation = await res.json();
+    s.savedAt = null;
+    await storeFeedback(s.evaluation);
     save();
     renderControls();
-    renderReport(s.evaluation);
+    renderReport(s.evaluation, s.savedAt);
   } catch (err) {
-    reportMessage(err.message, 'Try again', () => showFeedback(true), true);
+    reportMessage(err.message, 'Try again', () => showFeedback(true, { force }), true);
   }
   return undefined;
 }
@@ -606,7 +660,15 @@ async function showFeedback(generate) {
 els.start.addEventListener('click', start);
 els.pause.addEventListener('click', pause);
 els.end.addEventListener('click', () => end());
-els.feedback.addEventListener('click', () => showFeedback(false));
+els.feedback.addEventListener('click', async () => {
+  const s = state.s;
+  if (s.evaluation) { showFeedback(false); return; }
+  if (s.status === 'running' || s.status === 'paused') {
+    const ok = await askConfirm('Feedback includes a model answer and a diagram, so it can spoil the exercise. Your timer keeps going. Get feedback now?', 'Give me feedback');
+    if (!ok) return;
+  }
+  showFeedback(true);
+});
 els.reportClose.addEventListener('click', () => els.report.close());
 els.qClose.addEventListener('click', () => setQuestionOpen(false));
 els.qTab.addEventListener('click', () => setQuestionOpen(true));
@@ -678,6 +740,9 @@ async function init() {
   });
 
   state.s = load();
+  const saved = await loadSavedFeedback();
+  if (saved) { state.s.evaluation = saved.report; state.s.savedAt = saved.at; }
+  else if (state.s.evaluation) storeFeedback(state.s.evaluation);
   state.s.lastWatchedSig = boardSignature(state.app.getBoard());
   const ui = getUi();
   renderQuestion();

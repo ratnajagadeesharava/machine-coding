@@ -26,6 +26,8 @@ CREATE TABLE IF NOT EXISTS attempts (
 CREATE TABLE IF NOT EXISTS quiz_stats (quiz_id TEXT PRIMARY KEY, best INTEGER, count INTEGER NOT NULL DEFAULT 0, last TEXT);
 -- quizzes generated with AI (json)
 CREATE TABLE IF NOT EXISTS custom_quizzes (id TEXT PRIMARY KEY, body TEXT NOT NULL, position INTEGER NOT NULL);
+-- interview feedback reports (json), one per interview question, newest saved report wins
+CREATE TABLE IF NOT EXISTS feedback (question_key TEXT PRIMARY KEY, body TEXT NOT NULL, at INTEGER NOT NULL);
 -- small things: the quiz in progress (resume) and the two toggles
 CREATE TABLE IF NOT EXISTS kv (key TEXT PRIMARY KEY, value TEXT NOT NULL);
 `;
@@ -73,6 +75,10 @@ export function openProgress(file = path.join(path.dirname(new URL(import.meta.u
     custom: db.prepare('SELECT body FROM custom_quizzes ORDER BY position'),
     insertCustom: db.prepare('INSERT OR REPLACE INTO custom_quizzes (id, body, position) VALUES (?, ?, ?)'),
     clearCustom: db.prepare('DELETE FROM custom_quizzes'),
+    fbGet: db.prepare('SELECT body, at FROM feedback WHERE question_key = ?'),
+    fbSet: db.prepare('INSERT INTO feedback (question_key, body, at) VALUES (?, ?, ?) ON CONFLICT(question_key) DO UPDATE SET body = excluded.body, at = excluded.at'),
+    fbDel: db.prepare('DELETE FROM feedback WHERE question_key = ?'),
+    fbClear: db.prepare('DELETE FROM feedback'),
     kvAll: db.prepare('SELECT key, value FROM kv'),
     kvSet: db.prepare('INSERT INTO kv (key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value'),
     kvDel: db.prepare('DELETE FROM kv WHERE key = ?'),
@@ -122,6 +128,18 @@ export function openProgress(file = path.join(path.dirname(new URL(import.meta.u
       else if (KV_KEYS.includes(key)) { if (value == null) q.kvDel.run(key); else q.kvSet.run(key, JSON.stringify(value)); }
       else throw new RangeError(`unknown progress key "${key}"`);
     },
+    // interview feedback reports: one saved report per question key
+    getFeedback(key) {
+      const r = q.fbGet.get(key);
+      return r ? { report: JSON.parse(r.body), at: r.at } : null;
+    },
+    saveFeedback(key, report) {
+      if (!report || typeof report !== 'object' || Array.isArray(report)) throw new TypeError('report must be an object');
+      const at = Date.now();
+      q.fbSet.run(key, JSON.stringify(report), at);
+      return { at };
+    },
+    deleteFeedback(key) { q.fbDel.run(key); },
     // merge progress that was kept in a browser's localStorage into the database (keeps whatever is already there)
     sync({ attempts, history, custom } = {}) {
       const have = read();
@@ -141,7 +159,7 @@ export function openProgress(file = path.join(path.dirname(new URL(import.meta.u
     },
     // back to zero: every table emptied (the schema stays)
     reset: db.transaction(() => {
-      q.clearAttempts.run(); q.clearStats.run(); q.clearCustom.run(); q.clearKv.run();
+      q.clearAttempts.run(); q.clearStats.run(); q.clearCustom.run(); q.clearKv.run(); q.fbClear.run();
       q.metaSet.run('reset_at', new Date().toISOString());
       return read();
     }),
