@@ -29,6 +29,14 @@ function fitContainer(el, v) {
   }
 }
 
+const el0 = (wb, id) => (findItem(wb._board, id) || {}).type;
+
+// Names people usually give boxes in a system design; shown as one-click suggestions while a shape is being named.
+const COMPONENT_NAMES = [
+  'Client', 'Web app', 'Mobile app', 'API Gateway', 'Load Balancer', 'Service', 'Auth Service', 'Cache (Redis)', 'Database', 'Read Replica',
+  'Message Queue', 'Kafka', 'Worker', 'CDN', 'Object Storage (S3)', 'Search (Elasticsearch)', 'Rate Limiter', 'Notification Service',
+];
+
 export function installText(P) {
   P.startEditing = function startEditing(id) { this._beginEdit(id); };
 
@@ -80,10 +88,13 @@ export function installText(P) {
       e.stopPropagation();
       if (e.isComposing || ed.composing || e.keyCode === 229) return;
       if (e.key === 'Escape') { e.preventDefault(); this._finishEditor(); return; }
-      if (e.key === 'Enter' && (e.ctrlKey || e.metaKey || (kind === 'frame' && !e.shiftKey))) { e.preventDefault(); this._finishEditor(); return; }
+      // short labels: Enter finishes, Shift+Enter adds a line. Notes and free text keep Enter for a new line (Ctrl+Enter finishes).
+      const shortLabel = kind === 'frame' || kind === 'linear' || (kind === 'container' && el.type !== 'sticky');
+      if (e.key === 'Enter' && (e.ctrlKey || e.metaKey || (shortLabel && !e.shiftKey))) { e.preventDefault(); this._finishEditor(); return; }
       if (e.key === 'Tab') {
         e.preventDefault();
-        if (kind === 'text' || kind === 'container') this._indentEditor(e.shiftKey);
+        const first = ed.sugg && ed.sugg[0];
+        if (kind === 'container' && el.type !== 'sticky') { if (first) this._pickSuggestion(ed, first); } else if (kind === 'text' || kind === 'container') this._indentEditor(e.shiftKey);
       }
     });
     ta.addEventListener('blur', () => { if (this._editor === ed) this._finishEditor(); });
@@ -98,6 +109,7 @@ export function installText(P) {
     focus();
     setTimeout(focus, 0);
     this._onEditorInput(true);
+    this._placeConnectors();
   };
 
   // A small bar above the text being edited: font, size and alignment without leaving the keyboard flow.
@@ -131,10 +143,49 @@ export function installText(P) {
     done.addEventListener('mousedown', (e) => e.preventDefault());
     done.addEventListener('click', () => this._finishEditor());
     bar.appendChild(done);
+    if (ed.kind === 'container' && el0(this, ed.id) !== 'sticky') {
+      ed.suggBox = document.createElement('div');
+      ed.suggBox.className = 'wb-fmt-sugg';
+      ed.suggBox.setAttribute('aria-label', 'Suggested names');
+      bar.appendChild(ed.suggBox);
+    }
     bar.addEventListener('pointerdown', (e) => e.stopPropagation());
     bar.addEventListener('mousedown', (e) => e.preventDefault());
     ed.bar = bar; ed.barBtns = btns;
     this.root.appendChild(bar);
+  };
+
+  P._pickSuggestion = function _pickSuggestion(ed, name) {
+    ed.ta.value = name;
+    this._onEditorInput();
+    ed.ta.focus({ preventScroll: true });
+    ed.ta.setSelectionRange(name.length, name.length);
+  };
+
+  P._refreshSuggestions = function _refreshSuggestions(ed) {
+    if (!ed.suggBox) return;
+    const q = ed.ta.value.trim().toLowerCase();
+    const words = (n) => n.toLowerCase().split(/[\s(]+/);
+    const rank = (n) => (n.toLowerCase().startsWith(q) ? 0 : words(n).some((w) => w.startsWith(q)) ? 1 : q.length > 2 && n.toLowerCase().includes(q) ? 2 : 9);
+    const list = (q ? COMPONENT_NAMES.filter((n) => rank(n) < 9 && n.toLowerCase() !== q).sort((a, b) => rank(a) - rank(b)) : COMPONENT_NAMES).slice(0, 6);
+    const same = list.length === (ed.sugg || []).length && list.every((n, i) => n === ed.sugg[i]);
+    ed.sugg = list;
+    if (same) return;
+    ed.suggBox.replaceChildren();
+    ed.suggBox.hidden = !list.length;
+    if (!list.length) return;
+    const lead = document.createElement('span');
+    lead.className = 'wb-fmt-lead';
+    lead.textContent = 'Suggestions (Tab for first):';
+    ed.suggBox.appendChild(lead);
+    for (const n of list) {
+      const b = document.createElement('button');
+      b.type = 'button'; b.className = 'wb-fmt-chip'; b.textContent = n;
+      b.addEventListener('mousedown', (e) => e.preventDefault());
+      b.addEventListener('pointerdown', (e) => e.stopPropagation());
+      b.addEventListener('click', () => this._pickSuggestion(ed, n));
+      ed.suggBox.appendChild(b);
+    }
   };
 
   P._refreshFormatBar = function _refreshFormatBar(ed) {
@@ -149,11 +200,12 @@ export function installText(P) {
   P._placeFormatBar = function _placeFormatBar(ed, el, sx, sy, sw) {
     if (!ed.bar) return;
     this._refreshFormatBar(ed);
+    this._refreshSuggestions(ed);
     const rw = this.root.clientWidth || 800;
     const bw = ed.bar.offsetWidth || 280;
     let x = sx + sw / 2 - bw / 2;
     x = Math.max(8, Math.min(rw - bw - 8, x));
-    let y = sy - 46;
+    let y = sy - (ed.bar.offsetHeight || 46) - 8;
     if (y < 8) y = sy + Math.max(24, (el.fontSize || 20) * this._view.zoom * 1.6) + 12;
     ed.bar.style.left = `${x}px`;
     ed.bar.style.top = `${y}px`;
@@ -297,6 +349,7 @@ export function installText(P) {
       this._setSelection(this._selIds().filter((id) => id !== el.id));
     }
     this._emit('editing', { id: null });
+    this._placeConnectors();
     if (this._tool === 'text' && !this._toolLocked) this._afterCreate();
     if (ed.isNew && drop) this._renderNow(); else this._commit();
     this._renderNow();
