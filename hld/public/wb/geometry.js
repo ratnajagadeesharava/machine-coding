@@ -1,6 +1,6 @@
 // Hit testing, boxes, handles, resize maths, snapping and text metrics. DOM-free (numbers only).
 import {
-  BINDABLE_TYPES, LIMITS, MIN_SIZE, center, elementBounds, findItem, hasPoints, isLinear, normalizePoints, pointsBounds, resolvePoints, rotatePoint,
+  BINDABLE_TYPES, LIMITS, MIN_SIZE, center, elementBounds, findItem, hasPoints, isContainer, isLinear, normalizePoints, pointsBounds, resolvePoints, rotatePoint,
   selectionBounds,
 } from '../../shared/board.js';
 import { curveSamples, databaseCap } from './rough.js';
@@ -215,6 +215,16 @@ export function hitElement(board, el, point, tol = 0) {
     return distToPolyline(p, poly, true) <= tol + sw + 1 || outlineOf(el).extra.some((e) => distToPolyline(p, e) <= tol + sw + 1);
   }
   return d <= tol + sw + 1;
+}
+
+// Topmost container (rect, diamond, ellipse, database, sticky) whose inside holds the point, even when it has no fill.
+export function hitContainerInside(board, point, { skipLocked = false } = {}) {
+  for (let i = board.items.length - 1; i >= 0; i--) {
+    const el = board.items[i];
+    if (!isContainer(el) || (skipLocked && el.locked)) continue;
+    if (shapeDistanceLocal(el, toLocal(el, point)) === 0) return el;
+  }
+  return null;
 }
 
 export function hitTestTop(board, point, tol = 0, { skipLocked = false, ids } = {}) {
