@@ -94,10 +94,10 @@ HLD Room is built from three independent parts, and each works without the other
 | Draw on the whiteboard (middle) | The same whiteboard as `/board.html`, saved per question. |
 | **Clarify requirements** | Aria answers like a product owner, and keeps every answer consistent for the rest of the interview. |
 | **Give me a hint** | One graduated hint, only as strong as needed. |
-| **Review my board** | Strengths, the biggest gap, and a probing question about your actual components. |
+| **Review my board** | In plain English: what Aria expected to see, what is on your board, one request walked along your arrows to show where it would break, and a probing question. |
 | Ask anything in the chat | Free conversation, with your board and the clock attached. |
 | Close the Aria panel (right) | Aria is **completely off**: no check-ins and no AI requests. The whiteboard keeps working; reopen her with the slim **Aria** tab. Both panel states are remembered. |
-| **End** (or time runs out) | A feedback report: verdict, 0-5 scores for requirements, estimation, API, data model, architecture, scaling and trade-offs, plus strengths, gaps and next steps, scaled to the level you chose. |
+| **End** (or time runs out) | A feedback report: verdict, 0-5 scores for requirements, estimation, API, data model, architecture, scaling and trade-offs, plus strengths, gaps and next steps, scaled to the level you chose. The report also has **What I expected to see** (shown / partly / missing), **What happens on your board** (a few real situations followed step by step, with a tick or a cross per step) and **The diagram I expected**, a whiteboard-style picture of one good answer. It is written fresh by Aria each time and is never stored in the repo. |
 
 ### The whiteboard
 

@@ -66,6 +66,33 @@ function mockEvaluation(params) {
     strengths: c.components ? ['You put components on the board.'] : [],
     gaps: ['Mock mode gives canned feedback only.'],
     next_steps: ['Run with a real ANTHROPIC_API_KEY for real feedback.'],
+    expectation: [
+      { what: 'A way for users to reach the system', status: c.components ? 'shown' : 'missing', note: 'Mock note about your entry point.' },
+      { what: 'A place to store the data', status: 'partly', note: 'Mock note about storage.' },
+      { what: 'A way to handle ten times more traffic', status: 'missing', note: 'Mock note about scaling.' },
+    ],
+    simulation: [{
+      scenario: 'A user sends one normal request',
+      steps: [
+        { text: 'The request arrives at the first box on your board.', works: c.components > 0 },
+        { text: 'It reaches storage, but no arrow leads there yet.', works: false },
+      ],
+      takeaway: 'Mock walk-through: connect your boxes so a request can travel all the way.',
+    }],
+    diagram: {
+      nodes: [
+        { id: 'user', label: 'User', kind: 'client' },
+        { id: 'lb', label: 'Load balancer', kind: 'balancer' },
+        { id: 'api', label: 'API service', kind: 'service' },
+        { id: 'cache', label: 'Cache', kind: 'cache' },
+        { id: 'db', label: 'Database', kind: 'database' },
+      ],
+      edges: [
+        { from: 'user', to: 'lb', label: 'HTTPS' }, { from: 'lb', to: 'api', label: 'request' },
+        { from: 'api', to: 'cache', label: 'read' }, { from: 'api', to: 'db', label: 'read/write' },
+      ],
+      caption: 'Mock diagram. A request goes through the load balancer to the API. The API reads the cache first, then the database.',
+    },
   };
 }
 

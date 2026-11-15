@@ -111,3 +111,25 @@
 .resizing, .resizing * { cursor: col-resize !important; user-select: none !important; }
 .resizer[hidden] { display: none; }
 @media (max-width: 900px) { .resizer { display: none; } }
+
+/* review sections: what was expected, the walk-through, the expected diagram */
+.rp-h { font-size: 16px; margin: 4px 0 2px; }
+.rp-sub { color: var(--muted); font-size: 14px; margin-bottom: 8px; }
+.rp-block { display: grid; gap: 8px; padding-top: 6px; border-top: 1px solid var(--line); }
+.rp-expect { list-style: none; padding: 0; display: grid; gap: 8px; }
+.rp-item { border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; background: var(--card); }
+.rp-item p { font-size: 14px; color: var(--muted); margin-top: 4px; }
+.rp-item-head { display: flex; gap: 10px; align-items: center; }
+.rp-pill { font-size: 12px; font-weight: 800; padding: 2px 10px; border-radius: 99px; background: var(--accent-soft); color: var(--accent-strong); }
+.rp-pill.shown { background: #e3f4e8; color: #1d7a3a; } .rp-pill.missing { background: var(--danger-soft); color: var(--danger); }
+.rp-sim { border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; display: grid; gap: 8px; }
+.rp-sim h4 { font-size: 15px; margin: 0; }
+.rp-sim { gap: 6px; }
+.rp-steps { list-style: none; padding: 0; display: grid; gap: 6px; font-size: 14.5px; }
+.rp-steps li { display: grid; grid-template-columns: 22px 1fr; gap: 8px; align-items: start; }
+.rp-mark { width: 22px; height: 22px; border-radius: 50%; display: grid; place-items: center; font-size: 13px; font-weight: 800; }
+.rp-steps .ok .rp-mark { background: #e3f4e8; color: #1d7a3a; } .rp-steps .bad .rp-mark { background: var(--danger-soft); color: var(--danger); }
+.rp-take { font-size: 14px; font-weight: 600; }
+.rp-diagram { border: 1px solid var(--line); border-radius: 12px; background: #fff; overflow: auto; padding: 6px; }
+.rp-diagram svg { display: block; max-width: 100%; height: auto; margin: 0 auto; }
+.rp-caption { font-size: 14px; color: var(--muted); }
