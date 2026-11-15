@@ -751,6 +751,14 @@ export function installInput(P) {
   };
 
   // ---------- double click / context menu ----------
+  // The one selected shape that should take typing as its name: freshly drawn, or still empty. Named shapes keep the letter shortcuts for tools.
+  P._typeTarget = function _typeTarget() {
+    if (this._selection.size !== 1) return null;
+    const el = findItem(this._board, [...this._selection][0]);
+    if (!el || el.locked || !isContainer(el) || this._tool !== 'select') return null;
+    return (this._justCreated === el.id || !el.text) ? el : null;
+  };
+
   P._onDblClick = function _onDblClick(e) {
     if (!this._canEdit()) return;
     if (this._lastLinearEnd && Date.now() - this._lastLinearEnd < 450) return;
@@ -949,12 +957,12 @@ export function installInput(P) {
       if (code === 'KeyV') { prevent(); this.flip('v'); return; }
       if (code === 'Digit1') { prevent(); this.zoomToFit(); return; }
       if (code === 'Digit2') { prevent(); this.zoomToSelection(); return; }
-      if (key.length === 1 && editable && this._justCreated != null) { /* shifted character typed into a fresh shape */ } else return;
+      if (key.length === 1 && editable && this._typeTarget()) { /* shifted character typed into a shape that still has no name */ } else return;
     }
     // typing straight after creating a shape starts its label
-    if (key.length === 1 && editable && this._justCreated != null && this._selection.size === 1 && this._selection.has(this._justCreated)) {
-      const el = findItem(this._board, this._justCreated);
-      if (el && isContainer(el)) { prevent(); this._beginEdit(el.id, { initial: key }); return; }
+    if (key.length === 1 && editable) {
+      const el = this._typeTarget();
+      if (el) { prevent(); this._beginEdit(el.id, { initial: key }); return; }
     }
     if (key.length !== 1) return;
     const k = key.toLowerCase();

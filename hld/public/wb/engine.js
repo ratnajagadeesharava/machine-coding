@@ -11,6 +11,7 @@ import { HISTORY_BYTES, HISTORY_LIMIT, STYLE_KEYS, clamp, cloneEl, fin, svgEl } 
 import { svgToPngBlob } from './engine-image.js';
 import { installInput } from './engine-input.js';
 import { installText } from './engine-text.js';
+import { installConnect } from './engine-connect.js';
 import { installClipboard } from './engine-clipboard.js';
 
 let uid = 0;
@@ -701,6 +702,7 @@ export class Whiteboard {
 
   _drawOverlay() {
     if (this._destroyed) return;
+    this._placeConnectors();
     const o = this._overlay;
     o.replaceChildren();
     const z = this._view.zoom;
@@ -844,4 +846,5 @@ function _resolve(board, el) {
 
 installInput(Whiteboard.prototype);
 installText(Whiteboard.prototype);
+installConnect(Whiteboard.prototype);
 installClipboard(Whiteboard.prototype);

@@ -74,7 +74,7 @@ HLD Room is built from three independent parts, and each works without the other
 |---|---|---|
 | **Home** (`/`) | Pick one of 26 questions, write your own, or open a blank whiteboard. Shows sessions you can continue. | the question bank (`/api/questions`) |
 | **Interview room** (`/room.html?q=<id>` or `?custom=<id>`) | A closable question panel, the whiteboard, and a closable Aria panel, plus the timer and feedback report. | only the **question** |
-| **Whiteboard** (`/board.html`) | A full-page, Excalidraw-style whiteboard that saves in your browser. | nothing: no question, no timer, no bot, **no server API call at all** |
+| **Whiteboard** (`/board.html`) | A full-page, Excalidraw-style whiteboard that saves in your browser. Naming is quick: a new shape opens its label at once, **Enter** finishes (Shift+Enter = new line), typing on an empty selected shape starts its name, common component names appear as suggestions (**Tab** takes the first), a small bar sets size, font and alignment, and the **+** handles around a selected shape add a connected next shape. | nothing: no question, no timer, no bot, **no server API call at all** |
 
 ### Home
 
