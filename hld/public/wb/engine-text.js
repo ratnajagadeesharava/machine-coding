@@ -70,7 +70,7 @@ export function installText(P) {
     ta.setAttribute('autocapitalize', 'off');
     ta.setAttribute('autocomplete', 'off');
     ta.setAttribute('aria-label', kind === 'frame' ? 'Frame name' : 'Text');
-    ta.placeholder = kind === 'text' ? 'Type here…' : kind === 'frame' ? 'Frame name' : kind === 'linear' ? 'Label' : 'Label';
+    ta.placeholder = kind === 'text' ? 'Type here…' : kind === 'frame' ? 'Frame name' : kind === 'linear' ? 'Label' : 'Type a name';
     ta.wrap = kind === 'text' || kind === 'frame' ? 'off' : 'soft';
     const field = kind === 'frame' ? 'name' : 'text';
     ta.value = (el[field] || '') + initial;
@@ -167,7 +167,7 @@ export function installText(P) {
     const q = ed.ta.value.trim().toLowerCase();
     const words = (n) => n.toLowerCase().split(/[\s(]+/);
     const rank = (n) => (n.toLowerCase().startsWith(q) ? 0 : words(n).some((w) => w.startsWith(q)) ? 1 : q.length > 2 && n.toLowerCase().includes(q) ? 2 : 9);
-    const list = (q ? COMPONENT_NAMES.filter((n) => rank(n) < 9 && n.toLowerCase() !== q).sort((a, b) => rank(a) - rank(b)) : COMPONENT_NAMES).slice(0, 6);
+    const list = (q ? COMPONENT_NAMES.filter((n) => rank(n) < 9 && n.toLowerCase() !== q).sort((a, b) => rank(a) - rank(b)) : COMPONENT_NAMES).slice(0, 5);
     const same = list.length === (ed.sugg || []).length && list.every((n, i) => n === ed.sugg[i]);
     ed.sugg = list;
     if (same) return;
@@ -176,7 +176,8 @@ export function installText(P) {
     if (!list.length) return;
     const lead = document.createElement('span');
     lead.className = 'wb-fmt-lead';
-    lead.textContent = 'Suggestions (Tab for first):';
+    lead.textContent = 'Tab \u21B9';
+    lead.title = 'Press Tab to use the first suggestion';
     ed.suggBox.appendChild(lead);
     for (const n of list) {
       const b = document.createElement('button');
@@ -205,8 +206,15 @@ export function installText(P) {
     const bw = ed.bar.offsetWidth || 280;
     let x = sx + sw / 2 - bw / 2;
     x = Math.max(8, Math.min(rw - bw - 8, x));
-    let y = sy - (ed.bar.offsetHeight || 46) - 8;
-    if (y < 8) y = sy + Math.max(24, (el.fontSize || 20) * this._view.zoom * 1.6) + 12;
+    const z = this._view.zoom;
+    const bh = ed.bar.offsetHeight || 46;
+    const rh = this.root.clientHeight || 600;
+    // the whole shape (not just the text box) is kept visible: the bar goes under it, or above it when there is no room below
+    const top = ed.kind === 'container' ? this._view.y + el.y * z : sy;
+    const bottom = ed.kind === 'container' ? this._view.y + (el.y + el.h) * z : sy + (parseFloat(ed.ta.style.height) || 24);
+    let y = bottom + 14;
+    if (y + bh > rh - 8) y = top - bh - 14;
+    y = Math.max(8, y);
     ed.bar.style.left = `${x}px`;
     ed.bar.style.top = `${y}px`;
   };
