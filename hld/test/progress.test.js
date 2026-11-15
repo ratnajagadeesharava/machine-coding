@@ -166,3 +166,34 @@ test('without a database the API says so and the page falls back to the browser'
     assert.equal((await call(s.base, 'GET', '/api/progress')).status, 503);
   } finally { await s.close(); }
 });
+
+test('interview feedback is saved per question, replaced on redo, and wiped by reset', () => {
+  const p = openProgress(':memory:');
+  assert.equal(p.getFeedback('q:url-shortener'), null);
+  p.saveFeedback('q:url-shortener', { verdict: 'Good', summary: 'one' });
+  p.saveFeedback('q:url-shortener', { verdict: 'Mixed', summary: 'two' });
+  p.saveFeedback('custom:abc', { verdict: 'Strong', summary: 'other' });
+  assert.equal(p.getFeedback('q:url-shortener').report.summary, 'two');
+  assert.equal(p.getFeedback('custom:abc').report.summary, 'other');
+  assert.throws(() => p.saveFeedback('q:x', 'nope'), TypeError);
+  p.deleteFeedback('custom:abc');
+  assert.equal(p.getFeedback('custom:abc'), null);
+  p.reset();
+  assert.equal(p.getFeedback('q:url-shortener'), null);
+});
+
+test('feedback API: read is open, changes need the guard header, bad keys are refused', async () => {
+  const s = await start();
+  try {
+    const key = '/api/feedback/q:url-shortener';
+    assert.deepEqual(await (await call(s.base, 'GET', key, undefined, {})).json(), { report: null, at: null });
+    assert.equal((await call(s.base, 'PUT', key, { report: { summary: 'x' } }, {})).status, 403);
+    assert.equal((await call(s.base, 'PUT', key, { report: { summary: 'x' } })).status, 200);
+    assert.equal((await call(s.base, 'PUT', key, { report: 'bad' })).status, 400);
+    assert.equal((await call(s.base, 'PUT', key, { report: { summary: 'x' } }, { 'x-hld-progress': '1', origin: 'https://evil.example' })).status, 403);
+    assert.equal((await (await call(s.base, 'GET', key, undefined, {})).json()).report.summary, 'x');
+    assert.equal((await call(s.base, 'GET', '/api/feedback/..%2Fetc', undefined, {})).status, 404);
+    assert.equal((await call(s.base, 'DELETE', key)).status, 200);
+    assert.equal((await (await call(s.base, 'GET', key, undefined, {})).json()).report, null);
+  } finally { await s.close(); }
+});
